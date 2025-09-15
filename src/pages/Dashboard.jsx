@@ -9,13 +9,12 @@ import { Link } from 'react-router-dom';
 const Dashboard = () => {
   const { currentUser, getAgentsByAgency, isAdmin, isAgent } = useAuth();
   const { getRequestStats, getNewRequests } = useRequests();
-  const { getTariffsByAgency } = useTariffs();
+  const { tariffs, loading: tariffsLoading, error: tariffsError } = useTariffs();
   const { getAgencyByManagerEmail } = useAgency();
 
   const userAgents = getAgentsByAgency(currentUser?.id);
   const requestStats = getRequestStats(currentUser?.id);
   const newRequests = getNewRequests(currentUser?.id);
-  const tariffs = getTariffsByAgency(currentUser?.id);
 
   // Admin statistics
   const adminStats = [
@@ -46,6 +45,13 @@ const Dashboard = () => {
       icon: '✅',
       color: 'bg-green-100 text-green-600',
       description: 'Expéditions terminées'
+    },
+    {
+      title: 'Tarifs configurés',
+      value: Array.isArray(tariffs) ? tariffs.length : 0,
+      icon: '💰',
+      color: 'bg-purple-100 text-purple-600',
+      description: 'Tarifs disponibles'
     },
     {
       title: 'Revenus',
@@ -107,9 +113,25 @@ const Dashboard = () => {
     <DashboardLayout>
       {/* Titre de la page */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">
-          Bienvenue, {currentUser?.name} !
-        </h1>
+        {(() => {
+          const displayName = currentUser?.name 
+            || [currentUser?.nom, currentUser?.prenoms].filter(Boolean).join(' ')
+            || 'Utilisateur';
+          return (
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-2xl font-bold text-gray-900">
+                Bienvenue, {displayName} !
+              </h1>
+              <span
+                className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                  isAdmin() ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                }`}
+              >
+                {isAdmin() ? 'Administrateur' : 'Agent'}
+              </span>
+            </div>
+          );
+        })()}
         <p className="text-gray-600 mt-2">
           {isAdmin() 
             ? 'Gérez votre équipe et suivez les performances de votre agence'
@@ -375,20 +397,32 @@ const Dashboard = () => {
               <h3 className="text-lg font-medium text-gray-900">Résumé des tarifs</h3>
             </div>
             <div className="p-6">
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Total tarifs</span>
-                  <span className="text-sm font-medium">{tariffs.length}</span>
+              {tariffsLoading ? (
+                <div className="flex justify-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Tarifs actifs</span>
-                  <span className="text-sm font-medium">{tariffs.filter(t => t.isActive).length}</span>
+              ) : tariffsError ? (
+                <div className="text-red-500 text-sm">Erreur lors du chargement des tarifs</div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Total tarifs</span>
+                    <span className="text-sm font-medium">{tariffs?.length || 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Tarifs actifs</span>
+                    <span className="text-sm font-medium">
+                      {tariffs?.filter(t => t?.actif)?.length || 0}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Indices uniques</span>
+                    <span className="text-sm font-medium">
+                      {tariffs?.length ? [...new Set(tariffs.map(t => t?.indice))].length : 0}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Destinations</span>
-                  <span className="text-sm font-medium">{[...new Set(tariffs.map(t => t.destination))].length}</span>
-                </div>
-              </div>
+              )}
             </div>
           </div>
 

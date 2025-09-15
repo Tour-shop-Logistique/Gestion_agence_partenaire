@@ -1,460 +1,382 @@
-import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTariffs } from '../contexts/TariffContext';
 import DashboardLayout from '../components/DashboardLayout';
+import SelectTariffIndexModal from '../components/SelectTariffIndexModal';
+import { formatPrice } from '../utils/format';
+
 
 const Tariffs = () => {
-  const { currentUser, isAdmin } = useAuth();
-  const { 
-    getTariffsByAgency,
-    createTariff,
-    updateTariff,
-    deleteTariff,
-    toggleTariffStatus,
-    getWeightRanges,
-    formatPrice
+  const {
+    loading,
+    error,
+    message,
+    selectedIndex,
+    editingZones,
+    isSaving,
+    selectIndex,
+    updateZonePercentage,
+    saveTariff,
+    getIndices,
+    getCurrentTariff,
+    existingTariffs,
+    newTariff,
+    loadTariffs,
+    updateNewTariffZones
   } = useTariffs();
+  
+  const [availableIndices, setAvailableIndices] = useState([]);
+  const [currentTariffData, setCurrentTariffData] = useState(null);
 
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [editingTariff, setEditingTariff] = useState(null);
-  const [formData, setFormData] = useState({
-    destination: '',
-    weightRange: '',
-    price: '',
-    deliveryTime: '',
-    currency: 'XOF'
-  });
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
+  const [showSaveButton, setShowSaveButton] = useState(false);
+  const [showTariffForm, setShowTariffForm] = useState(false);
+  const [showIndexModal, setShowIndexModal] = useState(false);
 
-  const tariffs = getTariffsByAgency(currentUser?.id);
-  const weightRanges = getWeightRanges();
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage('');
-
-    try {
-      const tariffData = {
-        ...formData,
-        price: parseInt(formData.price),
-        agencyId: currentUser.id
-      };
-
-      if (editingTariff) {
-        const result = await updateTariff(editingTariff.id, tariffData);
-        setMessage(result.message);
-        if (result.success) {
-          setEditingTariff(null);
-          resetForm();
+  // Charger les tarifs au montage du composant
+  useEffect(() => {
+    const fetchTariffs = async () => {
+      try {
+        await loadTariffs();
+        // Mettre à jour les indices disponibles après le chargement
+        const indices = getIndices();
+        setAvailableIndices(indices);
+      } catch (err) {
+        console.error('Erreur lors du chargement des tarifs:', err);
+      }
+    };
+    
+    fetchTariffs();
+  }, [loadTariffs, getIndices]);
+  
+  // Mettre à jour le tarif courant lorsque l'indice sélectionné change
+  useEffect(() => {
+    const updateSelectedTariff = async () => {
+      if (selectedIndex === 'new') {
+        // Utiliser les données du nouveau tarif depuis le contexte
+        setCurrentTariffData(newTariff);
+        setShowTariffForm(true);
+        setShowSaveButton(true); // Activer le bouton de sauvegarde pour les nouveaux tarifs
+      } else if (selectedIndex) {
+        // Pour un tarif existant
+        const tariff = getCurrentTariff();
+        if (tariff) {
+          setCurrentTariffData(tariff);
+          setShowTariffForm(true);
+          setShowSaveButton(false); // Désactiver le bouton jusqu'à ce qu'une modification soit faite
         }
       } else {
-        const result = await createTariff(tariffData);
-        setMessage(result.message);
-        if (result.success) {
-          setShowAddForm(false);
-          resetForm();
+        // Aucun tarif sélectionné
+        setShowTariffForm(false);
+        setShowSaveButton(false);
+      }
+    };
+
+    updateSelectedTariff();
+  }, [selectedIndex, getCurrentTariff, newTariff, setShowSaveButton, setShowTariffForm, setCurrentTariffData]);
+
+  const handleZoneChange = useCallback((zoneId, value) => {
+    if (selectedIndex === 'new') {
+      // Mettre à jour les zones du nouveau tarif dans le contexte
+      const updatedZones = newTariff.prix_zones.map(zone => {
+        if (zone.zone_destination_id === zoneId) {
+          const pourcentage = parseFloat(value) || 0;
+          const montantBase = parseFloat(zone.montant_base) || 0;
+          const montantPrestation = (montantBase * pourcentage) / 100;
+          
+          return {
+            ...zone,
+            pourcentage_prestation: pourcentage,
+            montant_prestation: parseFloat(montantPrestation.toFixed(2)),
+            montant_expedition: parseFloat((montantBase + montantPrestation).toFixed(2))
+          };
         }
-      }
-    } catch (error) {
-      setMessage('Une erreur est survenue');
-    } finally {
-      setLoading(false);
+        return zone;
+      });
+      
+      updateNewTariffZones(updatedZones);
+    } else {
+      // Mettre à jour les zones d'un tarif existant
+      updateZonePercentage(zoneId, value);
     }
-  };
+    setShowSaveButton(true);
+  }, [selectedIndex, newTariff.prix_zones, updateNewTariffZones, updateZonePercentage]);
 
-  const handleEdit = (tariff) => {
-    setEditingTariff(tariff);
-    setFormData({
-      destination: tariff.destination,
-      weightRange: tariff.weightRange,
-      price: tariff.price.toString(),
-      deliveryTime: tariff.deliveryTime,
-      currency: tariff.currency
-    });
-    setShowAddForm(true);
-  };
-
-  const handleDelete = async (tariffId) => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce tarif ?')) {
-      setLoading(true);
-      try {
-        const result = await deleteTariff(tariffId);
-        setMessage(result.message);
-      } catch (error) {
-        setMessage('Erreur lors de la suppression');
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
-
-  const handleToggleStatus = async (tariffId) => {
-    setLoading(true);
+  const handleSave = useCallback(async () => {
     try {
-      const result = await toggleTariffStatus(tariffId);
-      setMessage(result.message);
-    } catch (error) {
-      setMessage('Erreur lors de la modification du statut');
-    } finally {
-      setLoading(false);
+      // Appeler la fonction de sauvegarde du contexte
+      const result = await saveTariff();
+      
+      if (result?.success) {
+        // Recharger les tarifs après la sauvegarde
+        await loadTariffs(true);
+        
+        // Mettre à jour la liste des indices disponibles
+        const indices = getIndices();
+        setAvailableIndices(indices);
+        
+        // Fermer le modal après un court délai pour montrer le message de succès
+        setTimeout(() => {
+          setShowIndexModal(false);
+          setShowSaveButton(false);
+        }, 1000);
+      }
+    } catch (err) {
+      console.error('Erreur lors de la sauvegarde du tarif:', err);
     }
-  };
+  }, [saveTariff, loadTariffs, getIndices, setShowIndexModal, setShowSaveButton]);
 
-  const resetForm = () => {
-    setFormData({
-      destination: '',
-      weightRange: '',
-      price: '',
-      deliveryTime: '',
-      currency: 'XOF'
-    });
-  };
+  const handleNewTariff = useCallback(() => {
+    setShowIndexModal(true);
+  }, []);
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('fr-FR', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
+  const handleIndexSelect = useCallback((selectedIndex) => {
+    selectIndex(selectedIndex);
+    setShowIndexModal(false);
+    setShowTariffForm(true);
+  }, [selectIndex, setShowIndexModal, setShowTariffForm]);
+
+  const currentTariff = getCurrentTariff();
+  const indices = getIndices();
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <DashboardLayout>
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <strong className="font-bold">Erreur ! </strong>
+          <span className="block sm:inline">{error}</span>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
-      {/* Titre de la page */}
-      <div className="mb-8">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Gestion des tarifs</h1>
-            <p className="text-gray-600 mt-2">
-              {isAdmin() 
-                ? 'Configurez les tarifs d\'expédition pour votre agence'
-                : 'Consultez les tarifs d\'expédition disponibles'
-              }
-            </p>
-          </div>
-          {isAdmin() && (
-            <button
-              onClick={() => {
-                setShowAddForm(true);
-                setEditingTariff(null);
-                resetForm();
-              }}
-              className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-            >
-              + Ajouter un tarif
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Message */}
-      {message && (
-        <div className={`mb-6 p-4 rounded-lg ${
-          message.includes('succès') 
-            ? 'bg-green-50 border border-green-200 text-green-600' 
-            : 'bg-red-50 border border-red-200 text-red-600'
-        }`}>
-          {message}
-        </div>
-      )}
-
-      {/* Add/Edit Form */}
-      {showAddForm && isAdmin() && (
-        <div className="bg-white shadow rounded-lg mb-6">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900">
-              {editingTariff ? 'Modifier le tarif' : 'Ajouter un nouveau tarif'}
-            </h3>
-          </div>
-          <div className="p-6">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="destination" className="block text-sm font-medium text-gray-700">
-                    Destination *
-                  </label>
-                  <input
-                    type="text"
-                    id="destination"
-                    name="destination"
-                    value={formData.destination}
-                    onChange={handleChange}
-                    required
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="Ex: France, Canada, États-Unis"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="weightRange" className="block text-sm font-medium text-gray-700">
-                    Plage de poids *
-                  </label>
-                  <select
-                    id="weightRange"
-                    name="weightRange"
-                    value={formData.weightRange}
-                    onChange={handleChange}
-                    required
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                  >
-                    <option value="">Sélectionner une plage</option>
-                    {weightRanges.map((range) => (
-                      <option key={range} value={range}>{range}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label htmlFor="price" className="block text-sm font-medium text-gray-700">
-                    Prix (FCFA) *
-                  </label>
-                  <input
-                    type="number"
-                    id="price"
-                    name="price"
-                    value={formData.price}
-                    onChange={handleChange}
-                    required
-                    min="0"
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="25000"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="deliveryTime" className="block text-sm font-medium text-gray-700">
-                    Délai de livraison *
-                  </label>
-                  <input
-                    type="text"
-                    id="deliveryTime"
-                    name="deliveryTime"
-                    value={formData.deliveryTime}
-                    onChange={handleChange}
-                    required
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                    placeholder="Ex: 3-5 jours"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="currency" className="block text-sm font-medium text-gray-700">
-                    Devise
-                  </label>
-                  <select
-                    id="currency"
-                    name="currency"
-                    value={formData.currency}
-                    onChange={handleChange}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                  >
-                    <option value="XOF">FCFA (XOF)</option>
-                    <option value="EUR">Euro (EUR)</option>
-                    <option value="USD">Dollar US (USD)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowAddForm(false);
-                    setEditingTariff(null);
-                    resetForm();
-                  }}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-md text-sm font-medium disabled:opacity-50"
-                >
-                  {loading ? 'Enregistrement...' : (editingTariff ? 'Mettre à jour' : 'Ajouter')}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Tarifs List */}
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">
-            Tarifs d'expédition ({tariffs.length})
-          </h3>
-        </div>
-        <div className="p-6">
-          {tariffs.length === 0 ? (
-            <div className="text-center py-8">
-              <div className="text-4xl mb-4">💰</div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Aucun tarif</h3>
-              <p className="text-gray-600 mb-4">
-                {isAdmin() 
-                  ? 'Commencez par ajouter votre premier tarif d\'expédition.'
-                  : 'Aucun tarif disponible pour le moment.'
-                }
-              </p>
-              {isAdmin() && (
-                <button
-                  onClick={() => {
-                    setShowAddForm(true);
-                    setEditingTariff(null);
-                    resetForm();
-                  }}
-                  className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-                >
-                  + Ajouter un tarif
-                </button>
-              )}
+      <div className="container mx-auto px-4 py-8">
+        <div className="bg-white shadow rounded-lg p-6">
+          {/* En-tête avec titre et messages */}
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold text-gray-900">Gestion des tarifs</h2>
+              <button
+                onClick={handleNewTariff}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
+              >
+                + Ajouter un tarif
+              </button>
             </div>
-          ) : (
+            
+            {message && (
+              <div className="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
+                <span className="block sm:inline">{message}</span>
+              </div>
+            )}
+            {error && (
+              <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                <span className="block sm:inline">{error}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Liste des tarifs existants */}
+          <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-8">
+            <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
+              <h3 className="text-lg leading-6 font-medium text-gray-900">Tarifs existants</h3>
+              <p className="mt-1 max-w-2xl text-sm text-gray-500">
+                Liste des configurations de tarifs existantes pour votre agence
+              </p>
+            </div>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Destination
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      ID
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Poids
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Indice
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Prix
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Délai
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Statut
                     </th>
-                    {isAdmin() && (
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    )}
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Date de création
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {tariffs.map((tariff) => (
-                    <tr key={tariff.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {tariff.destination}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {tariff.weightRange}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {formatPrice(tariff.price, tariff.currency)}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {tariff.deliveryTime}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          tariff.isActive 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {tariff.isActive ? 'Actif' : 'Inactif'}
-                        </span>
-                      </td>
-                      {isAdmin() && (
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex justify-end space-x-2">
-                            <button
-                              onClick={() => handleEdit(tariff)}
-                              className="text-primary-600 hover:text-primary-900"
-                            >
-                              ✏️ Modifier
-                            </button>
-                            <button
-                              onClick={() => handleToggleStatus(tariff.id)}
-                              className={`${
-                                tariff.isActive 
-                                  ? 'text-red-600 hover:text-red-900' 
-                                  : 'text-green-600 hover:text-green-900'
-                              }`}
-                            >
-                              {tariff.isActive ? '🚫 Désactiver' : '✅ Activer'}
-                            </button>
-                            <button
-                              onClick={() => handleDelete(tariff.id)}
-                              className="text-red-600 hover:text-red-900"
-                            >
-                              🗑️ Supprimer
-                            </button>
-                          </div>
+                  {existingTariffs.length > 0 ? (
+                    existingTariffs.map((tariff) => (
+                      <tr key={tariff.id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {tariff.id ? String(tariff.id).substring(0, 8) + '...' : 'N/A'}
                         </td>
-                      )}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          Indice {tariff.indice || 'N/A'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${tariff.actif ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                            {tariff.actif ? 'Actif' : 'Inactif'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {tariff.created_at ? new Date(tariff.created_at).toLocaleDateString() : 'N/A'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <button
+                            onClick={() => handleIndexSelect(tariff.indice)}
+                            className="text-indigo-600 hover:text-indigo-900 mr-4"
+                          >
+                            Configurer
+                          </button>
+                          <button className="text-red-600 hover:text-red-900">
+                            Supprimer
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500">
+                        Aucun tarif configuré pour le moment
+                      </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
-          )}
+          </div>
+
+          {/* Formulaire de configuration des tarifs */}
+          <div className="mt-6">
+            {showTariffForm && (
+              <div className="bg-white shadow rounded-lg overflow-hidden p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    {selectedIndex === 'new' ? 'Nouveau tarif' : `Configuration du tarif`}
+                  </h2>
+                  <button
+                    onClick={() => setShowTariffForm(false)}
+                    className="text-gray-400 hover:text-gray-500"
+                  >
+                    <span className="sr-only">Fermer</span>
+                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Tableau des zones */}
+                {currentTariffData && (
+                  <div className="mt-6">
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">
+                      Configuration des zones pour l'indice {selectedIndex}
+                    </h3>
+                    
+                    {loading ? (
+                      <div className="flex justify-center p-6">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Zone
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Montant Base
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                % Prestation
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Montant Prestation
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Montant Expédition
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {editingZones.map((zone) => (
+                              <tr key={zone.zone_destination_id} className="hover:bg-gray-50">
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                  Zone {zone.zone_destination_id.replace('z', '')}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                  {formatPrice(zone.montant_base, 'XOF')}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="flex items-center">
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      step="0.1"
+                                      value={zone.pourcentage_prestation || ''}
+                                      onChange={(e) => handleZoneChange(zone.zone_destination_id, e.target.value)}
+                                      className="w-20 px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                    />
+                                    <span className="ml-2">%</span>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                  {formatPrice(zone.montant_prestation || 0, 'XOF')}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                  {formatPrice(zone.montant_expedition || 0, 'XOF')}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        
+                        <div className="mt-6 flex justify-end">
+                          <button
+                            onClick={() => setShowTariffForm(false)}
+                            className="mr-3 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                          >
+                            Annuler
+                          </button>
+                          <button
+                            onClick={handleSave}
+                            disabled={isSaving || (selectedIndex !== 'new' && !showSaveButton)}
+                            className={`px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${selectedIndex === 'new' || showSaveButton ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400 cursor-not-allowed'}`}
+                          >
+                            {isSaving ? 'Enregistrement...' : selectedIndex === 'new' ? 'Créer le tarif' : 'Enregistrer les modifications'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
-
-      {/* Statistiques des tarifs */}
-      {tariffs.length > 0 && (
-        <div className="mt-6 bg-white shadow rounded-lg">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900">Statistiques des tarifs</h3>
-          </div>
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900">{tariffs.length}</div>
-                <div className="text-sm text-gray-600">Total tarifs</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">
-                  {tariffs.filter(t => t.isActive).length}
-                </div>
-                <div className="text-sm text-gray-600">Tarifs actifs</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">
-                  {[...new Set(tariffs.map(t => t.destination))].length}
-                </div>
-                <div className="text-sm text-gray-600">Destinations</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">
-                  {formatPrice(tariffs.reduce((sum, t) => sum + t.price, 0))}
-                </div>
-                <div className="text-sm text-gray-600">Prix moyen</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <SelectTariffIndexModal
+        isOpen={showIndexModal}
+        onClose={() => setShowIndexModal(false)}
+        onSave={handleSave}
+        isSaving={isSaving}
+      />
     </DashboardLayout>
   );
 };
 
 export default Tariffs;
+
+

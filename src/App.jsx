@@ -32,6 +32,37 @@ const ProtectedRoute = ({ children }) => {
   return currentUser ? children : <Navigate to="/login" />;
 };
 
+// Role-based route guard (admin-only by default). Admin bypass can be enabled.
+const RoleRoute = ({ children, allowed = ['admin'], bypassAdmin = true }) => {
+  const { loading, isAdmin, isAgent, currentUser } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Admin override if bypass is enabled (also accept raw backend role flags)
+  const isAdminLike = (isAdmin && typeof isAdmin === 'function' && isAdmin())
+    || currentUser?.role === 'is_agence_admin'
+    || currentUser?.is_agence_admin === true;
+  if (bypassAdmin && isAdminLike) {
+    return children;
+  }
+
+  const allowAdmin = allowed.includes('admin');
+  const allowAgent = allowed.includes('agent');
+  const okAdmin = allowAdmin && isAdminLike;
+  const okAgent = allowAgent && isAgent && typeof isAgent === 'function' && isAgent();
+
+  return (okAdmin || okAgent) ? children : <Navigate to="/dashboard" />;
+};
+
 // Main application component
 const AppContent = () => {
   return (
@@ -49,7 +80,9 @@ const AppContent = () => {
             } />
             <Route path="/agents" element={
               <ProtectedRoute>
-                <Agents />
+                <RoleRoute allowed={["admin"]} bypassAdmin={true}>
+                  <Agents />
+                </RoleRoute>
               </ProtectedRoute>
             } />
             <Route path="/requests" element={
@@ -59,7 +92,9 @@ const AppContent = () => {
             } />
             <Route path="/tariffs" element={
               <ProtectedRoute>
-                <Tariffs />
+                <RoleRoute allowed={["admin"]} bypassAdmin={true}>
+                  <Tariffs />
+                </RoleRoute>
               </ProtectedRoute>
             } />
             <Route path="/shipments" element={

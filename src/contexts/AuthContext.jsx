@@ -1,74 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { apiService } from '../utils/api';
 
 const AuthContext = createContext();
 
-// Comptes de test prédéfinis
-const TEST_ACCOUNTS = [
-  {
-    id: 1,
-    name: 'Admin Test',
-    email: 'admin@test.com',
-    password: '123456',
-    role: 'admin',
-    company: 'Agence Test Admin',
-    phone: '+225 27 22 49 50 00'
-  },
-  {
-    id: 2,
-    name: 'Manager Test',
-    email: 'manager@test.com',
-    password: '123456',
-    role: 'manager',
-    company: 'Agence Test Manager',
-    phone: '+225 27 22 49 50 01'
-  },
-  {
-    id: 3,
-    name: 'Agent Test',
-    email: 'agent@test.com',
-    password: '123456',
-    role: 'agent',
-    company: 'Agence Test Agent',
-    phone: '+225 27 22 49 50 02'
-  }
-];
-
-// Agents de test prédéfinis
-const TEST_AGENTS = [
-  {
-    id: 101,
-    name: 'Marie Koné',
-    email: 'marie.kone@agence.com',
-    password: '123456',
-    role: 'agent',
-    phone: '+225 27 22 49 50 10',
-    status: 'active',
-    agencyId: 1,
-    createdAt: '2024-01-15'
-  },
-  {
-    id: 102,
-    name: 'Jean Traoré',
-    email: 'jean.traore@agence.com',
-    password: '123456',
-    role: 'agent',
-    phone: '+225 27 22 49 50 11',
-    status: 'active',
-    agencyId: 1,
-    createdAt: '2024-01-20'
-  },
-  {
-    id: 103,
-    name: 'Fatou Diallo',
-    email: 'fatou.diallo@agence.com',
-    password: '123456',
-    role: 'agent',
-    phone: '+225 27 22 49 50 12',
-    status: 'inactive',
-    agencyId: 1,
-    createdAt: '2024-02-01'
-  }
-];
+// Tableau vide car nous n'utilisons plus de comptes de test
+const TEST_ACCOUNTS = [];
+const TEST_AGENTS = [];
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -80,128 +17,155 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
+  const [agencyData, setAgencyData] = useState(null);
   const [agents, setAgents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [agencyLoading, setAgencyLoading] = useState(false);
+  const [agencyError, setAgencyError] = useState(null);
 
-  // Initialiser les comptes de test et agents dans localStorage
+  // Charger les informations de l'agence
+  const getAgencyShow = async () => {
+    if (!currentUser?.id) return null;
+    
+    setAgencyLoading(true);
+    setAgencyError(null);
+    
+    try {
+      const response = await apiService.getAgencyProfile();
+      if (response.success) {
+        setAgencyData(response.data);
+        localStorage.setItem('agencyData', JSON.stringify(response.data));
+        return response.data;
+      }
+      throw new Error(response.message || 'Erreur lors du chargement des données de l\'agence');
+    } catch (error) {
+      console.error('Erreur lors du chargement des données de l\'agence:', error);
+      setAgencyError(error.message);
+      return null;
+    } finally {
+      setAgencyLoading(false);
+    }
+  };
+
+  // Vérifier si un utilisateur est déjà connecté
   useEffect(() => {
-    const existingAccounts = localStorage.getItem('testAccounts');
-    if (!existingAccounts) {
-      localStorage.setItem('testAccounts', JSON.stringify(TEST_ACCOUNTS));
-    }
-    
-    const existingAgents = localStorage.getItem('agents');
-    if (!existingAgents) {
-      localStorage.setItem('agents', JSON.stringify(TEST_AGENTS));
-    }
-    
-    // Vérifier si un utilisateur est déjà connecté
-    const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
-      setCurrentUser(JSON.parse(savedUser));
-    }
+    const initializeAuth = async () => {
+      const savedUser = localStorage.getItem('currentUser');
+      
+      if (savedUser) {
+        try {
+          const user = JSON.parse(savedUser);
+          setCurrentUser(user);
+          
+          // Vérifier et charger les données d'agence en cache
+          const savedAgencyData = localStorage.getItem('agencyData');
+          if (savedAgencyData && savedAgencyData !== 'undefined') {
+            try {
+              const parsedAgencyData = JSON.parse(savedAgencyData);
+              setAgencyData(parsedAgencyData);
+            } catch (e) {
+              console.warn('Erreur lors du parsing des données d\'agence:', e);
+              // Nettoyer les données invalides
+              localStorage.removeItem('agencyData');
+            }
+          }
+          
+          // On rafraîchit les données de l'agence en arrière-plan
+          if (user.role === 'admin' || user.role === 'manager') {
+            getAgencyShow();
+          }
+        } catch (error) {
+          console.error('Erreur lors de l\'initialisation de l\'authentification:', error);
+        }
+      }
 
-    // Charger les agents
-    const savedAgents = localStorage.getItem('agents');
-    if (savedAgents) {
-      setAgents(JSON.parse(savedAgents));
-    }
-    
-    setLoading(false);
+      // Charger les agents
+      const savedAgents = localStorage.getItem('agents');
+      if (savedAgents) {
+        setAgents(JSON.parse(savedAgents));
+      }
+      
+      setLoading(false);
+    };
+
+    initializeAuth();
   }, []);
 
-  const login = async (email, password) => {
+  const login = async (telephone, password) => {
     try {
-      // Récupérer les comptes de test
-      const accounts = JSON.parse(localStorage.getItem('testAccounts') || '[]');
-      const savedAgents = JSON.parse(localStorage.getItem('agents') || '[]');
+      const response = await apiService.login(telephone, password);
+
+      if (!response.success) {
+        return { success: false, message: response.message || 'Identifiants incorrects' };
+      }
+
+      const user = response.user || {};
+      // Persister l'utilisateur et le token
+      setCurrentUser(user);
+      localStorage.setItem('currentUser', JSON.stringify(user));
       
-      // Chercher l'utilisateur dans les comptes de test
-      let user = accounts.find(account => 
-        account.email === email && account.password === password
-      );
-
-      // Si pas trouvé, chercher dans les agents
-      if (!user) {
-        user = savedAgents.find(agent => 
-          agent.email === email && agent.password === password
-        );
+      // Charger les données de l'agence si l'utilisateur est admin ou manager
+      if (user.role === 'admin' || user.role === 'manager') {
+        await getAgencyShow();
+      }
+      if (response.token) {
+        localStorage.setItem('authToken', response.token);
       }
 
-      if (user) {
-        // Créer un objet utilisateur sans le mot de passe
-        const { password: _, ...userWithoutPassword } = user;
-        setCurrentUser(userWithoutPassword);
-        localStorage.setItem('currentUser', JSON.stringify(userWithoutPassword));
-        
-        return {
-          success: true,
-          message: 'Connexion réussie',
-          user: userWithoutPassword
-        };
-      } else {
-        return {
-          success: false,
-          message: 'Email ou mot de passe incorrect'
-        };
-      }
+      return {
+        success: true,
+        message: 'Connexion réussie',
+        user,
+      };
     } catch (error) {
       return {
         success: false,
-        message: 'Erreur lors de la connexion'
+        message: error.message || 'Erreur lors de la connexion'
       };
     }
   };
 
   const register = async (userData) => {
     try {
-      const accounts = JSON.parse(localStorage.getItem('testAccounts') || '[]');
+      setCurrentUser(userData);
+      localStorage.setItem('currentUser', JSON.stringify(userData));
       
-      // Vérifier si l'email existe déjà
-      const existingUser = accounts.find(account => account.email === userData.email);
-      if (existingUser) {
-        return {
-          success: false,
-          message: 'Un compte avec cet email existe déjà'
-        };
+      if (userData.token) {
+        localStorage.setItem('authToken', userData.token);
       }
-
-      // Créer le nouvel utilisateur
-      const newUser = {
-        id: Date.now(),
-        name: userData.name,
-        email: userData.email,
-        password: userData.password,
-        role: 'admin', // Par défaut, les nouveaux comptes sont admin
-        company: userData.company,
-        phone: userData.phone || ''
-      };
-
-      // Ajouter aux comptes
-      accounts.push(newUser);
-      localStorage.setItem('testAccounts', JSON.stringify(accounts));
-
-      // Connecter l'utilisateur
-      const { password: _, ...userWithoutPassword } = newUser;
-      setCurrentUser(userWithoutPassword);
-      localStorage.setItem('currentUser', JSON.stringify(userWithoutPassword));
-
-      return {
-        success: true,
-        message: 'Compte créé avec succès',
-        user: userWithoutPassword
-      };
+      
+      return { success: true, user: userData };
     } catch (error) {
-      return {
-        success: false,
-        message: 'Erreur lors de la création du compte'
-      };
-    }
+      console.error('Registration error:', error);
+      return { success: false, message: error.message || 'Erreur lors de la connexion après inscription' };
+        }
   };
 
-  const logout = () => {
-    setCurrentUser(null);
-    localStorage.removeItem('currentUser');
+  const logout = async () => {
+    try {
+      // Appeler l'API de déconnexion
+      const response = await apiService.logout();
+      
+      if (!response.success) {
+        console.warn('La déconnexion du serveur a échoué, mais la déconnexion locale sera effectuée');
+      }
+      
+      return { success: true, message: 'Déconnexion réussie' };
+    } catch (error) {
+      console.error('Erreur lors de la déconnexion:', error);
+      // Retourner quand même un succès car on va nettoyer localement
+      return { success: false, message: 'Erreur lors de la déconnexion du serveur, mais vous avez été déconnecté localement' };
+    } finally {
+      // Nettoyer l'état d'authentification côté client dans tous les cas
+      setCurrentUser(null);
+      localStorage.removeItem('currentUser');
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      
+      // Rediriger vers la page de connexion
+      window.location.href = '/login';
+    }
   };
 
   const isAuthenticated = () => {
@@ -213,11 +177,19 @@ export const AuthProvider = ({ children }) => {
   };
 
   const isAdmin = () => {
-    return currentUser?.role === 'admin';
+    return (
+      currentUser?.role === 'admin' ||
+      currentUser?.role === 'is_agence_admin' ||
+      currentUser?.is_agence_admin === true
+    );
   };
 
   const isAgent = () => {
-    return currentUser?.role === 'agent';
+    return (
+      currentUser?.role === 'agent' ||
+      currentUser?.role === 'is_agence_menber' ||
+      currentUser?.is_agence_menber === true
+    );
   };
 
   // Fonctions de gestion des agents
@@ -305,7 +277,12 @@ export const AuthProvider = ({ children }) => {
     updateAgent,
     deleteAgent,
     getAgentsByAgency,
-    loading
+    loading,
+    // Ajout des propriétés manquantes
+    getAgencyShow,
+    agencyData,
+    agencyLoading,
+    agencyError
   };
 
   return (

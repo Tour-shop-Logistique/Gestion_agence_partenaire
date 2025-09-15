@@ -1,26 +1,37 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import logo from '../assets/logo_blanc_shop.jpg';
 
 const Home = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-green-50">
+    <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-r from-orange-600 via-yellow-600 to-green-600 text-white">
+      <section className="relative overflow-hidden bg-gradient-to-r from-secondary-700 to-secondary-900 text-white">
         <div className="absolute inset-0 bg-black opacity-20"></div>
         
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
           <div className="text-center">
-            <div className="inline-flex items-center px-4 py-2 rounded-full bg-white bg-opacity-20 backdrop-blur-sm text-sm font-medium mb-8">
-              <span className="mr-2">🇨🇮</span>
-              Leader de l'exportation ivoirienne
+            <div className="flex flex-col items-center mb-8">
+              <div className="flex flex-col items-center">
+                <img 
+                  src={logo} 
+                  alt="Tour Shop" 
+                  className="h-24 w-24 md:h-32 md:w-32 rounded-full object-cover border-4 border-white shadow-lg mb-3"
+                />
+                <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Tour Shop</h2>
+              </div>
+              <div className="inline-flex items-center px-6 py-2 rounded-full bg-white bg-opacity-20 backdrop-blur-sm text-sm font-medium mt-2">
+                <span className="mr-2">🇨🇮</span>
+                Leader de l'exportation ivoirienne
+              </div>
             </div>
             
             <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
               <span className="block">Dashboard de Gestion</span>
-              <span className="block text-yellow-300">des Agences Partenaires</span>
+              <span className="block text-primary-400">des Agences Partenaires</span>
             </h1>
             
-            <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto text-orange-100">
+            <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto text-gray-200">
               Plateforme complète de gestion pour les agences d'exportation ivoiriennes. Gérez vos agents, tarifs, demandes clients et développez votre activité. 
               Textiles, produits manufacturés, cosmétiques, artisanat et plus encore vers le monde entier.
             </p>
@@ -29,34 +40,34 @@ const Home = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12 max-w-4xl mx-auto">
               <div className="text-center">
                 <div className="text-3xl mb-2">🏢</div>
-                <div className="text-3xl font-bold text-yellow-300">150+</div>
-                <div className="text-sm text-orange-100">Agences ivoiriennes</div>
+                <div className="text-3xl font-bold text-primary-400">150+</div>
+                <div className="text-sm text-gray-200">Agences ivoiriennes</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl mb-2">🌍</div>
-                <div className="text-3xl font-bold text-yellow-300">45+</div>
-                <div className="text-sm text-orange-100">Pays de destination</div>
+                <div className="text-3xl font-bold text-primary-400">45+</div>
+                <div className="text-sm text-gray-200">Pays de destination</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl mb-2">📦</div>
-                <div className="text-3xl font-bold text-yellow-300">25k+</div>
-                <div className="text-sm text-orange-100">Expéditions/mois</div>
+                <div className="text-3xl font-bold text-primary-400">25k+</div>
+                <div className="text-sm text-gray-200">Expéditions/mois</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl mb-2">⭐</div>
-                <div className="text-3xl font-bold text-yellow-300">98%</div>
-                <div className="text-sm text-orange-100">Satisfaction client</div>
+                <div className="text-3xl font-bold text-primary-400">98%</div>
+                <div className="text-sm text-gray-200">Satisfaction client</div>
               </div>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/register">
-                <button className="bg-white text-orange-600 hover:bg-orange-50 px-8 py-3 rounded-lg font-semibold transition-colors transform hover:scale-105">
+                <button className="bg-blue-500 text-white hover:bg-blue-600 px-8 py-3 rounded-lg font-semibold transition-colors transform hover:scale-105 shadow-md">
                   📝 Inscription gratuite
                 </button>
               </Link>
               <Link to="/login">
-                <button className="border-2 border-white text-white hover:bg-white hover:text-orange-600 px-8 py-3 rounded-lg font-semibold transition-colors">
+                <button className="border-2 border-white text-white hover:bg-white hover:text-secondary-700 px-8 py-3 rounded-lg font-semibold transition-colors">
                   🔐 Se connecter
                 </button>
               </Link>
@@ -176,22 +187,22 @@ const Home = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-orange-600 to-yellow-600 text-white">
+      <section className="py-20 bg-gradient-to-r from-secondary-700 to-secondary-900 text-white">
         <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
           <h2 className="text-4xl font-bold mb-6">
             Prêt à développer vos exportations ?
           </h2>
-          <p className="text-xl mb-8 text-orange-100">
+          <p className="text-xl mb-8 text-gray-200">
             Rejoignez plus de 150 entreprises ivoiriennes qui exportent déjà avec succès
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/register">
-              <button className="bg-white text-orange-600 hover:bg-orange-50 px-8 py-3 rounded-lg font-semibold transition-colors">
+              <button className="bg-primary-500 hover:bg-primary-600 text-white px-8 py-3 rounded-lg font-semibold transition-colors shadow-md transform hover:scale-105">
                 📝 Commencer gratuitement
               </button>
             </Link>
             <Link to="/tariffs">
-              <button className="border-2 border-white text-white hover:bg-white hover:text-orange-600 px-8 py-3 rounded-lg font-semibold transition-colors">
+              <button className="border-2 border-white text-white hover:bg-white hover:text-secondary-800 px-8 py-3 rounded-lg font-semibold transition-colors">
                 💰 Voir les tarifs
               </button>
             </Link>

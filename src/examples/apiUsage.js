@@ -1,7 +1,7 @@
 // Exemples d'utilisation de l'API Agence Partenaire
 // Ce fichier montre comment utiliser les différentes fonctions API
 
-import { apiService, validateEmail, validatePassword, formatPrice } from '../utils/api';
+import apiService, { validateEmail, validatePassword, formatPrice } from '../utils/api';
 
 // ===== EXEMPLE 1: ENREGISTREMENT D'UN NOUVEL UTILISATEUR =====
 

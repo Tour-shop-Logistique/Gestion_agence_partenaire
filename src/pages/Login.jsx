@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import apiService from '../utils/api';
 
 const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    email: '',
+    telephone: '',
     password: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [testLoading, setTestLoading] = useState(false);
+  const [testMsg, setTestMsg] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -20,15 +23,41 @@ const Login = () => {
     }));
   };
 
+  const handleTestCors = async () => {
+    setTestMsg('');
+    setTestLoading(true);
+    try {
+      const res = await apiService.testCors();
+      if (res.success) {
+        setTestMsg('Test CORS OK: ' + (typeof res.data === 'string' ? res.data : 'Réponse reçue'));
+      } else {
+        setTestMsg('Test CORS échoué: ' + (res.message || 'Erreur inconnue'));
+      }
+    } catch (e) {
+      setTestMsg('Test CORS échoué: ' + (e.message || 'Erreur inconnue'));
+    } finally {
+      setTestLoading(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      const result = await login(formData.email, formData.password);
+      const result = await login(formData.telephone, formData.password);
+      console.log(result);
       if (result.success) {
-        navigate('/dashboard');
+        const user = result.user || {};
+        // Si admin et pas encore d'agence liée, diriger vers la configuration d'agence
+        const isAdminLike = user.is_agence_admin || user.role === 'admin' || result.role === 'is_agence_admin';
+        const hasAgencyLinked = !!(user.agence_id); // si besoin, ajouter d'autres checks
+        if (isAdminLike && !hasAgencyLinked) {
+          navigate('/agency-profile');
+        } else {
+          navigate('/dashboard');
+        }
       } else {
         setError(result.message);
       }
@@ -57,15 +86,7 @@ const Login = () => {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow-lg rounded-lg sm:px-10">
-          {/* Comptes de test */}
-          <div className="mb-6 p-4 bg-blue-50 rounded-lg">
-            <h3 className="text-sm font-medium text-blue-900 mb-2">🧪 Comptes de test :</h3>
-            <div className="text-xs text-blue-800 space-y-1">
-              <div><strong>Admin:</strong> admin@test.com / 123456</div>
-              <div><strong>Manager:</strong> manager@test.com / 123456</div>
-              <div><strong>Agent:</strong> agent@test.com / 123456</div>
-            </div>
-          </div>
+          
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
@@ -75,20 +96,20 @@ const Login = () => {
             )}
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email
+              <label htmlFor="telephone" className="block text-sm font-medium text-gray-700">
+                Téléphone
               </label>
               <div className="mt-1">
                 <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
+                  id="telephone"
+                  name="telephone"
+                  type="tel"
+                  autoComplete="tel"
                   required
-                  value={formData.email}
+                  value={formData.telephone}
                   onChange={handleChange}
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                  placeholder="votre@email.com"
+                  placeholder="+225 66 66 66 66"
                 />
               </div>
             </div>
@@ -130,6 +151,23 @@ const Login = () => {
                 S'inscrire
               </Link>
             </p>
+          </div>
+
+          {/* Test CORS section */}
+          <div className="mt-6">
+            {testMsg && (
+              <div className={`mb-3 text-sm ${testMsg.startsWith('Test CORS OK') ? 'text-green-700' : 'text-red-700'}`}>
+                {testMsg}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={handleTestCors}
+              disabled={testLoading}
+              className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
+            >
+              {testLoading ? 'Test en cours...' : 'Tester API (/test-cors)'}
+            </button>
           </div>
 
           <div className="mt-6 text-center">

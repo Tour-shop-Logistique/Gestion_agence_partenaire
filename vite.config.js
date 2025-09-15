@@ -9,8 +9,8 @@ export default defineConfig({
     host: true,
     open: true,
     allowedHosts: [
-      'f747ac304be53643ab71d72fd7c3231b.serveo.net'
-    ]
+      'agence.nport.link',
+    ],
   },
   build: {
     outDir: 'dist',

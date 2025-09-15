@@ -82,7 +82,30 @@ const Sidebar = () => {
     }
   ];
 
-  const menuItems = isAdmin() ? adminMenuItems : agentMenuItems;
+  // Accepter à la fois la normalisation (role === 'admin' ou flag is_agence_admin)
+  // et le rôle brut renvoyé par l'API ('is_agence_admin')
+  const isAdminLike = isAdmin() || currentUser?.role === 'is_agence_admin' || currentUser?.is_agence_admin === true;
+  // Si admin: donner accès à tous les onglets (admin + agent) sans doublons
+  const menuItems = (() => {
+    if (!isAdminLike) {
+      // Restreindre l'agent: pas d'accès à gestion des agents ni aux tarifs
+      const forbidden = new Set(['/agents', '/tariffs']);
+      return agentMenuItems.filter(item => !forbidden.has(item.path));
+    }
+    // Utiliser une Map pour dédupliquer par path et prioriser les items admin
+    const map = new Map();
+    // D'abord les items admin (prioritaires)
+    for (const item of adminMenuItems) {
+      map.set(item.path, item);
+    }
+    // Puis ajouter les items agent seulement s'ils n'existent pas déjà
+    for (const item of agentMenuItems) {
+      if (!map.has(item.path)) {
+        map.set(item.path, item);
+      }
+    }
+    return Array.from(map.values());
+  })();
 
   return (
     <div className="bg-white shadow-lg w-64 min-h-screen fixed left-0 top-0 z-50">
@@ -111,17 +134,17 @@ const Sidebar = () => {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900 truncate">
-              {currentUser?.name}
+              {currentUser?.name || [currentUser?.nom, currentUser?.prenoms].filter(Boolean).join(' ')}
             </p>
             <p className="text-xs text-gray-500 truncate">
-              {currentUser?.email}
+              {currentUser?.email || currentUser?.telephone}
             </p>
             <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium mt-1 ${
-              isAdmin() 
+              isAdminLike 
                 ? 'bg-red-100 text-red-800' 
                 : 'bg-blue-100 text-blue-800'
             }`}>
-              {isAdmin() ? 'Administrateur' : 'Agent'}
+              {isAdminLike ? 'Administrateur' : 'Agent'}
             </span>
           </div>
         </div>
