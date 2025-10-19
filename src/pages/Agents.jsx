@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import DashboardLayout from '../components/DashboardLayout';
-import apiService from '../utils/api';
+import { apiService } from '../utils/api';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
 const Agents = () => {

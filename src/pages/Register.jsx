@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import apiService from '../utils/api';
+import { apiService } from '../utils/api';
+
 
 const Register = () => {
-  const { register } = useAuth();
+  // const { register } = useAuth();
+  const { register: authRegister } = useAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     firstName: '',
@@ -77,7 +79,7 @@ const Register = () => {
         role: 'agent',
       };
 
-      const result = await register({ ...userPayload, token });
+      const result = await authRegister({ ...userPayload, token });
 
       if (result.success) {
         showToast('success', 'Compte créé avec succès !');

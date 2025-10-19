@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTariffs } from '../contexts/TariffContext';
 import DashboardLayout from '../components/DashboardLayout';
 import SelectTariffIndexModal from '../components/SelectTariffIndexModal';
@@ -19,86 +19,84 @@ const Tariffs = () => {
     getIndices,
     getCurrentTariff,
     existingTariffs,
-    newTariff,
-    loadTariffs,
+    fetchAgencyTariffs,
     updateNewTariffZones
   } = useTariffs();
   
-  const [availableIndices, setAvailableIndices] = useState([]);
-  const [currentTariffData, setCurrentTariffData] = useState(null);
-
-  const [showSaveButton, setShowSaveButton] = useState(false);
   const [showTariffForm, setShowTariffForm] = useState(false);
   const [showIndexModal, setShowIndexModal] = useState(false);
+  const [localZones, setLocalZones] = useState([]);
+  
+  // Récupérer les données du tarif actuel
+  const currentTariffData = useMemo(() => {
+    if (selectedIndex) {
+      // Try to find the tariff in existingTariffs first
+      const existingTariff = existingTariffs.find(t => t.indice === selectedIndex);
+      if (existingTariff) return existingTariff;
+      
+      // Fall back to getCurrentTariff if not found
+      return getCurrentTariff();
+    }
+    return null;
+  }, [getCurrentTariff, selectedIndex, existingTariffs]);
 
   // Charger les tarifs au montage du composant
   useEffect(() => {
-    const fetchTariffs = async () => {
+    const loadData = async () => {
+      
       try {
-        await loadTariffs();
-        // Mettre à jour les indices disponibles après le chargement
-        const indices = getIndices();
-        setAvailableIndices(indices);
+
+        await fetchAgencyTariffs();
+       
       } catch (err) {
         console.error('Erreur lors du chargement des tarifs:', err);
       }
     };
     
-    fetchTariffs();
-  }, [loadTariffs, getIndices]);
+    loadData();
+  }, [fetchAgencyTariffs]);
   
-  // Mettre à jour le tarif courant lorsque l'indice sélectionné change
+  // Mettre à jour les zones locales lorsque les zones d'édition ou le tarif sélectionné change
   useEffect(() => {
-    const updateSelectedTariff = async () => {
-      if (selectedIndex === 'new') {
-        // Utiliser les données du nouveau tarif depuis le contexte
-        setCurrentTariffData(newTariff);
-        setShowTariffForm(true);
-        setShowSaveButton(true); // Activer le bouton de sauvegarde pour les nouveaux tarifs
-      } else if (selectedIndex) {
-        // Pour un tarif existant
-        const tariff = getCurrentTariff();
-        if (tariff) {
-          setCurrentTariffData(tariff);
-          setShowTariffForm(true);
-          setShowSaveButton(false); // Désactiver le bouton jusqu'à ce qu'une modification soit faite
-        }
-      } else {
-        // Aucun tarif sélectionné
-        setShowTariffForm(false);
-        setShowSaveButton(false);
+    if (selectedIndex && existingTariffs.length > 0) {
+      const selectedTariff = existingTariffs.find(t => t.indice === selectedIndex);
+      if (selectedTariff?.prix_zones) {
+        setLocalZones([...selectedTariff.prix_zones]);
       }
-    };
-
-    updateSelectedTariff();
-  }, [selectedIndex, getCurrentTariff, newTariff, setShowSaveButton, setShowTariffForm, setCurrentTariffData]);
+    } else if (editingZones && editingZones.length > 0) {
+      setLocalZones([...editingZones]);
+    }
+  }, [editingZones, selectedIndex, existingTariffs]);
 
   const handleZoneChange = useCallback((zoneId, value) => {
+    const pourcentage = parseFloat(value) || 0;
+    
+    // Mettre à jour les zones locales
+    const updatedZones = localZones.map(zone => {
+      if (zone.zone_destination_id === zoneId) {
+        const montantBase = parseFloat(zone.montant_base) || 0;
+        const montantPrestation = (montantBase * pourcentage) / 100;
+        
+        return {
+          ...zone,
+          pourcentage_prestation: pourcentage,
+          montant_prestation: parseFloat(montantPrestation.toFixed(2)),
+          montant_expedition: parseFloat((montantBase + montantPrestation).toFixed(2))
+        };
+      }
+      return zone;
+    });
+    
+    setLocalZones(updatedZones);
+    
+    // Si c'est un nouveau tarif, mettre à jour le contexte
     if (selectedIndex === 'new') {
-      // Mettre à jour les zones du nouveau tarif dans le contexte
-      const updatedZones = newTariff.prix_zones.map(zone => {
-        if (zone.zone_destination_id === zoneId) {
-          const pourcentage = parseFloat(value) || 0;
-          const montantBase = parseFloat(zone.montant_base) || 0;
-          const montantPrestation = (montantBase * pourcentage) / 100;
-          
-          return {
-            ...zone,
-            pourcentage_prestation: pourcentage,
-            montant_prestation: parseFloat(montantPrestation.toFixed(2)),
-            montant_expedition: parseFloat((montantBase + montantPrestation).toFixed(2))
-          };
-        }
-        return zone;
-      });
-      
       updateNewTariffZones(updatedZones);
     } else {
-      // Mettre à jour les zones d'un tarif existant
-      updateZonePercentage(zoneId, value);
+      // Pour un tarif existant, mettre à jour le contexte
+      updateZonePercentage(zoneId, pourcentage);
     }
-    setShowSaveButton(true);
-  }, [selectedIndex, newTariff.prix_zones, updateNewTariffZones, updateZonePercentage]);
+  }, [localZones, selectedIndex, updateNewTariffZones, updateZonePercentage]);
 
   const handleSave = useCallback(async () => {
     try {
@@ -107,35 +105,61 @@ const Tariffs = () => {
       
       if (result?.success) {
         // Recharger les tarifs après la sauvegarde
-        await loadTariffs(true);
-        
-        // Mettre à jour la liste des indices disponibles
-        const indices = getIndices();
-        setAvailableIndices(indices);
+        await fetchAgencyTariffs(true);
         
         // Fermer le modal après un court délai pour montrer le message de succès
         setTimeout(() => {
           setShowIndexModal(false);
-          setShowSaveButton(false);
         }, 1000);
+        
+        return result;
       }
     } catch (err) {
       console.error('Erreur lors de la sauvegarde du tarif:', err);
+      throw err;
     }
-  }, [saveTariff, loadTariffs, getIndices, setShowIndexModal, setShowSaveButton]);
+  }, [saveTariff, fetchAgencyTariffs, getIndices]);
 
   const handleNewTariff = useCallback(() => {
+    selectIndex('new');
     setShowIndexModal(true);
-  }, []);
+  }, [selectIndex]);
 
-  const handleIndexSelect = useCallback((selectedIndex) => {
-    selectIndex(selectedIndex);
-    setShowIndexModal(false);
-    setShowTariffForm(true);
-  }, [selectIndex, setShowIndexModal, setShowTariffForm]);
-
-  const currentTariff = getCurrentTariff();
-  const indices = getIndices();
+  const handleIndexSelect = useCallback((index) => {
+    try {
+      // Call selectIndex to update the context state with the selected tariff
+      selectIndex(index);
+      
+      // Find the selected tariff in existingTariffs
+      const selectedTariff = existingTariffs.find(t => t.indice === index);
+      
+      // If we found the tariff, update local zones
+      if (selectedTariff && selectedTariff.prix_zones) {
+        setLocalZones([...selectedTariff.prix_zones]);
+      }
+      
+      // Show the tariff form and close the modal
+      setShowTariffForm(true);
+      setShowIndexModal(false);
+      
+    } catch (error) {
+      console.error('Error selecting tariff:', error);
+      // Still close the modal even if there was an error
+      setShowIndexModal(false);
+    }
+  }, [selectIndex, existingTariffs]);
+  
+  const handleZoneUpdate = useCallback((updatedZones) => {
+    setLocalZones(updatedZones);
+    
+    if (selectedIndex === 'new') {
+      updateNewTariffZones(updatedZones);
+    } else {
+      updatedZones.forEach(zone => {
+        updateZonePercentage(zone.zone_destination_id, zone.pourcentage_prestation);
+      });
+    }
+  }, [selectedIndex, updateNewTariffZones, updateZonePercentage]);
 
   if (loading) {
     return (
@@ -216,7 +240,7 @@ const Tariffs = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {existingTariffs.length > 0 ? (
+                  {existingTariffs && existingTariffs.length > 0 ? (
                     existingTariffs.map((tariff) => (
                       <tr key={tariff.id}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -264,7 +288,7 @@ const Tariffs = () => {
               <div className="bg-white shadow rounded-lg overflow-hidden p-6">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-xl font-semibold text-gray-900">
-                    {selectedIndex === 'new' ? 'Nouveau tarif' : `Configuration du tarif`}
+                    {selectedIndex ===  `Configuration du tarif`}
                   </h2>
                   <button
                     onClick={() => setShowTariffForm(false)}
@@ -280,9 +304,6 @@ const Tariffs = () => {
                 {/* Tableau des zones */}
                 {currentTariffData && (
                   <div className="mt-6">
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">
-                      Configuration des zones pour l'indice {selectedIndex}
-                    </h3>
                     
                     {loading ? (
                       <div className="flex justify-center p-6">
@@ -317,7 +338,7 @@ const Tariffs = () => {
                                   Zone {zone.zone_destination_id.replace('z', '')}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                  {formatPrice(zone.montant_base, 'XOF')}
+                                  {formatPrice(zone.montant_base || 0, 'XOF')}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                   <div className="flex items-center">
@@ -352,8 +373,8 @@ const Tariffs = () => {
                           </button>
                           <button
                             onClick={handleSave}
-                            disabled={isSaving || (selectedIndex !== 'new' && !showSaveButton)}
-                            className={`px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${selectedIndex === 'new' || showSaveButton ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400 cursor-not-allowed'}`}
+                            disabled={isSaving || localZones.length === 0}
+                            className={`px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${!isSaving && localZones.length > 0 ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400 cursor-not-allowed'}`}
                           >
                             {isSaving ? 'Enregistrement...' : selectedIndex === 'new' ? 'Créer le tarif' : 'Enregistrer les modifications'}
                           </button>
@@ -372,6 +393,10 @@ const Tariffs = () => {
         onClose={() => setShowIndexModal(false)}
         onSave={handleSave}
         isSaving={isSaving}
+        selectedIndex={selectedIndex}
+        onIndexSelect={handleIndexSelect}
+        zones={localZones}
+        onZoneUpdate={handleZoneUpdate}
       />
     </DashboardLayout>
   );

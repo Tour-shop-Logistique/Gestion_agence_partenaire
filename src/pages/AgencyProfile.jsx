@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import DashboardLayout from '../components/DashboardLayout';
 import logo from '../assets/logo_blanc_shop.jpg';
-import apiService from '../utils/api';
+import { apiService } from '../utils/api';
 
 const AgencyProfile = () => {
   const { currentUser, isAdmin, agencyData, getAgencyShow } = useAuth();
