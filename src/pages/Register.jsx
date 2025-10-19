@@ -1,56 +1,60 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { apiService } from '../utils/api';
-
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
+import { apiService } from "../utils/api";
+import AuthLayout from "../components/AuthLayout";
 
 const Register = () => {
   // const { register } = useAuth();
   const { register: authRegister } = useAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    phone: '',
-    type: 'agent'
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    phone: "",
+    type: "agent",
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [toast, setToast] = useState({ visible: false, type: 'success', message: '' });
+  const [error, setError] = useState("");
+  const [toast, setToast] = useState({
+    visible: false,
+    type: "success",
+    message: "",
+  });
 
   const showToast = (type, message, duration = 3500) => {
     setToast({ visible: true, type, message });
     window.clearTimeout(showToast._t);
     showToast._t = window.setTimeout(() => {
-      setToast(prev => ({ ...prev, visible: false }));
+      setToast((prev) => ({ ...prev, visible: false }));
     }, duration);
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
 
     // Validation simple
     if (formData.password !== formData.confirmPassword) {
-      setError('Les mots de passe ne correspondent pas');
+      setError("Les mots de passe ne correspondent pas");
       setLoading(false);
       return;
     }
 
     if (formData.password.length < 6) {
-      setError('Le mot de passe doit contenir au moins 6 caractères');
+      setError("Le mot de passe doit contenir au moins 6 caractères");
       setLoading(false);
       return;
     }
@@ -67,7 +71,9 @@ const Register = () => {
       });
 
       if (!apiResult.success) {
-        throw new Error(apiResult.message || apiResult.error || "Erreur lors de l'inscription");
+        throw new Error(
+          apiResult.message || apiResult.error || "Erreur lors de l'inscription"
+        );
       }
 
       // Mettre à jour le contexte d'auth avec l'utilisateur et le token éventuel
@@ -76,68 +82,71 @@ const Register = () => {
         name: `${formData.firstName} ${formData.lastName}`.trim(),
         email: formData.email,
         phone: formData.phone,
-        role: 'agent',
+        role: "agent",
       };
 
       const result = await authRegister({ ...userPayload, token });
 
       if (result.success) {
-        showToast('success', 'Compte créé avec succès !');
+        showToast("success", "Compte créé avec succès !");
         // Décider de la redirection selon le rôle et l'agence
         const roleFlag = apiResult.data?.role; // ex: 'is_agence_admin'
-        const isAdminLike = roleFlag === 'is_agence_admin' || userPayload.role === 'admin' || userPayload.is_agence_admin;
-        const hasAgencyLinked = !!(userPayload.agence_id);
+        const isAdminLike =
+          roleFlag === "is_agence_admin" ||
+          userPayload.role === "admin" ||
+          userPayload.is_agence_admin;
+        const hasAgencyLinked = !!userPayload.agence_id;
         if (isAdminLike && !hasAgencyLinked) {
-          navigate('/agency-profile');
+          navigate("/agency-profile");
         } else {
-          navigate('/dashboard');
+          navigate("/dashboard");
         }
       } else {
-        const msg = result.message || 'Erreur lors de la connexion après inscription';
+        const msg =
+          result.message || "Erreur lors de la connexion après inscription";
         setError(msg);
-        showToast('error', msg);
+        showToast("error", msg);
       }
     } catch (error) {
-      const msg = error.message || 'Une erreur est survenue lors de la création du compte';
+      const msg =
+        error.message ||
+        "Une erreur est survenue lors de la création du compte";
       setError(msg);
-      showToast('error', msg);
+      showToast("error", msg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-green-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative">
+    <AuthLayout>
       {/* Toast notifications */}
       {toast.visible && (
         <div
           className={`fixed top-4 right-4 z-50 rounded-md shadow-lg px-4 py-3 text-sm flex items-start gap-3
-            ${toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}
+            ${
+              toast.type === "success"
+                ? "bg-green-600 text-white"
+                : "bg-red-600 text-white"
+            }`}
           role="status"
           aria-live="polite"
         >
           <span className="mt-0.5">
-            {toast.type === 'success' ? '✅' : '⚠️'}
+            {toast.type === "success" ? "✅" : "⚠️"}
           </span>
           <div>{toast.message}</div>
         </div>
       )}
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="text-center">
-          <div className="w-12 h-12 bg-primary-600 rounded-lg flex items-center justify-center mx-auto mb-4">
-            <span className="text-white font-bold text-lg">AP</span>
-          </div>
-          <h2 className="text-3xl font-bold text-gray-900">
+
+      <div className="w-full max-w-md mx-auto px-4 pt-8">
+        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 sm:p-8">
+          <h2 className="text-3xl font-bold text-white text-center mb-2">
             Créer votre agence
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="text-gray-300 text-center mb-6">
             Créez votre compte administrateur pour gérer votre agence
           </p>
-        </div>
-      </div>
-
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow-lg rounded-lg sm:px-10">
           <form onSubmit={handleSubmit} className="space-y-6 relative">
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg">
@@ -146,7 +155,10 @@ const Register = () => {
             )}
 
             <div>
-              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="firstName"
+                className="block text-sm font-medium text-gray-200 mb-1"
+              >
                 Nom *
               </label>
               <div className="mt-1">
@@ -158,13 +170,16 @@ const Register = () => {
                   required
                   value={formData.firstName}
                   onChange={handleChange}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                  className="appearance-none block w-full px-4 py-2 bg-white/10 border border-gray-300/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Votre nom"
                 />
               </div>
             </div>
             <div>
-              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="lastName"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Prenom *
               </label>
               <div className="mt-1">
@@ -183,7 +198,10 @@ const Register = () => {
             </div>
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Email *
               </label>
               <div className="mt-1">
@@ -200,10 +218,12 @@ const Register = () => {
                 />
               </div>
             </div>
-            
 
             <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="phone"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Téléphone
               </label>
               <div className="mt-1">
@@ -221,7 +241,10 @@ const Register = () => {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Mot de passe *
               </label>
               <div className="mt-1">
@@ -240,7 +263,10 @@ const Register = () => {
             </div>
 
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="confirmPassword"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Confirmer le mot de passe *
               </label>
               <div className="mt-1">
@@ -264,39 +290,42 @@ const Register = () => {
                 disabled={loading}
                 className="w-full flex items-center justify-center gap-2 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
               >
-               {loading && (
-  <svg
-    className="animate-spin h-4 w-4 text-white"
-    xmlns="http://www.w3.org/2000/svg"
-    fill="none"
-    viewBox="0 0 24 24"
-    role="status"
-    aria-hidden="true"
-  >
-    <circle
-      className="opacity-25"
-      cx="12"
-      cy="12"
-      r="10"
-      stroke="currentColor"
-      strokeWidth="4"
-    ></circle>
-    <path
-      className="opacity-75"
-      fill="currentColor"
-      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-    ></path>
-  </svg>
-)}
-                {loading ? 'Création...' : 'Créer mon compte'}
+                {loading && (
+                  <svg
+                    className="animate-spin h-4 w-4 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    role="status"
+                    aria-hidden="true"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                    ></path>
+                  </svg>
+                )}
+                {loading ? "Création..." : "Créer mon compte"}
               </button>
             </div>
           </form>
 
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
-              Déjà un compte ?{' '}
-              <Link to="/login" className="font-medium text-primary-600 hover:text-primary-500">
+              Déjà un compte ?{" "}
+              <Link
+                to="/login"
+                className="font-medium text-primary-600 hover:text-primary-500"
+              >
                 Se connecter
               </Link>
             </p>
@@ -313,15 +342,31 @@ const Register = () => {
       {loading && (
         <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex items-center justify-center z-40">
           <div className="flex items-center gap-3 text-gray-700">
-            <svg className="animate-spin h-5 w-5 text-primary-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+            <svg
+              className="animate-spin h-5 w-5 text-primary-600"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+              ></path>
             </svg>
             <span>Veuillez patienter...</span>
           </div>
         </div>
       )}
-    </div>
+    </AuthLayout>
   );
 };
 

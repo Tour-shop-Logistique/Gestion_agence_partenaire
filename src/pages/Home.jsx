@@ -1,214 +1,174 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import logo from '../assets/logo_blanc_shop.jpg';
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import logo from "../assets/logo_transparent.png";
+import heroImg from "../assets/background.jpg";
+import LoginModal from "../components/LoginModal";
+import RegisterModal from "../components/RegisterModal";
 
 const Home = () => {
+  const [scrolled, setScrolled] = useState(false);
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [registerModalOpen, setRegisterModalOpen] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 50);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen relative">
+      {/* Image d'arrière-plan pour toute la page */}
+      <div className="fixed inset-0 z-0">
+        <img
+          src={heroImg}
+          alt="Logistique maritime"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/60"></div>
+      </div>
+
+      {/* Header avec fond transparent/translucide */}
+      <header className={`fixed w-full top-0 z-50 transition-all duration-300 ${
+        scrolled ? 'bg-black/80 backdrop-blur-sm' : 'bg-transparent'
+      }`}>
+        <div className="w-full max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+          <Link to="/" className="flex items-center">
+            <img src={logo} alt="Tour Shop" className="h-8 w-auto sm:h-10" />
+          </Link>
+          <div className="flex items-center gap-3 sm:gap-4">
+            <button 
+              onClick={() => setLoginModalOpen(true)}
+              className="text-sm sm:text-base text-white hover:text-blue-400 px-2 py-1 transition-colors"
+            >
+              Connexion
+            </button>
+            <button
+              onClick={() => setRegisterModalOpen(true)}
+              className="bg-blue-600 text-white px-4 sm:px-6 py-2 rounded-full text-sm font-medium hover:bg-blue-700 transition-all shadow-lg hover:shadow-blue-500/25"
+            >
+              Inscription
+            </button>
+          </div>
+        </div>
+      </header>
+
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-r from-secondary-700 to-secondary-900 text-white">
-        <div className="absolute inset-0 bg-black opacity-20"></div>
-        
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-          <div className="text-center">
-            <div className="flex flex-col items-center mb-8">
-              <div className="flex flex-col items-center">
-                <img 
-                  src={logo} 
-                  alt="Tour Shop" 
-                  className="h-24 w-24 md:h-32 md:w-32 rounded-full object-cover border-4 border-white shadow-lg mb-3"
-                />
-                <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">Tour Shop</h2>
-              </div>
-              <div className="inline-flex items-center px-6 py-2 rounded-full bg-white bg-opacity-20 backdrop-blur-sm text-sm font-medium mt-2">
-                <span className="mr-2">🇨🇮</span>
-                Leader de l'exportation ivoirienne
-              </div>
-            </div>
-            
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-              <span className="block">Dashboard de Gestion</span>
-              <span className="block text-primary-400">des Agences Partenaires</span>
+      <main className="relative min-h-screen flex flex-col items-center justify-start z-10">
+        {/* Contenu centré */}
+        <div className="relative z-10 w-full px-4 pb-4 sm:pb-8 pt-24 sm:pt-32 lg:pt-32">
+          <div className="max-w-4xl mx-auto text-center">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 sm:mb-6 leading-tight">
+              Gérez vos Expéditions <br />
+              <span className="inline-flex items-center">
+                en toute
+                <span className="text-blue-400 relative ml-2">
+                  Simplicité
+                  <svg className="absolute -bottom-1 sm:-bottom-2 left-0 w-full" height="10" viewBox="0 0 100 10" fill="none">
+                    <path d="M2 5C20 8 40 2 60 5C80 8 98 3 98 3" stroke="#60A5FA" strokeWidth="3" strokeLinecap="round"/>
+                  </svg>
+                </span>
+              </span>
             </h1>
-            
-            <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto text-gray-200">
-              Plateforme complète de gestion pour les agences d'exportation ivoiriennes. Gérez vos agents, tarifs, demandes clients et développez votre activité. 
-              Textiles, produits manufacturés, cosmétiques, artisanat et plus encore vers le monde entier.
-            </p>
 
-            {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12 max-w-4xl mx-auto">
-              <div className="text-center">
-                <div className="text-3xl mb-2">🏢</div>
-                <div className="text-3xl font-bold text-primary-400">150+</div>
-                <div className="text-sm text-gray-200">Agences ivoiriennes</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl mb-2">🌍</div>
-                <div className="text-3xl font-bold text-primary-400">45+</div>
-                <div className="text-sm text-gray-200">Pays de destination</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl mb-2">📦</div>
-                <div className="text-3xl font-bold text-primary-400">25k+</div>
-                <div className="text-sm text-gray-200">Expéditions/mois</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl mb-2">⭐</div>
-                <div className="text-3xl font-bold text-primary-400">98%</div>
-                <div className="text-sm text-gray-200">Satisfaction client</div>
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/register">
-                <button className="bg-blue-500 text-white hover:bg-blue-600 px-8 py-3 rounded-lg font-semibold transition-colors transform hover:scale-105 shadow-md">
-                  📝 Inscription gratuite
-                </button>
-              </Link>
-              <Link to="/login">
-                <button className="border-2 border-white text-white hover:bg-white hover:text-secondary-700 px-8 py-3 rounded-lg font-semibold transition-colors">
-                  🔐 Se connecter
-                </button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Solutions complètes pour l'exportation ivoirienne
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              De la gestion des tarifs au suivi des expéditions, nous accompagnons les entreprises ivoiriennes 
-              dans leur développement international.
+            <p className="text-base sm:text-lg md:text-xl text-gray-200 max-w-2xl mx-auto mb-6 sm:mb-8">
+              Plateforme complète de gestion d'expéditions pour les agences.
+              Suivez vos colis, gérez vos clients et optimisez vos opérations
+              depuis une seule interface.
             </p>
           </div>
+        </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {/* Feature 1 */}
-            <div className="bg-white p-8 rounded-lg shadow-lg text-center hover:shadow-xl transition-shadow duration-300 transform hover:-translate-y-1">
-              <div className="flex justify-center mb-6">
-                <div className="p-3 bg-orange-100 rounded-full">
-                  <svg className="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+        {/* Section d'introduction détaillée */}
+        <div className="w-full max-w-6xl mx-auto px-6 py-4 sm:py-4 lg:py-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 text-white">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 sm:p-6 hover:bg-white/15 transition-all">
+              <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 text-blue-400">Gestion des Expéditions</h3>
+              <ul className="space-y-2 sm:space-y-3 text-gray-200">
+                <li className="flex items-start">
+                  <svg className="w-5 h-5 text-blue-400 mr-2 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                   </svg>
-                </div>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">Gestion des agents</h3>
-              <p className="text-gray-600 mb-6">Administrez votre équipe d'agents avec des rôles et permissions personnalisables pour optimiser votre organisation.</p>
-              <ul className="text-left space-y-2">
-                <li className="flex items-center text-sm text-gray-600">
-                  <span className="text-green-500 mr-2">✓</span>
-                  Création de comptes agents
+                  Suivi en temps réel de vos colis
                 </li>
-                <li className="flex items-center text-sm text-gray-600">
-                  <span className="text-green-500 mr-2">✓</span>
-                  Gestion des rôles (Admin/Manager/Agent)
+                <li className="flex items-start">
+                  <svg className="w-5 h-5 text-blue-400 mr-2 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Gestion des statuts d'expédition
                 </li>
-                <li className="flex items-center text-sm text-gray-600">
-                  <span className="text-green-500 mr-2">✓</span>
-                  Suivi des performances
-                </li>
-                <li className="flex items-center text-sm text-gray-600">
-                  <span className="text-green-500 mr-2">✓</span>
-                  Communication interne
+                <li className="flex items-start">
+                  <svg className="w-5 h-5 text-blue-400 mr-2 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Notifications automatiques aux clients
                 </li>
               </ul>
             </div>
 
-            {/* Feature 2 */}
-            <div className="bg-white p-8 rounded-lg shadow-lg text-center hover:shadow-xl transition-shadow duration-300 transform hover:-translate-y-1">
-              <div className="flex justify-center mb-6">
-                <div className="p-3 bg-orange-100 rounded-full">
-                  <svg className="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 hover:bg-white/15 transition-all">
+              <h3 className="text-xl font-semibold mb-3 text-blue-400">Gestion de la Clientèle</h3>
+              <ul className="space-y-2 text-gray-200">
+                <li className="flex items-start">
+                  <svg className="w-5 h-5 text-blue-400 mr-2 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                   </svg>
-                </div>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">Gestion des demandes clients</h3>
-              <p className="text-gray-600 mb-6">Traitez et suivez toutes les demandes d'exportation de vos clients avec un système de chat intégré.</p>
-              <ul className="text-left space-y-2">
-                <li className="flex items-center text-sm text-gray-600">
-                  <span className="text-green-500 mr-2">✓</span>
-                  Suivi des statuts
+                  Base de données clients centralisée
                 </li>
-                <li className="flex items-center text-sm text-gray-600">
-                  <span className="text-green-500 mr-2">✓</span>
-                  Chat en temps réel
+                <li className="flex items-start">
+                  <svg className="w-5 h-5 text-blue-400 mr-2 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Historique des expéditions par client
                 </li>
-                <li className="flex items-center text-sm text-gray-600">
-                  <span className="text-green-500 mr-2">✓</span>
-                  Notifications automatiques
-                </li>
-                <li className="flex items-center text-sm text-gray-600">
-                  <span className="text-green-500 mr-2">✓</span>
-                  Historique complet
+                <li className="flex items-start">
+                  <svg className="w-5 h-5 text-blue-400 mr-2 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Communication facilitée
                 </li>
               </ul>
             </div>
 
-            {/* Feature 3 */}
-            <div className="bg-white p-8 rounded-lg shadow-lg text-center hover:shadow-xl transition-shadow duration-300 transform hover:-translate-y-1">
-              <div className="flex justify-center mb-6">
-                <div className="p-3 bg-orange-100 rounded-full">
-                  <svg className="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 hover:bg-white/15 transition-all md:col-span-2 lg:col-span-1">
+              <h3 className="text-xl font-semibold mb-3 text-blue-400">Optimisation & Rapports</h3>
+              <ul className="space-y-2 text-gray-200">
+                <li className="flex items-start">
+                  <svg className="w-5 h-5 text-blue-400 mr-2 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                   </svg>
-                </div>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">Gestion des tarifs</h3>
-              <p className="text-gray-600 mb-6">Configurez et gérez vos tarifs d'exportation vers toutes les destinations internationales.</p>
-              <ul className="text-left space-y-2">
-                <li className="flex items-center text-sm text-gray-600">
-                  <span className="text-green-500 mr-2">✓</span>
-                  Tarification flexible
+                  Tableaux de bord analytiques
                 </li>
-                <li className="flex items-center text-sm text-gray-600">
-                  <span className="text-green-500 mr-2">✓</span>
-                  Destinations multiples
+                <li className="flex items-start">
+                  <svg className="w-5 h-5 text-blue-400 mr-2 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Rapports de performance détaillés
                 </li>
-                <li className="flex items-center text-sm text-gray-600">
-                  <span className="text-green-500 mr-2">✓</span>
-                  Types de transport
-                </li>
-                <li className="flex items-center text-sm text-gray-600">
-                  <span className="text-green-500 mr-2">✓</span>
-                  Calculs automatiques
+                <li className="flex items-start">
+                  <svg className="w-5 h-5 text-blue-400 mr-2 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Optimisation des coûts d'expédition
                 </li>
               </ul>
             </div>
           </div>
         </div>
-      </section>
+      </main>
 
-      {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-secondary-700 to-secondary-900 text-white">
-        <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <h2 className="text-4xl font-bold mb-6">
-            Prêt à développer vos exportations ?
-          </h2>
-          <p className="text-xl mb-8 text-gray-200">
-            Rejoignez plus de 150 entreprises ivoiriennes qui exportent déjà avec succès
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/register">
-              <button className="bg-primary-500 hover:bg-primary-600 text-white px-8 py-3 rounded-lg font-semibold transition-colors shadow-md transform hover:scale-105">
-                📝 Commencer gratuitement
-              </button>
-            </Link>
-            <Link to="/tariffs">
-              <button className="border-2 border-white text-white hover:bg-white hover:text-secondary-800 px-8 py-3 rounded-lg font-semibold transition-colors">
-                💰 Voir les tarifs
-              </button>
-            </Link>
-          </div>
-        </div>
-      </section>
+      {/* Modales */}
+      <LoginModal 
+        isOpen={loginModalOpen} 
+        onClose={() => setLoginModalOpen(false)} 
+      />
+      <RegisterModal 
+        isOpen={registerModalOpen} 
+        onClose={() => setRegisterModalOpen(false)}
+      />
     </div>
   );
 };
