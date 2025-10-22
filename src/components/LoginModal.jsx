@@ -1,17 +1,17 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
-import apiService from "../utils/api";
+import { useAuth } from "../hooks/useAuth";
 
 const LoginModal = ({ isOpen, onClose }) => {
-  const { login } = useAuth();
   const navigate = useNavigate();
+  const { login, isLoading } = useAuth();
+  
   const [formData, setFormData] = useState({
     telephone: "",
     password: "",
+    type: "agence",
   });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [localError, setLocalError] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -23,27 +23,30 @@ const LoginModal = ({ isOpen, onClose }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError("");
+    setLocalError("");
 
     try {
-      const result = await login(formData.telephone, formData.password);
+      const result = await login({
+        telephone: formData.telephone,
+        password: formData.password,
+        type: formData.type,
+      });
+      
       if (result.success) {
-        const user = result.user || {};
-        const isAdminLike = user.is_agence_admin || user.role === "admin" || result.role === "is_agence_admin";
+        const user = result.data?.user || {};
+        const isAdminLike = user.is_agence_admin || user.role === "admin" || user.role === "is_agence_admin";
         const hasAgencyLinked = !!user.agence_id;
+        
         if (isAdminLike && !hasAgencyLinked) {
           navigate("/agency-profile");
         } else {
           navigate("/dashboard");
         }
       } else {
-        setError(result.message);
+        setLocalError(result.error || "Échec de la connexion");
       }
-    } catch (error) {
-      setError("Une erreur est survenue lors de la connexion");
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      setLocalError("Une erreur est survenue lors de la connexion");
     }
   };
 
@@ -71,9 +74,9 @@ const LoginModal = ({ isOpen, onClose }) => {
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
+            {localError && (
               <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg">
-                {error}
+                {localError}
               </div>
             )}
 
@@ -119,10 +122,10 @@ const LoginModal = ({ isOpen, onClose }) => {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={isLoading}
               className="w-full flex justify-center py-2 px-4 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-all shadow-lg hover:shadow-blue-500/25 disabled:opacity-50 disabled:hover:bg-blue-600"
             >
-              {loading ? "Connexion..." : "Se connecter"}
+              {isLoading ? "Connexion..." : "Se connecter"}
             </button>
           </form>
         </div>

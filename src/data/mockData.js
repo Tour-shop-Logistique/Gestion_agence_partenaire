@@ -65,7 +65,7 @@ export const mockAgencies = [
 ];
 
 // Tarifs adaptés pour l'exportation ivoirienne
-export const mockTariffs = [
+export const mockTarifs = [
   {
     id: 1,
     agencyId: 1,
@@ -185,7 +185,7 @@ export const mockClientRequests = [
     status: "En attente",
     requestDate: "2024-01-15T10:30:00Z",
     estimatedDelivery: "2024-01-20",
-    tariffId: 1,
+    tarifId: 1,
     originalPrice: 45000,
     finalPrice: 45000,
     notes: "Colis fragile, nécessite un traitement spécial",
@@ -208,7 +208,7 @@ export const mockClientRequests = [
     status: "Acceptée",
     requestDate: "2024-01-14T14:20:00Z",
     estimatedDelivery: "2024-01-21",
-    tariffId: 2,
+    tarifId: 2,
     originalPrice: 85000,
     finalPrice: 85000,
     notes: "Vérification du poids requise",
@@ -231,7 +231,7 @@ export const mockClientRequests = [
     status: "En cours d'enlèvement",
     requestDate: "2024-01-13T09:15:00Z",
     estimatedDelivery: "2024-01-23",
-    tariffId: 3,
+    tarifId: 3,
     originalPrice: 180000,
     finalPrice: 195000,
     notes: "Poids réel supérieur au déclaré",
@@ -254,7 +254,7 @@ export const mockClientRequests = [
     status: "Collecté",
     requestDate: "2024-01-12T16:45:00Z",
     estimatedDelivery: "2024-01-15",
-    tariffId: 5,
+    tarifId: 5,
     originalPrice: 35000,
     finalPrice: 35000,
     notes: "Colis en bon état",
@@ -277,7 +277,7 @@ export const mockClientRequests = [
     status: "En transit",
     requestDate: "2024-01-11T11:30:00Z",
     estimatedDelivery: "2024-01-23",
-    tariffId: 7,
+    tarifId: 7,
     originalPrice: 150000,
     finalPrice: 150000,
     notes: "Colis assuré",

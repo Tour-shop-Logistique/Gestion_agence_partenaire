@@ -1,72 +1,59 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useTariffs } from '../contexts/TariffContext';
 import DashboardLayout from '../components/DashboardLayout';
-import SelectTariffIndexModal from '../components/SelectTariffIndexModal';
+import SelectTarifIndexModal from '../components/SelectTarifIndexModal';
 import { formatPrice } from '../utils/format';
+import { useTarifs } from '../hooks/useTarifs';
 
-
-const Tariffs = () => {
+const Tarifs = () => {
   const {
     loading,
     error,
     message,
+    existingTarifs,
     selectedIndex,
     editingZones,
     isSaving,
+    fetchAgencyTarifs,
+    saveTarif,
     selectIndex,
     updateZonePercentage,
-    saveTariff,
-    getIndices,
-    getCurrentTariff,
-    existingTariffs,
-    fetchAgencyTariffs,
-    updateNewTariffZones
-  } = useTariffs();
+    updateNewTarifZones,
+    getCurrentTarif
+  } = useTarifs();
   
-  const [showTariffForm, setShowTariffForm] = useState(false);
+  const [showTarifForm, setShowTarifForm] = useState(false);
   const [showIndexModal, setShowIndexModal] = useState(false);
   const [localZones, setLocalZones] = useState([]);
   
   // Récupérer les données du tarif actuel
-  const currentTariffData = useMemo(() => {
-    if (selectedIndex) {
-      // Try to find the tariff in existingTariffs first
-      const existingTariff = existingTariffs.find(t => t.indice === selectedIndex);
-      if (existingTariff) return existingTariff;
-      
-      // Fall back to getCurrentTariff if not found
-      return getCurrentTariff();
-    }
-    return null;
-  }, [getCurrentTariff, selectedIndex, existingTariffs]);
-
+  const currentTarifData = useMemo(() => {
+    return getCurrentTarif();
+  }, [getCurrentTarif]);
+  
   // Charger les tarifs au montage du composant
   useEffect(() => {
     const loadData = async () => {
-      
       try {
-
-        await fetchAgencyTariffs();
-       
+        await fetchAgencyTarifs();
       } catch (err) {
         console.error('Erreur lors du chargement des tarifs:', err);
       }
     };
     
     loadData();
-  }, [fetchAgencyTariffs]);
+  }, [fetchAgencyTarifs]);
   
   // Mettre à jour les zones locales lorsque les zones d'édition ou le tarif sélectionné change
   useEffect(() => {
-    if (selectedIndex && existingTariffs.length > 0) {
-      const selectedTariff = existingTariffs.find(t => t.indice === selectedIndex);
-      if (selectedTariff?.prix_zones) {
-        setLocalZones([...selectedTariff.prix_zones]);
+    if (selectedIndex && existingTarifs.length > 0) {
+      const selectedTarif = existingTarifs.find(t => t.indice === selectedIndex);
+      if (selectedTarif?.prix_zones) {
+        setLocalZones([...selectedTarif.prix_zones]);
       }
     } else if (editingZones && editingZones.length > 0) {
       setLocalZones([...editingZones]);
     }
-  }, [editingZones, selectedIndex, existingTariffs]);
+  }, [editingZones, selectedIndex, existingTarifs]);
 
   const handleZoneChange = useCallback((zoneId, value) => {
     const pourcentage = parseFloat(value) || 0;
@@ -91,21 +78,21 @@ const Tariffs = () => {
     
     // Si c'est un nouveau tarif, mettre à jour le contexte
     if (selectedIndex === 'new') {
-      updateNewTariffZones(updatedZones);
+      updateNewTarifZones(updatedZones);
     } else {
       // Pour un tarif existant, mettre à jour le contexte
       updateZonePercentage(zoneId, pourcentage);
     }
-  }, [localZones, selectedIndex, updateNewTariffZones, updateZonePercentage]);
+  }, [localZones, selectedIndex, updateNewTarifZones, updateZonePercentage]);
 
   const handleSave = useCallback(async () => {
     try {
       // Appeler la fonction de sauvegarde du contexte
-      const result = await saveTariff();
+      const result = await saveTarif();
       
       if (result?.success) {
         // Recharger les tarifs après la sauvegarde
-        await fetchAgencyTariffs(true);
+        await fetchAgencyTarifs(true);
         
         // Fermer le modal après un court délai pour montrer le message de succès
         setTimeout(() => {
@@ -118,48 +105,48 @@ const Tariffs = () => {
       console.error('Erreur lors de la sauvegarde du tarif:', err);
       throw err;
     }
-  }, [saveTariff, fetchAgencyTariffs, getIndices]);
+  }, [saveTarif, fetchAgencyTarifs]);
 
-  const handleNewTariff = useCallback(() => {
+  const handleNewTarif = useCallback(() => {
     selectIndex('new');
     setShowIndexModal(true);
   }, [selectIndex]);
 
   const handleIndexSelect = useCallback((index) => {
     try {
-      // Call selectIndex to update the context state with the selected tariff
+      // Call selectIndex to update the context state with the selected tarif
       selectIndex(index);
       
-      // Find the selected tariff in existingTariffs
-      const selectedTariff = existingTariffs.find(t => t.indice === index);
+      // Find the selected tarif in existingTarifs
+      const selectedTarif = existingTarifs.find(t => t.indice === index);
       
-      // If we found the tariff, update local zones
-      if (selectedTariff && selectedTariff.prix_zones) {
-        setLocalZones([...selectedTariff.prix_zones]);
+      // If we found the tarif, update local zones
+      if (selectedTarif && selectedTarif.prix_zones) {
+        setLocalZones([...selectedTarif.prix_zones]);
       }
       
-      // Show the tariff form and close the modal
-      setShowTariffForm(true);
+      // Show the tarif form and close the modal
+      setShowTarifForm(true);
       setShowIndexModal(false);
       
     } catch (error) {
-      console.error('Error selecting tariff:', error);
+      console.error('Error selecting tarif:', error);
       // Still close the modal even if there was an error
       setShowIndexModal(false);
     }
-  }, [selectIndex, existingTariffs]);
+  }, [selectIndex, existingTarifs]);
   
   const handleZoneUpdate = useCallback((updatedZones) => {
     setLocalZones(updatedZones);
     
     if (selectedIndex === 'new') {
-      updateNewTariffZones(updatedZones);
+      updateNewTarifZones(updatedZones);
     } else {
       updatedZones.forEach(zone => {
         updateZonePercentage(zone.zone_destination_id, zone.pourcentage_prestation);
       });
     }
-  }, [selectedIndex, updateNewTariffZones, updateZonePercentage]);
+  }, [selectedIndex, updateNewTarifZones, updateZonePercentage]);
 
   if (loading) {
     return (
@@ -191,7 +178,7 @@ const Tariffs = () => {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-bold text-gray-900">Gestion des tarifs</h2>
               <button
-                onClick={handleNewTariff}
+                onClick={handleNewTarif}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
               >
                 + Ajouter un tarif
@@ -240,26 +227,26 @@ const Tariffs = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {existingTariffs && existingTariffs.length > 0 ? (
-                    existingTariffs.map((tariff) => (
-                      <tr key={tariff.id}>
+                  {existingTarifs && existingTarifs.length > 0 ? (
+                    existingTarifs.map((tarif) => (
+                      <tr key={tarif.id}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {tariff.id ? String(tariff.id).substring(0, 8) + '...' : 'N/A'}
+                          {tarif.id ? String(tarif.id).substring(0, 8) + '...' : 'N/A'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          Indice {tariff.indice || 'N/A'}
+                          Indice {tarif.indice || 'N/A'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${tariff.actif ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                            {tariff.actif ? 'Actif' : 'Inactif'}
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${tarif.actif ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                            {tarif.actif ? 'Actif' : 'Inactif'}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {tariff.created_at ? new Date(tariff.created_at).toLocaleDateString() : 'N/A'}
+                          {tarif.created_at ? new Date(tarif.created_at).toLocaleDateString() : 'N/A'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <button
-                            onClick={() => handleIndexSelect(tariff.indice)}
+                            onClick={() => handleIndexSelect(tarif.indice)}
                             className="text-indigo-600 hover:text-indigo-900 mr-4"
                           >
                             Configurer
@@ -284,14 +271,14 @@ const Tariffs = () => {
 
           {/* Formulaire de configuration des tarifs */}
           <div className="mt-6">
-            {showTariffForm && (
+            {showTarifForm && (
               <div className="bg-white shadow rounded-lg overflow-hidden p-6">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-xl font-semibold text-gray-900">
                     {selectedIndex ===  `Configuration du tarif`}
                   </h2>
                   <button
-                    onClick={() => setShowTariffForm(false)}
+                    onClick={() => setShowTarifForm(false)}
                     className="text-gray-400 hover:text-gray-500"
                   >
                     <span className="sr-only">Fermer</span>
@@ -302,7 +289,7 @@ const Tariffs = () => {
                 </div>
 
                 {/* Tableau des zones */}
-                {currentTariffData && (
+                {currentTarifData && (
                   <div className="mt-6">
                     
                     {loading ? (
@@ -366,7 +353,7 @@ const Tariffs = () => {
                         
                         <div className="mt-6 flex justify-end">
                           <button
-                            onClick={() => setShowTariffForm(false)}
+                            onClick={() => setShowTarifForm(false)}
                             className="mr-3 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
                           >
                             Annuler
@@ -388,7 +375,7 @@ const Tariffs = () => {
           </div>
         </div>
       </div>
-      <SelectTariffIndexModal
+      <SelectTarifIndexModal
         isOpen={showIndexModal}
         onClose={() => setShowIndexModal(false)}
         onSave={handleSave}
@@ -402,6 +389,4 @@ const Tariffs = () => {
   );
 };
 
-export default Tariffs;
-
-
+export default Tarifs;

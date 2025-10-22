@@ -1,91 +1,86 @@
-import React, { useState, useEffect, useCallback, useMemo, useContext } from 'react';
-import { TariffContext } from '../contexts/TariffContext';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useTarifs } from '../hooks/useTarifs';
 
-const SelectTariffIndexModal = ({
-  isOpen,
-  onClose,
-  onSave,
-  isSaving,
-  selectedIndex,
-  onIndexSelect,
-  zones = [],
-  onZoneUpdate
+const SelectTarifIndexModal = ({ 
+  isOpen, 
+  onClose, 
+  onSave, 
+  isSavingProp, 
+  selectedIndex: selectedIndexProp, 
+  onIndexSelect, 
+  zones: zonesProp, 
+  editingZones: editingZonesProp,
+  onZoneUpdate 
 }) => {
-  const [editedZones, setEditedZones] = useState([]);
-  const [localSelectedIndex, setLocalSelectedIndex] = useState(selectedIndex);
-  const [isSavingLocal, setIsSaving] = useState(false);
-
-  // Utiliser le contexte pour accéder aux données et méthodes
   const { 
-    loading, 
-    error, 
-    tariffs,
-    loadTariffs,
-    editingZones,
-    selectIndex,
-    updateZonePercentage,
-    saveTariff
-  } = useContext(TariffContext);
+    existingTarifs: tarifs, 
+    isSaving: isSavingContext,
+    saveTarif: saveTarifContext
+  } = useTarifs();
+  
+  const [localSelectedIndex, setLocalSelectedIndex] = useState(selectedIndexProp || '');
+  const [editedZones, setEditedZones] = useState([]);
+  const [isSavingLocal, setIsSavingLocal] = useState(false);
+
+  // Utiliser le isSaving du contexte ou des props
+  useEffect(() => {
+    setIsSavingLocal(isSavingProp || isSavingContext);
+  }, [isSavingProp, isSavingContext]);
 
   // Charger les tarifs au montage du composant et sélectionner le premier index
-useEffect(() => {
-  const fetchData = async () => {
-    await loadTariffs();
-
-    // Une seule fois après le chargement initial
-    if (!localSelectedIndex && tariffs.length > 0) {
-      const firstIndex = tariffs[0]?.indice;
-      if (firstIndex) {
-        setLocalSelectedIndex(firstIndex);
-        const firstTariff = tariffs.find(t => t.indice === firstIndex);
-        if (firstTariff?.prix_zones) {
-          setEditedZones([...firstTariff.prix_zones]);
+  useEffect(() => {
+    const fetchData = async () => {
+      // Une seule fois après le chargement initial
+      if (!localSelectedIndex && tarifs.length > 0) {
+        const firstIndex = tarifs[0]?.indice;
+        if (firstIndex) {
+          setLocalSelectedIndex(firstIndex);
+          const firstTarif = tarifs.find(t => t.indice === firstIndex);
+          if (firstTarif?.prix_zones) {
+            setEditedZones([...firstTarif.prix_zones]);
+          }
         }
       }
-    }
-  };
+    };
 
-  fetchData();
-  // 👇 vide pour exécution unique au montage
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, []);
-
-
-
+    fetchData();
+    // 👇 vide pour exécution unique au montage
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Mettre à jour les zones éditées quand les props changent
   useEffect(() => {
-    if (zones && zones.length > 0) {
-      setEditedZones([...zones]);
-    } else if (editingZones && editingZones.length > 0) {
-      setEditedZones([...editingZones]);
+    if (zonesProp && zonesProp.length > 0) {
+      setEditedZones([...zonesProp]);
+    } else if (editingZonesProp && editingZonesProp.length > 0) {
+      setEditedZones([...editingZonesProp]);
     }
-  }, [zones, editingZones]);
+  }, [zonesProp, editingZonesProp]);
 
   // Mettre à jour l'index sélectionné localement
   useEffect(() => {
-    setLocalSelectedIndex(selectedIndex);
-  }, [selectedIndex]);
+    setLocalSelectedIndex(selectedIndexProp);
+  }, [selectedIndexProp]);
 
   // Récupérer les indices disponibles depuis les tarifs
   const availableIndices = useMemo(() => {
-    if (!tariffs || !Array.isArray(tariffs)) return [];
-    return tariffs.map(tarif => ({
+    if (!tarifs || !Array.isArray(tarifs)) return [];
+    return tarifs.map(tarif => ({
       value: tarif?.indice,
       label: `Indice ${tarif?.indice}`
     })).filter(item => item.value);
-  }, [tariffs]);
+  }, [tarifs]);
 
   const handleIndexChange = useCallback((e) => {
     const index = e.target.value;
     setLocalSelectedIndex(index);
     
     // Mettre à jour les zones avec celles du tarif sélectionné
-    const selectedTariff = tariffs.find(t => t.indice.toString() === index.toString());
-    if (selectedTariff?.prix_zones) {
-      setEditedZones([...selectedTariff.prix_zones]);
+    const selectedTarif = tarifs.find(t => t.indice.toString() === index.toString());
+    if (selectedTarif?.prix_zones) {
+      setEditedZones([...selectedTarif.prix_zones]);
     }
-  }, [tariffs]);
+  }, [tarifs]);
 
   const handleBaseAmountChange = useCallback((zoneId, value) => {
     const baseAmount = parseFloat(value) || 0;
@@ -133,7 +128,7 @@ useEffect(() => {
 
   const handleSaveChanges = useCallback(async () => {
     try {
-      setIsSaving(true);
+      setIsSavingLocal(true);
       let result;
       
       // Mettre à jour le parent avec la sélection actuelle
@@ -142,28 +137,28 @@ useEffect(() => {
       // Si c'est un nouveau tarif
       if (localSelectedIndex === 'new') {
         // Créer un nouveau tarif avec les zones éditées
-        const newTariff = {
+        const newTarif = {
           indice: localSelectedIndex,
           actif: true,
           prix_zones: editedZones
         };
-        result = await saveTariff(newTariff);
+        await saveTarifContext(newTarif);
       } else {
         // Mettre à jour les zones avant de sauvegarder
         if (onZoneUpdate) {
           onZoneUpdate(editedZones);
         }
-        
+
         if (onSave) {
-          result = await onSave(localSelectedIndex, editedZones);
+          await onSave(localSelectedIndex, editedZones);
         } else {
-          // Si pas de callback onSave fourni, utiliser directement saveTariff
-          const updatedTariff = {
+          // Si pas de callback onSave fourni, utiliser directement saveTarif
+          const updatedTarif = {
             indice: localSelectedIndex,
             actif: true,
             prix_zones: editedZones
           };
-          result = await saveTariff(updatedTariff);
+          await saveTarifContext(updatedTarif);
         }
       }
       
@@ -171,9 +166,9 @@ useEffect(() => {
     } catch (err) {
       console.error('Erreur lors de la sauvegarde:', err);
     } finally {
-      setIsSaving(false);
+      setIsSavingLocal(false);
     }
-  }, [localSelectedIndex, editedZones, onSave, onClose, onIndexSelect, onZoneUpdate, saveTariff]);
+  }, [localSelectedIndex, editedZones, onSave, onClose, onIndexSelect, onZoneUpdate, saveTarifContext]);
 
   // Mémoizer les lignes du tableau pour éviter les re-rendus inutiles
   const tableRows = useMemo(() => {
@@ -241,7 +236,7 @@ useEffect(() => {
       <div className="bg-white rounded-lg p-6 w-full max-w-5xl max-h-[90vh] flex flex-col">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold">
-            {selectedIndex === 'new' ? 'Nouveau tarif' : 'Configuration du tarif'}
+            {selectedIndexProp === 'new' ? 'Nouveau tarif' : 'Configuration du tarif'}
           </h2>
           <button
             onClick={onClose}
@@ -255,13 +250,13 @@ useEffect(() => {
         </div>
 
         <div className="mb-6">
-          <label htmlFor="tariffIndex" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="tarifIndex" className="block text-sm font-medium text-gray-700 mb-2">
             Sélectionner un indice
           </label>
           <div className="relative">
             <select
-              id="tariffIndex"
-              value={selectedIndex || ''}
+              id="tarifIndex"
+              value={localSelectedIndex || ''}
               onChange={handleIndexChange}
               className="block w-full max-w-md border border-gray-300 rounded-md px-3 py-2 pr-8 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
               disabled={isSavingLocal}
@@ -327,4 +322,4 @@ useEffect(() => {
   );
 };
 
-export default SelectTariffIndexModal;
+export default SelectTarifIndexModal;

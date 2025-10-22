@@ -67,7 +67,7 @@ export const validatePhone = (phone) => {
     return 'Le téléphone est requis';
   }
   // Regex basique pour les numéros de téléphone
-  const phoneRegex = /^[\+]?[0-9\s\-\(\)]{8,}$/;
+  const phoneRegex = /^[\+]?[0-9\s\-()]{8,}$/;
   if (!phoneRegex.test(phone)) {
     return 'Le numéro de téléphone n\'est pas valide';
   }

@@ -7,7 +7,7 @@ const ToastManager = () => {
   useEffect(() => {
     // Écouter les événements de notification
     const handleNewMessage = (event) => {
-      const { requestId, clientName, message } = event.detail;
+      const { requestId, clientName } = event.detail;
       addToast({
         id: Date.now(),
         message: `Nouveau message de ${clientName}`,
@@ -21,7 +21,7 @@ const ToastManager = () => {
     };
 
     const handleRequestUpdate = (event) => {
-      const { requestId, status, clientName } = event.detail;
+      const { status, clientName } = event.detail;
       const statusMessages = {
         'accepted': `Demande de ${clientName} acceptée`,
         'rejected': `Demande de ${clientName} rejetée`,

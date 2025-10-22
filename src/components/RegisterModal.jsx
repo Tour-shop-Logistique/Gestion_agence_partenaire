@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
-import { apiService } from "../utils/api";
+import { useAuth } from "../hooks/useAuth";
 
 const RegisterModal = ({ isOpen, onClose }) => {
-  const { register: authRegister } = useAuth();
   const navigate = useNavigate();
+  const { register, isLoading } = useAuth();
+  
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -13,10 +13,9 @@ const RegisterModal = ({ isOpen, onClose }) => {
     password: "",
     confirmPassword: "",
     phone: "",
-    type: "agent",
+    type: "agence",
   });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [localError, setLocalError] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -28,69 +27,46 @@ const RegisterModal = ({ isOpen, onClose }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError("");
+    setLocalError("");
 
     if (formData.password !== formData.confirmPassword) {
-      setError("Les mots de passe ne correspondent pas");
-      setLoading(false);
+      setLocalError("Les mots de passe ne correspondent pas");
       return;
     }
 
     if (formData.password.length < 6) {
-      setError("Le mot de passe doit contenir au moins 6 caractères");
-      setLoading(false);
+      setLocalError("Le mot de passe doit contenir au moins 6 caractères");
       return;
     }
 
     try {
-      const apiResult = await apiService.register({
+      const userData = {
         firstName: formData.firstName,
         lastName: formData.lastName,
         phone: formData.phone,
         email: formData.email,
         password: formData.password,
         confirmPassword: formData.confirmPassword,
-      });
-
-      if (!apiResult.success) {
-        throw new Error(
-          apiResult.message || apiResult.error || "Erreur lors de l'inscription"
-        );
-      }
-
-      const token = apiResult.data?.token;
-      const userPayload = apiResult.user || {
-        name: `${formData.firstName} ${formData.lastName}`.trim(),
-        email: formData.email,
-        phone: formData.phone,
-        role: "agent",
+        type: formData.type,
       };
 
-      const result = await authRegister({ ...userPayload, token });
+      const result = await register(userData);
 
       if (result.success) {
-        const roleFlag = apiResult.data?.role;
-        const isAdminLike =
-          roleFlag === "is_agence_admin" ||
-          userPayload.role === "admin" ||
-          userPayload.is_agence_admin;
-        const hasAgencyLinked = !!userPayload.agence_id;
+        const user = result.data?.user || {};
+        const isAdminLike = user.is_agence_admin || user.role === "admin" || user.role === "is_agence_admin";
+        const hasAgencyLinked = !!user.agence_id;
+        
         if (isAdminLike && !hasAgencyLinked) {
           navigate("/agency-profile");
         } else {
           navigate("/dashboard");
         }
       } else {
-        const msg = result.message || "Erreur lors de la connexion après inscription";
-        setError(msg);
+        setLocalError(result.error || "Échec de l'inscription");
       }
-    } catch (error) {
-      const msg =
-        error.message || "Une erreur est survenue lors de la création du compte";
-      setError(msg);
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      setLocalError("Une erreur est survenue lors de la création du compte");
     }
   };
 
@@ -118,9 +94,9 @@ const RegisterModal = ({ isOpen, onClose }) => {
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
+            {localError && (
               <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg">
-                {error}
+                {localError}
               </div>
             )}
 
@@ -244,10 +220,10 @@ const RegisterModal = ({ isOpen, onClose }) => {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={isLoading}
               className="w-full flex justify-center py-2 px-4 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-all shadow-lg hover:shadow-blue-500/25 disabled:opacity-50 disabled:hover:bg-blue-600"
             >
-              {loading ? "Création..." : "Créer mon compte"}
+              {isLoading ? "Création..." : "Créer mon compte"}
             </button>
           </form>
         </div>

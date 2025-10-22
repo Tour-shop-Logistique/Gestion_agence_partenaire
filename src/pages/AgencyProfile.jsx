@@ -1,227 +1,218 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import DashboardLayout from '../components/DashboardLayout';
-import logo from '../assets/logo_blanc_shop.jpg';
-import { apiService } from '../utils/api';
+import React, { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
+import DashboardLayout from "../components/DashboardLayout";
+import { useAgency } from "../hooks/useAgency";
+import { selectIsAdmin } from "../store/slices/authSlice";
+import logo from "../assets/logo_transparent.png";
 
 const AgencyProfile = () => {
-  const { currentUser, isAdmin, agencyData, getAgencyShow } = useAuth();
-  
-  const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(!agencyData);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState({ type: '', text: '' });
-  const [agency, setAgency] = useState(null);
+  const {
+    data: agencyData,
+    status,
+    error: agencyError,
+    loading,
+    fetchAgencyData,
+    updateAgencyData,
+    setupAgency,
+  } = useAgency();
 
+  const isAdmin = useSelector(selectIsAdmin);
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [message, setMessage] = useState({ type: "", text: "" });
   const [formData, setFormData] = useState({
-    name: '',
-    address: '',
-    ville: '',
-    pays: 'Côte d\'Ivoire',
-    telephone: '',
-    email: '',
-    website: '',
-    latitude: '',
-    longitude: '',
-    businessHours: '',
-    description: '',
-    commune: '',
+    name: "",
+    address: "",
+    ville: "",
+    pays: "Côte d'Ivoire",
+    telephone: "",
+    email: "",
+    website: "",
+    latitude: "",
+    longitude: "",
+    businessHours: "",
+    description: "",
+    commune: "",
     services: [],
     horaires: [
-      { jour: 'lundi', ouverture: '08:00', fermeture: '18:00', ferme: false },
-      { jour: 'mardi', ouverture: '08:00', fermeture: '18:00', ferme: false },
-      { jour: 'mercredi', ouverture: '08:00', fermeture: '18:00', ferme: false },
-      { jour: 'jeudi', ouverture: '08:00', fermeture: '18:00', ferme: false },
-      { jour: 'vendredi', ouverture: '08:00', fermeture: '18:00', ferme: false },
-      { jour: 'samedi', ouverture: '08:00', fermeture: '12:00', ferme: false },
-    ]
+      { jour: "lundi", ouverture: "08:00", fermeture: "18:00", ferme: false },
+      { jour: "mardi", ouverture: "08:00", fermeture: "18:00", ferme: false },
+      {
+        jour: "mercredi",
+        ouverture: "08:00",
+        fermeture: "18:00",
+        ferme: false,
+      },
+      { jour: "jeudi", ouverture: "08:00", fermeture: "18:00", ferme: false },
+      {
+        jour: "vendredi",
+        ouverture: "08:00",
+        fermeture: "18:00",
+        ferme: false,
+      },
+      { jour: "samedi", ouverture: "08:00", fermeture: "12:00", ferme: false },
+    ],
   });
 
-  // Charger et mettre à jour les données du formulaire quand les données de l'agence changent
+  // État pour stocker les données originales avant modification
+  const [originalFormData, setOriginalFormData] = useState(null);
+
+
+  // Mettre à jour le formulaire quand les données de l'agence changent
   useEffect(() => {
-    console.log('agencyData mis à jour:', agencyData);
-    
-    // S'assurer que le mode édition est désactivé au chargement
-    setIsEditing(true);
-    console.log('isEditing mis à jour:', isEditing);
-    
-    const updateFormData = () => {
-      if (!agencyData) return;
-      
-      console.log('Mise à jour du formulaire avec les données de l\'agence:', agencyData);
-      setLoading(false);
-      
-      // Créer un nouvel objet formData avec les valeurs par défaut
-      const newFormData = {
-        name: '',
-        address: '',
-        ville: '',
-        pays: 'Côte d\'Ivoire',
-        telephone: '',
-        email: '',
-        website: '',
-        description: '',
-        commune: '',
-        latitude: '',
-        longitude: '',
-        services: [],
-        horaires: [
-          { jour: 'lundi', ouverture: '08:00', fermeture: '18:00', ferme: false },
-          { jour: 'mardi', ouverture: '08:00', fermeture: '18:00', ferme: false },
-          { jour: 'mercredi', ouverture: '08:00', fermeture: '18:00', ferme: false },
-          { jour: 'jeudi', ouverture: '08:00', fermeture: '18:00', ferme: false },
-          { jour: 'vendredi', ouverture: '08:00', fermeture: '18:00', ferme: false },
-          { jour: 'samedi', ouverture: '08:00', fermeture: '12:00', ferme: false }
-        ]
-      };
-      
-      // Mettre à jour avec les données de l'agence
-      if (agencyData.nom_agence) newFormData.name = agencyData.nom_agence;
-      if (agencyData.adresse) newFormData.address = agencyData.adresse;
-      if (agencyData.ville) newFormData.ville = agencyData.ville;
-      if (agencyData.pays) newFormData.pays = agencyData.pays;
-      if (agencyData.telephone) newFormData.telephone = agencyData.telephone;
-      if (agencyData.email) newFormData.email = agencyData.email;
-      if (agencyData.website) newFormData.website = agencyData.website;
-      if (agencyData.description) newFormData.description = agencyData.description;
-      if (agencyData.commune) newFormData.commune = agencyData.commune;
-      
+    if (agencyData && agencyData.agence) {
+      const agence = agencyData.agence;
+      const newFormData = { ...formData };
+
+      if (agence.nom_agence) newFormData.name = agence.nom_agence;
+      if (agence.adresse) newFormData.address = agence.adresse;
+      if (agence.ville) newFormData.ville = agence.ville;
+      if (agence.pays) newFormData.pays = agence.pays;
+      if (agence.telephone) newFormData.telephone = agence.telephone;
+      if (agence.email) newFormData.email = agence.email;
+      if (agence.website) newFormData.website = agence.website;
+      if (agence.description) newFormData.description = agence.description;
+      if (agence.commune) newFormData.commune = agence.commune;
+
       // Gérer les coordonnées GPS
-      if (agencyData.latitude !== undefined && agencyData.latitude !== null) {
-        newFormData.latitude = String(agencyData.latitude);
+      if (agence.latitude !== undefined && agence.latitude !== null) {
+        newFormData.latitude = String(agence.latitude);
       }
-      if (agencyData.longitude !== undefined && agencyData.longitude !== null) {
-        newFormData.longitude = String(agencyData.longitude);
+      if (agence.longitude !== undefined && agence.longitude !== null) {
+        newFormData.longitude = String(agence.longitude);
       }
-      
-      // Gérer les services
-      if (Array.isArray(agencyData.services) && agencyData.services.length > 0) {
-        newFormData.services = [...agencyData.services];
-      }
-      
-      // Gérer les horaires
-      if (Array.isArray(agencyData.horaires) && agencyData.horaires.length > 0) {
-        // Créer un objet pour faciliter la recherche par jour
+
+      // Gérer les horaires selon la structure API
+      if (Array.isArray(agence.horaires) && agence.horaires.length > 0) {
         const horairesMap = {};
-        agencyData.horaires.forEach(h => {
+        agence.horaires.forEach((h) => {
           if (h.jour) horairesMap[h.jour] = h;
         });
-        
-        // Mettre à jour les horaires existants avec les données de l'API
-        newFormData.horaires = newFormData.horaires.map(horaire => {
+
+        newFormData.horaires = newFormData.horaires.map((horaire) => {
           const updatedHoraire = horairesMap[horaire.jour];
           if (updatedHoraire) {
             return {
               ...horaire,
               ouverture: updatedHoraire.ouverture || horaire.ouverture,
               fermeture: updatedHoraire.fermeture || horaire.fermeture,
-              ferme: updatedHoraire.ferme !== undefined ? updatedHoraire.ferme : horaire.ferme
+              ferme:
+                updatedHoraire.ferme !== undefined
+                  ? updatedHoraire.ferme
+                  : horaire.ferme,
             };
           }
           return horaire;
         });
       }
-      
-      console.log('Nouvelles données du formulaire:', newFormData);
+
       setFormData(newFormData);
-      
-      // Autoriser l'édition uniquement si admin
-      setIsEditing(isAdmin && typeof isAdmin === 'function' ? isAdmin() : false);
-    };
-    
-    const fetchAgencyData = async () => {
-      if (!currentUser) return;
-      
-      try {
-        console.log('Chargement des données de l\'agence depuis l\'API...');
-        const data = await getAgencyShow();
-        console.log('Données récupérées de l\'API:', data);
-      } catch (error) {
-        console.error('Erreur lors du chargement des données de l\'agence:', error);
-        setMessage({ 
-          type: 'error', 
-          text: 'Erreur lors du chargement des données de l\'agence' 
-        });
-      } finally {
-        setLoading(false);
+
+      // Sauvegarder les données originales pour l'annulation
+      if (!originalFormData && agencyData?.agence) {
+        setOriginalFormData({ ...newFormData });
       }
-    };
-    
-    if (agencyData && Object.keys(agencyData).length > 0) {
-      updateFormData();
-    } else if (currentUser) {
-      fetchAgencyData();
     }
-  }, [agencyData, currentUser, isAdmin, getAgencyShow]);
+  }, [agencyData, originalFormData]);
+
+  // Afficher les erreurs du hook
+  useEffect(() => {
+    if (agencyError) {
+      setMessage({ type: "error", text: agencyError });
+    }
+  }, [agencyError]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
-
 
   const handleHoraireChange = (index, field, value) => {
     const newHoraires = [...formData.horaires];
     newHoraires[index] = { ...newHoraires[index], [field]: value };
-    setFormData(prev => ({ ...prev, horaires: newHoraires }));
+    setFormData((prev) => ({ ...prev, horaires: newHoraires }));
   };
-
-
-
 
   const getCurrentLocation = () => {
     if (navigator.geolocation) {
-      setMessage({ type: 'info', text: 'Récupération de votre position...' });
+      setMessage({ type: "info", text: "Récupération de votre position..." });
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setFormData(prev => ({
+          setFormData((prev) => ({
             ...prev,
             latitude: position.coords.latitude.toFixed(6),
-            longitude: position.coords.longitude.toFixed(6)
+            longitude: position.coords.longitude.toFixed(6),
           }));
-          setMessage({ type: 'success', text: 'Localisation récupérée avec succès !' });
+          setMessage({
+            type: "success",
+            text: "Localisation récupérée avec succès !",
+          });
         },
         (error) => {
-          console.error('Erreur de géolocalisation:', error);
-          setMessage({ 
-            type: 'error', 
-            text: 'Impossible de récupérer la localisation. Veuillez activer la géolocalisation dans les paramètres de votre navigateur.' 
+          console.error("Erreur de géolocalisation:", error);
+          setMessage({
+            type: "error",
+            text: "Impossible de récupérer la localisation. Veuillez activer la géolocalisation dans les paramètres de votre navigateur.",
           });
         }
       );
     } else {
-      setMessage({ 
-        type: 'error', 
-        text: 'La géolocalisation n\'est pas supportée par votre navigateur.' 
+      setMessage({
+        type: "error",
+        text: "La géolocalisation n'est pas supportée par votre navigateur.",
       });
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("Form submitted");
+
     // Empêcher toute sauvegarde par un non-admin
-    if (!(isAdmin && typeof isAdmin === 'function' && isAdmin())) {
-      setMessage({ type: 'error', text: 'Vous n\'avez pas les droits pour modifier le profil agence.' });
+    if (!isAdmin) {
+      setMessage({
+        type: "error",
+        text: "Vous n'avez pas les droits pour modifier le profil agence.",
+      });
       return;
     }
+
     setSaving(true);
-    setMessage({ type: '', text: '' });
+    setMessage({ type: "", text: "" });
+    console.log("Saving state set to true");
 
     try {
       // Construire la structure horaires par défaut si aucune structure détaillée
       const defaultHoraires = [
-        { jour: 'lundi',     ouverture: '08:00', fermeture: '18:00', ferme: false },
-        { jour: 'mardi',     ouverture: '08:00', fermeture: '18:00', ferme: false },
-        { jour: 'mercredi',  ouverture: '08:00', fermeture: '18:00', ferme: false },
-        { jour: 'jeudi',     ouverture: '08:00', fermeture: '18:00', ferme: false },
-        { jour: 'vendredi',  ouverture: '08:00', fermeture: '18:00', ferme: false },
-        { jour: 'samedi',    ouverture: '08:00', fermeture: '12:00', ferme: false },
+        { jour: "lundi", ouverture: "08:00", fermeture: "18:00", ferme: false },
+        { jour: "mardi", ouverture: "08:00", fermeture: "18:00", ferme: false },
+        {
+          jour: "mercredi",
+          ouverture: "08:00",
+          fermeture: "18:00",
+          ferme: false,
+        },
+        { jour: "jeudi", ouverture: "08:00", fermeture: "18:00", ferme: false },
+        {
+          jour: "vendredi",
+          ouverture: "08:00",
+          fermeture: "18:00",
+          ferme: false,
+        },
+        {
+          jour: "samedi",
+          ouverture: "08:00",
+          fermeture: "12:00",
+          ferme: false,
+        },
       ];
 
-      // Préparer le payload exact attendu par /api/agence/setup
+      // Préparer le payload
       const agencyPayload = {
         nom_agence: formData.name,
         telephone: formData.telephone,
@@ -230,119 +221,311 @@ const AgencyProfile = () => {
         ville: formData.ville,
         commune: formData.commune,
         pays: formData.pays,
-        latitude: formData.latitude === '' ? null : parseFloat(formData.latitude),
-        longitude: formData.longitude === '' ? null : parseFloat(formData.longitude),
-        horaires: Array.isArray(formData.horaires) && formData.horaires.length ? formData.horaires : defaultHoraires,
+        latitude:
+          formData.latitude === "" ? null : parseFloat(formData.latitude),
+        longitude:
+          formData.longitude === "" ? null : parseFloat(formData.longitude),
+        horaires:
+          Array.isArray(formData.horaires) && formData.horaires.length
+            ? formData.horaires
+            : defaultHoraires,
       };
 
-      // Si une agence existe déjà, effectuer une mise à jour, sinon configuration initiale
-      const shouldUpdate = !!(agency && (agency.id || agency.agence_id || agency.code || agency.nom_agence));
-      const result = shouldUpdate
-        ? await apiService.updateAgency(agencyPayload)
-        : await apiService.setupAgency(agencyPayload);
-      if (result.success) {
-        setMessage({ type: 'success', text: result.message || (shouldUpdate ? 'Agence mise à jour avec succès !' : 'Agence configurée avec succès !') });
+      // Utiliser le hook pour mettre à jour l'agence
+      // Si une agence existe déjà (avec un ID), effectuer une mise à jour, sinon configuration initiale
+      const hasAgencyId = !!(
+        agencyData?.agence?.id ||
+        agencyData?.id ||
+        agencyData?.agence_id
+      );
+
+      const result = hasAgencyId
+        ? await updateAgencyData(agencyPayload)
+        : await setupAgency(agencyPayload);
+
+      if (result.type?.includes("fulfilled") || result.success) {
+        setMessage({
+          type: "success",
+          text: hasAgencyId ? "Agence mise à jour avec succès !" : "Agence créée avec succès !",
+        });
         setIsEditing(false);
-        if (result.data?.agence) {
-          setAgency(result.data.agence);
+
+        // Mettre à jour les données locales avec la réponse de l'API
+        if (result.agence) {
+          // Créer la structure attendue par le composant
+          const updatedAgencyData = {
+            agence: result.agence
+          };
+
+          // Mettre à jour le state local avec les nouvelles données
+          setFormData(prevFormData => ({
+            ...prevFormData,
+            name: result.agence.nom_agence || prevFormData.name,
+            address: result.agence.adresse || prevFormData.address,
+            ville: result.agence.ville || prevFormData.ville,
+            commune: result.agence.commune || prevFormData.commune,
+            pays: result.agence.pays || prevFormData.pays,
+            telephone: result.agence.telephone || prevFormData.telephone,
+            description: result.agence.description || prevFormData.description,
+            latitude: result.agence.latitude ? String(result.agence.latitude) : prevFormData.latitude,
+            longitude: result.agence.longitude ? String(result.agence.longitude) : prevFormData.longitude,
+            horaires: Array.isArray(result.agence.horaires) && result.agence.horaires.length > 0
+              ? result.agence.horaires
+              : prevFormData.horaires
+          }));
+        } else {
+          // Recharger les données de l'agence si pas de données dans la réponse
+          await fetchAgencyData();
         }
       } else {
-        throw new Error(result.message || 'Erreur lors de la configuration de l\'agence');
+        throw new Error(
+          result.error?.message || result.message || "Erreur lors de la sauvegarde de l'agence"
+        );
       }
     } catch (error) {
-      console.error('Erreur:', error);
-      setMessage({ type: 'error', text: error.message || 'Erreur lors de la sauvegarde' });
+      console.error("Erreur:", error);
+      setMessage({
+        type: "error",
+        text: error.message || "Erreur lors de la sauvegarde",
+      });
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) {
-    return (
-      <DashboardLayout>
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      </DashboardLayout>
-    );
-  }
   const handleEditToggle = () => {
     if (isEditing) {
-      // Annuler les modifications
+      // Annuler les modifications - restaurer les données originales
+      if (originalFormData) {
+        setFormData({ ...originalFormData });
+      }
       setIsEditing(false);
+      setMessage({ type: "", text: "" });
     } else {
-      // Préparer les données du formulaire pour l'édition
-      setFormData({
-        name: agency?.nom_agence || agency?.name || '',
-        telephone: agency?.telephone || '',
-        email: agency?.email || '',
-        description: agency?.description || '',
-        address: agency?.adresse || agency?.address || '',
-        ville: agency?.ville || '',
-        commune: agency?.commune || '',
-        pays: agency?.pays || 'Côte d\'Ivoire',
-        latitude: agency?.latitude?.toString() || '',
-        longitude: agency?.longitude?.toString() || '',
-        horaires: Array.isArray(agency?.horaires) && agency.horaires.length > 0 
-          ? [...agency.horaires]
-          : [
-              { jour: 'lundi', ouverture: '08:00', fermeture: '18:00', ferme: false },
-              { jour: 'mardi', ouverture: '08:00', fermeture: '18:00', ferme: false },
-              { jour: 'mercredi', ouverture: '08:00', fermeture: '18:00', ferme: false },
-              { jour: 'jeudi', ouverture: '08:00', fermeture: '18:00', ferme: false },
-              { jour: 'vendredi', ouverture: '08:00', fermeture: '18:00', ferme: false },
-              { jour: 'samedi', ouverture: '08:00', fermeture: '12:00', ferme: false },
-            ],
-      });
+      // Sauvegarder l'état actuel comme données originales avant modification
+      setOriginalFormData({ ...formData });
       setIsEditing(true);
     }
   };
 
+  // Ne pas afficher de loader au chargement initial, seulement au niveau du bouton d'actualisation
+
   return (
     <DashboardLayout>
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Profil de l'agence</h1>
-          {isAdmin && (
+      {/* Header avec titre et bouton d'action */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+            Profil de l'agence
+          </h1>
+          <p className="text-gray-600  mt-1 sm:mt-2 text-md">
+            Gérez les informations de votre agence
+          </p>
+        </div>
+        {isAdmin && (
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={async () => {
+                setRefreshing(true);
+                try {
+                  await fetchAgencyData();
+                  setMessage({
+                    type: "success",
+                    text: "Données actualisées avec succès !",
+                  });
+                  setTimeout(() => setMessage({ type: "", text: "" }), 3000);
+                } catch (error) {
+                  setMessage({
+                    type: "error",
+                    text: "Erreur lors de l'actualisation",
+                  });
+                  setTimeout(() => setMessage({ type: "", text: "" }), 3000);
+                } finally {
+                  setRefreshing(false);
+                }
+              }}
+              disabled={refreshing}
+              className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center disabled:opacity-50"
+              title="Actualiser les informations de l'agence"
+            >
+              {refreshing ? (
+                <>
+                  <svg
+                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Actualisation...
+                </>
+              ) : (
+                <>
+                  <svg
+                    className="w-4 h-4 mr-1"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    ></path>
+                  </svg>
+                  Actualiser
+                </>
+              )}
+            </button>
             <button
               onClick={handleEditToggle}
-              className={`px-4 py-2 rounded-md text-sm font-medium ${
-                isEditing 
-                  ? 'bg-gray-200 hover:bg-gray-300 text-gray-800' 
-                  : 'bg-primary-600 hover:bg-primary-700 text-white'
+              className={`px-4 py-2 rounded-md text-sm font-medium flex items-center transition-all duration-200 ${
+                isEditing
+                  ? "bg-gray-200 hover:bg-gray-300 text-gray-800"
+                  : "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
               }`}
             >
-              {isEditing ? 'Annuler' : 'Modifier le profil'}
+              {isEditing ? (
+                <>
+                  <svg
+                    className="w-4 h-4 mr-2 inline"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                  Annuler
+                </>
+              ) : (
+                <>
+                  <svg
+                    className="w-4 h-4 mr-2 inline"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                    />
+                  </svg>
+                  Modifier le profil
+                </>
+              )}
             </button>
-          )}
-        </div>
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-100">
-          {/* En-tête avec logo */}
-          <div className="bg-gradient-to-r from-secondary-700 to-secondary-900 px-6 py-4">
-            <div className="flex flex-col md:flex-row justify-between items-center">
-              <div className="flex items-center space-x-4 mb-4 md:mb-0">
-                <img 
-                  src={logo} 
-                  alt="Logo TousShop" 
-                  className="h-12 w-12 rounded-full object-cover border-2 border-white shadow-md"
-                />
-                <h1 className="text-2xl font-bold text-white">
-                  Profil de l'Agence
-                </h1>
-              </div>
+          </div>
+        )}
+      </div>
+
+      {/* Message de notification */}
+      {message.text && (
+        <div
+          className={`mb-6 p-4 rounded-lg border ${
+            message.type === "success"
+              ? "bg-green-50 border-green-200 text-green-800"
+              : message.type === "error"
+              ? "bg-red-50 border-red-200 text-red-800"
+              : "bg-blue-50 border-blue-200 text-blue-800"
+          }`}
+        >
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              {message.type === "success" && (
+                <svg
+                  className="h-5 w-5 text-green-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              )}
+              {message.type === "error" && (
+                <svg
+                  className="h-5 w-5 text-red-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              )}
+              {message.type === "info" && (
+                <svg
+                  className="h-5 w-5 text-blue-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              )}
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium">{message.text}</p>
             </div>
           </div>
+        </div>
+      )}
 
-          {message.text && (
-            <div className={`mx-6 mt-4 p-4 rounded-md ${
-              message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-            }`}>
-              {message.text}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {/* Informations générales */}
+      {/* Carte principale avec formulaire */}
+      
+        <form onSubmit={handleSubmit} className="p-4 space-y-2">
+          {/* Section Informations générales */}
+          <div className="bg-gray-50 rounded-lg p-6 border border-gray-200 shadow-md overflow-hidden">
+            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+              <svg
+                className="w-5 h-5 mr-2 text-blue-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                />
+              </svg>
+              Informations générales
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -353,8 +536,7 @@ const AgencyProfile = () => {
                   name="name"
                   value={formData.name}
                   onChange={handleInputChange}
-                  disabled={!(typeof isAdmin === "function" ? isAdmin() : isAdmin) || !isEditing}
-
+                  disabled={!isAdmin || !isEditing}
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
                 />
@@ -369,8 +551,7 @@ const AgencyProfile = () => {
                   name="address"
                   value={formData.address}
                   onChange={handleInputChange}
-                  disabled={!(typeof isAdmin === "function" ? isAdmin() : isAdmin) || !isEditing}
-
+                  disabled={!isAdmin || !isEditing}
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
                 />
@@ -385,8 +566,7 @@ const AgencyProfile = () => {
                   name="ville"
                   value={formData.ville}
                   onChange={handleInputChange}
-                  disabled={!(typeof isAdmin === "function" ? isAdmin() : isAdmin) || !isEditing}
-
+                  disabled={!isAdmin || !isEditing}
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
                 />
@@ -401,8 +581,7 @@ const AgencyProfile = () => {
                   name="commune"
                   value={formData.commune}
                   onChange={handleInputChange}
-                  disabled={!(typeof isAdmin === "function" ? isAdmin() : isAdmin) || !isEditing}
-
+                  disabled={!isAdmin || !isEditing}
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
                 />
@@ -417,8 +596,7 @@ const AgencyProfile = () => {
                   name="pays"
                   value={formData.pays}
                   onChange={handleInputChange}
-                  disabled={!(typeof isAdmin === "function" ? isAdmin() : isAdmin) || !isEditing}
-
+                  disabled={!isAdmin || !isEditing}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
                 />
               </div>
@@ -432,8 +610,7 @@ const AgencyProfile = () => {
                   name="telephone"
                   value={formData.telephone}
                   onChange={handleInputChange}
-                  disabled={!(typeof isAdmin === "function" ? isAdmin() : isAdmin) || !isEditing}
-
+                  disabled={!isAdmin || !isEditing}
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
                 />
@@ -447,40 +624,57 @@ const AgencyProfile = () => {
                   <button
                     type="button"
                     onClick={getCurrentLocation}
-                    disabled={!(typeof isAdmin === "function" ? isAdmin() : isAdmin) || !isEditing}
-
+                    disabled={!isAdmin || !isEditing}
                     className="text-xs bg-primary-100 text-primary-800 px-3 py-1.5 rounded-md hover:bg-primary-200 transition-colors flex items-center space-x-1 disabled:opacity-50"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
                     </svg>
                     <span>Utiliser ma position actuelle</span>
                   </button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1">Latitude</label>
+                    <label className="block text-xs text-gray-500 mb-1">
+                      Latitude
+                    </label>
                     <input
                       type="text"
                       name="latitude"
                       value={formData.latitude}
                       onChange={handleInputChange}
-                      disabled={!(typeof isAdmin === "function" ? isAdmin() : isAdmin) || !isEditing}
-
+                      disabled={!isAdmin || !isEditing}
                       placeholder="Ex: 5.3541"
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1">Longitude</label>
+                    <label className="block text-xs text-gray-500 mb-1">
+                      Longitude
+                    </label>
                     <input
                       type="text"
                       name="longitude"
                       value={formData.longitude}
                       onChange={handleInputChange}
-                      disabled={!(typeof isAdmin === "function" ? isAdmin() : isAdmin) || !isEditing}
-
+                      disabled={!isAdmin || !isEditing}
                       placeholder="Ex: -4.0083"
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
                     />
@@ -494,95 +688,190 @@ const AgencyProfile = () => {
                 </label>
                 <textarea
                   name="description"
-                  rows={4}
+                  rows={2}
                   value={formData.description}
                   onChange={handleInputChange}
-                  disabled={!(typeof isAdmin === "function" ? isAdmin() : isAdmin) || !isEditing}
-
+                  disabled={!isAdmin || !isEditing}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
                 />
               </div>
             </div>
+          </div>
+          <div className="pb-4"/>
 
-            {/* Horaires d'ouverture */}
-            <div className="border-t border-gray-200 pt-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Horaires d'ouverture</h3>
-              <div className="space-y-4">
-                {formData.horaires.map((horaire, index) => (
-                  <div key={index} className="grid grid-cols-12 gap-4 items-center">
-                    <div className="col-span-12 sm:col-span-2 font-medium text-gray-700">
-                      {horaire.jour.charAt(0).toUpperCase() + horaire.jour.slice(1)}
+          {/* Section Horaires d'ouverture */}
+          <div className="bg-gray-50 rounded-lg p-6 border border-gray-200 shadow-md overflow-hidden">
+            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+              <svg
+                className="w-5 h-5 mr-2 text-blue-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              Horaires d'ouverture
+            </h3>
+            <div className="space-y-4">
+              {formData.horaires.map((horaire, index) => (
+                <div
+                  key={index}
+                  className="bg-white rounded-lg p-4 border border-gray-200 hover:border-blue-300 transition-colors"
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+                    <div className="font-medium text-gray-900 flex items-center">
+                      <div
+                        className={`w-3 h-3 rounded-full mr-3 ${
+                          horaire.ferme ? "bg-red-500" : "bg-green-500"
+                        }`}
+                      ></div>
+                      {horaire.jour.charAt(0).toUpperCase() +
+                        horaire.jour.slice(1)}
                     </div>
-                    <div className="col-span-5 sm:col-span-4">
-                      <label className="block text-xs text-gray-500 mb-1">Ouverture</label>
+
+                    <div className="space-y-1">
+                      <label className="block text-xs text-gray-500 font-medium">
+                        Ouverture
+                      </label>
                       <input
                         type="time"
                         value={horaire.ouverture}
-                        onChange={(e) => handleHoraireChange(index, 'ouverture', e.target.value)}
-                        disabled={!(typeof isAdmin === "function" ? isAdmin() : isAdmin) || !isEditing}
-
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
+                        onChange={(e) =>
+                          handleHoraireChange(
+                            index,
+                            "ouverture",
+                            e.target.value
+                          )
+                        }
+                        disabled={!isAdmin || !isEditing || horaire.ferme}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 transition-colors text-sm"
                       />
                     </div>
-                    <div className="col-span-5 sm:col-span-4">
-                      <label className="block text-xs text-gray-500 mb-1">Fermeture</label>
+
+                    <div className="space-y-1">
+                      <label className="block text-xs text-gray-500 font-medium">
+                        Fermeture
+                      </label>
                       <input
                         type="time"
                         value={horaire.fermeture}
-                        onChange={(e) => handleHoraireChange(index, 'fermeture', e.target.value)}
-                        disabled={!(typeof isAdmin === "function" ? isAdmin() : isAdmin) || !isEditing}
-
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
+                        onChange={(e) =>
+                          handleHoraireChange(
+                            index,
+                            "fermeture",
+                            e.target.value
+                          )
+                        }
+                        disabled={!isAdmin || !isEditing || horaire.ferme}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 transition-colors text-sm"
                       />
                     </div>
-                    <div className="col-span-2 sm:col-span-2 flex justify-center">
-                      <div className="flex items-center h-5">
+
+                    <div className="flex items-center justify-center">
+                      <label className="flex items-center cursor-pointer">
                         <input
-                          id={`closed-${index}`}
-                          name={`closed-${index}`}
                           type="checkbox"
                           checked={horaire.ferme}
-                          onChange={(e) => handleHoraireChange(index, 'ferme', e.target.checked)}
-                          disabled={!(typeof isAdmin === "function" ? isAdmin() : isAdmin) || !isEditing}
-
-                          className="h-4 w-4 text-secondary-600 focus:ring-secondary-500 border-gray-300 rounded"
+                          onChange={(e) =>
+                            handleHoraireChange(
+                              index,
+                              "ferme",
+                              e.target.checked
+                            )
+                          }
+                          disabled={!isAdmin || !isEditing}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                         />
-                        <label htmlFor={`closed-${index}`} className="ml-2 block text-sm text-gray-700">
+                        <span className="ml-2 text-sm text-gray-700 font-medium">
                           Fermé
-                        </label>
-                      </div>
+                        </span>
+                      </label>
                     </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
+          </div>
 
-          
-
-            {isEditing && (
-              <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsEditing(false);
-                    setMessage({ type: '', text: '' });
-                  }}
-                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors duration-200"
+          {/* Boutons d'action */}
+          {isEditing && (
+            <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+              <button
+                type="button"
+                onClick={handleEditToggle}
+                className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium"
+              >
+                <svg
+                  className="w-4 h-4 mr-2 inline"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="px-6 py-2 bg-secondary-600 text-white rounded-md hover:bg-secondary-700 disabled:opacity-50 transition-colors duration-200"
-                >
-                  {saving ? 'Sauvegarde...' : 'Sauvegarder'}
-                </button>
-              </div>
-            )}
-          </form>
-        </div>
-      </div>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+                Annuler
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="inline-flex items-center px-6 py-3 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {saving ? (
+                  <>
+                    <svg
+                      className="animate-spin -ml-0.5 mr-2 h-4 w-4 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    Sauvegarde...
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      className="-ml-0.5 mr-2 h-4 w-4 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                    Sauvegarder
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+        </form>
+      
     </DashboardLayout>
   );
 };
