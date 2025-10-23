@@ -186,7 +186,7 @@ const authSlice = createSlice({
         state.status = "loading";
       })
       .addCase(logout.fulfilled, (state) => {
-        state.status = "idle";
+        state.status = "succeeded";
         state.isAuthenticated = false;
         state.currentUser = null;
         state.message = "Déconnexion réussie";

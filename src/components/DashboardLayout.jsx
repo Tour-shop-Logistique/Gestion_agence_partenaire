@@ -1,16 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
-import { useAgency } from '../hooks/useAgency';
 
 const DashboardLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { fetchAgencyData } = useAgency();
 
-  // Charger les données de l'agence au montage du layout
-  useEffect(() => {
-    fetchAgencyData();
-  }, [fetchAgencyData]);
+  // Les données de l'agence sont maintenant chargées dans App.jsx au niveau global
+  // Plus besoin de les charger ici pour éviter les appels multiples
 
   return (
     <div className="min-h-screen bg-gray-50">

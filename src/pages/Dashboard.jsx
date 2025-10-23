@@ -8,40 +8,16 @@ import { useAuth } from "../hooks/useAuth";
 // Import du hook personnalisé pour l'agence
 import { useAgency } from "../hooks/useAgency";
 
-// Import du hook personnalisé pour les tarifs
-import { useTarifs } from "../hooks/useTarifs";
-
 const Dashboard = () => {
   // Utilisation du hook d'authentification
   const { currentUser, isAdmin } = useAuth();
 
   // Utilisation du hook personnalisé pour l'agence
-  const {
-    data: agencyData,
-    users: agencyUsers,
-    status: agencyStatus,
-    fetchAgencyData,
-    fetchUsers
-  } = useAgency();
-
-  // Utilisation du hook personnalisé pour les tarifs
-  const {
-    existingTarifs: tarifs,
-    fetchAgencyTarifs
-  } = useTarifs();
-
-  // Chargement des données au montage du composant
-  useEffect(() => {
-    if (currentUser) {
-      fetchAgencyData();
-      fetchUsers();
-      fetchAgencyTarifs();
-    }
-  }, [currentUser, fetchAgencyData, fetchUsers, fetchAgencyTarifs]);
+  const { data: agencyData, users: agencyUsers } = useAgency();
 
   // Logique pour les agents (filtrer les utilisateurs de l'agence)
   const userAgents = Array.isArray(agencyUsers)
-    ? agencyUsers.filter(agent => agent.agence_id === currentUser?.agence_id)
+    ? agencyUsers.filter((agent) => agent.agence_id === currentUser?.agence_id)
     : [];
 
   // Données fictives pour les statistiques d'expéditions
@@ -54,273 +30,316 @@ const Dashboard = () => {
     delivered: 98,
     totalRevenue: 45750000,
     urgentRequests: 7,
-    newRequests: 5
+    newRequests: 5,
   };
 
-  // Admin statistics
+  // Admin statistics - Design exact de l'image
   const adminStats = [
     {
-      title: "Agents actifs",
-      value: userAgents.filter(agent => agent.status === "active").length,
-      icon: "👥",
-      color: "bg-blue-100 text-blue-600",
-      description: "Agents dans votre équipe"
-    },
-    {
-      title: "Nouvelles demandes",
+      title: "Nouvelles Demandes",
       value: mockExpeditionStats.newRequests,
-      icon: "📋",
-      color: "bg-red-100 text-red-600",
-      description: "Demandes en attente"
+      icon: (
+        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+      ),
+      bgColor: "bg-green-500",
+      barColor: "bg-green-500",
     },
     {
-      title: "En cours",
-      value: mockExpeditionStats.pickupInProgress + mockExpeditionStats.dropoffInProgress + mockExpeditionStats.inTransit + mockExpeditionStats.deliveryInProgress,
-      icon: "🔄",
-      color: "bg-orange-100 text-orange-600",
-      description: "Expéditions en cours"
+      title: "Total Expéditions",
+      value: mockExpeditionStats.total,
+      icon: (
+        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        </svg>
+      ),
+      bgColor: "bg-blue-500",
+      barColor: "bg-blue-500",
+    },
+
+    {
+      title: "Revenu mensuel",
+      value: "1 036 000 FCFA",
+      icon: (
+        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+      ),
+      bgColor: "bg-yellow-400",
+      barColor: "bg-yellow-400",
     },
     {
-      title: "Livrées",
-      value: mockExpeditionStats.delivered,
-      icon: "✅",
-      color: "bg-green-100 text-green-600",
-      description: "Expéditions terminées"
+      title: "Visites Aujourd'hui",
+      value: "78.41k",
+      icon: (
+        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path
+            fillRule="evenodd"
+            d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 010-1.113zM17.25 12a5.25 5.25 0 11-10.5 0 5.25 5.25 0 0110.5 0z"
+            clipRule="evenodd"
+          />
+        </svg>
+      ),
+      bgColor: "bg-red-500",
+      barColor: "bg-red-500",
     },
-    {
-      title: "Tarifs configurés",
-      value: Array.isArray(tarifs) ? tarifs.length : 0,
-      icon: "💰",
-      color: "bg-purple-100 text-purple-600",
-      description: "Tarifs disponibles"
-    },
-    {
-      title: "Revenus",
-      value: new Intl.NumberFormat("fr-FR", {
-        style: "currency",
-        currency: "XOF"
-      }).format(mockExpeditionStats.totalRevenue),
-      icon: "💰",
-      color: "bg-purple-100 text-purple-600",
-      description: "Chiffre d'affaires"
-    },
-    {
-      title: "Demandes urgentes",
-      value: mockExpeditionStats.urgentRequests,
-      icon: "🔥",
-      color: "bg-red-100 text-red-600",
-      description: "Priorité haute"
-    }
   ];
 
   // Agent statistics
   const agentStats = [
     {
-      title: "Expéditions assignées",
+      title: "Mes Expéditions",
       value: mockExpeditionStats.total,
-      icon: "📦",
-      color: "bg-blue-100 text-blue-600",
-      description: "Total des demandes"
+      icon: (
+        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        </svg>
+      ),
+      bgColor: "bg-blue-500",
+      barColor: "bg-blue-500",
     },
     {
-      title: "En cours",
-      value: mockExpeditionStats.pickupInProgress + mockExpeditionStats.dropoffInProgress + mockExpeditionStats.inTransit + mockExpeditionStats.deliveryInProgress,
-      icon: "🔄",
-      color: "bg-orange-100 text-orange-600",
-      description: "Expéditions en cours"
+      title: "Nouvelles Demandes",
+      value: mockExpeditionStats.newRequests,
+      icon: (
+        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+      ),
+      bgColor: "bg-green-500",
+      barColor: "bg-green-500",
     },
     {
-      title: "Livrées",
+      title: "Expéditions Actives",
+      value:
+        mockExpeditionStats.pickupInProgress +
+        mockExpeditionStats.dropoffInProgress +
+        mockExpeditionStats.inTransit +
+        mockExpeditionStats.deliveryInProgress,
+      icon: (
+        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+      ),
+      bgColor: "bg-yellow-500",
+      barColor: "bg-yellow-500",
+    },
+    {
+      title: "Expéditions Livrées",
       value: mockExpeditionStats.delivered,
-      icon: "✅",
-      color: "bg-green-100 text-green-600",
-      description: "Expéditions terminées"
+      icon: (
+        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+      bgColor: "bg-orange-500",
+      barColor: "bg-orange-500",
     },
-    {
-      title: "Revenus générés",
-      value: new Intl.NumberFormat("fr-FR", {
-        style: "currency",
-        currency: "XOF"
-      }).format(mockExpeditionStats.totalRevenue),
-      icon: "💰",
-      color: "bg-purple-100 text-purple-600",
-      description: "Chiffre d'affaires"
-    }
   ];
 
   const stats = isAdmin ? adminStats : agentStats;
 
-  // Vérifier si les données sont en cours de chargement
-  const agencyLoading = agencyStatus === "loading";
-
-  // Afficher un loader pendant le chargement initial
-  if (agencyLoading && !agencyData) {
-    return (
-      <DashboardLayout>
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-        </div>
-      </DashboardLayout>
-    );
-  }
+  const displayName =
+    currentUser?.name ||
+    [currentUser?.nom, currentUser?.prenoms].filter(Boolean).join(" ") ||
+    "Utilisateur";
 
   return (
     <DashboardLayout>
-      {/* Titre de la page */}
-      <div className="mb-6 md:mb-4">
-        {(() => {
-          const displayName = currentUser?.name 
-            || [currentUser?.nom, currentUser?.prenoms].filter(Boolean).join(" ")
-            || "Utilisateur";
-          return (
-            <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-2xl font-bold text-gray-900">
-                Bienvenue, {displayName} !
-              </h1>
-              <span
-                className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                  isAdmin ? "bg-purple-100 text-purple-800" : "bg-blue-100 text-blue-800"
-                }`}
-              >
-                {isAdmin ? "Administrateur" : "Agent"}
-              </span>
-            </div>
-          );
-        })()}
-        <p className="text-gray-600 mt-2 md:mt-1">
-          {isAdmin 
-            ? "Gérez votre équipe et suivez les performances de votre agence"
-            : "Gérez vos expéditions et suivez vos performances"
-          }
-        </p>
-      </div>
-
-      {/* Alertes pour nouvelles demandes */}
-      {isAdmin && mockExpeditionStats.newRequests > 0 && (
-        <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <span className="text-2xl">🔔</span>
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">
-                {mockExpeditionStats.newRequests} nouvelle{mockExpeditionStats.newRequests > 1 ? "s" : ""} demande{mockExpeditionStats.newRequests > 1 ? "s" : ""} en attente
-              </h3>
-              <div className="mt-2 text-sm text-red-700">
-                <p>Des demandes clients nécessitent votre attention.</p>
-              </div>
-              <div className="mt-4">
-                <button
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200"
-                >
-                  Voir les demandes →
-                </button>
-              </div>
-            </div>
+      <div className="space-y-6">
+        {/* Header avec salutation */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Bonjour, {displayName} 👋
+            </h1>
+            <p className="text-md text-gray-500 mt-1">
+              Voici un aperçu de votre activité aujourd'hui
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button className="px-4 py-2 text-sm text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+              {new Date().toLocaleDateString("fr-FR", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+              })}
+            </button>
           </div>
         </div>
-      )}
 
-      {/* Statistiques - mobile-first grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-        {stats.map((stat, index) => (
-          <div key={index} className="bg-white overflow-hidden shadow-sm rounded-xl border border-gray-100 hover:shadow-md transition-shadow duration-200">
-            <div className="p-4 sm:p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className={`w-10 h-10 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center ${stat.color}`}>
-                    <span className="text-lg sm:text-base">{stat.icon}</span>
+        {/* Statistiques */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {stats.map((stat, index) => (
+            <div
+              key={index}
+              className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
+            >
+              <div className="flex items-center justify-between">
+                {/* Partie gauche: icône + contenu */}
+                <div className="flex items-center gap-4 flex-1">
+                  {/* Icône circulaire */}
+                  <div
+                    className={`w-12 h-12 ${stat.bgColor} rounded-full flex items-center justify-center flex-shrink-0 text-white shadow-sm`}
+                  >
+                    {stat.icon}
                   </div>
-                </div>
-                <div className="ml-3 sm:ml-5 w-0 flex-1 min-w-0">
-                  <dl>
-                    <dt className="text-xs sm:text-sm font-medium text-gray-500 truncate">
-                      {stat.title}
-                    </dt>
-                    <dd className="text-xl sm:text-lg font-semibold text-gray-900 truncate">
+
+                  {/* Contenu */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-xl font-bold text-gray-900 mb-1">
                       {stat.value}
-                    </dd>
-                    <dd className="text-xs text-gray-500 truncate">
-                      {stat.description}
-                    </dd>
-                  </dl>
+                    </h3>
+                    <p className="text-sm text-gray-500">{stat.title}</p>
+                  </div>
+                </div>
+
+                {/* Barre verticale à droite */}
+                <div
+                  className={`w-1 h-16 ${stat.barColor} rounded-full ml-4`}
+                ></div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Section Analytics et Reports */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Analytics - Graphique circulaire */}
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900">Analytics</h3>
+              <button className="text-gray-400 hover:text-gray-600">
+                <svg
+                  className="w-5 h-5"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="flex items-center justify-center">
+              <div className="relative w-48 h-48">
+                <svg className="w-full h-full" viewBox="0 0 100 100">
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="45"
+                    fill="none"
+                    stroke="#e5e7eb"
+                    strokeWidth="8"
+                  />
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="45"
+                    fill="none"
+                    stroke="#3b82f6"
+                    strokeWidth="8"
+                    strokeDasharray="70 100"
+                    strokeLinecap="round"
+                    transform="rotate(-90 50 50)"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-2xl font-bold text-gray-900">70%</span>
+                  <span className="text-sm text-gray-500">Conversion</span>
                 </div>
               </div>
             </div>
           </div>
-        ))}
-      </div>
 
-      {/* Actions rapides - mobile-first */}
-      <div className="bg-white shadow-sm rounded-xl border border-gray-100 mb-6 sm:mb-8">
-        <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">
-            Actions rapides
-          </h3>
-        </div>
-        <div className="p-4 sm:p-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            {isAdmin ? (
-              <>
-                <Link to="/agents" className="flex items-center p-4 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 group">
-                  <span className="text-2xl mr-3 group-hover:scale-110 transition-transform">👥</span>
-                  <div className="text-left flex-1 min-w-0">
-                    <h4 className="font-semibold text-gray-900 truncate">Gérer les agents</h4>
-                    <p className="text-sm text-gray-500 truncate">Ajouter ou modifier des agents</p>
-                  </div>
-                  <svg className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                  </svg>
-                </Link>
-                <Link to="/tarifs" className="flex items-center p-4 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 group">
-                  <span className="text-2xl mr-3 group-hover:scale-110 transition-transform">💰</span>
-                  <div className="text-left flex-1 min-w-0">
-                    <h4 className="font-semibold text-gray-900 truncate">Gérer les tarifs</h4>
-                    <p className="text-sm text-gray-500 truncate">Configurer les tarifs d'expédition</p>
-                  </div>
-                  <svg className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                  </svg>
-                </Link>
-                <Link to="/profile" className="flex items-center p-4 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 group">
-                  <span className="text-2xl mr-3 group-hover:scale-110 transition-transform">⚙️</span>
-                  <div className="text-left flex-1 min-w-0">
-                    <h4 className="font-semibold text-gray-900 truncate">Paramètres de l'agence</h4>
-                    <p className="text-sm text-gray-500 truncate">Modifier les informations</p>
-                  </div>
-                  <svg className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                  </svg>
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link to="/requests" className="flex items-center p-4 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 group">
-                  <span className="text-2xl mr-3 group-hover:scale-110 transition-transform">📋</span>
-                  <div className="text-left flex-1 min-w-0">
-                    <h4 className="font-semibold text-gray-900 truncate">Mes expéditions</h4>
-                    <p className="text-sm text-gray-500 truncate">Voir mes expéditions assignées</p>
-                  </div>
-                  <svg className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                  </svg>
-                </Link>
-                <Link to="/profile" className="flex items-center p-4 border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 group">
-                  <span className="text-2xl mr-3 group-hover:scale-110 transition-transform">👤</span>
-                  <div className="text-left flex-1 min-w-0">
-                    <h4 className="font-semibold text-gray-900 truncate">Mon profil</h4>
-                    <p className="text-sm text-gray-500 truncate">Modifier mes informations</p>
-                  </div>
-                  <svg className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                  </svg>
-                </Link>
-              </>
-            )}
+          {/* Reports - Tableau résumé */}
+          <div className="lg:col-span-2 bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900">Expéditions récentes</h3>
+              <button className="text-gray-400 hover:text-gray-600">
+                <svg
+                  className="w-5 h-5"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                </svg>
+              </button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead>
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Expédition
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Statut
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Montant
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  <tr>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      EXP-001
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                        Livré
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                      15 Juin 2023
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                      2500 XOF
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      EXP-002
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                        En cours
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                      16 Juin 2023
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                      3200 XOF
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      EXP-003
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                        En transit
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                      17 Juin 2023
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                      1800 XOF
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
-
     </DashboardLayout>
   );
 };

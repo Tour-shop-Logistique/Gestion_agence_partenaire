@@ -318,7 +318,7 @@ const AgencyProfile = () => {
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
             Profil de l'agence
           </h1>
-          <p className="text-gray-600  mt-1 sm:mt-2 text-md">
+          <p className="text-gray-600  mt-1 text-md">
             Gérez les informations de votre agence
           </p>
         </div>

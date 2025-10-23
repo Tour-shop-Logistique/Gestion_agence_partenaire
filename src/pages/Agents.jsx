@@ -3,6 +3,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useAgency } from "../hooks/useAgency";
 import DashboardLayout from "../components/DashboardLayout";
 import AgentCardMobile from "../components/AgentCardMobile";
+import AgentCardDesktop from "../components/AgentCardDesktop";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 
 const Agents = () => {
@@ -16,14 +17,6 @@ const Agents = () => {
     toggleUserStatus,
     usersStatus: usersStatus,
   } = useAgency();
-
-  // Charger les utilisateurs seulement si la liste est vide
-  useEffect(() => {
-    if (agencyUsers.length === 0 && usersStatus === 'idle') {
-      console.log("Fetching users...");
-      fetchUsers();
-    }
-  }, [agencyUsers.length, usersStatus, fetchUsers]);
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingAgent, setEditingAgent] = useState(null);
@@ -41,7 +34,6 @@ const Agents = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [agentToDelete, setAgentToDelete] = useState(null);
-
 
   // Toggle agent active status
   const handleToggleStatus = async (agent) => {
@@ -96,11 +88,11 @@ const Agents = () => {
         const result = await editUser(editingAgent.id, payload);
 
         if (result.payload.success) {
+          await fetchUsers();
           setMessage("Agent mis à jour avec succès");
           closeModal();
           // Actualiser la liste après modification
           setTimeout(() => setMessage(""), 3000);
-          await fetchUsers();
         } else {
           closeModal();
           throw new Error(result.error || "Erreur lors de la mise à jour");
@@ -119,11 +111,12 @@ const Agents = () => {
         const result = await createUser(payload);
 
         if (result.payload.success) {
+          await fetchUsers();
           setMessage("Agent créé avec succès");
           closeModal();
           // Actualiser la liste après création
+
           setTimeout(() => setMessage(""), 3000);
-          await fetchUsers();
         } else {
           closeModal();
           throw new Error(result.error || "Erreur lors de la création");
@@ -229,52 +222,6 @@ const Agents = () => {
     }
   };
 
-  useEffect(() => {
-    const handleEscape = (e) => {
-      if (e.key === "Escape") {
-        closeModal();
-      }
-    };
-
-    window.addEventListener("keydown", handleEscape);
-    return () => window.removeEventListener("keydown", handleEscape);
-  }, []);
-
-  const getStatusBadge = (agent) => {
-    if (updatingAgent === agent.id) {
-      return (
-        <div className="flex items-center">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-          <span className="text-gray-500 text-xs">Mise à jour...</span>
-        </div>
-      );
-    }
-
-    return (
-      <div className="flex items-center space-x-2">
-        <span
-          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-            agent.actif
-              ? "bg-green-100 text-green-800"
-              : "bg-red-100 text-red-800"
-          }`}
-        >
-          {agent.actif ? "Actif" : "Inactif"}
-        </span>
-        <label className="relative inline-flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            checked={agent.actif}
-            onChange={() => handleToggleStatus(agent)}
-            className="sr-only peer"
-            disabled={updatingAgent === agent.id}
-          />
-          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
-        </label>
-      </div>
-    );
-  };
-
   if (!isAdmin) {
     return (
       <DashboardLayout>
@@ -299,7 +246,7 @@ const Agents = () => {
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
               Gestion des agents
             </h1>
-            <p className="text-gray-600 mt-1 sm:mt-2 text-md">
+            <p className="text-gray-600 mt-1 text-md">
               Administrez votre équipe d'agents
             </p>
           </div>
@@ -385,28 +332,22 @@ const Agents = () => {
               <div className="flex flex-row sm:items-center gap-4">
                 <div className="flex items-center space-x-2">
                   <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                  <span className="text-sm sm:text-base text-gray-600 font-medium">
+                  <span className="text-sm sm:text-md text-gray-600 font-medium">
                     Total: {agencyUsers.length}
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <span className="text-sm sm:text-base text-gray-600 font-medium">
+                  <span className="text-sm sm:text-md text-gray-600 font-medium">
                     Actifs: {agencyUsers.filter((a) => a.actif).length}
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                  <span className="text-sm sm:text-base text-gray-600 font-medium">
+                  <span className="text-sm sm:text-md text-gray-600 font-medium">
                     Inactifs: {agencyUsers.filter((a) => !a.actif).length}
                   </span>
                 </div>
-              </div>
-              <div className="text-xs hidden lg:block text-gray-500 font-medium">
-                Mis à jour: {new Date().toLocaleTimeString("fr-FR", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
               </div>
             </div>
           </div>
@@ -431,7 +372,10 @@ const Agents = () => {
           <div className="p-6">
             <div className="animate-pulse space-y-4">
               {Array.from({ length: 3 }).map((_, index) => (
-                <div key={index} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
+                <div
+                  key={index}
+                  className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg"
+                >
                   <div className="w-14 h-14 bg-gray-200 rounded-full"></div>
                   <div className="flex-1 space-y-2">
                     <div className="h-4 bg-gray-200 rounded w-3/4"></div>
@@ -445,82 +389,14 @@ const Agents = () => {
           </div>
         ) : agencyUsers && agencyUsers.length > 0 ? (
           <>
-            <div className="hidden lg:block">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Agent</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Téléphone</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {agencyUsers.map((agent) => (
-                    <tr key={agent.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10">
-                            <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
-                              {(agent.nom || agent.name || "A").charAt(0).toUpperCase()}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {agent.nom && agent.prenoms ? `${agent.nom} ${agent.prenoms}` : agent.name || "Sans nom"}
-                        </div>
-                        {agent.type === "admin" && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-sm">
-                            👑 Admin
-                          </span>
-                        )}
-                        {agent.type === "manager" && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-sm">
-                            👔 Manager
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {agent.email}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {agent.telephone || "Non défini"}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(agent)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex items-center justify-end space-x-1">
-                          <button
-                            onClick={() => handleEdit(agent)}
-                            className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 active:scale-95"
-                            title="Modifier l'agent"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                          </button>
-                          <button
-                            onClick={() => handleDelete(agent)}
-                            disabled={loading}
-                            className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 active:scale-95 disabled:opacity-50"
-                            title="Supprimer l'agent"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <AgentCardDesktop
+              agencyUsers={agencyUsers}
+              handleEdit={handleEdit}
+              handleDelete={handleDelete}
+              handleToggleStatus={handleToggleStatus}
+              updatingAgent={updatingAgent}
+              loading={loading}
+            />
             <AgentCardMobile
               agents={agencyUsers}
               onEdit={handleEdit}
@@ -533,22 +409,43 @@ const Agents = () => {
         ) : (
           <div className="p-8 text-center">
             <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl flex items-center justify-center shadow-lg">
-              <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+              <svg
+                className="w-10 h-10 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                />
               </svg>
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-3">
               Aucun agent trouvé
             </h3>
             <p className="text-gray-500 mb-8 max-w-sm mx-auto leading-relaxed">
-              Commencez par ajouter des agents à votre équipe pour gérer efficacement vos opérations et améliorer votre service client.
+              Commencez par ajouter des agents à votre équipe pour gérer
+              efficacement vos opérations et améliorer votre service client.
             </p>
             <button
               onClick={openAddModal}
               className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white font-semibold rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
             >
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              <svg
+                className="w-5 h-5 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                />
               </svg>
               Ajouter un agent
             </button>

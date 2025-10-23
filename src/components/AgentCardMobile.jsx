@@ -35,7 +35,7 @@ const AgentCardMobile = ({
   };
 
   return (
-    <div className="space-y-4 block lg:hidden">
+    <div className="space-y-4 block md:hidden">
       {agents.map((agent) => (
         <div
           key={agent.id}
@@ -91,7 +91,7 @@ const AgentCardMobile = ({
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-white font-bold text-lg truncate">
+                  <h3 className="text-white font-bold text-lg truncate max-w-[200px]">
                     {agent.nom && agent.prenoms
                       ? `${agent.nom} ${agent.prenoms}`
                       : agent.name || "Sans nom"}

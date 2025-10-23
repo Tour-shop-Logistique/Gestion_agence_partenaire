@@ -1,15 +1,16 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
+  useNavigate,
+  useLocation,
 } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { useAuth } from "./hooks/useAuth";
 import { useAgency } from "./hooks/useAgency";
 import { useTarifs } from "./hooks/useTarifs";
-import { apiService } from "./utils/apiService";
 
 // Import des pages
 import Home from "./pages/Home";
@@ -18,18 +19,25 @@ import Tarifs from "./pages/Tarifs";
 import AgencyProfile from "./pages/AgencyProfile";
 import Agents from "./pages/Agents";
 
+// Composant pour gérer la redirection automatique
+const AutoRedirect = ({ children }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { isAuthenticated, status } = useSelector((state) => state.auth);
+
+  useEffect(() => {
+    // Si l'utilisateur est authentifié et sur la page d'accueil, rediriger vers le dashboard
+    if (isAuthenticated && status === "succeeded" && location.pathname === "/") {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [isAuthenticated, status, location.pathname, navigate]);
+
+  return children;
+};
+
 // Composant pour les routes protégées
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, status } = useSelector((state) => state.auth);
-
-  // Afficher un loader pendant la vérification d'authentification
-  // if (status === 'loading') {
-  //   return (
-  //     <div className="min-h-screen flex items-center justify-center">
-  //       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-  //     </div>
-  //   );
-  // }
 
   return isAuthenticated ? children : <Navigate to="/" replace />;
 };
@@ -37,12 +45,10 @@ const ProtectedRoute = ({ children }) => {
 // Composant pour les routes publiques
 const PublicRoute = ({ children }) => {
   const { isAuthenticated } = useSelector((state) => state.auth);
-
   return !isAuthenticated ? children : <Navigate to="/dashboard" replace />;
 };
 
-function App() {
-  const dispatch = useDispatch();
+function AppContent() {
   const { checkAuth } = useAuth();
   const { isAuthenticated, status } = useSelector((state) => state.auth);
 
@@ -51,33 +57,34 @@ function App() {
   const { fetchAgencyTarifs } = useTarifs();
 
   // État pour contrôler l'affichage du loader initial
-  const [initialCheckDone, setInitialCheckDone] = React.useState(false);
+  const [initialCheckDone, setInitialCheckDone] = useState(false);
 
   useEffect(() => {
     // Vérifier si un token existe au démarrage de l'application
     const token = localStorage.getItem("auth_token");
-    console.log("Token:", token);
+    console.log("Token au démarrage:", token);
+    
     if (token) {
-      // Définir le token dans le service API
-      apiService.setAuthToken(token);
+      // Si un token existe, vérifier son authenticité
       checkAuth().finally(() => {
         setInitialCheckDone(true);
       });
     } else {
-      // Si pas de token ou déjà authentifié, marquer comme terminé
+      // Si pas de token, marquer comme terminé
       setInitialCheckDone(true);
     }
-  }, [checkAuth, isAuthenticated, status]);
+  }, [checkAuth]);
 
   // Charger les données de l'agence quand l'utilisateur est authentifié
   useEffect(() => {
     if (isAuthenticated && status === "succeeded") {
-      // Charger les données de l'agence, les utilisateurs et les tarifs
+      console.log("Utilisateur authentifié, chargement des données...");
+      // Charger les données de l'agence et les tarifs
       fetchAgencyData();
       fetchUsers();
       fetchAgencyTarifs();
     }
-  }, [isAuthenticated, status, fetchAgencyData, fetchUsers, fetchAgencyTarifs]);
+  }, [isAuthenticated, status]); // Retirer les dépendances des fonctions pour éviter les re-renders
 
   // Afficher un loader pendant la vérification initiale
   if (!initialCheckDone) {
@@ -94,7 +101,7 @@ function App() {
   }
 
   return (
-    <Router>
+    <AutoRedirect>
       <Routes>
         {/* Routes publiques */}
         <Route
@@ -143,6 +150,14 @@ function App() {
         {/* Route par défaut */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+    </AutoRedirect>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <AppContent />
     </Router>
   );
 }
