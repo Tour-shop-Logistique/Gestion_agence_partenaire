@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import DashboardLayout from "../components/DashboardLayout";
 
@@ -14,6 +14,26 @@ const Dashboard = () => {
 
   // Utilisation du hook personnalisé pour l'agence
   const { data: agencyData, users: agencyUsers } = useAgency();
+
+  // États pour les dates
+  const [startDate, setStartDate] = useState(() => {
+    const date = new Date();
+    date.setDate(1); // Premier jour du mois
+    return date.toISOString().split('T')[0];
+  });
+
+  const [endDate, setEndDate] = useState(() => {
+    return new Date().toISOString().split('T')[0];
+  });
+
+  // Fonction pour formater la date au format dd-mm-yyyy
+  const formatDateDisplay = (dateString) => {
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
 
   // Logique pour les agents (filtrer les utilisateurs de l'agence)
   const userAgents = Array.isArray(agencyUsers)
@@ -160,13 +180,65 @@ const Dashboard = () => {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <button className="px-4 py-2 text-sm text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
-              {new Date().toLocaleDateString("fr-FR", {
-                day: "2-digit",
-                month: "2-digit",
-                year: "numeric",
-              })}
-            </button>
+            {/* Date de début */}
+            <div className="relative">
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="sr-only"
+                id="start-date-input"
+              />
+              <label
+                htmlFor="start-date-input"
+                className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer"
+              >
+                <span>{formatDateDisplay(startDate)}</span>
+                <svg
+                  className="w-4 h-4 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </label>
+            </div>
+
+            {/* Date de fin */}
+            <div className="relative">
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="sr-only"
+                id="end-date-input"
+              />
+              <label
+                htmlFor="end-date-input"
+                className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer"
+              >
+                <span>{formatDateDisplay(endDate)}</span>
+                <svg
+                  className="w-4 h-4 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </label>
+            </div>
           </div>
         </div>
 

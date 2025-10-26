@@ -54,7 +54,7 @@ function AppContent() {
 
   // Hooks pour charger les données de l'agence et tarifs
   const { fetchAgencyData, fetchUsers } = useAgency();
-  const { fetchAgencyTarifs } = useTarifs();
+  const { fetchAgencyTarifs, fetchTarifs } = useTarifs();
 
   // État pour contrôler l'affichage du loader initial
   const [initialCheckDone, setInitialCheckDone] = useState(false);
@@ -82,6 +82,7 @@ function AppContent() {
       // Charger les données de l'agence et les tarifs
       fetchAgencyData();
       fetchUsers();
+      fetchTarifs();
       fetchAgencyTarifs();
     }
   }, [isAuthenticated, status]); // Retirer les dépendances des fonctions pour éviter les re-renders
