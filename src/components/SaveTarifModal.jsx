@@ -385,5 +385,5 @@ const SaveTarifModal = ({
   );
 };
 
-export default SelectTarifIndexModal;
+export default SaveTarifModal;
 
