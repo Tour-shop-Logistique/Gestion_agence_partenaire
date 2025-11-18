@@ -5,7 +5,7 @@
 // Utiliser toujours l'URL distante (ou VITE_API_BASE_URL si fournie)
 // ATTENTION: Nécessite que le serveur distant expose les en-têtes CORS
 const API_BASE_URL = (
-  import.meta?.env?.VITE_API_BASE_URL || 'https://tourshop.nport.link/api'
+  import.meta?.env?.VITE_API_BASE_URL || 'https://tourshop.loophole.site/api'
 );
 
 // Endpoints de l'API

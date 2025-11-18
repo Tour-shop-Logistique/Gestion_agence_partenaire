@@ -11,6 +11,7 @@ const Dashboard = () => {
   const { getRequestStats, getNewRequests } = useRequests();
   const { tariffs, loading: tariffsLoading, error: tariffsError } = useTariffs();
   const { getAgencyByManagerEmail } = useAgency();
+  const { getAgencyUsers } = useAgency();
 
   const userAgents = getAgentsByAgency(currentUser?.id);
   const requestStats = getRequestStats(currentUser?.id);

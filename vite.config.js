@@ -10,6 +10,7 @@ export default defineConfig({
     open: true,
     allowedHosts: [
       'agence.nport.link',
+      'tourshop.loophole.site',
     ],
   },
   build: {
