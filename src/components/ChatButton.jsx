@@ -1,7 +1,7 @@
 import React from 'react';
 import NotificationBadge from './NotificationBadge';
 
-const ChatButton = ({ request, unreadCount, onClick, className = '' }) => {
+const ChatButton = ({ unreadCount, onClick, className = '' }) => {
   return (
     <button
       onClick={onClick}

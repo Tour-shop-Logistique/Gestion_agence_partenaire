@@ -3,8 +3,8 @@
 
 // Exemple de configuration Supabase
 export const supabaseConfig = {
-  url: process.env.VITE_SUPABASE_URL,
-  anonKey: process.env.VITE_SUPABASE_ANON_KEY,
+  url: import.meta.env.VITE_SUPABASE_URL,
+  anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY,
 };
 
 // Fonctions utilitaires pour l'API future
@@ -114,7 +114,7 @@ export class ApiService {
 }
 
 // Instance par défaut (à configurer avec les vraies URLs)
-export const apiService = new ApiService(process.env.VITE_API_BASE_URL || 'http://localhost:3001/api');
+export const apiService = new ApiService(import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api');
 
 // Utilitaires pour la gestion des tokens
 export const tokenUtils = {

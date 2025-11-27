@@ -1,469 +1,417 @@
-import React from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { useRequests } from '../contexts/RequestContext';
-import { useTariffs } from '../contexts/TariffContext';
-import { useAgency } from '../contexts/AgencyContext';
-import DashboardLayout from '../components/DashboardLayout';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import DashboardLayout from "../components/DashboardLayout";
+
+// Import du hook personnalisé pour l'authentification
+import { useAuth } from "../hooks/useAuth";
+
+// Import du hook personnalisé pour l'agence
+import { useAgency } from "../hooks/useAgency";
 
 const Dashboard = () => {
-  const { currentUser, getAgentsByAgency, isAdmin, isAgent } = useAuth();
-  const { getRequestStats, getNewRequests } = useRequests();
-  const { tariffs, loading: tariffsLoading, error: tariffsError } = useTariffs();
-  const { getAgencyByManagerEmail } = useAgency();
-  const { getAgencyUsers } = useAgency();
+  // Utilisation du hook d'authentification
+  const { currentUser, isAdmin } = useAuth();
 
-  const userAgents = getAgentsByAgency(currentUser?.id);
-  const requestStats = getRequestStats(currentUser?.id);
-  const newRequests = getNewRequests(currentUser?.id);
+  // Utilisation du hook personnalisé pour l'agence
+  const { data: agencyData, users: agencyUsers } = useAgency();
 
-  // Admin statistics
+  // États pour les dates
+  const [startDate, setStartDate] = useState(() => {
+    const date = new Date();
+    date.setDate(1); // Premier jour du mois
+    return date.toISOString().split('T')[0];
+  });
+
+  const [endDate, setEndDate] = useState(() => {
+    return new Date().toISOString().split('T')[0];
+  });
+
+  // Fonction pour formater la date au format dd-mm-yyyy
+  const formatDateDisplay = (dateString) => {
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
+
+  // Logique pour les agents (filtrer les utilisateurs de l'agence)
+  const userAgents = Array.isArray(agencyUsers)
+    ? agencyUsers.filter((agent) => agent.agence_id === currentUser?.agence_id)
+    : [];
+
+  // Données fictives pour les statistiques d'expéditions
+  const mockExpeditionStats = {
+    total: 156,
+    pickupInProgress: 12,
+    dropoffInProgress: 8,
+    inTransit: 23,
+    deliveryInProgress: 15,
+    delivered: 98,
+    totalRevenue: 45750000,
+    urgentRequests: 7,
+    newRequests: 5,
+  };
+
+  // Admin statistics - Design exact de l'image
   const adminStats = [
     {
-      title: 'Agents actifs',
-      value: userAgents.filter(agent => agent.status === 'active').length,
-      icon: '👥',
-      color: 'bg-blue-100 text-blue-600',
-      description: 'Agents dans votre équipe'
+      title: "Nouvelles Demandes",
+      value: mockExpeditionStats.newRequests,
+      icon: (
+        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+      ),
+      bgColor: "bg-green-500",
+      barColor: "bg-green-500",
     },
     {
-      title: 'Nouvelles demandes',
-      value: newRequests.length,
-      icon: '📋',
-      color: 'bg-red-100 text-red-600',
-      description: 'Demandes en attente'
+      title: "Total Expéditions",
+      value: mockExpeditionStats.total,
+      icon: (
+        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        </svg>
+      ),
+      bgColor: "bg-blue-500",
+      barColor: "bg-blue-500",
+    },
+
+    {
+      title: "Revenu mensuel",
+      value: "1 036 000 FCFA",
+      icon: (
+        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+      ),
+      bgColor: "bg-yellow-400",
+      barColor: "bg-yellow-400",
     },
     {
-      title: 'En cours',
-      value: requestStats.pickupInProgress + requestStats.dropoffInProgress + requestStats.inTransit + requestStats.deliveryInProgress,
-      icon: '🔄',
-      color: 'bg-orange-100 text-orange-600',
-      description: 'Expéditions en cours'
+      title: "Visites Aujourd'hui",
+      value: "78.41k",
+      icon: (
+        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path
+            fillRule="evenodd"
+            d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 010-1.113zM17.25 12a5.25 5.25 0 11-10.5 0 5.25 5.25 0 0110.5 0z"
+            clipRule="evenodd"
+          />
+        </svg>
+      ),
+      bgColor: "bg-red-500",
+      barColor: "bg-red-500",
     },
-    {
-      title: 'Livrées',
-      value: requestStats.delivered,
-      icon: '✅',
-      color: 'bg-green-100 text-green-600',
-      description: 'Expéditions terminées'
-    },
-    {
-      title: 'Tarifs configurés',
-      value: Array.isArray(tariffs) ? tariffs.length : 0,
-      icon: '💰',
-      color: 'bg-purple-100 text-purple-600',
-      description: 'Tarifs disponibles'
-    },
-    {
-      title: 'Revenus',
-      value: new Intl.NumberFormat('fr-FR', {
-        style: 'currency',
-        currency: 'XOF'
-      }).format(requestStats.totalRevenue),
-      icon: '💰',
-      color: 'bg-purple-100 text-purple-600',
-      description: 'Chiffre d\'affaires'
-    },
-    {
-      title: 'Demandes urgentes',
-      value: requestStats.urgentRequests,
-      icon: '🔥',
-      color: 'bg-red-100 text-red-600',
-      description: 'Priorité haute'
-    }
   ];
 
   // Agent statistics
   const agentStats = [
     {
-      title: 'Expéditions assignées',
-      value: requestStats.total,
-      icon: '📦',
-      color: 'bg-blue-100 text-blue-600',
-      description: 'Total des demandes'
+      title: "Mes Expéditions",
+      value: mockExpeditionStats.total,
+      icon: (
+        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        </svg>
+      ),
+      bgColor: "bg-blue-500",
+      barColor: "bg-blue-500",
     },
     {
-      title: 'En cours',
-      value: requestStats.pickupInProgress + requestStats.dropoffInProgress + requestStats.inTransit + requestStats.deliveryInProgress,
-      icon: '🔄',
-      color: 'bg-orange-100 text-orange-600',
-      description: 'Expéditions en cours'
+      title: "Nouvelles Demandes",
+      value: mockExpeditionStats.newRequests,
+      icon: (
+        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+      ),
+      bgColor: "bg-green-500",
+      barColor: "bg-green-500",
     },
     {
-      title: 'Livrées',
-      value: requestStats.delivered,
-      icon: '✅',
-      color: 'bg-green-100 text-green-600',
-      description: 'Expéditions terminées'
+      title: "Expéditions Actives",
+      value:
+        mockExpeditionStats.pickupInProgress +
+        mockExpeditionStats.dropoffInProgress +
+        mockExpeditionStats.inTransit +
+        mockExpeditionStats.deliveryInProgress,
+      icon: (
+        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+      ),
+      bgColor: "bg-yellow-500",
+      barColor: "bg-yellow-500",
     },
     {
-      title: 'Revenus générés',
-      value: new Intl.NumberFormat('fr-FR', {
-        style: 'currency',
-        currency: 'XOF'
-      }).format(requestStats.totalRevenue),
-      icon: '💰',
-      color: 'bg-purple-100 text-purple-600',
-      description: 'Chiffre d\'affaires'
-    }
+      title: "Expéditions Livrées",
+      value: mockExpeditionStats.delivered,
+      icon: (
+        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+      bgColor: "bg-orange-500",
+      barColor: "bg-orange-500",
+    },
   ];
 
-  const stats = isAdmin() ? adminStats : agentStats;
+  const stats = isAdmin ? adminStats : agentStats;
+
+  const displayName =
+    currentUser?.name ||
+    [currentUser?.nom, currentUser?.prenoms].filter(Boolean).join(" ") ||
+    "Utilisateur";
 
   return (
     <DashboardLayout>
-      {/* Titre de la page */}
-      <div className="mb-8">
-        {(() => {
-          const displayName = currentUser?.name 
-            || [currentUser?.nom, currentUser?.prenoms].filter(Boolean).join(' ')
-            || 'Utilisateur';
-          return (
-            <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-2xl font-bold text-gray-900">
-                Bienvenue, {displayName} !
-              </h1>
-              <span
-                className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                  isAdmin() ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
-                }`}
+      <div className="space-y-6">
+        {/* Header avec salutation */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Bonjour, {displayName} 👋
+            </h1>
+            <p className="text-md text-gray-500 mt-1">
+              Voici un aperçu de votre activité aujourd'hui
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            {/* Date de début */}
+            <div className="relative">
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="sr-only"
+                id="start-date-input"
+              />
+              <label
+                htmlFor="start-date-input"
+                className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer"
               >
-                {isAdmin() ? 'Administrateur' : 'Agent'}
-              </span>
-            </div>
-          );
-        })()}
-        <p className="text-gray-600 mt-2">
-          {isAdmin() 
-            ? 'Gérez votre équipe et suivez les performances de votre agence'
-            : 'Gérez vos expéditions et suivez vos performances'
-          }
-        </p>
-      </div>
-
-      {/* Alertes pour nouvelles demandes */}
-      {isAdmin() && newRequests.length > 0 && (
-        <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <span className="text-2xl">🔔</span>
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">
-                {newRequests.length} nouvelle{newRequests.length > 1 ? 's' : ''} demande{newRequests.length > 1 ? 's' : ''} en attente
-              </h3>
-              <div className="mt-2 text-sm text-red-700">
-                <p>Des demandes clients nécessitent votre attention.</p>
-              </div>
-              <div className="mt-4">
-                <Link
-                  to="/requests"
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200"
+                <span>{formatDateDisplay(startDate)}</span>
+                <svg
+                  className="w-4 h-4 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  Voir les demandes →
-                </Link>
-              </div>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </label>
+            </div>
+
+            {/* Date de fin */}
+            <div className="relative">
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="sr-only"
+                id="end-date-input"
+              />
+              <label
+                htmlFor="end-date-input"
+                className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer"
+              >
+                <span>{formatDateDisplay(endDate)}</span>
+                <svg
+                  className="w-4 h-4 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </label>
             </div>
           </div>
         </div>
-      )}
 
-      {/* Statistiques */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
-        {stats.map((stat, index) => (
-          <div key={index} className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${stat.color}`}>
-                    <span className="text-lg">{stat.icon}</span>
+        {/* Statistiques */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {stats.map((stat, index) => (
+            <div
+              key={index}
+              className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
+            >
+              <div className="flex items-center justify-between">
+                {/* Partie gauche: icône + contenu */}
+                <div className="flex items-center gap-4 flex-1">
+                  {/* Icône circulaire */}
+                  <div
+                    className={`w-12 h-12 ${stat.bgColor} rounded-full flex items-center justify-center flex-shrink-0 text-white shadow-sm`}
+                  >
+                    {stat.icon}
                   </div>
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">
-                      {stat.title}
-                    </dt>
-                    <dd className="text-lg font-medium text-gray-900">
+
+                  {/* Contenu */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-xl font-bold text-gray-900 mb-1">
                       {stat.value}
-                    </dd>
-                    <dd className="text-xs text-gray-500">
-                      {stat.description}
-                    </dd>
-                  </dl>
+                    </h3>
+                    <p className="text-sm text-gray-500">{stat.title}</p>
+                  </div>
                 </div>
+
+                {/* Barre verticale à droite */}
+                <div
+                  className={`w-1 h-16 ${stat.barColor} rounded-full ml-4`}
+                ></div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Actions rapides */}
-      <div className="bg-white shadow rounded-lg mb-8">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">
-            Actions rapides
-          </h3>
+          ))}
         </div>
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {isAdmin() ? (
-              <>
-                <Link to="/agents" className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                  <span className="text-2xl mr-3">👥</span>
-                  <div className="text-left">
-                    <h4 className="font-medium text-gray-900">Gérer les agents</h4>
-                    <p className="text-sm text-gray-500">Ajouter ou modifier des agents</p>
-                  </div>
-                </Link>
-                <Link to="/requests" className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                  <span className="text-2xl mr-3">📋</span>
-                  <div className="text-left">
-                    <h4 className="font-medium text-gray-900">Voir les demandes</h4>
-                    <p className="text-sm text-gray-500">Consulter les demandes clients</p>
-                  </div>
-                </Link>
-                <Link to="/tariffs" className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                  <span className="text-2xl mr-3">💰</span>
-                  <div className="text-left">
-                    <h4 className="font-medium text-gray-900">Configurer les tarifs</h4>
-                    <p className="text-sm text-gray-500">Gérer les prix d'expédition</p>
-                  </div>
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link to="/requests" className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                  <span className="text-2xl mr-3">📋</span>
-                  <div className="text-left">
-                    <h4 className="font-medium text-gray-900">Nouvelles demandes</h4>
-                    <p className="text-sm text-gray-500">Traiter les demandes clients</p>
-                  </div>
-                </Link>
-                <Link to="/shipments" className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                  <span className="text-2xl mr-3">📦</span>
-                  <div className="text-left">
-                    <h4 className="font-medium text-gray-900">Suivre les expéditions</h4>
-                    <p className="text-sm text-gray-500">Mettre à jour les statuts</p>
-                  </div>
-                </Link>
-                <Link to="/tariffs" className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                  <span className="text-2xl mr-3">💰</span>
-                  <div className="text-left">
-                    <h4 className="font-medium text-gray-900">Consulter les tarifs</h4>
-                    <p className="text-sm text-gray-500">Voir les prix d'expédition</p>
-                  </div>
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
 
-      {/* Section récente pour admin */}
-      {isAdmin() && userAgents.length > 0 && (
-        <div className="bg-white shadow rounded-lg mb-8">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900">
-              Agents récents
-            </h3>
-          </div>
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {userAgents.slice(0, 3).map((agent) => (
-                <div key={agent.id} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 h-10 w-10">
-                      <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
-                        <span className="text-primary-600 font-medium">
-                          {agent.name.split(' ').map(n => n[0]).join('')}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm font-medium text-gray-900">{agent.name}</p>
-                      <p className="text-sm text-gray-500">{agent.email}</p>
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium mt-1 ${
-                        agent.status === 'active' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {agent.status === 'active' ? 'Actif' : 'Inactif'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Section récente pour agent */}
-      {isAgent() && (
-        <div className="bg-white shadow rounded-lg">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900">
-              Dernières activités
-            </h3>
-          </div>
-          <div className="p-6">
-            <div className="space-y-4">
-              <div className="flex items-center p-3 bg-green-50 rounded-lg">
-                <span className="text-green-600 mr-3">✅</span>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Demande acceptée</p>
-                  <p className="text-xs text-gray-500">Colis #1234 - Client: Jean Dupont</p>
-                </div>
-              </div>
-              <div className="flex items-center p-3 bg-blue-50 rounded-lg">
-                <span className="text-blue-600 mr-3">📦</span>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Expédition mise à jour</p>
-                  <p className="text-xs text-gray-500">Colis #1235 - Statut: En transit</p>
-                </div>
-              </div>
-              <div className="flex items-center p-3 bg-yellow-50 rounded-lg">
-                <span className="text-yellow-600 mr-3">⏳</span>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Nouvelle demande</p>
-                  <p className="text-xs text-gray-500">Colis #1236 - En attente de traitement</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Informations supplémentaires pour admin */}
-      {isAdmin() && (
-        <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Informations de l'agence */}
-          <div className="bg-white shadow rounded-lg">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium text-gray-900">Informations de l'agence</h3>
-                <Link
-                  to="/agency-profile"
-                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+        {/* Section Analytics et Reports */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Analytics - Graphique circulaire */}
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900">Analytics</h3>
+              <button className="text-gray-400 hover:text-gray-600">
+                <svg
+                  className="w-5 h-5"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  Modifier
-                </Link>
-              </div>
+                  <path d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                </svg>
+              </button>
             </div>
-            <div className="p-6">
-              {(() => {
-                const userAgency = getAgencyByManagerEmail(currentUser?.email);
-                if (userAgency) {
-                  return (
-                    <div className="space-y-3">
-                      <div>
-                        <span className="text-sm text-gray-600">Nom</span>
-                        <p className="text-sm font-medium">{userAgency.name}</p>
-                      </div>
-                      <div>
-                        <span className="text-sm text-gray-600">Code</span>
-                        <p className="text-sm font-medium">{userAgency.code}</p>
-                      </div>
-                      <div>
-                        <span className="text-sm text-gray-600">Ville</span>
-                        <p className="text-sm font-medium">{userAgency.city}</p>
-                      </div>
-                      <div>
-                        <span className="text-sm text-gray-600">Téléphone</span>
-                        <p className="text-sm font-medium">{userAgency.phone}</p>
-                      </div>
-                    </div>
-                  );
-                } else {
-                  return (
-                    <div className="text-center py-4">
-                      <p className="text-sm text-gray-500 mb-3">Aucune information d'agence</p>
-                      <Link
-                        to="/agency-profile"
-                        className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-                      >
-                        Configurer l'agence
-                      </Link>
-                    </div>
-                  );
-                }
-              })()}
+
+            <div className="flex items-center justify-center">
+              <div className="relative w-48 h-48">
+                <svg className="w-full h-full" viewBox="0 0 100 100">
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="45"
+                    fill="none"
+                    stroke="#e5e7eb"
+                    strokeWidth="8"
+                  />
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="45"
+                    fill="none"
+                    stroke="#3b82f6"
+                    strokeWidth="8"
+                    strokeDasharray="70 100"
+                    strokeLinecap="round"
+                    transform="rotate(-90 50 50)"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-2xl font-bold text-gray-900">70%</span>
+                  <span className="text-sm text-gray-500">Conversion</span>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Résumé des tarifs */}
-          <div className="bg-white shadow rounded-lg">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Résumé des tarifs</h3>
+          {/* Reports - Tableau résumé */}
+          <div className="lg:col-span-2 bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900">Expéditions récentes</h3>
+              <button className="text-gray-400 hover:text-gray-600">
+                <svg
+                  className="w-5 h-5"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                </svg>
+              </button>
             </div>
-            <div className="p-6">
-              {tariffsLoading ? (
-                <div className="flex justify-center py-4">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-                </div>
-              ) : tariffsError ? (
-                <div className="text-red-500 text-sm">Erreur lors du chargement des tarifs</div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Total tarifs</span>
-                    <span className="text-sm font-medium">{tariffs?.length || 0}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Tarifs actifs</span>
-                    <span className="text-sm font-medium">
-                      {tariffs?.filter(t => t?.actif)?.length || 0}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Indices uniques</span>
-                    <span className="text-sm font-medium">
-                      {tariffs?.length ? [...new Set(tariffs.map(t => t?.indice))].length : 0}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Résumé des demandes */}
-          <div className="bg-white shadow rounded-lg">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Résumé des demandes</h3>
-            </div>
-            <div className="p-6">
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Total demandes</span>
-                  <span className="text-sm font-medium">{requestStats.total}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">En attente</span>
-                  <span className="text-sm font-medium">{requestStats.pending}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">En cours</span>
-                  <span className="text-sm font-medium">{requestStats.pickupInProgress + requestStats.dropoffInProgress + requestStats.inTransit + requestStats.deliveryInProgress}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Livrées</span>
-                  <span className="text-sm font-medium">{requestStats.delivered}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Revenus totaux</span>
-                  <span className="text-sm font-medium">
-                    {new Intl.NumberFormat('fr-FR', {
-                      style: 'currency',
-                      currency: 'XOF'
-                    }).format(requestStats.totalRevenue)}
-                  </span>
-                </div>
-              </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead>
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Expédition
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Statut
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Montant
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  <tr>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      EXP-001
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                        Livré
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                      15 Juin 2023
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                      2500 XOF
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      EXP-002
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                        En cours
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                      16 Juin 2023
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                      3200 XOF
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      EXP-003
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                        En transit
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                      17 Juin 2023
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                      1800 XOF
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
-      )}
+      </div>
     </DashboardLayout>
   );
 };
