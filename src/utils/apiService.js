@@ -99,11 +99,17 @@ class ApiService {
    */
   async post(endpoint, data = {}, options = {}) {
     try {
-      console.log(JSON.stringify(data));
+      const isFormData = data instanceof FormData;
+      const headers = this.getHeaders(options.headers);
+
+      if (isFormData) {
+        delete headers["Content-Type"];
+      }
+
       const response = await fetch(`${this.baseURL}${endpoint}`, {
         method: "POST",
-        headers: this.getHeaders(options.headers),
-        body: JSON.stringify(data),
+        headers,
+        body: isFormData ? data : JSON.stringify(data),
         ...options,
       });
 
@@ -119,10 +125,17 @@ class ApiService {
    */
   async put(endpoint, data = {}, options = {}) {
     try {
+      const isFormData = data instanceof FormData;
+      const headers = this.getHeaders(options.headers);
+
+      if (isFormData) {
+        delete headers["Content-Type"];
+      }
+
       const response = await fetch(`${this.baseURL}${endpoint}`, {
         method: "PUT",
-        headers: this.getHeaders(options.headers),
-        body: JSON.stringify(data),
+        headers,
+        body: isFormData ? data : JSON.stringify(data),
         ...options,
       });
 

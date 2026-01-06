@@ -5,6 +5,7 @@ const AddAgencyTarifModal = ({ show, onClose, editingTarif }) => {
  const { groupageTarifs, createTarifGroupage, updateTarifGroupage } = useTarifs();
 
   const [tarifData, setTarifData] = useState(null);
+  const [tarifGroupageData, setTarifGroupageData] = useState(null);
 
   const [selectedTarifId, setSelectedTarifId] = useState("");
 
@@ -15,7 +16,6 @@ const AddAgencyTarifModal = ({ show, onClose, editingTarif }) => {
       // 🟩 MODE MODIFICATION
       const clonedModes = editingTarif.prix_modes.map((m) => ({
         ...m,
-        montant_base: Number(m.montant_base),
         pourcentage_prestation: Number(m.pourcentage_prestation),
       }));
 
@@ -60,6 +60,7 @@ useEffect(() => {
   });
 
   setTarifData({
+    id : tarif.id,
     category_id: tarif.category_id,
     tarif_minimum: tarif.tarif_minimum,
     prix_modes: clonedModes,
@@ -87,16 +88,25 @@ useEffect(() => {
 
   // 🔥 Nettoyer avant envoi → seulement les données nécessaires
   const preparePayload = () => {
-    return {
-      category_id: tarifData.category_id,
-    tarif_minimum: Number(tarifData.tarif_minimum),
-    prix_modes: tarifData.prix_modes.map((m) => ({
-      mode: m.mode,
-      montant_base: Number(m.montant_base),
+    console.log(tarifData,"🛜🛜")
+    if (!editingTarif) {
+      return {
+        tarif_groupage_id: tarifData.id,
+      prix_modes: tarifData.prix_modes.map((m) => ({
+        mode: m.mode,
+        // montant_base: Number(m.montant_base),
       pourcentage_prestation: Number(m.pourcentage_prestation),
     })),
     };
-  };
+  }else {
+    return {
+      prix_modes: tarifData.prix_modes.map((m) => ({
+        mode: m.mode,
+      pourcentage_prestation: Number(m.pourcentage_prestation),
+    })),
+    };
+  }
+  }
 
 const handleSave = () => {
   if (!tarifData) return;
@@ -104,7 +114,9 @@ const handleSave = () => {
   const payload = preparePayload();
 
   if (editingTarif) {
+   
     updateTarifGroupage(editingTarif.id, payload);
+     console.log(payload, "edit")
   } else {
     console.log(payload,"🛜🛜 create")
     createTarifGroupage(payload);

@@ -2,11 +2,14 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { selectCurrentUser, selectIsAdmin } from "../store/slices/authSlice";
+import { useAgency } from "../hooks/useAgency";
+import { getLogoUrl } from "../utils/apiConfig";
 
 const Sidebar = ({ onClose }) => {
   const currentUser = useSelector(selectCurrentUser);
   const isAdmin = useSelector(selectIsAdmin);
   const location = useLocation();
+  const { data: agencyData } = useAgency();
 
   const isActive = (path) => {
     return location.pathname === path;
@@ -18,6 +21,12 @@ const Sidebar = ({ onClose }) => {
       name: "Dashboard",
       icon: "📊",
       description: "Vue d'ensemble",
+    },
+    {
+      path: "/create-expedition",
+      name: "Nouvelle Expédition",
+      icon: "➕",
+      description: "Enregistrer un colis",
     },
     {
       path: "/requests",
@@ -57,6 +66,12 @@ const Sidebar = ({ onClose }) => {
       name: "Dashboard",
       icon: "📊",
       description: "Vue d'ensemble",
+    },
+    {
+      path: "/create-expedition",
+      name: "Nouvelle Expédition",
+      icon: "➕",
+      description: "Enregistrer un colis",
     },
     {
       path: "/requests",
@@ -143,22 +158,31 @@ const Sidebar = ({ onClose }) => {
           </div>
         )}
 
-        {/* User info section - compact on mobile */}
         <div className="p-4 border-b border-gray-100">
           <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
-              <span className="text-primary-600 font-semibold text-sm">
-                {currentUser?.name
-                  ?.split(" ")
-                  .map((n) => n[0])
-                  .join("")
-                  .toUpperCase() ||
-                  [currentUser?.nom, currentUser?.prenoms]
-                    .filter(Boolean)
-                    .map((n) => n[0])
-                    .join("")
-                    .toUpperCase()}
-              </span>
+            <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden border border-gray-100">
+              {agencyData?.agence?.logo ? (
+                <img
+                  src={getLogoUrl(agencyData.agence.logo)}
+                  alt="Logo Agence"
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                <div className="w-full h-full bg-primary-100 flex items-center justify-center">
+                  <span className="text-primary-600 font-semibold text-sm">
+                    {currentUser?.name
+                      ?.split(" ")
+                      .map((n) => n[0])
+                      .join("")
+                      .toUpperCase() ||
+                      [currentUser?.nom, currentUser?.prenoms]
+                        .filter(Boolean)
+                        .map((n) => n[0])
+                        .join("")
+                        .toUpperCase()}
+                  </span>
+                </div>
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-gray-900 truncate">
@@ -171,11 +195,10 @@ const Sidebar = ({ onClose }) => {
                 {currentUser?.email || currentUser?.telephone}
               </p>
               <span
-                className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mt-1 ${
-                  isAdminLike
-                    ? "bg-red-100 text-red-800"
-                    : "bg-blue-100 text-blue-800"
-                }`}
+                className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mt-1 ${isAdminLike
+                  ? "bg-red-100 text-red-800"
+                  : "bg-blue-100 text-blue-800"
+                  }`}
               >
                 {isAdminLike ? "Admin" : "Agent"}
               </span>
@@ -192,11 +215,10 @@ const Sidebar = ({ onClose }) => {
               <Link
                 to={item.path}
                 onClick={onClose}
-                className={`flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-                  isActive(item.path)
-                    ? "bg-primary-50 text-primary-900 border-l-4 border-blue-800 shadow-sm"
-                    : "text-gray-700 hover:bg-gray-50 hover:text-gray-900 active:bg-gray-100"
-                }`}
+                className={`flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${isActive(item.path)
+                  ? "bg-primary-50 text-primary-900 border-l-4 border-blue-800 shadow-sm"
+                  : "text-gray-700 hover:bg-gray-50 hover:text-gray-900 active:bg-gray-100"
+                  }`}
               >
                 <span className="text-xl mr-4 flex-shrink-0">{item.icon}</span>
                 <div className="flex-1 min-w-0">

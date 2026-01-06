@@ -3,6 +3,7 @@ import { useSelector } from "react-redux";
 import DashboardLayout from "../components/DashboardLayout";
 import { useAgency } from "../hooks/useAgency";
 import { selectIsAdmin } from "../store/slices/authSlice";
+import { getLogoUrl } from "../utils/apiConfig";
 import logo from "../assets/logo_transparent.png";
 
 const AgencyProfile = () => {
@@ -24,6 +25,7 @@ const AgencyProfile = () => {
   const [message, setMessage] = useState({ type: "", text: "" });
   const [formData, setFormData] = useState({
     name: "",
+    code_agence: "",
     address: "",
     ville: "",
     pays: "Côte d'Ivoire",
@@ -54,7 +56,11 @@ const AgencyProfile = () => {
       },
       { jour: "samedi", ouverture: "08:00", fermeture: "12:00", ferme: false },
     ],
+    logo: null,
   });
+
+  const [logoFile, setLogoFile] = useState(null);
+  const [logoPreview, setLogoPreview] = useState(null);
 
   // État pour stocker les données originales avant modification
   const [originalFormData, setOriginalFormData] = useState(null);
@@ -67,6 +73,7 @@ const AgencyProfile = () => {
       const newFormData = { ...formData };
 
       if (agence.nom_agence) newFormData.name = agence.nom_agence;
+      if (agence.code_agence) newFormData.code_agence = agence.code_agence;
       if (agence.adresse) newFormData.address = agence.adresse;
       if (agence.ville) newFormData.ville = agence.ville;
       if (agence.pays) newFormData.pays = agence.pays;
@@ -75,6 +82,7 @@ const AgencyProfile = () => {
       if (agence.website) newFormData.website = agence.website;
       if (agence.description) newFormData.description = agence.description;
       if (agence.commune) newFormData.commune = agence.commune;
+      if (agence.logo) newFormData.logo = agence.logo;
 
       // Gérer les coordonnées GPS
       if (agence.latitude !== undefined && agence.latitude !== null) {
@@ -130,6 +138,18 @@ const AgencyProfile = () => {
       ...prev,
       [name]: value,
     }));
+  };
+
+  const handleLogoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setLogoFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleHoraireChange = (index, field, value) => {
@@ -212,9 +232,9 @@ const AgencyProfile = () => {
         },
       ];
 
-      // Préparer le payload
       const agencyPayload = {
         nom_agence: formData.name,
+        code_agence: formData.code_agence,
         telephone: formData.telephone,
         description: formData.description,
         adresse: formData.address,
@@ -230,6 +250,10 @@ const AgencyProfile = () => {
             ? formData.horaires
             : defaultHoraires,
       };
+
+      if (logoFile) {
+        agencyPayload.logo = logoFile;
+      }
 
       // Utiliser le hook pour mettre à jour l'agence
       // Si une agence existe déjà (avec un ID), effectuer une mise à jour, sinon configuration initiale
@@ -261,6 +285,7 @@ const AgencyProfile = () => {
           setFormData(prevFormData => ({
             ...prevFormData,
             name: result.agence.nom_agence || prevFormData.name,
+            code_agence: result.agence.code_agence || prevFormData.code_agence,
             address: result.agence.adresse || prevFormData.address,
             ville: result.agence.ville || prevFormData.ville,
             commune: result.agence.commune || prevFormData.commune,
@@ -393,11 +418,10 @@ const AgencyProfile = () => {
             </button>
             <button
               onClick={handleEditToggle}
-              className={`px-4 py-2 rounded-md text-sm font-medium flex items-center transition-all duration-200 ${
-                isEditing
-                  ? "bg-gray-200 hover:bg-gray-300 text-gray-800"
-                  : "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
-              }`}
+              className={`px-4 py-2 rounded-md text-sm font-medium flex items-center transition-all duration-200 ${isEditing
+                ? "bg-gray-200 hover:bg-gray-300 text-gray-800"
+                : "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
+                }`}
             >
               {isEditing ? (
                 <>
@@ -442,13 +466,12 @@ const AgencyProfile = () => {
       {/* Message de notification */}
       {message.text && (
         <div
-          className={`mb-6 p-4 rounded-lg border ${
-            message.type === "success"
-              ? "bg-green-50 border-green-200 text-green-800"
-              : message.type === "error"
+          className={`mb-6 p-4 rounded-lg border ${message.type === "success"
+            ? "bg-green-50 border-green-200 text-green-800"
+            : message.type === "error"
               ? "bg-red-50 border-red-200 text-red-800"
               : "bg-blue-50 border-blue-200 text-blue-800"
-          }`}
+            }`}
         >
           <div className="flex items-center">
             <div className="flex-shrink-0">
@@ -506,204 +529,362 @@ const AgencyProfile = () => {
       )}
 
       {/* Carte principale avec formulaire */}
-      
-        <form onSubmit={handleSubmit} className="p-4 space-y-2">
-          {/* Section Informations générales */}
-          <div className="bg-gray-50 rounded-lg p-6 border border-gray-200 shadow-md overflow-hidden">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
-              <svg
-                className="w-5 h-5 mr-2 text-blue-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                />
-              </svg>
-              Informations générales
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nom de l'agence *
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  disabled={!isAdmin || !isEditing}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
-                />
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Adresse *
-                </label>
-                <input
-                  type="text"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                  disabled={!isAdmin || !isEditing}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
-                />
-              </div>
+      <form onSubmit={handleSubmit} className="p-4 space-y-2">
+        {/* Section Informations générales */}
+        <div className="bg-gray-50 rounded-lg p-6 border border-gray-200 shadow-md overflow-hidden">
+          <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+            <svg
+              className="w-5 h-5 mr-2 text-blue-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+              />
+            </svg>
+            Informations générales
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Nom de l'agence *
+              </label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                disabled={!isAdmin || !isEditing}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
+              />
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Ville *
-                </label>
-                <input
-                  type="text"
-                  name="ville"
-                  value={formData.ville}
-                  onChange={handleInputChange}
-                  disabled={!isAdmin || !isEditing}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Code de l'agence *
+              </label>
+              <input
+                type="text"
+                name="code_agence"
+                value={formData.code_agence}
+                onChange={handleInputChange}
+                disabled={!isAdmin || !isEditing}
+                required
+                placeholder="Ex: AGENT001"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
+              />
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Commune *
-                </label>
-                <input
-                  type="text"
-                  name="commune"
-                  value={formData.commune}
-                  onChange={handleInputChange}
-                  disabled={!isAdmin || !isEditing}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Adresse *
+              </label>
+              <input
+                type="text"
+                name="address"
+                value={formData.address}
+                onChange={handleInputChange}
+                disabled={!isAdmin || !isEditing}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
+              />
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Pays
-                </label>
-                <input
-                  type="text"
-                  name="pays"
-                  value={formData.pays}
-                  onChange={handleInputChange}
-                  disabled={!isAdmin || !isEditing}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Ville *
+              </label>
+              <input
+                type="text"
+                name="ville"
+                value={formData.ville}
+                onChange={handleInputChange}
+                disabled={!isAdmin || !isEditing}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
+              />
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Téléphone *
-                </label>
-                <input
-                  type="tel"
-                  name="telephone"
-                  value={formData.telephone}
-                  onChange={handleInputChange}
-                  disabled={!isAdmin || !isEditing}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Commune *
+              </label>
+              <input
+                type="text"
+                name="commune"
+                value={formData.commune}
+                onChange={handleInputChange}
+                disabled={!isAdmin || !isEditing}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
+              />
+            </div>
 
-              <div className="md:col-span-2">
-                <div className="flex justify-between items-center mb-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Localisation GPS
-                  </label>
-                  <button
-                    type="button"
-                    onClick={getCurrentLocation}
-                    disabled={!isAdmin || !isEditing}
-                    className="text-xs bg-primary-100 text-primary-800 px-3 py-1.5 rounded-md hover:bg-primary-200 transition-colors flex items-center space-x-1 disabled:opacity-50"
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Pays
+              </label>
+              <input
+                type="text"
+                name="pays"
+                value={formData.pays}
+                onChange={handleInputChange}
+                disabled={!isAdmin || !isEditing}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Téléphone *
+              </label>
+              <input
+                type="tel"
+                name="telephone"
+                value={formData.telephone}
+                onChange={handleInputChange}
+                disabled={!isAdmin || !isEditing}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Localisation GPS
+                </label>
+                <button
+                  type="button"
+                  onClick={getCurrentLocation}
+                  disabled={!isAdmin || !isEditing}
+                  className="text-xs bg-primary-100 text-primary-800 px-3 py-1.5 rounded-md hover:bg-primary-200 transition-colors flex items-center space-x-1 disabled:opacity-50"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                    </svg>
-                    <span>Utiliser ma position actuelle</span>
-                  </button>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
+                  <span>Utiliser ma position actuelle</span>
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    Latitude
+                  </label>
+                  <input
+                    type="text"
+                    name="latitude"
+                    value={formData.latitude}
+                    onChange={handleInputChange}
+                    disabled={!isAdmin || !isEditing}
+                    placeholder="Ex: 5.3541"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
+                  />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">
-                      Latitude
-                    </label>
-                    <input
-                      type="text"
-                      name="latitude"
-                      value={formData.latitude}
-                      onChange={handleInputChange}
-                      disabled={!isAdmin || !isEditing}
-                      placeholder="Ex: 5.3541"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">
-                      Longitude
-                    </label>
-                    <input
-                      type="text"
-                      name="longitude"
-                      value={formData.longitude}
-                      onChange={handleInputChange}
-                      disabled={!isAdmin || !isEditing}
-                      placeholder="Ex: -4.0083"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">
+                    Longitude
+                  </label>
+                  <input
+                    type="text"
+                    name="longitude"
+                    value={formData.longitude}
+                    onChange={handleInputChange}
+                    disabled={!isAdmin || !isEditing}
+                    placeholder="Ex: -4.0083"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
+                  />
                 </div>
               </div>
+            </div>
 
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Description
+              </label>
+              <textarea
+                name="description"
+                rows={2}
+                value={formData.description}
+                onChange={handleInputChange}
+                disabled={!isAdmin || !isEditing}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Logo de l'agence
+              </label>
+              <div className="flex items-center space-x-6">
+                <div className="flex-shrink-0">
+                  {logoPreview || (agencyData?.agence?.logo) ? (
+                    <img
+                      className="h-16 w-16 object-contain rounded-full border-2 border-gray-200"
+                      src={logoPreview || getLogoUrl(agencyData?.agence?.logo)}
+                      alt="Logo Preview"
+                    />
+                  ) : (
+                    <div className="h-16 w-16 rounded-full bg-gray-200 flex items-center justify-center text-gray-400">
+                      <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                <label className="block w-full">
+                  <span className="sr-only">Choisir un logo</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoChange}
+                    disabled={!isAdmin || !isEditing}
+                    className="block w-full text-sm text-gray-500
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-md file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-blue-50 file:text-blue-700
+                        hover:file:bg-blue-100
+                        disabled:opacity-50"
+                  />
                 </label>
-                <textarea
-                  name="description"
-                  rows={2}
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  disabled={!isAdmin || !isEditing}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
-                />
               </div>
             </div>
           </div>
-          <div className="pb-4"/>
+        </div>
+        <div className="pb-4" />
 
-          {/* Section Horaires d'ouverture */}
-          <div className="bg-gray-50 rounded-lg p-6 border border-gray-200 shadow-md overflow-hidden">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+        {/* Section Horaires d'ouverture */}
+        <div className="bg-gray-50 rounded-lg p-6 border border-gray-200 shadow-md overflow-hidden">
+          <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+            <svg
+              className="w-5 h-5 mr-2 text-blue-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            Horaires d'ouverture
+          </h3>
+          <div className="space-y-4">
+            {formData.horaires.map((horaire, index) => (
+              <div
+                key={index}
+                className="bg-white rounded-lg p-4 border border-gray-200 hover:border-blue-300 transition-colors"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+                  <div className="font-medium text-gray-900 flex items-center">
+                    <div
+                      className={`w-3 h-3 rounded-full mr-3 ${horaire.ferme ? "bg-red-500" : "bg-green-500"
+                        }`}
+                    ></div>
+                    {horaire.jour.charAt(0).toUpperCase() +
+                      horaire.jour.slice(1)}
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-xs text-gray-500 font-medium">
+                      Ouverture
+                    </label>
+                    <input
+                      type="time"
+                      value={horaire.ouverture}
+                      onChange={(e) =>
+                        handleHoraireChange(
+                          index,
+                          "ouverture",
+                          e.target.value
+                        )
+                      }
+                      disabled={!isAdmin || !isEditing || horaire.ferme}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 transition-colors text-sm"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-xs text-gray-500 font-medium">
+                      Fermeture
+                    </label>
+                    <input
+                      type="time"
+                      value={horaire.fermeture}
+                      onChange={(e) =>
+                        handleHoraireChange(
+                          index,
+                          "fermeture",
+                          e.target.value
+                        )
+                      }
+                      disabled={!isAdmin || !isEditing || horaire.ferme}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 transition-colors text-sm"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-center">
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={horaire.ferme}
+                        onChange={(e) =>
+                          handleHoraireChange(
+                            index,
+                            "ferme",
+                            e.target.checked
+                          )
+                        }
+                        disabled={!isAdmin || !isEditing}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <span className="ml-2 text-sm text-gray-700 font-medium">
+                        Fermé
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Boutons d'action */}
+        {isEditing && (
+          <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={handleEditToggle}
+              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium"
+            >
               <svg
-                className="w-5 h-5 mr-2 text-blue-600"
+                className="w-4 h-4 mr-2 inline"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -712,166 +893,62 @@ const AgencyProfile = () => {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth="2"
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  d="M6 18L18 6M6 6l12 12"
                 />
               </svg>
-              Horaires d'ouverture
-            </h3>
-            <div className="space-y-4">
-              {formData.horaires.map((horaire, index) => (
-                <div
-                  key={index}
-                  className="bg-white rounded-lg p-4 border border-gray-200 hover:border-blue-300 transition-colors"
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
-                    <div className="font-medium text-gray-900 flex items-center">
-                      <div
-                        className={`w-3 h-3 rounded-full mr-3 ${
-                          horaire.ferme ? "bg-red-500" : "bg-green-500"
-                        }`}
-                      ></div>
-                      {horaire.jour.charAt(0).toUpperCase() +
-                        horaire.jour.slice(1)}
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="block text-xs text-gray-500 font-medium">
-                        Ouverture
-                      </label>
-                      <input
-                        type="time"
-                        value={horaire.ouverture}
-                        onChange={(e) =>
-                          handleHoraireChange(
-                            index,
-                            "ouverture",
-                            e.target.value
-                          )
-                        }
-                        disabled={!isAdmin || !isEditing || horaire.ferme}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 transition-colors text-sm"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="block text-xs text-gray-500 font-medium">
-                        Fermeture
-                      </label>
-                      <input
-                        type="time"
-                        value={horaire.fermeture}
-                        onChange={(e) =>
-                          handleHoraireChange(
-                            index,
-                            "fermeture",
-                            e.target.value
-                          )
-                        }
-                        disabled={!isAdmin || !isEditing || horaire.ferme}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 transition-colors text-sm"
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-center">
-                      <label className="flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={horaire.ferme}
-                          onChange={(e) =>
-                            handleHoraireChange(
-                              index,
-                              "ferme",
-                              e.target.checked
-                            )
-                          }
-                          disabled={!isAdmin || !isEditing}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                        />
-                        <span className="ml-2 text-sm text-gray-700 font-medium">
-                          Fermé
-                        </span>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Boutons d'action */}
-          {isEditing && (
-            <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
-              <button
-                type="button"
-                onClick={handleEditToggle}
-                className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium"
-              >
-                <svg
-                  className="w-4 h-4 mr-2 inline"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-                Annuler
-              </button>
-              <button
-                type="submit"
-                disabled={saving}
-                className="inline-flex items-center px-6 py-3 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {saving ? (
-                  <>
-                    <svg
-                      className="animate-spin -ml-0.5 mr-2 h-4 w-4 text-white"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
-                    Sauvegarde...
-                  </>
-                ) : (
-                  <>
-                    <svg
-                      className="-ml-0.5 mr-2 h-4 w-4 text-white"
-                      fill="none"
+              Annuler
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="inline-flex items-center px-6 py-3 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? (
+                <>
+                  <svg
+                    className="animate-spin -ml-0.5 mr-2 h-4 w-4 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
                       stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                    Sauvegarder
-                  </>
-                )}
-              </button>
-            </div>
-          )}
-        </form>
-      
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                  Sauvegarde...
+                </>
+              ) : (
+                <>
+                  <svg
+                    className="-ml-0.5 mr-2 h-4 w-4 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                  Sauvegarder
+                </>
+              )}
+            </button>
+          </div>
+        )}
+      </form>
+
     </DashboardLayout>
   );
 };

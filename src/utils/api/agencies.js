@@ -13,9 +13,26 @@ export const agenciesApi = {
    */
   async setupAgency(agencyData) {
     try {
+      let payload = agencyData;
+
+      // Si on a un logo ou si on veut forcer FormData
+      if (agencyData.logo instanceof File) {
+        const formData = new FormData();
+        Object.keys(agencyData).forEach(key => {
+          if (agencyData[key] !== null && agencyData[key] !== undefined) {
+            if (typeof agencyData[key] === 'object' && !(agencyData[key] instanceof File)) {
+              formData.append(key, JSON.stringify(agencyData[key]));
+            } else {
+              formData.append(key, agencyData[key]);
+            }
+          }
+        });
+        payload = formData;
+      }
+
       const response = await apiService.post(
         API_ENDPOINTS.AGENCIES.SETUP,
-        agencyData
+        payload
       );
 
       return {
@@ -38,6 +55,7 @@ export const agenciesApi = {
   async getAgency() {
     try {
       const response = await apiService.get(API_ENDPOINTS.AGENCIES.SHOW);
+      console.log("Données de l'agence (agence/show):", response);
 
       return {
         success: response.success !== false,
@@ -59,9 +77,26 @@ export const agenciesApi = {
    */
   async updateAgency(agencyData) {
     try {
+      let payload = agencyData;
+
+      // Si on a un logo ou si on veut forcer FormData
+      if (agencyData.logo instanceof File) {
+        const formData = new FormData();
+        Object.keys(agencyData).forEach(key => {
+          if (agencyData[key] !== null && agencyData[key] !== undefined) {
+            if (typeof agencyData[key] === 'object' && !(agencyData[key] instanceof File)) {
+              formData.append(key, JSON.stringify(agencyData[key]));
+            } else {
+              formData.append(key, agencyData[key]);
+            }
+          }
+        });
+        payload = formData;
+      }
+
       const response = await apiService.put(
         API_ENDPOINTS.AGENCIES.UPDATE,
-        agencyData
+        payload
       );
 
       return {

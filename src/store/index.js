@@ -3,6 +3,8 @@ import { configureStore } from '@reduxjs/toolkit';
 import authReducer from './slices/authSlice';
 import agencyReducer from './slices/agencySlice';
 import tarifsReducer from './slices/tarifsSlice';
+import expeditionReducer from './slices/expeditionSlice';
+import productReducer from './slices/productSlice';
 
 /**
  * Configuration du store Redux
@@ -12,6 +14,8 @@ export const store = configureStore({
     auth: authReducer,
     agency: agencyReducer,
     tarifs: tarifsReducer,
+    expedition: expeditionReducer,
+    products: productReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

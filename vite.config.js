@@ -13,6 +13,24 @@ export default defineConfig({
       'tourshop.loophole.site',
       'tourshop.nport.link',
     ],
+    proxy: {
+      '/api': {
+        target: 'https://2e4d46aafa84.ngrok-free.app',
+        changeOrigin: true,
+        secure: false,
+        headers: {
+          'ngrok-skip-browser-warning': 'true'
+        }
+      },
+      '/storage': {
+        target: 'https://2e4d46aafa84.ngrok-free.app',
+        changeOrigin: true,
+        secure: false,
+        headers: {
+          'ngrok-skip-browser-warning': 'true'
+        }
+      }
+    }
   },
   build: {
     outDir: 'dist',

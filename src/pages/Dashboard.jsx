@@ -7,6 +7,7 @@ import { useAuth } from "../hooks/useAuth";
 
 // Import du hook personnalisé pour l'agence
 import { useAgency } from "../hooks/useAgency";
+import { getLogoUrl } from "../utils/apiConfig";
 
 const Dashboard = () => {
   // Utilisation du hook d'authentification
@@ -169,15 +170,26 @@ const Dashboard = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Header avec salutation */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Bonjour, {displayName} 👋
-            </h1>
-            <p className="text-md text-gray-500 mt-1">
-              Voici un aperçu de votre activité aujourd'hui
-            </p>
+        {/* Header avec salutation et logo */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            {agencyData?.agence?.logo && (
+              <div className="flex-shrink-0">
+                <img
+                  src={getLogoUrl(agencyData.agence.logo)}
+                  alt="Logo Agence"
+                  className="h-16 w-16 object-contain rounded-lg border border-gray-100 shadow-sm bg-white p-1"
+                />
+              </div>
+            )}
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Bonjour, {displayName} 👋
+              </h1>
+              <p className="text-md text-gray-500 mt-1">
+                Bienvenue dans votre espace {agencyData?.agence?.nom_agence || "agence"}
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             {/* Date de début */}

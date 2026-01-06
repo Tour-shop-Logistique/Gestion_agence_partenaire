@@ -95,6 +95,8 @@ export const tarifsApi = {
   },
 
 
+
+
   /**
    * Mettre à jour un tarif groupage
    * @param {string|number} tarifId - ID du tarif

@@ -11,6 +11,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { useAuth } from "./hooks/useAuth";
 import { useAgency } from "./hooks/useAgency";
 import { useTarifs } from "./hooks/useTarifs";
+import { getLogoUrl } from "./utils/apiConfig";
 
 // Import des pages
 import Home from "./pages/Home";
@@ -18,6 +19,7 @@ import Dashboard from "./pages/Dashboard";
 import Tarifs from "./pages/Tarifs";
 import AgencyProfile from "./pages/AgencyProfile";
 import Agents from "./pages/Agents";
+import CreateExpedition from "./pages/CreateExpedition";
 
 // Composant pour gérer la redirection automatique
 const AutoRedirect = ({ children }) => {
@@ -63,7 +65,7 @@ function AppContent() {
     // Vérifier si un token existe au démarrage de l'application
     const token = localStorage.getItem("auth_token");
     console.log("Token au démarrage:", token);
-    
+
     if (token) {
       // Si un token existe, vérifier son authenticité
       checkAuth().finally(() => {
@@ -89,12 +91,19 @@ function AppContent() {
 
   // Afficher un loader pendant la vérification initiale
   if (!initialCheckDone) {
+    const storedAgencyData = JSON.parse(localStorage.getItem("agencyData") || "{}");
+    const storedLogo = storedAgencyData?.agence?.logo;
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 text-lg">
-            Vérification de la connexion...
+          {storedLogo ? (
+            <img src={getLogoUrl(storedLogo)} alt="Logo Agence" className="h-24 w-auto mx-auto mb-6 drop-shadow-lg" />
+          ) : (
+            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
+          )}
+          <p className="text-gray-600 text-lg font-medium">
+            Chargement de votre espace...
           </p>
         </div>
       </div>
@@ -144,6 +153,14 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <Agents />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/create-expedition"
+          element={
+            <ProtectedRoute>
+              <CreateExpedition />
             </ProtectedRoute>
           }
         />

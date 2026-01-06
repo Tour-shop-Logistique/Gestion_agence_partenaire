@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { selectCurrentUser, logout } from "../store/slices/authSlice";
 import { useAgency } from "../hooks/useAgency";
+import { getLogoUrl } from "../utils/apiConfig";
 
 const Header = ({ onToggleSidebar }) => {
   const dispatch = useDispatch();
@@ -10,6 +11,7 @@ const Header = ({ onToggleSidebar }) => {
 
   const [showDropdown, setShowDropdown] = useState(false);
   const [agencyName, setAgencyName] = useState(agencyData?.agence?.nom_agence ?? "Dashboard");
+  const [agencyLogo, setAgencyLogo] = useState(getLogoUrl(agencyData?.agence?.logo) ?? null);
 
   useEffect(() => {
     // Fonction pour récupérer les données de l'agence depuis localStorage
@@ -29,16 +31,19 @@ const Header = ({ onToggleSidebar }) => {
       return null;
     };
     console.log("agencyData:", agencyData);
-    // Mettre à jour le nom de l'agence quand agencyData change
+    // Mettre à jour le nom et logo de l'agence quand agencyData change
     if (agencyData?.agence?.nom_agence) {
       setAgencyName(agencyData.agence.nom_agence);
+      setAgencyLogo(getLogoUrl(agencyData.agence.logo));
     } else {
       // Essayer de récupérer depuis localStorage si pas disponible dans Redux
       const storedData = getAgencyData();
       if (storedData?.agence?.nom_agence) {
         setAgencyName(storedData.agence.nom_agence);
+        setAgencyLogo(getLogoUrl(storedData.agence.logo));
       } else {
         setAgencyName("Dashboard"); // Revenir à "Dashboard" si aucune donnée disponible
+        setAgencyLogo(null);
       }
     }
   }, [agencyData]);
@@ -79,10 +84,19 @@ const Header = ({ onToggleSidebar }) => {
             </svg>
           </button>
 
-          {/* Agency name - responsive text size */}
-          <h1 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">
-            {agencyName}
-          </h1>
+          {/* Agency name and logo - responsive text size */}
+          <div className="flex items-center">
+            {agencyLogo && (
+              <img
+                src={agencyLogo}
+                alt="Logo"
+                className="h-8 w-8 object-contain mr-2 rounded"
+              />
+            )}
+            <h1 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">
+              {agencyName}
+            </h1>
+          </div>
         </div>
 
         {/* Actions utilisateur - mobile-first layout */}

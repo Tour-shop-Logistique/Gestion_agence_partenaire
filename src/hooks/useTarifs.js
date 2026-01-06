@@ -82,14 +82,19 @@ export const useTarifs = () => {
     }
   }, [dispatch]);
   
-  const updateGroupageTarifData = useCallback(async  (id, payload) => {
+const updateGroupageTarifData = useCallback(
+  async (id, payload) => {
     try {
       return await dispatch(updateTarifGroupage({ id, data: payload })).unwrap();
     } catch (error) {
-      console.error('Erreur lors de la mise à jour du tarif:', error);
+      console.error("Erreur lors de la mise à jour du tarif:", error);
       return { success: false, error };
     }
-  }, [dispatch]);
+  },
+  [dispatch]
+);
+
+
   
   const saveTarifData = useCallback(async () => {
     try {

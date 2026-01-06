@@ -132,23 +132,22 @@ export const createTarifGroupage = createAsyncThunk(
   }
 );
 
-// Mettre à jour un tarif groupage
-export const updateTarifGroupage =createAsyncThunk(
+export const updateTarifGroupage = createAsyncThunk(
   'tarifs/updateTarifGroupage',
-  async (tarifData, { rejectWithValue }) => {
+  async ({ id, data }, { rejectWithValue }) => {
     try {
-      const response = await tarifsApi.updateTarifGroupage(tarifData);
-      console.log('res Groupage agence ', response);
-      if (response.success) return response.data.tarifs || [];
+      const response = await tarifsApi.updateTarifGroupage(id, data);
+
+      if (response.success) {
+        return response.data;
+      }
+
       return rejectWithValue(response.message);
     } catch (e) {
       return rejectWithValue(e.message);
     }
   }
-)
-
-
-
+);
 
 
 
