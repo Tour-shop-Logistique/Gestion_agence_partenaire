@@ -8,11 +8,7 @@ export default defineConfig({
     port: 5173,
     host: true,
     open: true,
-    allowedHosts: [
-      'agence.nport.link',
-      'tourshop.loophole.site',
-      'tourshop.nport.link',
-    ],
+    allowedHosts: true,
     proxy: {
       '/api': {
         target: 'https://c5894f7feb53.ngrok-free.app',
