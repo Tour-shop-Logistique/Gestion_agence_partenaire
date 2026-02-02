@@ -327,7 +327,7 @@ const Agents = () => {
       {agencyUsers && agencyUsers.length > 0 && (
         <div className="mb-6 sm:mb-8">
           {/* Résumé rapide - responsive */}
-          <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200 shadow-sm">
+          <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4 border border-gray-200 shadow-sm">
             <div className="flex flex-row items-center justify-between gap-4">
               <div className="flex flex-row sm:items-center gap-4">
                 <div className="flex items-center space-x-2">
@@ -356,18 +356,17 @@ const Agents = () => {
 
       {message && (
         <div
-          className={`mb-6 p-4 rounded-lg ${
-            message.includes("succès")
+          className={`mb-6 p-4 rounded-lg ${message.includes("succès")
               ? "bg-green-50 border border-green-200 text-green-600"
               : "bg-red-50 border border-red-200 text-red-600"
-          }`}
+            }`}
         >
           {message}
         </div>
       )}
 
       {/* Liste des agents - Design responsive : lignes sur desktop, cards sur mobile */}
-      <div className="bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden">
+      <div className="bg-white shadow-sm rounded-lg border border-gray-100 overflow-hidden">
         {usersStatus === "loading" ? (
           <div className="p-6">
             <div className="animate-pulse space-y-4">
@@ -408,7 +407,7 @@ const Agents = () => {
           </>
         ) : (
           <div className="p-8 text-center">
-            <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl flex items-center justify-center shadow-lg">
+            <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center shadow-lg">
               <svg
                 className="w-10 h-10 text-gray-400"
                 fill="none"
@@ -432,7 +431,7 @@ const Agents = () => {
             </p>
             <button
               onClick={openAddModal}
-              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white font-semibold rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
+              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white font-semibold rounded-lg hover:from-primary-700 hover:to-primary-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
             >
               <svg
                 className="w-5 h-5 mr-2"
@@ -469,7 +468,7 @@ const Agents = () => {
               &#8203;
             </span>
 
-            <div className="inline-block w-full max-w-2xl mx-4 sm:mx-auto transform overflow-hidden rounded-2xl bg-white text-left align-bottom shadow-2xl transition-all sm:my-8 sm:align-middle">
+            <div className="inline-block w-full max-w-2xl mx-4 sm:mx-auto transform overflow-hidden rounded-xl bg-white text-left align-bottom shadow-2xl transition-all sm:my-8 sm:align-middle">
               <form onSubmit={handleSubmit}>
                 {/* Header avec gradient */}
                 <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
@@ -730,7 +729,7 @@ const Agents = () => {
                 </div>
 
                 {/* Footer avec boutons */}
-                <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-3 rounded-b-2xl">
+                <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-3 rounded-b-xl">
                   <button
                     type="button"
                     onClick={closeModal}
@@ -802,7 +801,7 @@ const Agents = () => {
                                 d="M12 6v6m0 0v6m0-6h6m-6 0H6"
                               />
                             </svg>
-                            Créer l'agent
+                            Enregistrer l'agent
                           </>
                         )}
                       </span>
@@ -815,134 +814,73 @@ const Agents = () => {
         </div>
       )}
 
-      {/* Modal de confirmation de suppression - mobile-first */}
-      {showDeleteModal && agentToDelete && (
+      {showDeleteModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex min-h-screen items-center justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-            {/* Overlay avec blur */}
+          <div className="flex min-h-screen items-center justify-center px-4">
             <div
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm"
               onClick={cancelDelete}
             ></div>
-
-            <span
-              className="hidden sm:inline-block sm:h-screen sm:align-middle"
-              aria-hidden="true"
-            >
-              &#8203;
-            </span>
-
-            <div className="inline-block w-full max-w-md mx-4 sm:mx-auto transform overflow-hidden rounded-2xl bg-white text-left align-bottom shadow-2xl transition-all sm:my-8 sm:align-middle">
-              {/* Header avec icône d'avertissement */}
-              <div className="bg-gradient-to-r from-red-500 to-red-600 px-6 py-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                    <svg
-                      className="w-5 h-5 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                      />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-white">
-                      Confirmer la suppression
-                    </h3>
-                    <p className="text-red-100 text-sm">
-                      Cette action est irréversible
-                    </p>
-                  </div>
-                </div>
+            <div className="relative bg-white rounded-xl max-w-md w-full p-6 shadow-2xl transition-all font-sans">
+              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 text-red-600 mb-4 mx-auto">
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  ></path>
+                </svg>
               </div>
-
-              {/* Body du modal */}
-              <div className="px-6 py-6">
-                <div className="text-center">
-                  <p className="text-md text-gray-600 mb-6">
-                    Voulez-vous vraiment supprimer cet agent ?
-                  </p>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="text-sm space-y-1">
-                      <div className="flex justify-between items-center py-1">
-                        <span className="text-gray-600">Nom complet :</span>
-                        <span className="font-medium text-gray-900">
-                          {agentToDelete.nom} {agentToDelete.prenoms}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center py-1">
-                        <span className="text-gray-600">Téléphone :</span>
-                        <span className="font-medium text-gray-900">
-                          {agentToDelete.telephone || "Non défini"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Footer avec boutons */}
-              <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-3 rounded-b-2xl">
+              <h3 className="text-lg font-bold text-gray-900 text-center mb-2">
+                Supprimer l'agent ?
+              </h3>
+              <p className="text-sm text-gray-500 text-center mb-6">
+                Êtes-vous sûr de vouloir supprimer{" "}
+                <span className="font-bold text-gray-900">
+                  {agentToDelete?.nom} {agentToDelete?.prenoms}
+                </span>{" "}
+                ? Cette action est irréversible.
+              </p>
+              <div className="flex gap-3">
                 <button
-                  type="button"
                   onClick={cancelDelete}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                   Annuler
                 </button>
                 <button
-                  type="button"
                   onClick={confirmDelete}
                   disabled={loading}
-                  className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 border border-transparent rounded-lg text-sm font-medium text-white hover:from-red-700 hover:to-red-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl"
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors flex items-center justify-center"
                 >
                   {loading ? (
-                    <span className="flex items-center">
-                      <svg
-                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      Suppression...
-                    </span>
-                  ) : (
-                    <span className="flex items-center">
-                      <svg
-                        className="w-4 h-4 mr-2"
-                        fill="none"
+                    <svg
+                      className="animate-spin h-4 w-4 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
                         stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
-                      </svg>
-                      Supprimer définitivement
-                    </span>
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                  ) : (
+                    "Supprimer"
                   )}
                 </button>
               </div>

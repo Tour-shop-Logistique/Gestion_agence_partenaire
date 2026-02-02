@@ -20,6 +20,7 @@ import Tarifs from "./pages/Tarifs";
 import AgencyProfile from "./pages/AgencyProfile";
 import Agents from "./pages/Agents";
 import CreateExpedition from "./pages/CreateExpedition";
+import Expeditions from "./pages/Expeditions";
 
 // Composant pour gérer la redirection automatique
 const AutoRedirect = ({ children }) => {
@@ -157,10 +158,18 @@ function AppContent() {
           }
         />
         <Route
+          path="/expeditions"
+          element={
+            <ProtectedRoute>
+              <Expeditions />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/create-expedition"
           element={
             <ProtectedRoute>
-              <CreateExpedition />
+              <Navigate to="/dashboard" replace />
             </ProtectedRoute>
           }
         />

@@ -1,6 +1,6 @@
 import React from "react";
 
-const AgentCardDektop = ({
+const AgentCardDesktop = ({
   agencyUsers,
   handleEdit,
   handleDelete,
@@ -8,40 +8,6 @@ const AgentCardDektop = ({
   updatingAgent,
   loading,
 }) => {
-const getStatusBadge = (agent) => {
-    if (updatingAgent === agent.id) {
-      return (
-        <div className="flex items-center">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-          <span className="text-gray-500 text-xs">Mise à jour...</span>
-        </div>
-      );
-    }
-
-    return (
-      <div className="flex items-center space-x-2">
-        <span
-          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-            agent.actif
-              ? "bg-green-100 text-green-800"
-              : "bg-red-100 text-red-800"
-          }`}
-        >
-          {agent.actif ? "Actif" : "Inactif"}
-        </span>
-        <label className="relative inline-flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            checked={agent.actif}
-            onChange={() => handleToggleStatus(agent)}
-            className="sr-only peer"
-            disabled={updatingAgent === agent.id}
-          />
-          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
-        </label>
-      </div>
-    );
-  };
 
   return (
     <div className="hidden md:block">
@@ -80,9 +46,8 @@ const getStatusBadge = (agent) => {
                       </div>
                       {/* Indicateur de statut sur l'avatar */}
                       <div
-                        className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${
-                          agent.actif ? "bg-green-500" : "bg-red-500"
-                        }`}
+                        className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${agent.actif ? "bg-green-500" : "bg-red-500"
+                          }`}
                       ></div>
                     </div>
                   </div>
@@ -148,7 +113,6 @@ const getStatusBadge = (agent) => {
                 </div>
               </td>
 
-              {/* Colonne Statut */}
               <td className="px-6 py-4 whitespace-nowrap">
                 {updatingAgent === agent.id ? (
                   <div className="flex items-center space-x-2">
@@ -160,16 +124,14 @@ const getStatusBadge = (agent) => {
                 ) : (
                   <div className="flex items-center space-x-3">
                     <span
-                      className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm ${
-                        agent.actif
-                          ? "bg-green-100 text-green-800 border border-green-200"
-                          : "bg-red-100 text-red-800 border border-red-200"
-                      }`}
+                      className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm ${agent.actif
+                        ? "bg-green-100 text-green-800 border border-green-200"
+                        : "bg-red-100 text-red-800 border border-red-200"
+                        }`}
                     >
                       <span
-                        className={`w-2 h-2 rounded-full mr-2 ${
-                          agent.actif ? "bg-green-500" : "bg-red-500"
-                        }`}
+                        className={`w-2 h-2 rounded-full mr-2 ${agent.actif ? "bg-green-500" : "bg-red-500"
+                          }`}
                       ></span>
                       {agent.actif ? "Actif" : "Inactif"}
                     </span>
@@ -177,7 +139,7 @@ const getStatusBadge = (agent) => {
                       <input
                         type="checkbox"
                         checked={agent.actif}
-                        onChange={() => getStatusBadge(agent)}
+                        onChange={() => handleToggleStatus(agent)}
                         className="sr-only peer"
                         disabled={updatingAgent === agent.id}
                       />
@@ -245,4 +207,4 @@ const getStatusBadge = (agent) => {
   );
 };
 
-export default AgentCardDektop;
+export default AgentCardDesktop;

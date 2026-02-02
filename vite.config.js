@@ -15,7 +15,7 @@ export default defineConfig({
     ],
     proxy: {
       '/api': {
-        target: 'https://2e4d46aafa84.ngrok-free.app',
+        target: 'https://c5894f7feb53.ngrok-free.app',
         changeOrigin: true,
         secure: false,
         headers: {
@@ -23,7 +23,7 @@ export default defineConfig({
         }
       },
       '/storage': {
-        target: 'https://2e4d46aafa84.ngrok-free.app',
+        target: 'https://c5894f7feb53.ngrok-free.app',
         changeOrigin: true,
         secure: false,
         headers: {

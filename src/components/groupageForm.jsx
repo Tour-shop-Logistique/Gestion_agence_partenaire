@@ -1,224 +1,232 @@
 import React, { useState, useEffect } from "react";
 import { useTarifs } from "../hooks/useTarifs";
 
-const AddAgencyTarifModal = ({ show, onClose, editingTarif }) => {
- const { groupageTarifs, createTarifGroupage, updateTarifGroupage } = useTarifs();
+const AddAgencyTarifModal = ({ show, onClose, editingTarif, selectedBaseRate }) => {
+  const {
+    groupageTarifs,
+    createTarifGroupage,
+    updateTarifGroupage,
+    deleteTarifGroupage,
+    isSaving,
+    error: apiError,
+    fetchTarifGroupageAgence
+  } = useTarifs();
 
   const [tarifData, setTarifData] = useState(null);
-  const [tarifGroupageData, setTarifGroupageData] = useState(null);
-
+  const [localError, setLocalError] = useState("");
   const [selectedTarifId, setSelectedTarifId] = useState("");
 
-  // Charger les données du tarif sélectionné
+  // Initialisation des données
   useEffect(() => {
     if (editingTarif) {
-
-      // 🟩 MODE MODIFICATION
-      const clonedModes = editingTarif.prix_modes.map((m) => ({
-        ...m,
-        pourcentage_prestation: Number(m.pourcentage_prestation),
-      }));
-
+      // MODE MODIFICATION (Tarif Agence existant)
       setTarifData({
         id: editingTarif.id,
-        category_id: editingTarif.category_id,
-        tarif_minimum: editingTarif.tarif_minimum,
-        prix_modes: clonedModes,
+        categoryName: editingTarif.category?.nom || (editingTarif.type_expedition === 'groupage_afrique' ? 'Expédition Afrique' : (editingTarif.type_expedition === 'groupage_ca' ? 'Expédition CA' : 'Général')),
+        pays: editingTarif.pays,
+        mode: editingTarif.mode,
+        ligne: editingTarif.ligne,
+        montant_base: editingTarif.montant_base,
+        pourcentage_prestation: Number(editingTarif.pourcentage_prestation) || 0,
+        montant_prestation: editingTarif.montant_prestation,
+        montant_expedition: editingTarif.montant_expedition,
       });
+      setSelectedTarifId(editingTarif.tarif_groupage_id || "");
+    } else if (selectedBaseRate) {
+      // MODE CREATION (Depuis un tarif de base spécifique)
+      const base = Number(selectedBaseRate.montant_base);
+      const pct = Number(selectedBaseRate.pourcentage_prestation);
+      const prestation = Number(selectedBaseRate.montant_prestation);
+      const expedition = Number(selectedBaseRate.montant_expedition);
 
+      setTarifData({
+        tarif_groupage_id: selectedBaseRate.id,
+        categoryName: selectedBaseRate.category?.nom || (selectedBaseRate.type_expedition === 'groupage_afrique' ? 'Expédition Afrique' : (selectedBaseRate.type_expedition === 'groupage_ca' ? 'Expédition CA' : 'Général')),
+        pays: selectedBaseRate.pays,
+        mode: selectedBaseRate.mode,
+        ligne: selectedBaseRate.ligne,
+        montant_base: base,
+        pourcentage_prestation: pct,
+        montant_prestation: prestation,
+        montant_expedition: expedition,
+      });
+      setSelectedTarifId(selectedBaseRate.id);
     } else {
-      // 🟩 MODE CREATION : vide
-     setTarifData({
-  category_id: "",
-  tarif_minimum: "",
-  prix_modes: []
-});
-
+      // MODE CREATION (Générique)
+      setTarifData(null);
+      setSelectedTarifId("");
     }
-  }, [editingTarif]);
+  }, [editingTarif, selectedBaseRate]);
 
-useEffect(() => {
-  if (!selectedTarifId || editingTarif) return;
+  // Chargement auto quand on change via le select (si mode générique)
+  useEffect(() => {
+    if (!selectedTarifId || editingTarif || selectedBaseRate) return;
 
-  const tarif = groupageTarifs.find((t) => t.id === selectedTarifId);
-  if (!tarif) return;
+    const baseRate = groupageTarifs.find((t) => t.id === selectedTarifId);
+    if (!baseRate) return;
 
-  const clonedModes = tarif.prix_modes.map((mode) => {
-    const base = Number(mode.montant_base);
-    const pct = Number(mode.pourcentage_prestation);
+    const base = Number(baseRate.montant_base);
+    const pct = Number(baseRate.pourcentage_prestation);
+    const prestation = Number(baseRate.montant_prestation);
+    const expedition = Number(baseRate.montant_expedition);
 
-    const prestation = (base * pct) / 100;
-    const total = base + prestation;
-
-    return {
-      mode: mode.mode,
+    setTarifData({
+      tarif_groupage_id: baseRate.id,
+      categoryName: baseRate.category?.nom || (baseRate.type_expedition === 'groupage_afrique' ? 'Expédition Afrique' : (baseRate.type_expedition === 'groupage_ca' ? 'Expédition CA' : 'Général')),
+      pays: baseRate.pays,
+      mode: baseRate.mode,
+      ligne: baseRate.ligne,
       montant_base: base,
       pourcentage_prestation: pct,
       montant_prestation: prestation,
-      montant_expedition: total,
-    };
-  });
+      montant_expedition: expedition,
+    });
+  }, [selectedTarifId, groupageTarifs, editingTarif, selectedBaseRate]);
 
-  setTarifData({
-    id : tarif.id,
-    category_id: tarif.category_id,
-    tarif_minimum: tarif.tarif_minimum,
-    prix_modes: clonedModes,
-  });
-}, [selectedTarifId, editingTarif]);
-
-  const handlePercentageChange = (index, value) => {
+  const handlePercentageChange = (value) => {
     if (!tarifData) return;
 
-    const newModes = [...tarifData.prix_modes];
-    const pct = Number(value);
+    const pct = value === "" ? "" : Number(value);
+    const pctNum = pct === "" ? 0 : pct;
+    const prestation = parseFloat(((tarifData.montant_base * pctNum) / 100).toFixed(2));
+    const total = parseFloat((tarifData.montant_base + prestation).toFixed(2));
 
-    newModes[index].pourcentage_prestation = pct;
-
-    newModes[index].montant_prestation = parseFloat(
-      ((newModes[index].montant_base * pct) / 100).toFixed(2)
-    );
-
-    newModes[index].montant_expedition = parseFloat(
-      (newModes[index].montant_base + newModes[index].montant_prestation).toFixed(2)
-    );
-
-    setTarifData({ ...tarifData, prix_modes: newModes });
+    setTarifData({
+      ...tarifData,
+      pourcentage_prestation: pct,
+      montant_prestation: prestation,
+      montant_expedition: total,
+    });
   };
 
-  // 🔥 Nettoyer avant envoi → seulement les données nécessaires
-  const preparePayload = () => {
-    console.log(tarifData,"🛜🛜")
-    if (!editingTarif) {
-      return {
-        tarif_groupage_id: tarifData.id,
-      prix_modes: tarifData.prix_modes.map((m) => ({
-        mode: m.mode,
-        // montant_base: Number(m.montant_base),
-      pourcentage_prestation: Number(m.pourcentage_prestation),
-    })),
-    };
-  }else {
-    return {
-      prix_modes: tarifData.prix_modes.map((m) => ({
-        mode: m.mode,
-      pourcentage_prestation: Number(m.pourcentage_prestation),
-    })),
-    };
-  }
-  }
+  const handleSave = async () => {
+    if (!tarifData && !editingTarif?.delete) return;
+    setLocalError("");
 
-const handleSave = () => {
-  if (!tarifData) return;
+    try {
+      let result;
+      if (editingTarif) {
+        // Suppression si demandé
+        if (editingTarif.delete) {
+          result = await deleteTarifGroupage(editingTarif.id);
+        } else {
+          result = await updateTarifGroupage(editingTarif.id, {
+            pourcentage_prestation: Number(tarifData.pourcentage_prestation)
+          });
+        }
+      } else {
+        if (!tarifData.tarif_groupage_id) {
+          setLocalError("Veuillez sélectionner un tarif de base");
+          return;
+        }
+        result = await createTarifGroupage({
+          tarif_groupage_id: tarifData.tarif_groupage_id,
+          pourcentage_prestation: Number(tarifData.pourcentage_prestation)
+        });
+      }
 
-  const payload = preparePayload();
-
-  if (editingTarif) {
-   
-    updateTarifGroupage(editingTarif.id, payload);
-     console.log(payload, "edit")
-  } else {
-    console.log(payload,"🛜🛜 create")
-    createTarifGroupage(payload);
-  }
-
-  onClose();
-};
-
+      if (result && result.success !== false) {
+        if (!editingTarif?.delete) {
+          await fetchTarifGroupageAgence(true);
+        }
+        onClose();
+      }
+    } catch (err) {
+      console.error("Erreur lors de la sauvegarde:", err);
+    }
+  };
 
   if (!show) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl w-full max-w-2xl p-6 shadow-xl relative">
+  const errorToShow = localError || apiError;
 
-        {/* Bouton fermer */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-xl font-bold"
-        >
-          ×
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+      <div className="bg-white rounded-3xl w-full max-w-xl p-8 shadow-2xl relative animate-in slide-in-from-bottom-4 duration-500">
+
+        <button onClick={onClose} className="absolute top-6 right-6 text-gray-400 hover:text-gray-900 hover:bg-gray-100 w-10 h-10 rounded-xl flex items-center justify-center transition-all">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
 
-        <h2 className="text-2xl font-bold mb-6 text-gray-800">
-          Ajouter un tarif agence
+        <h2 className="text-3xl font-black mb-2 text-gray-900">
+          {editingTarif ? (editingTarif.delete ? "Supprimer le tarif" : "Modifier le tarif") : "Ajouter un tarif agence"}
         </h2>
+        <p className="text-gray-500 font-medium mb-8">
+          {editingTarif?.delete ? "Voulez-vous vraiment supprimer ce tarif ?" : "Configurez la marge bénéficiaire pour ce mode d'expédition"}
+        </p>
 
-        {/* Select */}
-       {!editingTarif && (
-  <div className="mb-6">
-    <label className="block text-sm font-medium text-gray-600 mb-2">
-      Sélectionner un tarif de base
-    </label>
-    <select
-      className="w-full border border-gray-300 rounded-lg p-3 bg-gray-50"
-      value={selectedTarifId}
-      onChange={(e) => setSelectedTarifId(e.target.value)}
-    >
-      <option value="">-- Choisir un tarif --</option>
-      {groupageTarifs.map((t) => (
-        <option key={t.id} value={t.id}>
-          {t.category?.nom}
-        </option>
-      ))}
-    </select>
-  </div>
-)}
-
-        {/* Liste des modes */}
-        {tarifData && (
-          <div className="space-y-4 max-h-80 overflow-auto pr-2">
-            {tarifData.prix_modes.map((mode, idx) => (
-              <div
-                key={idx}
-                className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gray-50 p-4 rounded-xl border"
-              >
-                <span className="font-semibold text-gray-800 text-lg min-w-[120px]">
-                  {mode.mode}
-                </span>
-
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      className="w-24 border border-gray-300 rounded-lg p-2 text-sm focus:ring-blue-500 focus:border-blue-500"
-                      value={mode.pourcentage_prestation}
-                      onChange={(e) =>
-                        handlePercentageChange(idx, e.target.value)
-                      }
-                    />
-                    <span className="text-gray-600">%</span>
-                  </div>
-
-                  <span className="text-gray-700 text-sm">
-                    Prestation:{" "}
-                    <span className="font-medium">{mode.montant_prestation} FCFA</span>
-                  </span>
-
-                  <span className="text-gray-700 text-sm">
-                    Total:{" "}
-                    <span className="font-bold">{mode.montant_expedition} FCFA</span>
-                  </span>
-                </div>
-              </div>
-            ))}
+        {errorToShow && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-100 text-red-600 rounded-2xl text-sm font-bold flex items-center gap-3">
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+            {errorToShow}
           </div>
         )}
 
-        {/* Boutons */}
-        <div className="mt-8 flex justify-end gap-4">
-          <button
-            onClick={onClose}
-            className="px-5 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100"
-          >
-            Annuler
-          </button>
+        {!editingTarif && !selectedBaseRate && (
+          <div className="mb-6">
+            <label className="block text-sm font-black text-gray-500 uppercase tracking-widest mb-2">Choisir un tarif de base</label>
+            <select
+              className="w-full border-2 border-gray-100 rounded-xl p-4 bg-gray-50 font-bold text-gray-700 focus:border-blue-500 focus:bg-white transition-all outline-none"
+              value={selectedTarifId}
+              onChange={(e) => setSelectedTarifId(e.target.value)}
+            >
+              <option value="">-- Sélectionner --</option>
+              {groupageTarifs.map((t) => (
+                <option key={t.id} value={t.id}>
+                  [{t.type_expedition?.replace('groupage_', '').toUpperCase()}] {t.category?.nom || t.pays} - {t.mode}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
+        {tarifData && !editingTarif?.delete && (
+          <div className="space-y-6">
+            <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Détails de l'expédition</p>
+                  <p className="text-xl font-black text-blue-900">{tarifData.categoryName}</p>
+                  <p className="text-sm font-bold text-blue-600">{tarifData.pays} • {tarifData.mode} {tarifData.ligne ? `(${tarifData.ligne})` : ''}</p>
+                </div>
+                <div className="bg-white px-3 py-1 rounded-full border border-blue-200">
+                  <span className="text-[10px] font-black text-blue-600 uppercase">Base: {tarifData.montant_base?.toLocaleString()} FCFA</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6 pt-6 border-t border-blue-100">
+                <div>
+                  <p className="text-[10px] font-black text-blue-400 uppercase mb-2">Prestation (%)</p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      className="w-full border-2 border-blue-200 rounded-xl p-3 font-black text-blue-600 focus:border-blue-500 outline-none transition-all"
+                      value={tarifData.pourcentage_prestation}
+                      onChange={(e) => handlePercentageChange(e.target.value)}
+                    />
+                    <span className="font-bold text-blue-400 text-xl">%</span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] font-black text-blue-400 uppercase mb-1">Prix Final</p>
+                  <p className="text-4xl font-black text-gray-900 leading-none">
+                    {tarifData.montant_expedition?.toLocaleString()}
+                  </p>
+                  <p className="text-xs font-bold text-gray-400 mt-2">FCFA</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="mt-10 flex justify-end gap-4">
+          <button onClick={onClose} disabled={isSaving} className="px-6 py-3 rounded-2xl border-2 border-gray-100 text-gray-500 font-bold hover:bg-gray-50 transition-all disabled:opacity-50">Annuler</button>
           <button
             onClick={handleSave}
-            className="px-6 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 shadow"
+            disabled={isSaving || (!tarifData && !editingTarif?.delete)}
+            className={`px-8 py-3 rounded-2xl text-white font-black shadow-xl transition-all transform hover:scale-105 active:scale-95 disabled:opacity-70 ${editingTarif?.delete ? 'bg-red-600 hover:bg-red-700 shadow-red-500/30' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/30'}`}
           >
-            Sauvegarder
+            {isSaving ? "Traitement..." : (editingTarif?.delete ? "Confirmer la suppression" : "Sauvegarder")}
           </button>
         </div>
       </div>

@@ -262,7 +262,6 @@ const agencySlice = createSlice({
 
       // Edit User
       .addCase(editUser.pending, (state) => {
-        state.usersStatus = 'loading';
         state.usersError = null;
       })
       .addCase(editUser.fulfilled, (state, action) => {
@@ -279,7 +278,6 @@ const agencySlice = createSlice({
 
       // Delete User
       .addCase(deleteUser.pending, (state) => {
-        state.usersStatus = 'loading';
         state.usersError = null;
       })
       .addCase(deleteUser.fulfilled, (state, action) => {
@@ -294,7 +292,6 @@ const agencySlice = createSlice({
 
       // Toggle User Status
       .addCase(toggleUserStatus.pending, (state) => {
-        state.usersStatus = 'loading';
         state.usersError = null;
       })
       .addCase(toggleUserStatus.fulfilled, (state, action) => {

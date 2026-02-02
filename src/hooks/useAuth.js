@@ -25,7 +25,7 @@ import {
  */
 export const useAuth = () => {
   const dispatch = useDispatch();
-  
+
   // Sélecteurs d'état
   const currentUser = useSelector(selectCurrentUser);
   const isAuthenticated = useSelector(selectIsAuthenticated);
@@ -35,7 +35,7 @@ export const useAuth = () => {
   const isAdmin = useSelector(selectIsAdmin);
   const isAgent = useSelector(selectIsAgent);
   const hasAgency = useSelector(selectHasAgency);
-  
+
   // Actions encapsulées
   const loginUser = useCallback(async (credentials) => {
     try {
@@ -45,7 +45,7 @@ export const useAuth = () => {
       return { success: false, error };
     }
   }, [dispatch]);
-  
+
   const registerUser = useCallback(async (userData) => {
     try {
       const result = await dispatch(register(userData)).unwrap();
@@ -54,7 +54,7 @@ export const useAuth = () => {
       return { success: false, error };
     }
   }, [dispatch]);
-  
+
   const logoutUser = useCallback(async () => {
     try {
       await dispatch(logout()).unwrap();
@@ -63,49 +63,52 @@ export const useAuth = () => {
       return { success: false, error };
     }
   }, [dispatch]);
-  
-  const fetchProfile = useCallback(async () => {
+
+  const fetchProfile = useCallback(async (forceRefresh = false) => {
+    if (!forceRefresh && currentUser) {
+      return { success: true, data: currentUser };
+    }
     try {
       const result = await dispatch(fetchUserProfile()).unwrap();
       return { success: true, data: result };
     } catch (error) {
       return { success: false, error };
     }
-  }, [dispatch]);
+  }, [dispatch, currentUser]);
 
   const checkAuth = useCallback(async () => {
     try {
       const result = await dispatch(checkAuthState()).unwrap();
-    
+
       return { success: true, data: result };
     } catch (error) {
       return { success: false, error };
     }
   }, [dispatch]);
-  
-  
+
+
   const clearAuthErrors = useCallback(() => {
     dispatch(clearErrors());
   }, [dispatch]);
-  
+
   const clearAuthMessage = useCallback(() => {
     dispatch(clearMessage());
   }, [dispatch]);
-  
+
   // Vérifications d'autorisation
-  
+
   const checkIsAdmin = useCallback(() => {
     return isAdmin;
   }, [isAdmin]);
-  
+
   const checkIsAgent = useCallback(() => {
     return isAgent;
   }, [isAgent]);
-  
+
   const checkHasAgency = useCallback(() => {
     return hasAgency;
   }, [hasAgency]);
-  
+
   return {
     // État
     currentUser,
@@ -114,7 +117,7 @@ export const useAuth = () => {
     error,
     message,
     isLoading: status === 'loading',
-    
+
     // Actions
     login: loginUser,
     register: registerUser,
@@ -125,7 +128,7 @@ export const useAuth = () => {
     // changePassword: changeUserPassword,
     clearErrors: clearAuthErrors,
     clearMessage: clearAuthMessage,
-    
+
     // Vérifications d'autorisation
     isAdmin: checkIsAdmin(),
     isAgent: checkIsAgent(),

@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
     createExpedition as createExpeditionThunk,
@@ -13,18 +14,32 @@ export const useExpedition = () => {
     const dispatch = useDispatch();
 
     // Sélecteurs de l'état
-    const { expeditions, status, error, message } = useSelector(state => state.expedition);
+    const { expeditions, meta, status, error, message } = useSelector(state => state.expedition);
     const { list: products, status: productStatus } = useSelector(state => state.products);
 
     // Actions
-    const createExpedition = (data) => dispatch(createExpeditionThunk(data));
-    const loadExpeditions = () => dispatch(fetchExpeditions());
-    const resetStatus = () => dispatch(clearExpeditionStatus());
-    const loadProducts = () => dispatch(fetchProducts());
+    const createExpedition = useCallback((data) => dispatch(createExpeditionThunk(data)), [dispatch]);
+
+    const loadExpeditions = useCallback((page = 1, forceRefresh = false) => {
+        if (!forceRefresh && expeditions.length > 0 && meta.current_page === page && status === 'succeeded') {
+            return;
+        }
+        return dispatch(fetchExpeditions(page));
+    }, [dispatch, expeditions.length, meta.current_page, status]);
+
+    const resetStatus = useCallback(() => dispatch(clearExpeditionStatus()), [dispatch]);
+
+    const loadProducts = useCallback((forceRefresh = false) => {
+        if (!forceRefresh && products && products.length > 0 && productStatus === 'succeeded') {
+            return;
+        }
+        return dispatch(fetchProducts());
+    }, [dispatch, products, productStatus]);
 
     return {
         // État
         expeditions,
+        meta,
         products,
         status,
         productStatus,

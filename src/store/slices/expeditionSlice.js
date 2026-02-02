@@ -21,16 +21,19 @@ export const createExpedition = createAsyncThunk(
     }
 );
 
-// Lister les expéditions
+// Lister les expéditions avec pagination
 export const fetchExpeditions = createAsyncThunk(
     "expedition/fetchAll",
-    async (_, { rejectWithValue }) => {
+    async (page = 1, { rejectWithValue }) => {
         try {
-            const result = await expeditionsApi.listExpeditions();
+            const result = await expeditionsApi.listExpeditions(page);
             if (!result.success) {
                 return rejectWithValue(result.message);
             }
-            return result.data;
+            return {
+                data: result.data,
+                meta: result.meta
+            };
         } catch (error) {
             return rejectWithValue(error.message || "Erreur lors du chargement");
         }
@@ -41,6 +44,12 @@ const expeditionSlice = createSlice({
     name: "expedition",
     initialState: {
         expeditions: [],
+        meta: {
+            current_page: 1,
+            last_page: 1,
+            per_page: 20,
+            total: 0
+        },
         currentExpedition: null,
         status: "idle", // 'idle' | 'loading' | 'succeeded' | 'failed'
         error: null,
@@ -80,7 +89,8 @@ const expeditionSlice = createSlice({
             })
             .addCase(fetchExpeditions.fulfilled, (state, action) => {
                 state.status = "succeeded";
-                state.expeditions = action.payload;
+                state.expeditions = action.payload.data;
+                state.meta = action.payload.meta || state.meta;
             })
             .addCase(fetchExpeditions.rejected, (state, action) => {
                 state.status = "failed";

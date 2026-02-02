@@ -5,7 +5,7 @@ import { useAuth } from "../hooks/useAuth";
 const LoginModal = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const { login, isLoading } = useAuth();
-  
+
   const [formData, setFormData] = useState({
     telephone: "",
     password: "",
@@ -26,26 +26,30 @@ const LoginModal = ({ isOpen, onClose }) => {
     setLocalError("");
 
     try {
+      console.log("[Login] Sending credentials:", { telephone: formData.telephone, type: formData.type });
       const result = await login({
         telephone: formData.telephone,
         password: formData.password,
         type: formData.type,
       });
-      
+      console.log("[Login] Result:", result);
+
       if (result.success) {
         const user = result.data?.user || {};
         const isAdminLike = user.is_agence_admin || user.role === "admin" || user.role === "is_agence_admin";
         const hasAgencyLinked = !!user.agence_id;
-        
+
         if (isAdminLike && !hasAgencyLinked) {
           navigate("/agency-profile");
         } else {
           navigate("/dashboard");
         }
       } else {
-        setLocalError(result.error || "Échec de la connexion");
+        console.error("[Login] Failed:", result.message || result.error);
+        setLocalError(result.message || result.error || "Échec de la connexion");
       }
     } catch (err) {
+      console.error("[Login] Exception:", err);
       setLocalError("Une erreur est survenue lors de la connexion");
     }
   };
@@ -56,7 +60,7 @@ const LoginModal = ({ isOpen, onClose }) => {
     <div className="fixed inset-0 flex items-center justify-center z-50">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose}></div>
       <div className="relative w-full max-w-md px-4">
-        <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 sm:p-8 shadow-xl">
+        <div className="bg-white/10 backdrop-blur-md rounded-lg p-6 sm:p-8 shadow-xl">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 text-gray-300 hover:text-white"

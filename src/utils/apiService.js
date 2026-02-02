@@ -32,6 +32,7 @@ class ApiService {
     const headers = {
       "Content-Type": "application/json",
       Accept: "application/json",
+      "ngrok-skip-browser-warning": "true",
       ...customHeaders,
     };
 
@@ -46,13 +47,24 @@ class ApiService {
    * Gérer les erreurs de réponse
    */
   async handleResponse(response) {
+    console.log(`[ApiService] Response from ${response.url}: ${response.status} ${response.statusText}`);
     const contentType = response.headers.get("content-type");
     const isJson = contentType && contentType.includes("application/json");
 
-    const data = isJson ? await response.json() : await response.text();
+    let data;
+    const text = await response.text();
+    console.log(`[ApiService] Raw body (first 100 chars):`, text.substring(0, 100));
+
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch (e) {
+      console.warn("[ApiService] JSON parse error:", e.message);
+      data = { message: text || "Erreur de format de réponse" };
+    }
 
     // Si la réponse n'est pas OK (status 4xx ou 5xx)
     if (!response.ok) {
+      console.error(`Erreur API ${response.status}:`, data);
       const error = new Error(
         data?.message || data?.error || `Erreur HTTP: ${response.status}`
       );
@@ -189,7 +201,10 @@ class ApiService {
   async upload(endpoint, formData, options = {}) {
     try {
       // Ne pas définir Content-Type pour FormData (le navigateur le fait automatiquement)
-      const headers = { ...options.headers };
+      const headers = {
+        "ngrok-skip-browser-warning": "true",
+        ...options.headers
+      };
       if (this.token) {
         headers["Authorization"] = `Bearer ${this.token}`;
       }

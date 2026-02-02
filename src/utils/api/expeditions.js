@@ -31,16 +31,20 @@ export const expeditionsApi = {
     },
 
     /**
-     * Lister les expéditions de l'agence
+     * Lister les expéditions de l'agence avec pagination
+     * @param {number} page - Numéro de la page
      * @returns {Promise<Object>}
      */
-    async listExpeditions() {
+    async listExpeditions(page = 1) {
         try {
-            const response = await apiService.get(API_ENDPOINTS.EXPEDITIONS.LIST);
+            const response = await apiService.get(`${API_ENDPOINTS.EXPEDITIONS.LIST}?page=${page}`);
+            console.log("response Liste Expeditions", response);
 
             return {
                 success: response.success !== false,
-                data: response.data || response,
+                data: response.data || [],
+                meta: response.meta || null,
+                message: response.message
             };
         } catch (error) {
             return {

@@ -8,6 +8,7 @@ import {
   fetchTarifGroupageAgence,
   createTarifGroupage,
   updateTarifGroupage,
+  deleteTarifGroupage,
   saveTarif,
   selectIndex,
   updateZonePercentage,
@@ -19,9 +20,9 @@ import {
 
 export const useTarifs = () => {
   const dispatch = useDispatch();
-  
+
   // Sélecteurs Redux
- const {
+  const {
     tarifs,
     existingTarifs,
     groupageTarifs,
@@ -33,69 +34,81 @@ export const useTarifs = () => {
     error,
     message
   } = useSelector(selectTarifsState);
-  
+
   const currentTarifData = useSelector(selectCurrentTarif);
-  
+
   // Actions encapsulées
-  const fetchAllTarifs = useCallback(async () => {
+  const fetchAllTarifs = useCallback(async (forceRefresh = false) => {
+    if (!forceRefresh && tarifs && tarifs.length > 0) {
+      return { success: true, data: tarifs };
+    }
     try {
       return await dispatch(fetchTarifs()).unwrap();
     } catch (error) {
       console.error('Erreur lors de la récupération des tarifs:', error);
       return { success: false, error };
     }
-  }, [dispatch]);
-  
+  }, [dispatch, tarifs]);
+
   const fetchAgencyTarifsData = useCallback(async (forceRefresh = false) => {
+    if (!forceRefresh && existingTarifs && existingTarifs.length > 0) {
+      return { success: true, data: existingTarifs };
+    }
     try {
       return await dispatch(fetchAgencyTarifs(forceRefresh)).unwrap();
     } catch (error) {
       console.error("Erreur lors de la récupération des tarifs de l'agence:", error);
       return { success: false, error };
     }
-  }, [dispatch]);
+  }, [dispatch, existingTarifs]);
 
- // === TARIFS GROUPAGE ===
-  const fetchAllTarifsGroupageBase = useCallback(async () => {
+  // === TARIFS GROUPAGE ===
+  const fetchAllTarifsGroupageBase = useCallback(async (forceRefresh = false) => {
+    if (!forceRefresh && groupageTarifs && groupageTarifs.length > 0) {
+      return { success: true, data: groupageTarifs };
+    }
     try {
       return await dispatch(fetchTarifsGroupage()).unwrap();
     } catch (error) {
       console.error("Erreur lors du chargement des tarifs groupage:", error);
       return { success: false, error };
     }
-  }, [dispatch]);
+  }, [dispatch, groupageTarifs]);
 
-  const fetchAgencyTarifsGroupage = useCallback(async () => {
+  const fetchAgencyTarifsGroupage = useCallback(async (forceRefresh = false) => {
+    if (!forceRefresh && existingGroupageTarifs && existingGroupageTarifs.length > 0) {
+      return { success: true, data: existingGroupageTarifs };
+    }
     try {
       return await dispatch(fetchTarifGroupageAgence()).unwrap();
     } catch (error) {
       console.error("Erreur lors du chargement des tarifs groupage agence:", error);
       return { success: false, error };
     }
-  }, [dispatch]);
+  }, [dispatch, existingGroupageTarifs]);
   const saveGroupageTarifData = useCallback(async (payload) => {
     try {
-       return await dispatch(createTarifGroupage(payload)).unwrap();
+      return await dispatch(createTarifGroupage(payload)).unwrap();
     } catch (error) {
       console.error('Erreur lors de la sauvegarde du tarif:', error);
       return { success: false, error };
     }
   }, [dispatch]);
-  
-const updateGroupageTarifData = useCallback(
-  async (id, payload) => {
-    try {
-      return await dispatch(updateTarifGroupage({ id, data: payload })).unwrap();
-    } catch (error) {
-      console.error("Erreur lors de la mise à jour du tarif:", error);
-      return { success: false, error };
-    }
-  },
-  [dispatch]
-);
+
+  const updateGroupageTarifData = useCallback(
+    async (id, payload) => {
+      try {
+        return await dispatch(updateTarifGroupage({ id, data: payload })).unwrap();
+      } catch (error) {
+        console.error("Erreur lors de la mise à jour du tarif:", error);
+        return { success: false, error };
+      }
+    },
+    [dispatch]
+  );
 
 
-  
+
   const saveTarifData = useCallback(async () => {
     try {
       return await dispatch(saveTarif()).unwrap();
@@ -104,30 +117,30 @@ const updateGroupageTarifData = useCallback(
       return { success: false, error };
     }
   }, [dispatch]);
-  
+
   const selectTarifIndex = useCallback((index) => {
     dispatch(selectIndex(index));
   }, [dispatch]);
-  
+
   const updateZonePercentageValue = useCallback((zoneId, percentage) => {
     dispatch(updateZonePercentage({ zoneId, percentage }));
   }, [dispatch]);
-  
+
   const updateZones = useCallback((zones) => {
     dispatch(updateNewTarifZones(zones));
   }, [dispatch]);
-  
+
   const clearMessageNotification = useCallback(() => {
     dispatch(clearMessage());
   }, [dispatch]);
-  
+
   const getCurrentTarif = useCallback(() => {
     return currentTarifData;
   }, [currentTarifData]);
-  
+
   const getIndices = useCallback(() => {
     if (!tarifs || !Array.isArray(tarifs)) return [];
-    
+
     return tarifs
       .filter(tarif => tarif?.indice)
       .map(tarif => ({
@@ -135,7 +148,16 @@ const updateGroupageTarifData = useCallback(
         label: `Indice ${tarif.indice}`
       }));
   }, [tarifs]);
-  
+
+  const deleteGroupageTarifData = useCallback(async (id) => {
+    try {
+      return await dispatch(deleteTarifGroupage(id)).unwrap();
+    } catch (error) {
+      console.error('Erreur lors de la suppression du tarif:', error);
+      return { success: false, error };
+    }
+  }, [dispatch]);
+
   return {
     // État
     loading,
@@ -154,8 +176,9 @@ const updateGroupageTarifData = useCallback(
     fetchAgencyTarifs: fetchAgencyTarifsData,
     fetchTarifsGroupageBase: fetchAllTarifsGroupageBase,
     fetchTarifGroupageAgence: fetchAgencyTarifsGroupage,
- createTarifGroupage: saveGroupageTarifData,
-  updateTarifGroupage: updateGroupageTarifData,
+    createTarifGroupage: saveGroupageTarifData,
+    updateTarifGroupage: updateGroupageTarifData,
+    deleteTarifGroupage: deleteGroupageTarifData,
     saveTarif: saveTarifData,
     selectIndex: selectTarifIndex,
     updateZonePercentage: updateZonePercentageValue,

@@ -32,15 +32,14 @@ const Home = () => {
       </div>
 
       {/* Header avec fond transparent/translucide */}
-      <header className={`fixed w-full top-0 z-50 transition-all duration-300 ${
-        scrolled ? 'bg-black/80 backdrop-blur-sm' : 'bg-transparent'
-      }`}>
+      <header className={`fixed w-full top-0 z-50 transition-all duration-300 ${scrolled ? 'bg-black/80 backdrop-blur-sm' : 'bg-transparent'
+        }`}>
         <div className="w-full max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <Link to="/" className="flex items-center">
             <img src={logo} alt="Tour Shop" className="h-8 w-auto sm:h-10" />
           </Link>
           <div className="flex items-center gap-3 sm:gap-4">
-            <button 
+            <button
               onClick={() => setLoginModalOpen(true)}
               className="text-sm sm:text-base text-white hover:text-blue-400 px-2 py-1 transition-colors"
             >
@@ -48,7 +47,7 @@ const Home = () => {
             </button>
             <button
               onClick={() => setRegisterModalOpen(true)}
-              className="bg-blue-600 text-white px-4 sm:px-6 py-2 rounded-full text-sm font-medium hover:bg-blue-700 transition-all shadow-lg hover:shadow-blue-500/25"
+              className="bg-blue-600 text-white px-4 sm:px-6 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-all shadow-lg hover:shadow-blue-500/25"
             >
               Inscription
             </button>
@@ -68,7 +67,7 @@ const Home = () => {
                 <span className="text-blue-400 relative ml-2">
                   Simplicité
                   <svg className="absolute -bottom-1 sm:-bottom-2 left-0 w-full" height="10" viewBox="0 0 100 10" fill="none">
-                    <path d="M2 5C20 8 40 2 60 5C80 8 98 3 98 3" stroke="#60A5FA" strokeWidth="3" strokeLinecap="round"/>
+                    <path d="M2 5C20 8 40 2 60 5C80 8 98 3 98 3" stroke="#60A5FA" strokeWidth="3" strokeLinecap="round" />
                   </svg>
                 </span>
               </span>
@@ -85,7 +84,7 @@ const Home = () => {
         {/* Section d'introduction détaillée */}
         <div className="w-full max-w-6xl mx-auto px-6 py-4 sm:py-4 lg:py-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 text-white">
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 sm:p-6 hover:bg-white/15 transition-all">
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 sm:p-6 hover:bg-white/15 transition-all">
               <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 text-blue-400">Gestion des Expéditions</h3>
               <ul className="space-y-2 sm:space-y-3 text-gray-200">
                 <li className="flex items-start">
@@ -109,7 +108,7 @@ const Home = () => {
               </ul>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 hover:bg-white/15 transition-all">
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 hover:bg-white/15 transition-all">
               <h3 className="text-xl font-semibold mb-3 text-blue-400">Gestion de la Clientèle</h3>
               <ul className="space-y-2 text-gray-200">
                 <li className="flex items-start">
@@ -133,7 +132,7 @@ const Home = () => {
               </ul>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 hover:bg-white/15 transition-all md:col-span-2 lg:col-span-1">
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 hover:bg-white/15 transition-all md:col-span-2 lg:col-span-1">
               <h3 className="text-xl font-semibold mb-3 text-blue-400">Optimisation & Rapports</h3>
               <ul className="space-y-2 text-gray-200">
                 <li className="flex items-start">
@@ -161,12 +160,12 @@ const Home = () => {
       </main>
 
       {/* Modales */}
-      <LoginModal 
-        isOpen={loginModalOpen} 
-        onClose={() => setLoginModalOpen(false)} 
+      <LoginModal
+        isOpen={loginModalOpen}
+        onClose={() => setLoginModalOpen(false)}
       />
-      <RegisterModal 
-        isOpen={registerModalOpen} 
+      <RegisterModal
+        isOpen={registerModalOpen}
         onClose={() => setRegisterModalOpen(false)}
       />
     </div>

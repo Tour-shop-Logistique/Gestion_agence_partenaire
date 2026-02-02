@@ -125,6 +125,32 @@ export const tarifsApi = {
   },
 
   /**
+   * Supprimer un tarif groupage
+   * @param {string|number} tarifId - ID du tarif
+   * @returns {Promise<Object>}
+   */
+  async deleteTarifGroupage(tarifId) {
+    try {
+      const endpoint = API_ENDPOINTS.TARIFS.Delete_GROUPAGE.replace(
+        ":tarif",
+        String(tarifId)
+      );
+      const response = await apiService.delete(endpoint);
+
+      return {
+        success: response.success !== false,
+        data: response,
+        message: response.message || "Tarif groupage supprimé avec succès",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || "Erreur lors de la suppression du tarif groupage",
+      };
+    }
+  },
+
+  /**
    * Obtenir tous les tarifs publics avec filtres optionnels
    * @param {Object} filters - Filtres optionnels
    * @returns {Promise<Object>}
