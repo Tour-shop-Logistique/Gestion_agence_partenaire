@@ -2,8 +2,8 @@
  * Configuration de l'API pour l'application Agence Partenaire
  */
 
-// Configuration de base de l'API (utilisation du proxy en dev)
-export const API_BASE_URL = "/api";
+// Configuration de base de l'API (utilisation de la variable d'env ou du proxy en dev)
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 
 // Endpoints de l'API
 export const API_ENDPOINTS = {
