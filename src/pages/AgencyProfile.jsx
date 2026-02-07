@@ -4,14 +4,25 @@ import DashboardLayout from "../components/DashboardLayout";
 import { useAgency } from "../hooks/useAgency";
 import { selectIsAdmin } from "../store/slices/authSlice";
 import { getLogoUrl } from "../utils/apiConfig";
-import logo from "../assets/logo_transparent.png";
+import {
+  BuildingOffice2Icon,
+  MapPinIcon,
+  PhoneIcon,
+  ClockIcon,
+  PencilSquareIcon,
+  CheckIcon,
+  XMarkIcon,
+  ArrowPathIcon,
+  GlobeAltIcon,
+  MapIcon,
+  BriefcaseIcon,
+  CameraIcon
+} from "@heroicons/react/24/outline";
 
 const AgencyProfile = () => {
   const {
     data: agencyData,
-    status,
     error: agencyError,
-    loading,
     fetchAgencyData,
     updateAgencyData,
     setupAgency,
@@ -41,19 +52,9 @@ const AgencyProfile = () => {
     horaires: [
       { jour: "lundi", ouverture: "08:00", fermeture: "18:00", ferme: false },
       { jour: "mardi", ouverture: "08:00", fermeture: "18:00", ferme: false },
-      {
-        jour: "mercredi",
-        ouverture: "08:00",
-        fermeture: "18:00",
-        ferme: false,
-      },
+      { jour: "mercredi", ouverture: "08:00", fermeture: "18:00", ferme: false },
       { jour: "jeudi", ouverture: "08:00", fermeture: "18:00", ferme: false },
-      {
-        jour: "vendredi",
-        ouverture: "08:00",
-        fermeture: "18:00",
-        ferme: false,
-      },
+      { jour: "vendredi", ouverture: "08:00", fermeture: "18:00", ferme: false },
       { jour: "samedi", ouverture: "08:00", fermeture: "12:00", ferme: false },
     ],
     logo: null,
@@ -61,12 +62,8 @@ const AgencyProfile = () => {
 
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
-
-  // État pour stocker les données originales avant modification
   const [originalFormData, setOriginalFormData] = useState(null);
 
-
-  // Mettre à jour le formulaire quand les données de l'agence changent
   useEffect(() => {
     if (agencyData && agencyData.agence) {
       const agence = agencyData.agence;
@@ -84,7 +81,6 @@ const AgencyProfile = () => {
       if (agence.commune) newFormData.commune = agence.commune;
       if (agence.logo) newFormData.logo = agence.logo;
 
-      // Gérer les coordonnées GPS
       if (agence.latitude !== undefined && agence.latitude !== null) {
         newFormData.latitude = String(agence.latitude);
       }
@@ -92,7 +88,6 @@ const AgencyProfile = () => {
         newFormData.longitude = String(agence.longitude);
       }
 
-      // Gérer les horaires selon la structure API
       if (Array.isArray(agence.horaires) && agence.horaires.length > 0) {
         const horairesMap = {};
         agence.horaires.forEach((h) => {
@@ -106,10 +101,7 @@ const AgencyProfile = () => {
               ...horaire,
               ouverture: updatedHoraire.ouverture || horaire.ouverture,
               fermeture: updatedHoraire.fermeture || horaire.fermeture,
-              ferme:
-                updatedHoraire.ferme !== undefined
-                  ? updatedHoraire.ferme
-                  : horaire.ferme,
+              ferme: updatedHoraire.ferme !== undefined ? updatedHoraire.ferme : horaire.ferme,
             };
           }
           return horaire;
@@ -117,15 +109,12 @@ const AgencyProfile = () => {
       }
 
       setFormData(newFormData);
-
-      // Sauvegarder les données originales pour l'annulation
       if (!originalFormData && agencyData?.agence) {
         setOriginalFormData({ ...newFormData });
       }
     }
   }, [agencyData, originalFormData]);
 
-  // Afficher les erreurs du hook
   useEffect(() => {
     if (agencyError) {
       setMessage({ type: "error", text: agencyError });
@@ -134,10 +123,7 @@ const AgencyProfile = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleLogoChange = (e) => {
@@ -145,9 +131,7 @@ const AgencyProfile = () => {
     if (file) {
       setLogoFile(file);
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setLogoPreview(reader.result);
-      };
+      reader.onloadend = () => setLogoPreview(reader.result);
       reader.readAsDataURL(file);
     }
   };
@@ -168,70 +152,23 @@ const AgencyProfile = () => {
             latitude: position.coords.latitude.toFixed(6),
             longitude: position.coords.longitude.toFixed(6),
           }));
-          setMessage({
-            type: "success",
-            text: "Localisation récupérée avec succès !",
-          });
+          setMessage({ type: "success", text: "Localisation récupérée avec succès !" });
+          setTimeout(() => setMessage({ type: "", text: "" }), 3000);
         },
-        (error) => {
-          console.error("Erreur de géolocalisation:", error);
-          setMessage({
-            type: "error",
-            text: "Impossible de récupérer la localisation. Veuillez activer la géolocalisation dans les paramètres de votre navigateur.",
-          });
+        () => {
+          setMessage({ type: "error", text: "Impossible de récupérer la localisation." });
         }
       );
-    } else {
-      setMessage({
-        type: "error",
-        text: "La géolocalisation n'est pas supportée par votre navigateur.",
-      });
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Form submitted");
-
-    // Empêcher toute sauvegarde par un non-admin
-    if (!isAdmin) {
-      setMessage({
-        type: "error",
-        text: "Vous n'avez pas les droits pour modifier le profil agence.",
-      });
-      return;
-    }
-
+    if (!isAdmin) return;
     setSaving(true);
     setMessage({ type: "", text: "" });
-    console.log("Saving state set to true");
 
     try {
-      // Construire la structure horaires par défaut si aucune structure détaillée
-      const defaultHoraires = [
-        { jour: "lundi", ouverture: "08:00", fermeture: "18:00", ferme: false },
-        { jour: "mardi", ouverture: "08:00", fermeture: "18:00", ferme: false },
-        {
-          jour: "mercredi",
-          ouverture: "08:00",
-          fermeture: "18:00",
-          ferme: false,
-        },
-        { jour: "jeudi", ouverture: "08:00", fermeture: "18:00", ferme: false },
-        {
-          jour: "vendredi",
-          ouverture: "08:00",
-          fermeture: "18:00",
-          ferme: false,
-        },
-        {
-          jour: "samedi",
-          ouverture: "08:00",
-          fermeture: "12:00",
-          ferme: false,
-        },
-      ];
-
       const agencyPayload = {
         nom_agence: formData.name,
         code_agence: formData.code_agence,
@@ -241,78 +178,24 @@ const AgencyProfile = () => {
         ville: formData.ville,
         commune: formData.commune,
         pays: formData.pays,
-        latitude:
-          formData.latitude === "" ? null : parseFloat(formData.latitude),
-        longitude:
-          formData.longitude === "" ? null : parseFloat(formData.longitude),
-        horaires:
-          Array.isArray(formData.horaires) && formData.horaires.length
-            ? formData.horaires
-            : defaultHoraires,
+        latitude: formData.latitude === "" ? null : parseFloat(formData.latitude),
+        longitude: formData.longitude === "" ? null : parseFloat(formData.longitude),
+        horaires: formData.horaires,
       };
 
-      if (logoFile) {
-        agencyPayload.logo = logoFile;
-      }
+      if (logoFile) agencyPayload.logo = logoFile;
 
-      // Utiliser le hook pour mettre à jour l'agence
-      // Si une agence existe déjà (avec un ID), effectuer une mise à jour, sinon configuration initiale
-      const hasAgencyId = !!(
-        agencyData?.agence?.id ||
-        agencyData?.id ||
-        agencyData?.agence_id
-      );
-
-      const result = hasAgencyId
-        ? await updateAgencyData(agencyPayload)
-        : await setupAgency(agencyPayload);
+      const hasAgencyId = !!(agencyData?.agence?.id || agencyData?.id);
+      const result = hasAgencyId ? await updateAgencyData(agencyPayload) : await setupAgency(agencyPayload);
 
       if (result.type?.includes("fulfilled") || result.success) {
-        setMessage({
-          type: "success",
-          text: hasAgencyId ? "Agence mise à jour avec succès !" : "Agence créée avec succès !",
-        });
+        setMessage({ type: "success", text: "Profil agence mis à jour avec succès !" });
         setIsEditing(false);
-
-        // Mettre à jour les données locales avec la réponse de l'API
-        if (result.agence) {
-          // Créer la structure attendue par le composant
-          const updatedAgencyData = {
-            agence: result.agence
-          };
-
-          // Mettre à jour le state local avec les nouvelles données
-          setFormData(prevFormData => ({
-            ...prevFormData,
-            name: result.agence.nom_agence || prevFormData.name,
-            code_agence: result.agence.code_agence || prevFormData.code_agence,
-            address: result.agence.adresse || prevFormData.address,
-            ville: result.agence.ville || prevFormData.ville,
-            commune: result.agence.commune || prevFormData.commune,
-            pays: result.agence.pays || prevFormData.pays,
-            telephone: result.agence.telephone || prevFormData.telephone,
-            description: result.agence.description || prevFormData.description,
-            latitude: result.agence.latitude ? String(result.agence.latitude) : prevFormData.latitude,
-            longitude: result.agence.longitude ? String(result.agence.longitude) : prevFormData.longitude,
-            horaires: Array.isArray(result.agence.horaires) && result.agence.horaires.length > 0
-              ? result.agence.horaires
-              : prevFormData.horaires
-          }));
-        } else {
-          // Recharger les données de l'agence si pas de données dans la réponse
-          await fetchAgencyData();
-        }
-      } else {
-        throw new Error(
-          result.error?.message || result.message || "Erreur lors de la sauvegarde de l'agence"
-        );
+        await fetchAgencyData();
+        setTimeout(() => setMessage({ type: "", text: "" }), 5000);
       }
     } catch (error) {
-      console.error("Erreur:", error);
-      setMessage({
-        type: "error",
-        text: error.message || "Erreur lors de la sauvegarde",
-      });
+      setMessage({ type: "error", text: "Erreur lors de la sauvegarde." });
     } finally {
       setSaving(false);
     }
@@ -320,635 +203,303 @@ const AgencyProfile = () => {
 
   const handleEditToggle = () => {
     if (isEditing) {
-      // Annuler les modifications - restaurer les données originales
-      if (originalFormData) {
-        setFormData({ ...originalFormData });
-      }
+      if (originalFormData) setFormData({ ...originalFormData });
       setIsEditing(false);
       setMessage({ type: "", text: "" });
     } else {
-      // Sauvegarder l'état actuel comme données originales avant modification
       setOriginalFormData({ ...formData });
       setIsEditing(true);
     }
   };
 
-  // Ne pas afficher de loader au chargement initial, seulement au niveau du bouton d'actualisation
-
   return (
     <DashboardLayout>
-      {/* Header avec titre et bouton d'action */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-            Profil de l'agence
-          </h1>
-          <p className="text-gray-600  mt-1 text-md">
-            Gérez les informations de votre agence
-          </p>
-        </div>
-        {isAdmin && (
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={async () => {
-                setRefreshing(true);
-                try {
-                  await fetchAgencyData();
-                  setMessage({
-                    type: "success",
-                    text: "Données actualisées avec succès !",
-                  });
-                  setTimeout(() => setMessage({ type: "", text: "" }), 3000);
-                } catch (error) {
-                  setMessage({
-                    type: "error",
-                    text: "Erreur lors de l'actualisation",
-                  });
-                  setTimeout(() => setMessage({ type: "", text: "" }), 3000);
-                } finally {
-                  setRefreshing(false);
-                }
-              }}
-              disabled={refreshing}
-              className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center disabled:opacity-50"
-              title="Actualiser les informations de l'agence"
-            >
-              {refreshing ? (
-                <>
-                  <svg
-                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Actualisation...
-                </>
-              ) : (
-                <>
-                  <svg
-                    className="w-4 h-4 mr-1"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                    ></path>
-                  </svg>
-                  Actualiser
-                </>
-              )}
-            </button>
-            <button
-              onClick={handleEditToggle}
-              className={`px-4 py-2 rounded-md text-sm font-medium flex items-center transition-all duration-200 ${isEditing
-                ? "bg-gray-200 hover:bg-gray-300 text-gray-800"
-                : "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
-                }`}
-            >
-              {isEditing ? (
-                <>
-                  <svg
-                    className="w-4 h-4 mr-2 inline"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                  Annuler
-                </>
-              ) : (
-                <>
-                  <svg
-                    className="w-4 h-4 mr-2 inline"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                    />
-                  </svg>
-                  Modifier le profil
-                </>
-              )}
-            </button>
+      <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-700">
+
+        {/* --- PREMIUM HERO HEADER --- */}
+        <div className="relative overflow-hidden rounded-3xl bg-white border border-slate-100 shadow-xl shadow-slate-200/50">
+          {/* Banner Gradient */}
+          <div className="h-32 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 relative">
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
           </div>
-        )}
-      </div>
 
-      {/* Message de notification */}
-      {message.text && (
-        <div
-          className={`mb-6 p-4 rounded-lg border ${message.type === "success"
-            ? "bg-green-50 border-green-200 text-green-800"
-            : message.type === "error"
-              ? "bg-red-50 border-red-200 text-red-800"
-              : "bg-blue-50 border-blue-200 text-blue-800"
-            }`}
-        >
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              {message.type === "success" && (
-                <svg
-                  className="h-5 w-5 text-green-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              )}
-              {message.type === "error" && (
-                <svg
-                  className="h-5 w-5 text-red-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              )}
-              {message.type === "info" && (
-                <svg
-                  className="h-5 w-5 text-blue-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              )}
-            </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium">{message.text}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Carte principale avec formulaire */}
-
-      <form onSubmit={handleSubmit} className="p-4 space-y-2">
-        {/* Section Informations générales */}
-        <div className="bg-gray-50 rounded-lg p-6 border border-gray-200 shadow-md overflow-hidden">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
-            <svg
-              className="w-5 h-5 mr-2 text-blue-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-              />
-            </svg>
-            Informations générales
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Nom de l'agence *
-              </label>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                disabled={!isAdmin || !isEditing}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Code de l'agence *
-              </label>
-              <input
-                type="text"
-                name="code_agence"
-                value={formData.code_agence}
-                onChange={handleInputChange}
-                disabled={!isAdmin || !isEditing}
-                required
-                placeholder="Ex: AGENT001"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Adresse *
-              </label>
-              <input
-                type="text"
-                name="address"
-                value={formData.address}
-                onChange={handleInputChange}
-                disabled={!isAdmin || !isEditing}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Ville *
-              </label>
-              <input
-                type="text"
-                name="ville"
-                value={formData.ville}
-                onChange={handleInputChange}
-                disabled={!isAdmin || !isEditing}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Commune *
-              </label>
-              <input
-                type="text"
-                name="commune"
-                value={formData.commune}
-                onChange={handleInputChange}
-                disabled={!isAdmin || !isEditing}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Pays
-              </label>
-              <input
-                type="text"
-                name="pays"
-                value={formData.pays}
-                onChange={handleInputChange}
-                disabled={!isAdmin || !isEditing}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Téléphone *
-              </label>
-              <input
-                type="tel"
-                name="telephone"
-                value={formData.telephone}
-                onChange={handleInputChange}
-                disabled={!isAdmin || !isEditing}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <div className="flex justify-between items-center mb-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Localisation GPS
-                </label>
-                <button
-                  type="button"
-                  onClick={getCurrentLocation}
-                  disabled={!isAdmin || !isEditing}
-                  className="text-xs bg-primary-100 text-primary-800 px-3 py-1.5 rounded-md hover:bg-primary-200 transition-colors flex items-center space-x-1 disabled:opacity-50"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                    />
-                  </svg>
-                  <span>Utiliser ma position actuelle</span>
-                </button>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">
-                    Latitude
-                  </label>
-                  <input
-                    type="text"
-                    name="latitude"
-                    value={formData.latitude}
-                    onChange={handleInputChange}
-                    disabled={!isAdmin || !isEditing}
-                    placeholder="Ex: 5.3541"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">
-                    Longitude
-                  </label>
-                  <input
-                    type="text"
-                    name="longitude"
-                    value={formData.longitude}
-                    onChange={handleInputChange}
-                    disabled={!isAdmin || !isEditing}
-                    placeholder="Ex: -4.0083"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Description
-              </label>
-              <textarea
-                name="description"
-                rows={2}
-                value={formData.description}
-                onChange={handleInputChange}
-                disabled={!isAdmin || !isEditing}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent disabled:bg-gray-100 transition-colors"
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Logo de l'agence
-              </label>
-              <div className="flex items-center space-x-6">
-                <div className="flex-shrink-0">
+          <div className="px-8 pb-8 flex flex-col sm:flex-row items-end sm:items-center justify-between gap-6 -mt-12 relative z-10">
+            <div className="flex flex-col sm:flex-row items-end sm:items-center gap-6">
+              {/* Logo Wrapper */}
+              <div className="relative group">
+                <div className="w-32 h-32 rounded-2xl bg-white p-2 shadow-2xl border border-slate-100 flex items-center justify-center overflow-hidden">
                   {logoPreview || (agencyData?.agence?.logo) ? (
                     <img
-                      className="h-16 w-16 object-contain rounded-full border-2 border-gray-200"
                       src={logoPreview || getLogoUrl(agencyData?.agence?.logo)}
-                      alt="Logo Preview"
+                      alt="Logo"
+                      className="w-full h-full object-contain"
                     />
                   ) : (
-                    <div className="h-16 w-16 rounded-full bg-gray-200 flex items-center justify-center text-gray-400">
-                      <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
+                    <BuildingOffice2Icon className="w-16 h-16 text-slate-200" />
                   )}
                 </div>
-                <label className="block w-full">
-                  <span className="sr-only">Choisir un logo</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleLogoChange}
-                    disabled={!isAdmin || !isEditing}
-                    className="block w-full text-sm text-gray-500
-                        file:mr-4 file:py-2 file:px-4
-                        file:rounded-md file:border-0
-                        file:text-sm file:font-semibold
-                        file:bg-blue-50 file:text-blue-700
-                        hover:file:bg-blue-100
-                        disabled:opacity-50"
-                  />
-                </label>
+                {isEditing && (
+                  <label className="absolute inset-0 flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px] rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                    <CameraIcon className="w-8 h-8 text-white" />
+                    <input type="file" className="hidden" accept="image/*" onChange={handleLogoChange} />
+                  </label>
+                )}
               </div>
-            </div>
-          </div>
-        </div>
-        <div className="pb-4" />
 
-        {/* Section Horaires d'ouverture */}
-        <div className="bg-gray-50 rounded-lg p-6 border border-gray-200 shadow-md overflow-hidden">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
-            <svg
-              className="w-5 h-5 mr-2 text-blue-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            Horaires d'ouverture
-          </h3>
-          <div className="space-y-4">
-            {formData.horaires.map((horaire, index) => (
-              <div
-                key={index}
-                className="bg-white rounded-lg p-4 border border-gray-200 hover:border-blue-300 transition-colors"
-              >
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
-                  <div className="font-medium text-gray-900 flex items-center">
-                    <div
-                      className={`w-3 h-3 rounded-full mr-3 ${horaire.ferme ? "bg-red-500" : "bg-green-500"
-                        }`}
-                    ></div>
-                    {horaire.jour.charAt(0).toUpperCase() +
-                      horaire.jour.slice(1)}
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="block text-xs text-gray-500 font-medium">
-                      Ouverture
-                    </label>
-                    <input
-                      type="time"
-                      value={horaire.ouverture}
-                      onChange={(e) =>
-                        handleHoraireChange(
-                          index,
-                          "ouverture",
-                          e.target.value
-                        )
-                      }
-                      disabled={!isAdmin || !isEditing || horaire.ferme}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 transition-colors text-sm"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="block text-xs text-gray-500 font-medium">
-                      Fermeture
-                    </label>
-                    <input
-                      type="time"
-                      value={horaire.fermeture}
-                      onChange={(e) =>
-                        handleHoraireChange(
-                          index,
-                          "fermeture",
-                          e.target.value
-                        )
-                      }
-                      disabled={!isAdmin || !isEditing || horaire.ferme}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 transition-colors text-sm"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-center">
-                    <label className="flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={horaire.ferme}
-                        onChange={(e) =>
-                          handleHoraireChange(
-                            index,
-                            "ferme",
-                            e.target.checked
-                          )
-                        }
-                        disabled={!isAdmin || !isEditing}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      />
-                      <span className="ml-2 text-sm text-gray-700 font-medium">
-                        Fermé
-                      </span>
-                    </label>
-                  </div>
+              <div className="space-y-1 py-2">
+                <div className="flex items-center gap-3">
+                  <h1 className="text-2xl font-black text-slate-900 tracking-tight">{formData.name || "Nouvelle Agence"}</h1>
+                  <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase tracking-wider rounded-lg border border-emerald-100">Actif</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-slate-500 font-bold text-sm">
+                  <span className="flex items-center gap-1.5"><BriefcaseIcon className="w-4 h-4" /> {formData.code_agence || "CODE-000"}</span>
+                  <span className="flex items-center gap-1.5"><MapPinIcon className="w-4 h-4" /> {formData.ville}, {formData.pays}</span>
                 </div>
               </div>
-            ))}
+            </div>
+
+            {isAdmin && (
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={async () => {
+                    setRefreshing(true);
+                    await fetchAgencyData();
+                    setRefreshing(false);
+                  }}
+                  className="p-3 bg-slate-50 text-slate-600 rounded-xl hover:bg-slate-100 transition-colors border border-slate-200"
+                  title="Actualiser"
+                >
+                  <ArrowPathIcon className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
+                </button>
+                <button
+                  onClick={handleEditToggle}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-black transition-all ${isEditing
+                      ? "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      : "bg-slate-950 text-white hover:bg-slate-800 shadow-lg shadow-slate-200"
+                    }`}
+                >
+                  {isEditing ? <XMarkIcon className="w-5 h-5" /> : <PencilSquareIcon className="w-5 h-5" />}
+                  {isEditing ? "ANNULER" : "MODIFIER LE PROFIL"}
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Boutons d'action */}
+        {/* Notifications */}
+        {message.text && (
+          <div className={`p-4 rounded-2xl border flex items-center gap-4 animate-in slide-in-from-top-4 duration-300 ${message.type === "success" ? "bg-emerald-50 border-emerald-100 text-emerald-800" :
+              message.type === "error" ? "bg-rose-50 border-rose-100 text-rose-800" :
+                "bg-indigo-50 border-indigo-100 text-indigo-800"
+            }`}>
+            <div className={`p-2 rounded-xl ${message.type === "success" ? "bg-emerald-100" :
+                message.type === "error" ? "bg-rose-100" : "bg-indigo-100"
+              }`}>
+              {message.type === "success" ? <CheckIcon className="w-5 h-5" /> : <ArrowPathIcon className="w-5 h-5" />}
+            </div>
+            <p className="text-sm font-black uppercase tracking-tight">{message.text}</p>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+            {/* Main Info Column */}
+            <div className="lg:col-span-2 space-y-8">
+              <section className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm space-y-8">
+                <div className="flex items-center gap-3 border-b border-slate-50 pb-5">
+                  <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
+                    <BuildingOffice2Icon className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Informations Générales</h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.1em] ml-1">Désignation Officielle</label>
+                    <input
+                      type="text" name="name" value={formData.name} onChange={handleInputChange} disabled={!isEditing}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none disabled:opacity-60 disabled:bg-slate-50/50"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.1em] ml-1">Code Agence (Identification)</label>
+                    <input
+                      type="text" name="code_agence" value={formData.code_agence} onChange={handleInputChange} disabled={!isEditing}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none disabled:opacity-60"
+                    />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.1em] ml-1">Adresse Physique Complète</label>
+                    <input
+                      type="text" name="address" value={formData.address} onChange={handleInputChange} disabled={!isEditing}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none disabled:opacity-60"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.1em] ml-1">Ville</label>
+                    <input
+                      type="text" name="ville" value={formData.ville} onChange={handleInputChange} disabled={!isEditing}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none disabled:opacity-60"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.1em] ml-1">Commune / District</label>
+                    <input
+                      type="text" name="commune" value={formData.commune} onChange={handleInputChange} disabled={!isEditing}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none disabled:opacity-60"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.1em] ml-1">Contact Téléphonique</label>
+                    <div className="relative">
+                      <PhoneIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        type="tel" name="telephone" value={formData.telephone} onChange={handleInputChange} disabled={!isEditing}
+                        className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none disabled:opacity-60"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.1em] ml-1">Pays d'Opération</label>
+                    <div className="relative">
+                      <GlobeAltIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        type="text" name="pays" value={formData.pays} onChange={handleInputChange} disabled={!isEditing}
+                        className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none disabled:opacity-60"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm space-y-8">
+                <div className="flex items-center justify-between border-b border-slate-50 pb-5">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
+                      <MapIcon className="w-5 h-5" />
+                    </div>
+                    <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Positionnement GPS</h3>
+                  </div>
+                  {isEditing && (
+                    <button
+                      type="button" onClick={getCurrentLocation}
+                      className="text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-700 underline underline-offset-4"
+                    >
+                      Auto-Détecter
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.1em] ml-1">Latitude</label>
+                    <input
+                      type="text" name="latitude" value={formData.latitude} onChange={handleInputChange} disabled={!isEditing}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.1em] ml-1">Longitude</label>
+                    <input
+                      type="text" name="longitude" value={formData.longitude} onChange={handleInputChange} disabled={!isEditing}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none"
+                    />
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            {/* Sidebar Info Column */}
+            <div className="space-y-8">
+              <section className="bg-slate-900 text-white p-8 rounded-3xl shadow-xl shadow-slate-200 border border-slate-900 space-y-8 h-full">
+                <div className="flex items-center gap-3 border-b border-white/10 pb-5">
+                  <div className="p-2 bg-white/10 rounded-lg text-white">
+                    <ClockIcon className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-lg font-black uppercase tracking-tight">Horaires</h3>
+                </div>
+
+                <div className="space-y-4">
+                  {formData.horaires.map((horaire, index) => (
+                    <div key={index} className="group relative">
+                      <div className={`p-4 rounded-2xl border transition-all ${horaire.ferme ? 'bg-white/10 border-white/10 opacity-50' : 'bg-white/10 border-white/10 active:bg-white/15'
+                        }`}>
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-xs font-black uppercase tracking-[0.2em]">{horaire.jour}</span>
+                          <div className="flex items-center gap-2">
+                            {isEditing && (
+                              <input
+                                type="checkbox" checked={horaire.ferme} onChange={(e) => handleHoraireChange(index, "ferme", e.target.checked)}
+                                className="accent-indigo-500 w-4 h-4"
+                              />
+                            )}
+                            <span className={`text-[9px] font-black px-2 py-0.5 rounded uppercase ${horaire.ferme ? 'bg-rose-500/20 text-rose-300' : 'bg-emerald-500/20 text-emerald-300'}`}>
+                              {horaire.ferme ? 'Fermé' : 'Ouvert'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {!horaire.ferme && (
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="time" value={horaire.ouverture} onChange={(e) => handleHoraireChange(index, "ouverture", e.target.value)}
+                              disabled={!isEditing}
+                              className="flex-1 bg-black/20 border-white/10 rounded-lg px-2 py-1.5 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                            />
+                            <span className="text-white/20 font-black">/</span>
+                            <input
+                              type="time" value={horaire.fermeture} onChange={(e) => handleHoraireChange(index, "fermeture", e.target.value)}
+                              disabled={!isEditing}
+                              className="flex-1 bg-black/20 border-white/10 rounded-lg px-2 py-1.5 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </div>
+          </div>
+
+          {/* Description Section Full Width */}
+          <section className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm space-y-6">
+             <div className="flex items-center gap-3 border-b border-slate-50 pb-5">
+                <div className="p-2 bg-slate-900 rounded-lg text-white">
+                  <BriefcaseIcon className="w-5 h-5" />
+                </div>
+                <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Description Agence</h3>
+              </div>
+              <textarea
+                name="description" rows={4} value={formData.description} onChange={handleInputChange} disabled={!isEditing}
+                placeholder="Rédigez un court message de présentation..."
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium text-slate-600 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none resize-none"
+              />
+               <p className="text-[10px] text-slate-400 font-bold leading-relaxed">
+                 Cette description sera visible par vos clients lors de la prise de commande et dans l'annuaire des partenaires.
+               </p>
+          </section>
+        </form>
+
+        {/* Floating Action Button for saving (visible only if editing) */}
         {isEditing && (
-          <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+          <div className="fixed bottom-10 right-10 z-50 animate-in slide-in-from-bottom-10">
             <button
-              type="button"
-              onClick={handleEditToggle}
-              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium"
-            >
-              <svg
-                className="w-4 h-4 mr-2 inline"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-              Annuler
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="inline-flex items-center px-6 py-3 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              type="button" onClick={handleSubmit} disabled={saving}
+              className="flex items-center gap-3 px-8 py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-2xl shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-95 disabled:bg-slate-400"
             >
               {saving ? (
-                <>
-                  <svg
-                    className="animate-spin -ml-0.5 mr-2 h-4 w-4 text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
-                  Sauvegarde...
-                </>
+                <ArrowPathIcon className="w-6 h-6 animate-spin" />
               ) : (
-                <>
-                  <svg
-                    className="-ml-0.5 mr-2 h-4 w-4 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  Sauvegarder
-                </>
+                <CheckIcon className="w-6 h-6" />
               )}
+              <span>SAUVEGARDER LES MODIFICATIONS</span>
             </button>
           </div>
         )}
-      </form>
 
+      </div>
     </DashboardLayout>
   );
 };

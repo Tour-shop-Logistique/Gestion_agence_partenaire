@@ -11,31 +11,54 @@ export const checkAuthState = createAsyncThunk(
   "auth/checkAuthState",
   async (_, { dispatch, rejectWithValue }) => {
     try {
-      // const token = localStorage.getItem("auth_token");
+      const token = localStorage.getItem("auth_token");
 
-      // if (!token) {
-      //   return rejectWithValue("No token found");
-      // }
+      if (!token) {
+        return rejectWithValue("No token found");
+      }
 
-      // // Définir le token dans le service API
-      // apiService.setAuthToken(token);
+      // S'assurer que le token est présent dans le service API
+      apiService.setAuthToken(token);
 
-      // Récupérer le profil utilisateur
+      // Récupérer le profil utilisateur pour valider le token
       const result = await authApi.getProfile();
 
       if (!result.success) {
-        // Token invalide, supprimer
-        localStorage.removeItem("auth_token");
-        apiService.removeAuthToken();
-        return rejectWithValue(result.message);
+        // On ne déconnecte que si c'est une erreur d'authentification (401/403)
+        // ou si l'API nous dit explicitement que le token est invalide
+        const isAuthError = result.error?.status === 401 || result.error?.status === 403;
+
+        if (isAuthError) {
+          localStorage.removeItem("auth_token");
+          localStorage.removeItem("auth_user");
+          apiService.removeAuthToken();
+          return rejectWithValue(result.message);
+        }
+
+        // Pour les autres erreurs (500, réseau, etc.), on garde la session locale
+        // mais on rejette pour informer le composant
+        return rejectWithValue({
+          message: result.message,
+          keepSession: true
+        });
       }
 
+      // Sauvegarder le profil mis à jour
+      localStorage.setItem("auth_user", JSON.stringify(result.data));
       return result.data;
     } catch (error) {
-      // En cas d'erreur, nettoyer le token
-      localStorage.removeItem("auth_token");
-      apiService.removeAuthToken();
-      return rejectWithValue(error.message || "Session invalide");
+      const isAuthError = error.status === 401 || error.status === 403;
+
+      if (isAuthError) {
+        localStorage.removeItem("auth_token");
+        localStorage.removeItem("auth_user");
+        apiService.removeAuthToken();
+      }
+
+      return rejectWithValue({
+        message: error.message || "Session invalide",
+        keepSession: !isAuthError
+      });
     }
   }
 );
@@ -106,11 +129,20 @@ export const fetchUserProfile = createAsyncThunk(
 /**
  * Slice Redux pour l'authentification
  */
+const getInitialUser = () => {
+  try {
+    const user = localStorage.getItem("auth_user");
+    return user ? JSON.parse(user) : null;
+  } catch (e) {
+    return null;
+  }
+};
+
 const authSlice = createSlice({
   name: "auth",
   initialState: {
-    currentUser: null,
-    isAuthenticated: false,
+    currentUser: getInitialUser(),
+    isAuthenticated: !!localStorage.getItem("auth_token"),
     status: "idle", // 'idle' | 'loading' | 'succeeded' | 'failed'
     error: null,
     message: null,
@@ -144,13 +176,15 @@ const authSlice = createSlice({
       .addCase(login.fulfilled, (state, action) => {
         state.status = "succeeded";
         state.isAuthenticated = true;
-        state.currentUser = action.payload.user || action.payload;
+        const user = action.payload.user || action.payload;
+        state.currentUser = user;
         state.message = "Connexion réussie";
 
-        // Sauvegarder le token
+        // Sauvegarder le token et l'utilisateur
         if (action.payload.token) {
           apiService.setAuthToken(action.payload.token);
           localStorage.setItem("auth_token", action.payload.token);
+          localStorage.setItem("auth_user", JSON.stringify(user));
         }
       })
       .addCase(login.rejected, (state, action) => {
@@ -167,13 +201,15 @@ const authSlice = createSlice({
       .addCase(register.fulfilled, (state, action) => {
         state.status = "succeeded";
         state.isAuthenticated = true;
-        state.currentUser = action.payload.user || action.payload;
+        const user = action.payload.user || action.payload;
+        state.currentUser = user;
         state.message = "Inscription réussie";
 
-        // Sauvegarder le token
+        // Sauvegarder le token et l'utilisateur
         if (action.payload.token) {
           apiService.setAuthToken(action.payload.token);
           localStorage.setItem("auth_token", action.payload.token);
+          localStorage.setItem("auth_user", JSON.stringify(user));
         }
       })
       .addCase(register.rejected, (state, action) => {
@@ -191,9 +227,10 @@ const authSlice = createSlice({
         state.currentUser = null;
         state.message = "Déconnexion réussie";
 
-        // Supprimer le token
+        // Supprimer le token et l'utilisateur
         apiService.removeAuthToken();
         localStorage.removeItem("auth_token");
+        localStorage.removeItem("auth_user");
       })
       .addCase(logout.rejected, (state, action) => {
         state.status = "failed";
@@ -204,6 +241,7 @@ const authSlice = createSlice({
         state.currentUser = null;
         apiService.removeAuthToken();
         localStorage.removeItem("auth_token");
+        localStorage.removeItem("auth_user");
       })
 
       // Fetch User Profile
@@ -234,10 +272,17 @@ const authSlice = createSlice({
         state.isAuthenticated = true;
       })
       .addCase(checkAuthState.rejected, (state, action) => {
-        state.status = "idle";
-        state.error = null;
-        state.isAuthenticated = false;
-        state.currentUser = null;
+        // On ne remet à zéro que si keepSession n'est pas vrai
+        if (!action.payload?.keepSession) {
+          state.isAuthenticated = false;
+          state.currentUser = null;
+          state.status = "idle";
+        } else {
+          // Si on garde la session, on marque l'état comme succeeded car 
+          // on a quand même les infos locales
+          state.status = "succeeded";
+          state.error = action.payload.message;
+        }
       });
   },
 });

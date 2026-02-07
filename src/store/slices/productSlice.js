@@ -21,10 +21,27 @@ export const fetchProducts = createAsyncThunk(
     }
 );
 
+// Lister les catégories
+export const fetchCategories = createAsyncThunk(
+    "products/fetchCategories",
+    async (_, { rejectWithValue }) => {
+        try {
+            const result = await productsApi.listCategories();
+            if (!result.success) {
+                return rejectWithValue(result.message);
+            }
+            return result.data;
+        } catch (error) {
+            return rejectWithValue(error.message || "Erreur lors du chargement des catégories");
+        }
+    }
+);
+
 const productSlice = createSlice({
     name: "products",
     initialState: {
         list: [],
+        categories: [],
         status: "idle",
         error: null,
     },
@@ -39,6 +56,17 @@ const productSlice = createSlice({
                 state.list = action.payload;
             })
             .addCase(fetchProducts.rejected, (state, action) => {
+                state.status = "failed";
+                state.error = action.payload;
+            })
+            .addCase(fetchCategories.pending, (state) => {
+                state.status = "loading";
+            })
+            .addCase(fetchCategories.fulfilled, (state, action) => {
+                state.status = "succeeded";
+                state.categories = action.payload;
+            })
+            .addCase(fetchCategories.rejected, (state, action) => {
                 state.status = "failed";
                 state.error = action.payload;
             });

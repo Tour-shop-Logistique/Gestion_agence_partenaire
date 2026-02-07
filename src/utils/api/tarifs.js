@@ -13,8 +13,9 @@ export const tarifsApi = {
   async getTarifs() {
     try {
       const response = await apiService.get(API_ENDPOINTS.TARIFS.LIST);
-
+      console.log("response tarifs", response);
       return {
+
         success: response.success !== false,
         data: response,
         message: response.message || "Tarifs récupérés avec succès",
@@ -158,7 +159,7 @@ export const tarifsApi = {
   async getTarifsBase() {
     try {
       const response = await apiService.get(API_ENDPOINTS.TARIFS.LIST_BASE);
-
+      console.log("response tarifs base", response);
       return {
         success: response.success !== false,
         data: response,
@@ -178,6 +179,7 @@ export const tarifsApi = {
    * @returns {Promise<Object>}
    */
   async createTarifSimple(tarifData) {
+    console.log("tarifData", tarifData);
     try {
       const response = await apiService.post(
         API_ENDPOINTS.TARIFS.CREATE_SIMPLE,

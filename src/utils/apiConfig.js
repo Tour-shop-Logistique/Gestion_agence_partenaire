@@ -58,6 +58,7 @@ export const API_ENDPOINTS = {
   // Expéditions
   EXPEDITIONS: {
     CREATE: "/expedition/agence/create",
+    SIMULATE: "/expedition/agence/simulate",
     LIST: "/expedition/agence/list",
     SHOW: "/expedition/agence/show/:id",
   },
@@ -65,6 +66,7 @@ export const API_ENDPOINTS = {
   // Produits
   PRODUCTS: {
     LIST: "/produits/list",
+    LIST_CATEGORIES: "/produits/list-categories",
   },
 };
 

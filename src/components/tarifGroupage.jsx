@@ -1,10 +1,20 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useTarifs } from "../hooks/useTarifs";
-import AddAgencyTarifModal from "../components/groupageForm"
+import AddAgencyTarifModal from "../components/groupageForm";
+import {
+  PlusIcon,
+  ArchiveBoxIcon,
+  GlobeAltIcon,
+  TruckIcon,
+  PencilSquareIcon,
+  TrashIcon,
+  ChevronRightIcon,
+  ArrowPathIcon
+} from "@heroicons/react/24/outline";
 
 const TarifGroupageComponent = () => {
   const [showTarifGroupage, setShowTarifGroupage] = useState(false);
-  const [activeTab, setActiveTab] = useState("base");
+  const [activeTab, setActiveTab] = useState("agency"); // Changed default to "agency"
   const [editingTarif, setEditingTarif] = useState(null);
   const [selectedBaseRate, setSelectedBaseRate] = useState(null);
 
@@ -12,36 +22,24 @@ const TarifGroupageComponent = () => {
     loading,
     error,
     message,
-
-    // Tarifs
     groupageTarifs,
     existingGroupageTarifs,
-
-    // Actions du hook
     fetchTarifsGroupageBase,
     fetchTarifGroupageAgence,
-    saveTarif,
-    selectIndex,
-    updateZonePercentage,
-    updateNewTarifZones,
-    getCurrentTarif,
+    clearMessage
   } = useTarifs();
 
-  // Charger les tarifs groupage au montage
   useEffect(() => {
-    fetchTarifsGroupageBase();      // tarifs base groupage
-    fetchTarifGroupageAgence();     // tarifs agence groupage
-  }, []);
+    fetchTarifsGroupageBase();
+    fetchTarifGroupageAgence();
+  }, [fetchTarifsGroupageBase, fetchTarifGroupageAgence]); // Added dependencies
 
-  // Utilitaire de groupement des tarifs
   const groupRates = (rates) => {
     if (!rates || !Array.isArray(rates)) return [];
-
     const groups = {};
     rates.forEach((rate) => {
       const categoryName = rate.category?.nom || (rate.type_expedition === 'groupage_afrique' ? 'Expédition Afrique' : (rate.type_expedition === 'groupage_ca' ? 'Expédition CA' : 'Général'));
       const key = `${categoryName}-${rate.pays}-${rate.type_expedition}`;
-
       if (!groups[key]) {
         groups[key] = {
           id: key,
@@ -53,7 +51,6 @@ const TarifGroupageComponent = () => {
       }
       groups[key].modes.push(rate);
     });
-
     return Object.values(groups);
   };
 
@@ -75,219 +72,289 @@ const TarifGroupageComponent = () => {
     setShowTarifGroupage(true);
   };
 
-  const groupedBaseTarifs = groupRates(groupageTarifs);
-  const groupedAgencyTarifs = groupRates(existingGroupageTarifs);
+  const groupedBaseTarifs = useMemo(() => groupRates(groupageTarifs), [groupageTarifs]);
+  const groupedAgencyTarifs = useMemo(() => groupRates(existingGroupageTarifs), [existingGroupageTarifs]);
+
+  const kpis = [
+    { label: "Tarifs Agence", value: existingGroupageTarifs?.length || 0, icon: ArchiveBoxIcon, color: "text-indigo-600" },
+    { label: "Modèles Groupage", value: groupageTarifs?.length || 0, icon: GlobeAltIcon, color: "text-slate-600" },
+    { label: "Modes Actifs", value: (existingGroupageTarifs?.length || 0), icon: TruckIcon, color: "text-emerald-600" },
+  ];
 
   return (
-    <div>
-      {/* Section statistiques améliorée */}
-      {(groupageTarifs?.length > 0 || existingGroupageTarifs?.length > 0) && (
-        <div className="mb-6 sm:mb-8">
-          <div className="flex flex-row sm:justify-between sm:items-center gap-3">
-            {/* Bloc stats qui prend tout l'espace */}
-            <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200 shadow-sm mx flex-1">
-              <div className="flex flex-row items-center justify-between gap-4">
-                <div className="flex flex-row sm:items-center gap-4">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                    <span className="text-sm text-gray-600 font-medium">
-                      Tarifs agence: {existingGroupageTarifs?.length || 0}
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span className="text-sm text-gray-600 font-medium">
-                      Tarifs de base: {groupageTarifs?.length || 0}
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                    <span className="text-sm text-gray-600 font-medium">
-                      Total: {(groupageTarifs?.length || 0) + (existingGroupageTarifs?.length || 0)}
-                    </span>
-                  </div>
-                </div>
-              </div>
+    <div className="space-y-6">
+      {/* KPI Section */}
+      <div className="hidden md:grid grid-cols-1 md:grid-cols-3 gap-4">
+        {kpis.map((kpi, i) => (
+          <div key={i} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">{kpi.label}</p>
+              <p className="text-2xl font-bold text-slate-900">{kpi.value}</p>
             </div>
-
-            {/* Bouton */}
-            <div className="flex items-center">
-              <button
-                onClick={() => handleNewTarif()}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center transition-colors"
-              >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v12m6-6H6"></path>
-                </svg>
-                Ajouter un tarif
-              </button>
+            <div className={`p-3 rounded-lg bg-slate-50 ${kpi.color}`}>
+              <kpi.icon className="w-6 h-6" />
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Message */}
-      {message && (
-        <div className={`mb-6 p-4 rounded-lg ${message.includes("succès") ? "bg-green-50 border border-green-200 text-green-600" : "bg-red-50 border border-red-200 text-red-600"}`}>
-          {message}
-        </div>
-      )}
-
-      {/* Tabs */}
-      <div className="mb-6">
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8">
-            <button
-              onClick={() => setActiveTab("agency")}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === "agency" ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"}`}
-            >
-              Tarifs agence ({existingGroupageTarifs?.length || 0})
-            </button>
-            <button
-              onClick={() => setActiveTab("base")}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === "base" ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"}`}
-            >
-              Tarifs de base ({groupageTarifs?.length || 0})
-            </button>
-          </nav>
-        </div>
+        ))}
       </div>
 
-      <div className="bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden">
+      {/* Action Bar - SaaS Style */}
+      <div className="flex flex-col sm:flex-row justify-between items-center bg-white p-3 rounded-xl border border-slate-200 shadow-sm gap-3">
+        <div className="inline-flex w-full sm:w-auto p-1 bg-slate-100 rounded-lg">
+          <button
+            onClick={() => setActiveTab("agency")}
+            className={`flex-1 sm:flex-none px-4 py-2 text-[11px] font-bold rounded-md transition-all ${activeTab === "agency" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500 hover:text-slate-700"
+              }`}
+          >
+            Mes Groupages
+          </button>
+          <button
+            onClick={() => setActiveTab("base")}
+            className={`flex-1 sm:flex-none px-4 py-2 text-[11px] font-bold rounded-md transition-all ${activeTab === "base" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500 hover:text-slate-700"
+              }`}
+          >
+            Modèles
+          </button>
+        </div>
+
+        <button
+          onClick={() => handleNewTarif()}
+          className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all shadow-sm"
+        >
+          <PlusIcon className="w-4 h-4 mr-2" />
+          Nouveau Tarif
+        </button>
+      </div>
+
+      {/* Alerts - Refined */}
+      {message && (
+        <div className={`p-4 rounded-xl border flex items-center shadow-sm ${message.includes("succès")
+          ? "bg-emerald-50 border-emerald-100 text-emerald-800"
+          : "bg-blue-50 border-blue-100 text-blue-800"
+          }`}>
+          <div className={`mr-3 p-1 rounded-full ${message.includes("succès") ? "bg-emerald-100" : "bg-blue-100"}`}>
+            <ArrowPathIcon className={`w-4 h-4 ${message.includes("succès") ? "text-emerald-600" : "text-blue-600"}`} />
+          </div>
+          <p className="text-xs font-bold">{message}</p>
+        </div>
+      )}
+
+      {/* Main Grid / Data Table */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         {loading ? (
-          <div className="p-6">
-            <div className="animate-pulse space-y-4">
-              {Array.from({ length: 3 }).map((_, index) => (
-                <div key={index} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
-                  <div className="w-14 h-14 bg-gray-200 rounded-full"></div>
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                    <div className="h-3 bg-gray-200 rounded w-2/3"></div>
-                  </div>
-                  <div className="w-12 h-6 bg-gray-200 rounded-full"></div>
+          <div className="p-10 space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {[1, 2].map((i) => (
+                <div key={i} className="space-y-4">
+                  <div className="h-4 w-32 bg-slate-100 rounded animate-pulse"></div>
+                  <div className="h-24 bg-slate-50 rounded-2xl animate-pulse"></div>
                 </div>
               ))}
             </div>
           </div>
-        ) : activeTab === "agency" && existingGroupageTarifs?.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 text-left">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-sm font-semibold text-gray-700">Type</th>
-                  <th className="px-4 py-3 text-sm font-semibold text-gray-700">Détails</th>
-                  <th className="px-4 py-3 text-sm font-semibold text-gray-700">Pays</th>
-                  <th className="px-4 py-3 text-sm font-semibold text-gray-700">Modes Actifs et Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {groupedAgencyTarifs.map((group) => (
-                  <tr key={group.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${group.type_expedition?.includes('dhd') ? 'bg-blue-100 text-blue-700' : group.type_expedition?.includes('afrique') ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'}`}>
-                        {group.type_expedition?.replace('groupage_', '').toUpperCase() || 'GROUPAGE'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-800 font-medium">
-                      {group.categoryName}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{group.pays}</td>
-                    <td className="px-4 py-3 text-sm">
-                      <div className="flex flex-col gap-2">
-                        {group.modes.map((mode) => (
-                          <div key={mode.id} className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg border border-gray-200 group/mode transition-all hover:bg-white hover:shadow-sm">
-                            <div className="flex flex-col">
-                              <span className="font-bold text-gray-700 uppercase text-[10px]">{mode.mode} {mode.ligne ? `(${mode.ligne})` : ''}</span>
-                              <div className="flex items-center gap-2">
-                                <span className="text-blue-600 font-black text-sm">{mode.montant_expedition?.toLocaleString()} FCFA</span>
-                                <span className="text-gray-400 text-[10px]">({mode.pourcentage_prestation}%)</span>
+        ) : activeTab === "agency" ? (
+          existingGroupageTarifs?.length > 0 ? (
+            <>
+              {/* Desktop Table (Agency) */}
+              <div className="hidden lg:block overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-950 border-b border-slate-800">
+                      <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Type</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Catégorie / Pays</th>
+                      <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Modes configurés</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {groupedAgencyTarifs.map((group) => (
+                      <tr key={group.id} className="hover:bg-slate-50/50 transition-colors align-top">
+                        <td className="px-6 py-5">
+                          <span className={`inline-flex px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-tighter shadow-sm border ${group.type_expedition?.includes('dhd') ? 'bg-indigo-50 text-indigo-700 border-indigo-100' :
+                            group.type_expedition?.includes('afrique') ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
+                              'bg-slate-100 text-slate-700 border-slate-200'
+                            }`}>
+                            {group.type_expedition?.replace('groupage_', '').toUpperCase() || 'GROUPAGE'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-5">
+                          <p className="text-sm font-bold text-slate-900 leading-tight mb-1">{group.categoryName}</p>
+                          <p className="text-xs font-medium text-slate-500">{group.pays}</p>
+                        </td>
+                        <td className="px-6 py-5 min-w-[300px]">
+                          <div className="flex flex-col gap-2">
+                            {group.modes.map((mode) => (
+                              <div key={mode.id} className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-lg hover:border-indigo-300 hover:shadow-sm transition-all group/mode">
+                                <div className="flex flex-col">
+                                  <span className="text-[10px] font-bold text-slate-900 border-b border-slate-100 pb-1 mb-1">
+                                    {mode.mode} {mode.ligne ? `(${mode.ligne})` : ''}
+                                  </span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-bold text-slate-900">{mode.montant_expedition?.toLocaleString()}</span>
+                                    <span className="text-[9px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">+{mode.pourcentage_prestation}%</span>
+                                    <span className="text-[10px] font-medium text-slate-400">FCFA</span>
+                                  </div>
+                                </div>
+                                <div className="flex gap-1 opacity-0 group-hover/mode:opacity-100 transition-opacity">
+                                  <button onClick={() => handleEditTarif(mode)} className="p-1.5 text-slate-600 hover:text-indigo-600 hover:bg-slate-50 rounded transition-colors">
+                                    <PencilSquareIcon className="w-4 h-4" />
+                                  </button>
+                                  <button onClick={() => handleDeleteTarif(mode)} className="p-1.5 text-slate-600 hover:text-rose-600 hover:bg-slate-50 rounded transition-colors">
+                                    <TrashIcon className="w-4 h-4" />
+                                  </button>
+                                </div>
                               </div>
-                            </div>
-                            <div className="flex gap-2 opacity-0 group-hover/mode:opacity-100 transition-all">
-                              <button
-                                onClick={() => handleEditTarif(mode)}
-                                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                title="Modifier"
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                              </button>
-                              <button
-                                onClick={() => handleDeleteTarif(mode)}
-                                className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                title="Supprimer"
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v2m3 4s" /></svg>
-                              </button>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Cards (Agency) - Premium Cards */}
+              <div className="lg:hidden space-y-4 p-4 bg-slate-50/50">
+                {groupedAgencyTarifs.map((group) => (
+                  <div key={group.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <span className={`inline-flex px-2 py-0.5 mb-2 rounded text-[8px] font-black uppercase tracking-widest border ${group.type_expedition?.includes('dhd') ? 'bg-indigo-50 text-indigo-700 border-indigo-100' :
+                          group.type_expedition?.includes('afrique') ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
+                            'bg-slate-100 text-slate-700 border-slate-200'
+                          }`}>
+                          {group.type_expedition?.replace('groupage_', '').toUpperCase() || 'GROUPAGE'}
+                        </span>
+                        <h4 className="text-sm font-black text-slate-900">{group.categoryName}</h4>
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">{group.pays}</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      {group.modes.map((mode) => (
+                        <div key={mode.id} className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between group">
+                          <div>
+                            <p className="text-[10px] font-black text-slate-900 mb-1 flex items-center gap-2">
+                              {mode.mode}
+                              {mode.ligne && <span className="text-[9px] font-bold text-blue-500">{mode.ligne}</span>}
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <span className="text-base font-black text-slate-900 font-mono tracking-tighter">{mode.montant_expedition?.toLocaleString()}</span>
+                              <span className="text-[10px] font-black text-indigo-600 bg-white border border-indigo-100 px-1.5 py-0.5 rounded shadow-sm">+{mode.pourcentage_prestation}%</span>
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : activeTab === "base" && groupageTarifs?.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 text-left">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-sm font-semibold text-gray-700">Type</th>
-                  <th className="px-4 py-3 text-sm font-semibold text-gray-700">Détails</th>
-                  <th className="px-4 py-3 text-sm font-semibold text-gray-700">Pays</th>
-                  <th className="px-4 py-3 text-sm font-semibold text-gray-700">Modes de base</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {groupedBaseTarifs.map((group) => (
-                  <tr key={group.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${group.type_expedition?.includes('dhd') ? 'bg-blue-100 text-blue-700' : group.type_expedition?.includes('afrique') ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'}`}>
-                        {group.type_expedition?.replace('groupage_', '').toUpperCase() || 'GROUPAGE'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-800 font-medium">{group.categoryName}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{group.pays}</td>
-                    <td className="px-4 py-3 text-sm">
-                      <div className="flex flex-col gap-2">
-                        {group.modes.map((mode) => (
-                          <div key={mode.id} className="flex items-center justify-between bg-white p-2 rounded-lg border border-gray-100 hover:border-blue-200 group transition-all shadow-sm">
-                            <div className="flex flex-col">
-                              <span className="font-bold text-gray-700 uppercase text-[10px]">{mode.mode} {mode.ligne ? `(${mode.ligne})` : ''}</span>
-                              <span className="text-blue-700 font-black text-xs">{mode.montant_base?.toLocaleString()} FCFA</span>
-                            </div>
+                          <div className="flex gap-1.5">
                             <button
-                              onClick={() => handleNewTarif(mode)}
-                              className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-[10px] font-bold transition-all opacity-0 group-hover:opacity-100"
+                              onClick={() => handleEditTarif(mode)}
+                              className="p-2 bg-white text-slate-600 border border-slate-200 rounded-lg shadow-sm"
                             >
-                              Ajouter
+                              <PencilSquareIcon className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteTarif(mode)}
+                              className="p-2 bg-rose-50 text-rose-600 border border-rose-100 rounded-lg shadow-sm"
+                            >
+                              <TrashIcon className="w-4 h-4" />
                             </button>
                           </div>
-                        ))}
-                      </div>
-                    </td>
-                  </tr>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </div>
+            </>
+          ) : (
+            <EmptyState onAction={() => setActiveTab("base")} />
+          )
         ) : (
-          <div className="p-8 text-center">
-            <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl flex items-center justify-center shadow-lg">
-              <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" /></svg>
+          <>
+            {/* Desktop Table (Base) */}
+            <div className="hidden lg:block overflow-x-auto">
+              {/* ... table content remains similar ... */}
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Type d'expédition</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Détails modèle</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Modes disponibles</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {groupedBaseTarifs.map((group) => (
+                    <tr key={group.id} className="hover:bg-slate-50/50 transition-colors align-top">
+                      <td className="px-6 py-5">
+                        <span className="inline-flex px-2 py-1 rounded-md bg-slate-100 text-[10px] font-bold text-slate-600 uppercase tracking-tighter shadow-sm border border-slate-200">
+                          {group.type_expedition?.replace('groupage_', '').toUpperCase() || 'MOCKED'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-5">
+                        <p className="text-sm font-bold text-slate-900 leading-tight mb-1">{group.categoryName}</p>
+                        <p className="text-xs font-medium text-slate-500">{group.pays}</p>
+                      </td>
+                      <td className="px-6 py-5 min-w-[250px]">
+                        <div className="flex flex-col gap-2">
+                          {group.modes.map((mode) => (
+                            <div key={mode.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200 group/base">
+                              <div className="flex flex-col">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{mode.mode}</span>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-sm font-bold text-slate-900">{mode.montant_base?.toLocaleString()}</span>
+                                  <span className="text-[10px] font-medium text-slate-400 uppercase">FCFA</span>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => handleNewTarif(mode)}
+                                className="px-3 py-1.5 bg-white hover:bg-slate-950 text-slate-950 hover:text-white text-[10px] font-bold rounded border border-slate-200 hover:border-slate-950 transition-all shadow-sm"
+                              >
+                                IMPORT
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">Aucun tarif configuré</h3>
-            <p className="text-gray-500 mb-8 max-w-sm mx-auto leading-relaxed">Commencez par créer votre premier tarif d'expédition pour commencer à gérer vos prix.</p>
-            <button
-              onClick={() => handleNewTarif()}
-              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white font-semibold rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
-            >
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
-              Créer le premier tarif
-            </button>
-          </div>
+
+            {/* Mobile Cards (Base) */}
+            <div className="lg:hidden space-y-4 p-4 bg-slate-50/50">
+              {groupedBaseTarifs.map((group) => (
+                <div key={group.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <span className="inline-flex px-2 py-0.5 mb-2 rounded text-[8px] font-black text-slate-500 bg-slate-100 uppercase tracking-widest border border-slate-200">
+                        {group.type_expedition?.replace('groupage_', '').toUpperCase() || 'MOCKED'}
+                      </span>
+                      <h4 className="text-sm font-black text-slate-900">{group.categoryName}</h4>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">{group.pays}</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    {group.modes.map((mode) => (
+                      <div key={mode.id} className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
+                        <div>
+                          <p className="text-[10px] font-black text-slate-900 mb-1 uppercase tracking-tighter">{mode.mode}</p>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-base font-black text-slate-900 font-mono tracking-tighter">{mode.montant_base?.toLocaleString()}</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase">FCFA</span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleNewTarif(mode)}
+                          className="px-4 py-2 bg-white text-slate-950 text-[10px] font-black border border-slate-200 rounded-lg shadow-sm"
+                        >
+                          IMPORT
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
 
@@ -298,6 +365,7 @@ const TarifGroupageComponent = () => {
             setShowTarifGroupage(false);
             setEditingTarif(null);
             setSelectedBaseRate(null);
+            clearMessage();
           }}
           editingTarif={editingTarif}
           selectedBaseRate={selectedBaseRate}
@@ -306,5 +374,24 @@ const TarifGroupageComponent = () => {
     </div>
   );
 };
+
+const EmptyState = ({ onAction }) => (
+  <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+    <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mb-4 border border-slate-100">
+      <ArchiveBoxIcon className="w-8 h-8 text-slate-300" />
+    </div>
+    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest mb-2">Aucun tarif personnalisé</h3>
+    <p className="text-xs font-medium text-slate-500 mb-8 max-w-xs mx-auto leading-relaxed">
+      Vous n'avez pas encore configuré de marges pour les expéditions en groupage.
+      Utilisez les modèles de base pour commencer.
+    </p>
+    <button
+      onClick={onAction}
+      className="inline-flex items-center px-6 py-2 bg-slate-950 text-white text-xs font-bold rounded-lg hover:bg-slate-800 transition-all shadow-sm"
+    >
+      VOIR LES MODÈLES
+    </button>
+  </div>
+);
 
 export default TarifGroupageComponent;

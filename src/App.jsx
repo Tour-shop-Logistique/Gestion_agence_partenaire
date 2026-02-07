@@ -20,7 +20,9 @@ import Tarifs from "./pages/Tarifs";
 import AgencyProfile from "./pages/AgencyProfile";
 import Agents from "./pages/Agents";
 import CreateExpedition from "./pages/CreateExpedition";
+
 import Expeditions from "./pages/Expeditions";
+import ExpeditionDetails from "./pages/ExpeditionDetails";
 
 // Composant pour gérer la redirection automatique
 const AutoRedirect = ({ children }) => {
@@ -52,33 +54,26 @@ const PublicRoute = ({ children }) => {
 };
 
 function AppContent() {
-  const { checkAuth } = useAuth();
-  const { isAuthenticated, status } = useSelector((state) => state.auth);
-
   // Hooks pour charger les données de l'agence et tarifs
   const { fetchAgencyData, fetchUsers } = useAgency();
-  const { fetchAgencyTarifs, fetchTarifs } = useTarifs();
-
+  const { checkAuth } = useAuth();
+  const { isAuthenticated, status } = useSelector((state) => state.auth);
   // État pour contrôler l'affichage du loader initial
   const [initialCheckDone, setInitialCheckDone] = useState(false);
 
   useEffect(() => {
     // Vérifier si un token existe au démarrage de l'application
     const token = localStorage.getItem("auth_token");
-    console.log("Token au démarrage:", token);
-
     if (token) {
-      // Si un token existe, vérifier son authenticité
-      checkAuth().finally(() => {
-        setInitialCheckDone(true);
-      });
+      checkAuth().finally(() => setInitialCheckDone(true));
     } else {
-      // Si pas de token, marquer comme terminé
       setInitialCheckDone(true);
     }
   }, [checkAuth]);
 
   // Charger les données de l'agence quand l'utilisateur est authentifié
+  const { fetchAgencyTarifs, fetchTarifs, fetchTarifsGroupageBase, fetchTarifGroupageAgence } = useTarifs();
+
   useEffect(() => {
     if (isAuthenticated && status === "succeeded") {
       console.log("Utilisateur authentifié, chargement des données...");
@@ -87,8 +82,10 @@ function AppContent() {
       fetchUsers();
       fetchTarifs();
       fetchAgencyTarifs();
+      fetchTarifsGroupageBase();
+      fetchTarifGroupageAgence();
     }
-  }, [isAuthenticated, status]); // Retirer les dépendances des fonctions pour éviter les re-renders
+  }, [isAuthenticated, status]);
 
   // Afficher un loader pendant la vérification initiale
   if (!initialCheckDone) {
@@ -166,10 +163,18 @@ function AppContent() {
           }
         />
         <Route
+          path="/expeditions/:id"
+          element={
+            <ProtectedRoute>
+              <ExpeditionDetails />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/create-expedition"
           element={
             <ProtectedRoute>
-              <Navigate to="/dashboard" replace />
+              <CreateExpedition />
             </ProtectedRoute>
           }
         />

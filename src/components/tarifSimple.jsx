@@ -3,11 +3,22 @@ import SaveTarifModal from "../components/SaveTarifModal";
 import TarifConfigModal from "../components/TarifConfigModal";
 import { formatPrice } from "../utils/format";
 import { useTarifs } from "../hooks/useTarifs";
+import {
+  PlusIcon,
+  CircleStackIcon,
+  GlobeAltIcon,
+  ScaleIcon,
+  PencilSquareIcon,
+  DocumentDuplicateIcon,
+  TrashIcon,
+  EyeIcon,
+  EyeSlashIcon,
+} from "@heroicons/react/24/outline";
 
-const TarifSimpleComponent = ()=> {
+const TarifSimpleComponent = () => {
 
 
- const {
+  const {
     loading,
     error,
     message,
@@ -23,17 +34,18 @@ const TarifSimpleComponent = ()=> {
     updateZonePercentage,
     updateNewTarifZones,
     getCurrentTarif,
+    updateSingleTarifZone,
+    clearMessage,
+    deleteTarifSimple,
+    toggleTarifSimpleStatus,
   } = useTarifs();
 
   const [showTarifForm, setShowTarifForm] = useState(false);
   const [showIndexModal, setShowIndexModal] = useState(false);
   const [localZones, setLocalZones] = useState([]);
-  const [activeTab, setActiveTab] = useState("base");
+  const [activeTab, setActiveTab] = useState("agency"); // Default to agency for B2B tools
 
-
-
-
-      // Récupérer les données du tarif actuel
+  // Récupérer les données du tarif actuel
   const currentTarifData = useMemo(() => {
     return getCurrentTarif();
   }, [getCurrentTarif]);
@@ -41,14 +53,18 @@ const TarifSimpleComponent = ()=> {
   // Charger les tarifs de base au montage du composant
   useEffect(() => {
     fetchTarifs();
+    // fetchAgencyTarifs();
+  }, [fetchTarifs]);
+
+  useEffect(() => {
     fetchAgencyTarifs();
-  }, [fetchTarifs, fetchAgencyTarifs]);
+  }, [fetchAgencyTarifs]);
 
   // Mettre à jour les zones locales lorsque les zones d'édition ou le tarif sélectionné change
   useEffect(() => {
     if (selectedIndex && existingTarifs.length > 0) {
       const selectedTarif = existingTarifs.find(
-        (t) => t.indice === selectedIndex
+        (t) => String(t.indice) === String(selectedIndex)
       );
       if (selectedTarif?.prix_zones) {
         setLocalZones([...selectedTarif.prix_zones]);
@@ -93,27 +109,45 @@ const TarifSimpleComponent = ()=> {
     [localZones, selectedIndex, updateNewTarifZones, updateZonePercentage]
   );
 
-  const handleSave = useCallback(async () => {
+  const handleSave = useCallback(async (index, zones) => {
+    console.log("handleSave called with:", index, zones);
     try {
-      // Appeler la fonction de sauvegarde du contexte
-      const result = await saveTarif();
-
+      // Utiliser les paramètres explicites s'ils sont fournis (cas du SaveTarifModal)
+      // sinon le thunk utilisera le state (cas du TarifConfigModal)
+      const payload = (index && zones) ? { indice: index, prix_zones: zones } : undefined;
+      const result = await saveTarif(payload);
+      console.log("Save result:", result);
       if (result?.success) {
-        // Recharger les tarifs après la sauvegarde
-        await fetchAgencyTarifs(true);
-
-        // Fermer le modal après un court délai pour montrer le message de succès
-        setTimeout(() => {
-          setShowIndexModal(false);
-        }, 1000);
-
+        // Le reducer met à jour le state localement, pas besoin de recharger toute la liste
+        // await fetchAgencyTarifs(true);
+        // Fermer les deux modales possibles
+        setShowIndexModal(false);
+        setShowTarifForm(false);
         return result;
       }
     } catch (err) {
-      console.error("Erreur lors de la sauvegarde du tarif:", err);
+      console.error("Erreur sauvegarde:", err);
       throw err;
     }
-  }, [saveTarif, fetchAgencyTarifs]);
+  }, [saveTarif]);
+
+  const handleSaveZone = useCallback(async (zoneId, percentage) => {
+    try {
+      if (!zoneId) {
+        console.error("Zone ID missing");
+        return;
+      }
+      const result = await updateSingleTarifZone(zoneId, percentage);
+      /* 
+      if (result?.success) {
+        // Refresh potentially needed, but reducers should handle local state update
+        // await fetchAgencyTarifs(true);
+      } 
+      */
+    } catch (err) {
+      console.error("Erreur sauvegarde zone:", err);
+    }
+  }, [updateSingleTarifZone]);
 
   const handleNewTarif = useCallback(() => {
     selectIndex("new");
@@ -127,7 +161,7 @@ const TarifSimpleComponent = ()=> {
         selectIndex(index);
 
         // Find the selected tarif in existingTarifs
-        const selectedTarif = existingTarifs.find((t) => t.indice === index);
+        const selectedTarif = existingTarifs.find((t) => String(t.indice) === String(index));
 
         // If we found the tarif, update local zones
         if (selectedTarif && selectedTarif.prix_zones) {
@@ -164,755 +198,322 @@ const TarifSimpleComponent = ()=> {
     [selectedIndex, updateNewTarifZones, updateZonePercentage]
   );
 
+  const handleDelete = useCallback(async (tarif) => {
+    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer le tarif pour l'indice ${tarif.indice} ? Cette action est irréversible.`)) {
+      return;
+    }
+
+    try {
+      // Optimistic update: on n'attend pas le rechargement pour mettre à jour l'UI si possible
+      // Mais ici deleteTarifSimple est un thunk qui peut être géré par Redux pour l'UI optimiste
+      // Cependant, pour garantir une UX fluide, on supprime et on recharge silencieusement
+
+      if (tarif.prix_zones && tarif.prix_zones.length > 0) {
+        const promises = tarif.prix_zones.map(zone => deleteTarifSimple(zone.id));
+        await Promise.all(promises);
+
+        // On recharge les données pour être sûr, mais l'utilisateur verra potentiellement un état intermédiaire géré par Redux
+        // Si les reducers gèrent bien la suppression locale, l'UI se mettra à jour immédiatement
+        await fetchAgencyTarifs(true);
+      }
+    } catch (error) {
+      console.error("Erreur suppression:", error);
+      // En cas d'erreur, on recharge pour remettre l'état correct
+      await fetchAgencyTarifs(true);
+    }
+  }, [deleteTarifSimple, fetchAgencyTarifs]);
+
+  const handleStatus = useCallback(async (tarif) => {
+    try {
+      if (tarif.prix_zones && tarif.prix_zones.length > 0) {
+        // Appliquer optimisme ici si nécessaire manuellement via Redux, 
+        // mais le thunk update déjà le state local au fulfilled.
+
+        const promises = tarif.prix_zones.map(zone => toggleTarifSimpleStatus(zone.id));
+        await Promise.all(promises);
+
+        // Pas besoin de recharger toutes les données si le Reducer fait bien son travail
+        // On peut faire un fetch silencieux en arrière plan si on veut être puriste
+        fetchAgencyTarifs(true);
+      }
+    } catch (error) {
+      console.error("Erreur statut:", error);
+      // Revert if error
+      await fetchAgencyTarifs(true);
+    }
+  }, [toggleTarifSimpleStatus, fetchAgencyTarifs]);
+
+  const kpis = [
+    { label: "Tarifs Agence", value: existingTarifs?.length || 0, icon: CircleStackIcon, color: "text-indigo-600" },
+    { label: "Modèles de Base", value: baseTarifs?.length || 0, icon: GlobeAltIcon, color: "text-slate-600" },
+    { label: "Indices actifs", value: [...new Set([...(existingTarifs || []), ...(baseTarifs || [])].map(t => t.indice))].length, icon: ScaleIcon, color: "text-blue-600" },
+  ];
+
+  const fixedZones = Array.from({ length: 8 }, (_, i) => `Z${i + 1}`);
 
 
-    return (
+  return (
 
-        <div>
-                {/* Section statistiques améliorée - mobile-first */}
-      {  ((baseTarifs && baseTarifs.length > 0) ||
-  (existingTarifs && existingTarifs.length > 0)) && (
-       <div className="mb-6 sm:mb-8">
-  {/* Résumé rapide - responsive */}
-  <div className="flex flex-row sm:justify-between sm:items-center gap-3">
-
-    {/* BLOC STATISTIQUES QUI PREND TOUT L'ESPACE */}
-    <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200 shadow-sm mx flex-1">
-      <div className="flex flex-row items-center justify-between gap-4">
-        <div className="flex flex-row sm:items-center gap-4">
-
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-            <span className="text-sm sm:text-md text-gray-600 font-medium">
-              Tarifs agence: {existingTarifs?.length || 0}
-            </span>
+    <div className="space-y-6">
+      {/* KPI Section - SaaS Style */}
+      <div className="hidden md:grid grid-cols-1 md:grid-cols-3 gap-4">
+        {kpis.map((kpi, i) => (
+          <div key={i} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div>
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{kpi.label}</p>
+              <p className="text-2xl font-bold text-slate-900">{kpi.value}</p>
+            </div>
+            <div className={`p-3 rounded-lg bg-slate-50 ${kpi.color}`}>
+              <kpi.icon className="w-6 h-6" />
+            </div>
           </div>
-
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-            <span className="text-sm sm:text-md text-gray-600 font-medium">
-              Tarifs de base: {baseTarifs?.length || 0}
-            </span>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-            <span className="text-sm sm:text-md text-gray-600 font-medium">
-              Total: {(baseTarifs?.length || 0) + (existingTarifs?.length || 0)}
-            </span>
-          </div>
-
-        </div>
+        ))}
       </div>
-    </div>
 
-    {/* BOUTON À DROITE */}
-    <div className="flex items-center space-x-4">
-      <button
-        onClick={handleNewTarif}
-        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center transition-colors"
-      >
-        <svg
-          className="w-4 h-4 mr-2"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
+      {/* Mobile Action Bar - Stacked on small screens */}
+      <div className="flex flex-col sm:flex-row justify-between items-center bg-white p-3 rounded-xl border border-slate-200 shadow-sm gap-3">
+        <div className="inline-flex w-full sm:w-auto p-1 bg-slate-100 rounded-lg">
+          <button
+            onClick={() => setActiveTab("agency")}
+            className={`flex-1 sm:flex-none px-4 py-2 text-[11px] font-bold rounded-md transition-all ${activeTab === "agency" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500 hover:text-slate-700"
+              }`}
+          >
+            Mes Tarifs
+          </button>
+          <button
+            onClick={() => setActiveTab("base")}
+            className={`flex-1 sm:flex-none px-4 py-2 text-[11px] font-bold rounded-md transition-all ${activeTab === "base" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500 hover:text-slate-700"
+              }`}
+          >
+            Modèles
+          </button>
+        </div>
+
+        <button
+          onClick={handleNewTarif}
+          className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all shadow-sm"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-          ></path>
-        </svg>
-        Ajouter un tarif
-      </button>
-    </div>
-
-  </div>
-</div>
-
-        )}
+          <PlusIcon className="w-4 h-4 mr-2" />
+          Nouveau Tarif
+        </button>
+      </div>
 
       {message && (
-        <div
-          className={`mb-6 p-4 rounded-lg ${
-            message.includes("succès")
-              ? "bg-green-50 border border-green-200 text-green-600"
-              : "bg-red-50 border border-red-200 text-red-600"
-          }`}
-        >
+        <div className={`p-4 rounded-lg border text-xs font-bold flex items-center gap-2 ${message.includes("succès") ? "bg-emerald-50 border-emerald-100 text-emerald-700" : "bg-rose-50 border-rose-100 text-rose-700"
+          }`}>
+          <div className={`w-1.5 h-1.5 rounded-full ${message.includes("succès") ? "bg-emerald-500" : "bg-rose-500"}`}></div>
           {message}
         </div>
       )}
 
-      {/* Onglets pour séparer les tarifs de base et de l'agence */}
-      <div className="mb-6">
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8">
-            <button
-              onClick={() => setActiveTab("agency")}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === "agency"
-                  ? "border-blue-500 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
-            >
-              Tarifs agence ({existingTarifs?.length || 0})
-            </button>
-            <button
-              onClick={() => setActiveTab("base")}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === "base"
-                  ? "border-blue-500 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
-            >
-              Tarifs de base ({baseTarifs?.length || 0})
-            </button>
-          </nav>
-        </div>
-      </div>
-
-      {/* Liste des tarifs - Design responsive : lignes sur desktop, cards sur mobile */}
-      <div className="bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden">
+      {/* Data Grid Section */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         {loading ? (
-          <div className="p-6">
-            <div className="animate-pulse space-y-4">
-              {Array.from({ length: 3 }).map((_, index) => (
-                <div
-                  key={index}
-                  className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg"
-                >
-                  <div className="w-14 h-14 bg-gray-200 rounded-full"></div>
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                    <div className="h-3 bg-gray-200 rounded w-2/3"></div>
-                  </div>
-                  <div className="w-12 h-6 bg-gray-200 rounded-full"></div>
-                </div>
-              ))}
+          <div className="p-10 space-y-4">
+            <div className="h-4 w-1/3 bg-slate-100 rounded animate-pulse"></div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {[1, 2, 3, 4].map(i => <div key={i} className="h-20 bg-slate-50 rounded-xl animate-pulse"></div>)}
             </div>
           </div>
-        ) : activeTab === "base" && baseTarifs && baseTarifs.length > 0 ? (
+        ) : (
           <>
-            <div className="hidden lg:block">
-              {(() => {
-                // Créer les 8 zones fixes (Z1 à Z8)
-                const fixedZones = Array.from(
-                  { length: 8 },
-                  (_, i) => `z${i + 1}`
-                );
-                return (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Indice
-                          </th>
-                          {fixedZones.map((zoneId) => (
-                            <th
-                              key={zoneId}
-                              className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
-                            >
-                              Zone {zoneId.replace("z", "")}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {/* Tarifs de base */}
-                        {baseTarifs &&
-                          baseTarifs.map((tarif) => (
-                            <tr
-                              key={`base-${tarif.id}`}
-                              className="hover:bg-gray-50"
-                            >
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                <div className="flex items-center">
-                                  Indice {tarif.indice || "N/A"}
+            {/* Desktop Table (Hidden on small devices) */}
+            <div className="hidden lg:block overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-slate-50/50 sticky left-0 z-10 border-r border-slate-200">
+                      Indice
+                    </th>
+                    {fixedZones.map((z) => (
+                      <th key={z} className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center border-r border-slate-100 last:border-r-0">
+                        {z.replace(/Z/i, 'Zone ')}
+                      </th>
+                    ))}
+                    {activeTab === "agency" && (
+                      <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">
+                        Actions
+                      </th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {(activeTab === "agency" ? existingTarifs : baseTarifs)?.map((tarif) => (
+                    <tr key={tarif.id} className="hover:bg-indigo-50/30 transition-colors group">
+                      <td className="px-6 py-4 bg-white group-hover:bg-indigo-50/30 sticky left-0 z-10 border-r border-slate-100">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-2 h-2 rounded-full bg-slate-900"></div>
+                          <span className="font-bold text-slate-900">{tarif.indice}</span>
+                        </div>
+                      </td>
+                      {fixedZones.map((zoneId) => {
+                        const zoneData = tarif.prix_zones?.find(z => z.zone_destination_id?.toUpperCase() === zoneId);
+                        return (
+                          <td key={zoneId} className="px-6 py-4 text-center border-r border-slate-50 last:border-r-0">
+                            {zoneData ? (
+                              <div className="space-y-0.5">
+                                <div className="text-[13px] font-bold text-slate-900">
+                                  {formatPrice(zoneData.montant_expedition, "XOF")}
                                 </div>
-                              </td>
-                              {fixedZones.map((zoneId) => {
-                                const zoneData = tarif.prix_zones?.find(
-                                  (z) =>
-                                    z.zone_destination_id ===
-                                    zoneId.toUpperCase()
-                                );
-                                return (
-                                  <td
-                                    key={zoneId}
-                                    className="px-6 py-4 text-center text-sm text-gray-500"
-                                  >
-                                    {zoneData ? (
-                                      <div className="space-y-1">
-                                        <div className="text-sm font-semibold text-gray-900">
-                                          {formatPrice(
-                                            zoneData.montant_expedition || 0,
-                                            "XOF"
-                                          )}
-                                        </div>
-                                        <div className="text-xs text-gray-600">
-                                          Prix de base :{" "}
-                                          {formatPrice(
-                                            zoneData.montant_base || 0,
-                                            "XOF"
-                                          )}
-                                        </div>
-                                        <div className="text-xs text-blue-600">
-                                          +
-                                          {formatPrice(
-                                            zoneData.montant_prestation || 0,
-                                            "XOF"
-                                          )}{" "}
-                                          (
-                                          {zoneData.pourcentage_prestation || 0}
-                                          %)
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      <span className="text-gray-300">-</span>
-                                    )}
-                                  </td>
-                                );
-                              })}
-                            </tr>
-                          ))}
-                      </tbody>
-                    </table>
-                  </div>
-                );
-              })()}
-            </div>
-            <div className="lg:hidden divide-y divide-gray-100">
-              {/* Tarifs de base */}
-              {baseTarifs &&
-                baseTarifs.map((tarif) => (
-                  <div
-                    key={`base-mobile-${tarif.id}`}
-                    className="group p-4 hover:bg-gray-50/50 transition-all duration-200 active:bg-gray-100/50"
-                  >
-                    {/* Design mobile : Layout vertical optimisé */}
-                    <div className="flex items-start justify-between space-x-3">
-                      {/* Section informations principales */}
-                      <div className="flex items-start space-x-3 flex-1 min-w-0">
-                        {/* Avatar avec type */}
-                        <div className="relative flex-shrink-0">
-                          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
-                            📋
-                          </div>
-                          {/* Badge de type */}
-                          <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-3 border-white shadow-md bg-blue-500">
-                            <div className="w-full h-full rounded-full flex items-center justify-center bg-blue-400">
-                              <span className="text-xs text-white font-bold">
-                                B
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Informations détaillées */}
-                        <div className="flex-1 min-w-0 space-y-2">
-                          {/* Nom et type */}
-                          <div className="flex items-center justify-between">
-                            <h3 className="text-base font-semibold text-gray-900 truncate pr-2">
-                              Indice {tarif.indice || "N/A"}
-                            </h3>
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                              Tarif de base
-                            </span>
-                          </div>
-
-                          {/* Prix par zones */}
-                          <div className="flex items-center text-sm text-gray-600">
-                            <svg
-                              className="w-4 h-4 mr-2 text-gray-400 flex-shrink-0"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
-                              />
-                            </svg>
-                            <div className="flex flex-wrap gap-1">
-                              {tarif.prix_zones &&
-                                tarif.prix_zones
-                                  .slice(0, 2)
-                                  .map((zone, index) => (
-                                    <span
-                                      key={index}
-                                      className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-800"
-                                    >
-                                      Z
-                                      {zone.zone_destination_id.replace(
-                                        "z",
-                                        ""
-                                      )}
-                                      :{" "}
-                                      {formatPrice(
-                                        zone.montant_expedition || 0,
-                                        "XOF"
-                                      )}
-                                    </span>
-                                  ))}
-                              {tarif.prix_zones &&
-                                tarif.prix_zones.length > 2 && (
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-200 text-gray-600">
-                                    +{tarif.prix_zones.length - 2}
-                                  </span>
-                                )}
-                            </div>
-                          </div>
-
-                          {/* Date de création */}
-                          <div className="flex items-center text-xs text-gray-500">
-                            <svg
-                              className="w-3 h-3 mr-2 text-gray-400 flex-shrink-0"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                              />
-                            </svg>
-                            <span>
-                              Créé le{" "}
-                              {tarif.created_at
-                                ? new Date(tarif.created_at).toLocaleDateString(
-                                    "fr-FR",
-                                    {
-                                      day: "numeric",
-                                      month: "short",
-                                      year: "numeric",
-                                    }
-                                  )
-                                : "N/A"}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Actions - Design mobile compact */}
-                      <div className="flex flex-col items-end space-y-2">
-                        {/* Boutons d'action - Plus accessibles */}
-                        <div className="flex items-center space-x-1">
-                          <button
-                            onClick={() => handleIndexSelect(tarif.indice)}
-                            className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 active:scale-95"
-                            title="Configurer le tarif"
-                          >
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                              />
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-            </div>
-          </>
-        ) : activeTab === "agency" &&
-          existingTarifs &&
-          existingTarifs.length > 0 ? (
-          <>
-            <div className="hidden lg:block">
-              {(() => {
-                const fixedZones = Array.from(
-                  { length: 8 },
-                  (_, i) => `z${i + 1}`
-                );
-
-                return (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Indice
-                          </th>
-                          {fixedZones.map((zoneId) => (
-                            <th
-                              key={zoneId}
-                              className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
-                            >
-                              Zone {zoneId.replace("z", "")}
-                            </th>
-                          ))}
-                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Actions
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {existingTarifs.map((tarif) => (
-                          <tr
-                            key={`agency-${tarif.id}`}
-                            className="hover:bg-gray-50"
-                          >
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              <div className="flex items-center">
-                                Indice {tarif.indice || "N/A"}
+                                <div className="text-[10px] font-medium text-slate-400">
+                                  Base: {formatPrice(zoneData.montant_base, "XOF")}
+                                </div>
+                                <div className="text-[10px] font-bold text-indigo-600">
+                                  +{zoneData.pourcentage_prestation}%
+                                </div>
                               </div>
-                            </td>
-                            {fixedZones.map((zoneId) => {
-                              const zoneData = tarif.prix_zones?.find(
-                                (z) =>
-                                  z.zone_destination_id === zoneId.toUpperCase()
-                              );
-                              return (
-                                <td
-                                  key={zoneId}
-                                  className="px-6 py-4 text-center text-sm text-gray-500"
-                                >
-                                  {zoneData ? (
-                                    <div className="space-y-1">
-                                      <div className="text-sm font-semibold text-gray-900">
-                                        {formatPrice(
-                                          zoneData.montant_expedition || 0,
-                                          "XOF"
-                                        )}
-                                      </div>
-                                      <div className="text-xs text-gray-600">
-                                        Prix de base :{" "}
-                                        {formatPrice(
-                                          zoneData.montant_base || 0,
-                                          "XOF"
-                                        )}
-                                      </div>
-                                      <div className="text-xs text-orange-600">
-                                        +
-                                        {formatPrice(
-                                          zoneData.montant_prestation || 0,
-                                          "XOF"
-                                        )}{" "}
-                                        ({zoneData.pourcentage_prestation || 0}
-                                        %)
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <span className="text-gray-300">-</span>
-                                  )}
-                                </td>
-                              );
-                            })}
-                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                              <div className="flex items-center justify-end space-x-1">
-                                <button
-                                  onClick={() =>
-                                    handleIndexSelect(tarif.indice)
-                                  }
-                                  className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 active:scale-95"
-                                  title="Configurer le tarif"
-                                >
-                                  <svg
-                                    className="w-4 h-4"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth="2"
-                                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                                    />
-                                  </svg>
-                                </button>
-                                <button
-                                  className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 active:scale-95 disabled:opacity-50"
-                                  title="Supprimer le tarif"
-                                >
-                                  <svg
-                                    className="w-4 h-4"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth="2"
-                                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                    />
-                                  </svg>
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                );
-              })()}
-            </div>
-            <div className="lg:hidden divide-y divide-gray-100">
-              {existingTarifs.map((tarif) => (
-                <div
-                  key={`agency-mobile-${tarif.id}`}
-                  className="group p-4 hover:bg-gray-50/50 transition-all duration-200 active:bg-gray-100/50"
-                >
-                  <div className="flex items-start justify-between space-x-3">
-                    <div className="flex items-start space-x-3 flex-1 min-w-0">
-                      <div className="relative flex-shrink-0">
-                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
-                          {tarif.indice || "T"}
-                        </div>
-                        <div
-                          className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-3 border-white shadow-md ${
-                            tarif.actif ? "bg-green-500" : "bg-red-500"
-                          }`}
-                        >
-                          <div
-                            className={`w-full h-full rounded-full flex items-center justify-center ${
-                              tarif.actif ? "bg-green-400" : "bg-red-400"
-                            }`}
-                          >
-                            {tarif.actif ? (
-                              <svg
-                                className="w-2.5 h-2.5 text-white"
-                                fill="currentColor"
-                                viewBox="0 0 20 20"
-                              >
-                                <path
-                                  fillRule="evenodd"
-                                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                  clipRule="evenodd"
-                                />
-                              </svg>
                             ) : (
-                              <svg
-                                className="w-2.5 h-2.5 text-white"
-                                fill="currentColor"
-                                viewBox="0 0 20 20"
-                              >
-                                <path
-                                  fillRule="evenodd"
-                                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                  clipRule="evenodd"
-                                />
-                              </svg>
+                              <span className="text-slate-200 text-xs">-</span>
                             )}
+                          </td>
+                        );
+                      })}
+                      {activeTab === "agency" && (
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex flex-col items-end space-y-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="flex items-center space-x-1">
+                              <button
+                                onClick={() => handleStatus(tarif)}
+                                className={`p-1 rounded transition-all ${tarif.actif
+                                  ? "text-emerald-600 hover:bg-emerald-50"
+                                  : "text-slate-400 hover:text-emerald-600 hover:bg-slate-50"
+                                  }`}
+                                title={tarif.actif ? "Désactiver" : "Activer"}
+                              >
+                                {tarif.actif ? <EyeIcon className="w-4 h-4" /> : <EyeSlashIcon className="w-4 h-4" />}
+                              </button>
+                              <button
+                                onClick={() => handleIndexSelect(tarif.indice)}
+                                className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-all"
+                                title="Modifier"
+                              >
+                                <PencilSquareIcon className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(tarif)}
+                                className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-all"
+                                title="Supprimer"
+                              >
+                                <TrashIcon className="w-4 h-4" />
+                              </button>
+                            </div>
                           </div>
-                        </div>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Cards (Detailed & Optimized) */}
+            <div className="lg:hidden divide-y divide-slate-100">
+              {(activeTab === "agency" ? existingTarifs : baseTarifs)?.map((tarif) => (
+                <div key={tarif.id} className="p-5 space-y-5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-white font-black text-sm shadow-sm ring-4 ring-slate-50">
+                        {tarif.indice}
                       </div>
-
-                      <div className="flex-1 min-w-0 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-base font-semibold text-gray-900 truncate pr-2">
-                            Indice {tarif.indice || "N/A"}
-                          </h3>
-                          <span
-                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                              tarif.actif
-                                ? "bg-green-100 text-green-800"
-                                : "bg-red-100 text-red-800"
-                            }`}
-                          >
-                            {tarif.actif ? "Actif" : "Inactif"}
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Indice</span>
+                          <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${tarif.actif ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                            {tarif.actif ? 'ACTIF' : 'OFF'}
                           </span>
                         </div>
-
-                        <div className="flex items-center text-sm text-gray-600">
-                          <svg
-                            className="w-4 h-4 mr-2 text-gray-400 flex-shrink-0"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
-                            />
-                          </svg>
-                          <div className="flex flex-wrap gap-1">
-                            {tarif.prix_zones &&
-                              tarif.prix_zones
-                                .slice(0, 2)
-                                .map((zone, index) => (
-                                  <span
-                                    key={index}
-                                    className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-800"
-                                  >
-                                    Z{zone.zone_destination_id.replace("z", "")}
-                                    :{" "}
-                                    {formatPrice(
-                                      zone.montant_expedition || 0,
-                                      "XOF"
-                                    )}
-                                  </span>
-                                ))}
-                            {tarif.prix_zones &&
-                              tarif.prix_zones.length > 2 && (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-200 text-gray-600">
-                                  +{tarif.prix_zones.length - 2}
-                                </span>
-                              )}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center text-xs text-gray-500">
-                          <svg
-                            className="w-3 h-3 mr-2 text-gray-400 flex-shrink-0"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                            />
-                          </svg>
-                          <span>
-                            Créé le{" "}
-                            {tarif.created_at
-                              ? new Date(tarif.created_at).toLocaleDateString(
-                                  "fr-FR",
-                                  {
-                                    day: "numeric",
-                                    month: "short",
-                                    year: "numeric",
-                                  }
-                                )
-                              : "N/A"}
-                          </span>
-                        </div>
+                        <p className="text-sm font-bold text-slate-900 mt-0.5">Config. Tarifaire</p>
                       </div>
                     </div>
-
-                    <div className="flex flex-col items-end space-y-2">
-                      <div className="flex items-center space-x-1">
+                    {activeTab === "agency" && (
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => handleStatus(tarif)}
+                          className={`p-2 rounded-lg border ${tarif.actif
+                            ? "bg-emerald-50 text-emerald-600 border-emerald-100"
+                            : "bg-slate-50 text-slate-400 border-slate-200"
+                            }`}
+                        >
+                          {tarif.actif ? <EyeIcon className="w-5 h-5" /> : <EyeSlashIcon className="w-5 h-5" />}
+                        </button>
                         <button
                           onClick={() => handleIndexSelect(tarif.indice)}
-                          className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 active:scale-95"
-                          title="Modifier le tarif"
+                          className="p-2 bg-slate-50 text-slate-600 rounded-lg border border-slate-200"
                         >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                            />
-                          </svg>
+                          <PencilSquareIcon className="w-5 h-5" />
                         </button>
                         <button
-                          className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 active:scale-95 disabled:opacity-50"
-                          title="Supprimer le tarif"
+                          onClick={() => handleDelete(tarif)}
+                          className="p-2 bg-rose-50 text-rose-600 rounded-lg border border-rose-200"
                         >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            />
-                          </svg>
+                          <TrashIcon className="w-5 h-5" />
                         </button>
                       </div>
-                    </div>
+                    )}
+                  </div>
+
+                  {/* Zone Details - Balanced Grid */}
+                  <div className="grid grid-cols-2 gap-3 pb-2">
+                    {tarif.prix_zones?.slice(0, 8).map((zone, idx) => (
+                      <div key={idx} className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex flex-col justify-between h-16">
+                        <div className="flex justify-between items-start">
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider">
+                            Zone {zone.zone_destination_id.replace(/Z/i, '')}
+                          </p>
+                          <span className="text-[8px] font-bold text-indigo-500 bg-white px-1 rounded shadow-sm">+{zone.pourcentage_prestation}%</span>
+                        </div>
+                        <p className="text-xs font-bold text-slate-900 font-mono">
+                          {formatPrice(zone.montant_expedition, "XOF")}
+                        </p>
+                      </div>
+                    ))}
                   </div>
                 </div>
               ))}
             </div>
+
+            {/* Empty State */}
+            {(!loading && (activeTab === "agency" ? existingTarifs : baseTarifs)?.length === 0) && (
+              <div className="p-16 text-center">
+                <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-100 text-slate-300">
+                  <DocumentDuplicateIcon className="w-8 h-8" />
+                </div>
+                <h3 className="text-sm font-bold text-slate-900 mb-1">Aucun tarif configuré</h3>
+                <p className="text-xs text-slate-500 mb-6">Commencez par initialiser vos tarifs agence depuis les modèles.</p>
+                <button
+                  onClick={handleNewTarif}
+                  className="inline-flex items-center px-4 py-2 bg-slate-950 text-white rounded-lg text-xs font-bold shadow-sm"
+                >
+                  Ajouter maintenant
+                </button>
+              </div>
+            )}
           </>
-        ) : (
-          <div className="p-8 text-center">
-            <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl flex items-center justify-center shadow-lg">
-              <svg
-                className="w-10 h-10 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
-                />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">
-              Aucun tarif configuré
-            </h3>
-            <p className="text-gray-500 mb-8 max-w-sm mx-auto leading-relaxed">
-              Commencez par créer votre premier tarif d'expédition pour
-              commencer à gérer vos prix.
-            </p>
-            <button
-              onClick={handleNewTarif}
-              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white font-semibold rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
-            >
-              <svg
-                className="w-5 h-5 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                />
-              </svg>
-              Créer le premier tarif
-            </button>
-          </div>
         )}
       </div>
 
       {/* Formulaire de configuration des tarifs */}
       <TarifConfigModal
         isOpen={showTarifForm}
-        onClose={() => setShowTarifForm(false)}
+        onClose={() => {
+          setShowTarifForm(false);
+          clearMessage();
+        }}
         selectedIndex={selectedIndex}
         editingZones={editingZones}
         loading={loading}
         onZoneChange={handleZoneChange}
         onSave={handleSave}
+        onSaveZone={handleSaveZone}
         isSaving={isSaving}
       />
 
       <SaveTarifModal
         isOpen={showIndexModal}
-        onClose={() => setShowIndexModal(false)}
+        onClose={() => {
+          setShowIndexModal(false);
+          clearMessage();
+        }}
         onSave={handleSave}
         isSaving={isSaving}
         selectedIndex={selectedIndex}
@@ -920,8 +521,8 @@ const TarifSimpleComponent = ()=> {
         zones={localZones}
         onZoneUpdate={handleZoneUpdate}
       />
-        </div>
+    </div>
 
-    )
+  )
 }
 export default TarifSimpleComponent;

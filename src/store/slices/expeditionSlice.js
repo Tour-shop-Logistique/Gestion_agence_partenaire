@@ -40,6 +40,39 @@ export const fetchExpeditions = createAsyncThunk(
     }
 );
 
+// Récupérer les détails d'une expédition
+export const fetchExpeditionById = createAsyncThunk(
+    "expedition/fetchById",
+    async (id, { rejectWithValue }) => {
+        try {
+            const result = await expeditionsApi.getExpedition(id);
+            if (!result.success) {
+                return rejectWithValue(result.message);
+            }
+            return result.data;
+        } catch (error) {
+            return rejectWithValue(error.message || "Erreur lors du chargement des détails");
+        }
+    }
+);
+
+// Simuler une expédition
+export const simulateExpedition = createAsyncThunk(
+    "expedition/simulate",
+    async (expeditionData, { rejectWithValue }) => {
+        console.log("Simulation data:", expeditionData);
+        try {
+            const result = await expeditionsApi.simulateExpedition(expeditionData);
+            if (!result.success) {
+                return rejectWithValue(result.message);
+            }
+            return result.data;
+        } catch (error) {
+            return rejectWithValue(error.message || "Erreur lors de la simulation");
+        }
+    }
+);
+
 const expeditionSlice = createSlice({
     name: "expedition",
     initialState: {
@@ -51,15 +84,22 @@ const expeditionSlice = createSlice({
             total: 0
         },
         currentExpedition: null,
+        simulationResult: null,
         status: "idle", // 'idle' | 'loading' | 'succeeded' | 'failed'
+        simulationStatus: "idle", // 'idle' | 'loading' | 'succeeded' | 'failed'
         error: null,
         message: null,
     },
     reducers: {
         clearExpeditionStatus: (state) => {
             state.status = "idle";
+            state.simulationStatus = "idle";
             state.error = null;
             state.message = null;
+        },
+        clearSimulation: (state) => {
+            state.simulationResult = null;
+            state.simulationStatus = "idle";
         },
         setCurrentExpedition: (state, action) => {
             state.currentExpedition = action.payload;
@@ -75,10 +115,29 @@ const expeditionSlice = createSlice({
             .addCase(createExpedition.fulfilled, (state, action) => {
                 state.status = "succeeded";
                 state.message = "Expédition créée avec succès";
-                // Optionnel : ajouter à la liste locale si besoin
+                // Handle different response structures
+                // action.payload could be the expedition directly, or nested in data
+                const expeditionData = action.payload?.expedition || action.payload?.data || action.payload;
+                console.log("Expedition data in fulfilled:", expeditionData);
+                state.currentExpedition = expeditionData;
+                state.simulationResult = null; // Clear simulation on success
             })
             .addCase(createExpedition.rejected, (state, action) => {
                 state.status = "failed";
+                state.error = action.payload;
+            })
+
+            // Simulate Expedition
+            .addCase(simulateExpedition.pending, (state) => {
+                state.simulationStatus = "loading";
+                state.error = null;
+            })
+            .addCase(simulateExpedition.fulfilled, (state, action) => {
+                state.simulationStatus = "succeeded";
+                state.simulationResult = action.payload;
+            })
+            .addCase(simulateExpedition.rejected, (state, action) => {
+                state.simulationStatus = "failed";
                 state.error = action.payload;
             })
 
@@ -95,10 +154,24 @@ const expeditionSlice = createSlice({
             .addCase(fetchExpeditions.rejected, (state, action) => {
                 state.status = "failed";
                 state.error = action.payload;
+            })
+
+            // Fetch Expedition Details
+            .addCase(fetchExpeditionById.pending, (state) => {
+                state.status = "loading";
+                state.error = null;
+            })
+            .addCase(fetchExpeditionById.fulfilled, (state, action) => {
+                state.status = "succeeded";
+                state.currentExpedition = action.payload;
+            })
+            .addCase(fetchExpeditionById.rejected, (state, action) => {
+                state.status = "failed";
+                state.error = action.payload;
             });
     },
 });
 
-export const { clearExpeditionStatus, setCurrentExpedition } = expeditionSlice.actions;
+export const { clearExpeditionStatus, setCurrentExpedition, clearSimulation } = expeditionSlice.actions;
 
 export default expeditionSlice.reducer;

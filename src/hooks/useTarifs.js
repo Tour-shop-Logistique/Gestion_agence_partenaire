@@ -15,7 +15,10 @@ import {
   updateNewTarifZones,
   selectTarifsState,
   selectCurrentTarif,
-  clearMessage
+  clearMessage,
+  updateSingleTarifZone,
+  deleteTarifSimple,
+  toggleTarifSimpleStatus
 } from '../store/slices/tarifsSlice';
 
 export const useTarifs = () => {
@@ -109,9 +112,9 @@ export const useTarifs = () => {
 
 
 
-  const saveTarifData = useCallback(async () => {
+  const saveTarifData = useCallback(async (data) => {
     try {
-      return await dispatch(saveTarif()).unwrap();
+      return await dispatch(saveTarif(data)).unwrap();
     } catch (error) {
       console.error('Erreur lors de la sauvegarde du tarif:', error);
       return { success: false, error };
@@ -158,6 +161,34 @@ export const useTarifs = () => {
     }
   }, [dispatch]);
 
+  const updateSingleTarifZoneData = useCallback(async (id, pourcentage) => {
+    try {
+      return await dispatch(updateSingleTarifZone({ id, pourcentage_prestation: pourcentage })).unwrap();
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour de la zone:', error);
+      return { success: false, error };
+    }
+  }, [dispatch]);
+
+  const deleteTarifSimpleData = useCallback(async (id) => {
+    try {
+      return await dispatch(deleteTarifSimple(id)).unwrap();
+    } catch (error) {
+      console.error('Erreur lors de la suppression du tarif simple:', error);
+      return { success: false, error };
+    }
+  }, [dispatch]);
+
+  const toggleTarifSimpleStatusData = useCallback(async (id) => {
+    try {
+      return await dispatch(toggleTarifSimpleStatus(id)).unwrap();
+    } catch (error) {
+      console.error('Erreur lors du changement de statut du tarif simple:', error);
+      return { success: false, error };
+    }
+  }, [dispatch]);
+
+
   return {
     // État
     loading,
@@ -184,6 +215,9 @@ export const useTarifs = () => {
     updateZonePercentage: updateZonePercentageValue,
     updateNewTarifZones: updateZones,
     clearMessage: clearMessageNotification,
+    updateSingleTarifZone: updateSingleTarifZoneData,
+    deleteTarifSimple: deleteTarifSimpleData,
+    toggleTarifSimpleStatus: toggleTarifSimpleStatusData,
 
     // Selecteurs
     getCurrentTarif,

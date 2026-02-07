@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useTarifs } from "../hooks/useTarifs";
+import {
+  XMarkIcon,
+  InformationCircleIcon,
+  MapPinIcon,
+  CheckIcon,
+  TrashIcon,
+  ArrowPathIcon
+} from "@heroicons/react/24/outline";
 
 const AddAgencyTarifModal = ({ show, onClose, editingTarif, selectedBaseRate }) => {
   const {
@@ -9,17 +17,16 @@ const AddAgencyTarifModal = ({ show, onClose, editingTarif, selectedBaseRate }) 
     deleteTarifGroupage,
     isSaving,
     error: apiError,
-    fetchTarifGroupageAgence
+    fetchTarifGroupageAgence,
+    clearMessage
   } = useTarifs();
 
   const [tarifData, setTarifData] = useState(null);
   const [localError, setLocalError] = useState("");
   const [selectedTarifId, setSelectedTarifId] = useState("");
 
-  // Initialisation des données
   useEffect(() => {
     if (editingTarif) {
-      // MODE MODIFICATION (Tarif Agence existant)
       setTarifData({
         id: editingTarif.id,
         categoryName: editingTarif.category?.nom || (editingTarif.type_expedition === 'groupage_afrique' ? 'Expédition Afrique' : (editingTarif.type_expedition === 'groupage_ca' ? 'Expédition CA' : 'Général')),
@@ -33,7 +40,6 @@ const AddAgencyTarifModal = ({ show, onClose, editingTarif, selectedBaseRate }) 
       });
       setSelectedTarifId(editingTarif.tarif_groupage_id || "");
     } else if (selectedBaseRate) {
-      // MODE CREATION (Depuis un tarif de base spécifique)
       const base = Number(selectedBaseRate.montant_base);
       const pct = Number(selectedBaseRate.pourcentage_prestation);
       const prestation = Number(selectedBaseRate.montant_prestation);
@@ -52,24 +58,17 @@ const AddAgencyTarifModal = ({ show, onClose, editingTarif, selectedBaseRate }) 
       });
       setSelectedTarifId(selectedBaseRate.id);
     } else {
-      // MODE CREATION (Générique)
       setTarifData(null);
       setSelectedTarifId("");
     }
   }, [editingTarif, selectedBaseRate]);
 
-  // Chargement auto quand on change via le select (si mode générique)
   useEffect(() => {
     if (!selectedTarifId || editingTarif || selectedBaseRate) return;
-
     const baseRate = groupageTarifs.find((t) => t.id === selectedTarifId);
     if (!baseRate) return;
-
     const base = Number(baseRate.montant_base);
     const pct = Number(baseRate.pourcentage_prestation);
-    const prestation = Number(baseRate.montant_prestation);
-    const expedition = Number(baseRate.montant_expedition);
-
     setTarifData({
       tarif_groupage_id: baseRate.id,
       categoryName: baseRate.category?.nom || (baseRate.type_expedition === 'groupage_afrique' ? 'Expédition Afrique' : (baseRate.type_expedition === 'groupage_ca' ? 'Expédition CA' : 'Général')),
@@ -78,19 +77,17 @@ const AddAgencyTarifModal = ({ show, onClose, editingTarif, selectedBaseRate }) 
       ligne: baseRate.ligne,
       montant_base: base,
       pourcentage_prestation: pct,
-      montant_prestation: prestation,
-      montant_expedition: expedition,
+      montant_prestation: parseFloat(((base * pct) / 100).toFixed(2)),
+      montant_expedition: parseFloat((base + (base * pct) / 100).toFixed(2)),
     });
   }, [selectedTarifId, groupageTarifs, editingTarif, selectedBaseRate]);
 
   const handlePercentageChange = (value) => {
     if (!tarifData) return;
-
     const pct = value === "" ? "" : Number(value);
     const pctNum = pct === "" ? 0 : pct;
     const prestation = parseFloat(((tarifData.montant_base * pctNum) / 100).toFixed(2));
     const total = parseFloat((tarifData.montant_base + prestation).toFixed(2));
-
     setTarifData({
       ...tarifData,
       pourcentage_prestation: pct,
@@ -99,14 +96,19 @@ const AddAgencyTarifModal = ({ show, onClose, editingTarif, selectedBaseRate }) 
     });
   };
 
+  const handleClose = () => {
+    setLocalError("");
+    setSelectedTarifId("");
+    clearMessage();
+    onClose();
+  };
+
   const handleSave = async () => {
     if (!tarifData && !editingTarif?.delete) return;
     setLocalError("");
-
     try {
       let result;
       if (editingTarif) {
-        // Suppression si demandé
         if (editingTarif.delete) {
           result = await deleteTarifGroupage(editingTarif.id);
         } else {
@@ -124,110 +126,143 @@ const AddAgencyTarifModal = ({ show, onClose, editingTarif, selectedBaseRate }) 
           pourcentage_prestation: Number(tarifData.pourcentage_prestation)
         });
       }
-
       if (result && result.success !== false) {
-        if (!editingTarif?.delete) {
-          await fetchTarifGroupageAgence(true);
-        }
-        onClose();
+        if (!editingTarif?.delete) await fetchTarifGroupageAgence(true);
+        handleClose();
       }
     } catch (err) {
-      console.error("Erreur lors de la sauvegarde:", err);
+      console.error("Erreur sauvegarde:", err);
     }
   };
 
   if (!show) return null;
-
   const errorToShow = localError || apiError;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-      <div className="bg-white rounded-3xl w-full max-w-xl p-8 shadow-2xl relative animate-in slide-in-from-bottom-4 duration-500">
+    <div className="fixed inset-0 z-[60] overflow-y-auto">
+      <div className="flex min-h-screen items-center justify-center px-4">
+        {/* Overlay */}
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-[2px]" onClick={handleClose}></div>
 
-        <button onClick={onClose} className="absolute top-6 right-6 text-gray-400 hover:text-gray-900 hover:bg-gray-100 w-10 h-10 rounded-xl flex items-center justify-center transition-all">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
-        </button>
-
-        <h2 className="text-3xl font-black mb-2 text-gray-900">
-          {editingTarif ? (editingTarif.delete ? "Supprimer le tarif" : "Modifier le tarif") : "Ajouter un tarif agence"}
-        </h2>
-        <p className="text-gray-500 font-medium mb-8">
-          {editingTarif?.delete ? "Voulez-vous vraiment supprimer ce tarif ?" : "Configurez la marge bénéficiaire pour ce mode d'expédition"}
-        </p>
-
-        {errorToShow && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-100 text-red-600 rounded-2xl text-sm font-bold flex items-center gap-3">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
-            {errorToShow}
-          </div>
-        )}
-
-        {!editingTarif && !selectedBaseRate && (
-          <div className="mb-6">
-            <label className="block text-sm font-black text-gray-500 uppercase tracking-widest mb-2">Choisir un tarif de base</label>
-            <select
-              className="w-full border-2 border-gray-100 rounded-xl p-4 bg-gray-50 font-bold text-gray-700 focus:border-blue-500 focus:bg-white transition-all outline-none"
-              value={selectedTarifId}
-              onChange={(e) => setSelectedTarifId(e.target.value)}
-            >
-              <option value="">-- Sélectionner --</option>
-              {groupageTarifs.map((t) => (
-                <option key={t.id} value={t.id}>
-                  [{t.type_expedition?.replace('groupage_', '').toUpperCase()}] {t.category?.nom || t.pays} - {t.mode}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {tarifData && !editingTarif?.delete && (
-          <div className="space-y-6">
-            <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Détails de l'expédition</p>
-                  <p className="text-xl font-black text-blue-900">{tarifData.categoryName}</p>
-                  <p className="text-sm font-bold text-blue-600">{tarifData.pays} • {tarifData.mode} {tarifData.ligne ? `(${tarifData.ligne})` : ''}</p>
-                </div>
-                <div className="bg-white px-3 py-1 rounded-full border border-blue-200">
-                  <span className="text-[10px] font-black text-blue-600 uppercase">Base: {tarifData.montant_base?.toLocaleString()} FCFA</span>
-                </div>
+        <div className="relative inline-block w-full max-w-xl transform overflow-hidden rounded-xl bg-white text-left align-middle shadow-[0_20px_50px_rgba(0,0,0,0.2)] transition-all">
+          {/* Header */}
+          <div className="border-b border-slate-100 px-6 py-4 flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${editingTarif?.delete ? 'bg-rose-50 text-rose-600' : 'bg-indigo-50 text-indigo-600'}`}>
+                {editingTarif?.delete ? <TrashIcon className="w-6 h-6" /> : <InformationCircleIcon className="w-6 h-6" />}
               </div>
-
-              <div className="grid grid-cols-2 gap-6 pt-6 border-t border-blue-100">
-                <div>
-                  <p className="text-[10px] font-black text-blue-400 uppercase mb-2">Prestation (%)</p>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      className="w-full border-2 border-blue-200 rounded-xl p-3 font-black text-blue-600 focus:border-blue-500 outline-none transition-all"
-                      value={tarifData.pourcentage_prestation}
-                      onChange={(e) => handlePercentageChange(e.target.value)}
-                    />
-                    <span className="font-bold text-blue-400 text-xl">%</span>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-[10px] font-black text-blue-400 uppercase mb-1">Prix Final</p>
-                  <p className="text-4xl font-black text-gray-900 leading-none">
-                    {tarifData.montant_expedition?.toLocaleString()}
-                  </p>
-                  <p className="text-xs font-bold text-gray-400 mt-2">FCFA</p>
-                </div>
+              <div>
+                <h3 className="text-base font-black text-slate-900 leading-tight">
+                  {editingTarif ? (editingTarif.delete ? "Suppression du tarif" : "Modification du tarif") : "Ajout tarif agence"}
+                </h3>
+                <p className="text-xs font-medium text-slate-500">
+                  {editingTarif?.delete ? "Confirmez-vous le retrait de ce tarif ?" : "Définissez votre marge de prestation"}
+                </p>
               </div>
             </div>
+            <button onClick={handleClose} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-colors">
+              <XMarkIcon className="w-5 h-5" />
+            </button>
           </div>
-        )}
 
-        <div className="mt-10 flex justify-end gap-4">
-          <button onClick={onClose} disabled={isSaving} className="px-6 py-3 rounded-2xl border-2 border-gray-100 text-gray-500 font-bold hover:bg-gray-50 transition-all disabled:opacity-50">Annuler</button>
-          <button
-            onClick={handleSave}
-            disabled={isSaving || (!tarifData && !editingTarif?.delete)}
-            className={`px-8 py-3 rounded-2xl text-white font-black shadow-xl transition-all transform hover:scale-105 active:scale-95 disabled:opacity-70 ${editingTarif?.delete ? 'bg-red-600 hover:bg-red-700 shadow-red-500/30' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/30'}`}
-          >
-            {isSaving ? "Traitement..." : (editingTarif?.delete ? "Confirmer la suppression" : "Sauvegarder")}
-          </button>
+          <div className="px-6 py-6 space-y-6">
+            {errorToShow && (
+              <div className="p-3 bg-amber-50 border border-amber-100 rounded-lg text-amber-800 text-xs font-bold">
+                {errorToShow}
+              </div>
+            )}
+
+            {!editingTarif && !selectedBaseRate && (
+              <div>
+                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Modèle d'expédition</label>
+                <select
+                  className="w-full px-4 py-2 text-sm font-bold bg-white border border-slate-200 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                  value={selectedTarifId}
+                  onChange={(e) => setSelectedTarifId(e.target.value)}
+                >
+                  <option value="">-- Sélectionner un modèle --</option>
+                  {groupageTarifs.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      [{t.type_expedition?.replace('groupage_', '').toUpperCase()}] {t.category?.nom || t.pays} - {t.mode}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {tarifData && !editingTarif?.delete && (
+              <div className="space-y-6">
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center space-x-2 text-indigo-600 mb-1">
+                        <MapPinIcon className="w-3 h-3" />
+                        <span className="text-[10px] font-black uppercase tracking-widest">{tarifData.pays}</span>
+                      </div>
+                      <h4 className="text-sm font-black text-slate-900">{tarifData.categoryName}</h4>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase">{tarifData.mode} {tarifData.ligne ? `(${tarifData.ligne})` : ''}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] font-black text-slate-400 uppercase">Base Modèle</p>
+                      <p className="text-sm font-black text-slate-900">{tarifData.montant_base?.toLocaleString()} <span className="text-[10px] text-slate-400">FCFA</span></p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-6 pt-4 border-t border-slate-200">
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-500 uppercase mb-2">Prestation (%)</label>
+                      <div className="flex items-center">
+                        <input
+                          type="number"
+                          className="w-full px-3 py-2 text-sm font-black text-indigo-600 border border-slate-200 rounded-lg focus:border-indigo-500 outline-none"
+                          value={tarifData.pourcentage_prestation}
+                          onChange={(e) => handlePercentageChange(e.target.value)}
+                        />
+                        <span className="ml-2 font-black text-slate-400">%</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] font-black text-slate-500 uppercase mb-1">Tarif Final Agence</p>
+                      <div className="flex items-baseline justify-end space-x-1">
+                        <span className="text-2xl font-black text-slate-900">{tarifData.montant_expedition?.toLocaleString()}</span>
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">FCFA</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {editingTarif?.delete && (
+              <p className="text-sm font-medium text-slate-600 bg-slate-50 p-4 rounded-lg border border-slate-200">
+                L'indice et la zone <span className="font-black text-slate-900">{editingTarif.mode}</span> seront retirés de votre catalogue de prix. Cette action est irréversible.
+              </p>
+            )}
+          </div>
+
+          <div className="bg-slate-50 px-6 py-4 flex items-center justify-end space-x-3 border-t border-slate-100">
+            <button onClick={handleClose} disabled={isSaving} className="px-4 py-2 text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors">
+              Annuler
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={isSaving || (!tarifData && !editingTarif?.delete)}
+              className={`inline-flex items-center px-6 py-2 rounded-lg text-sm font-black text-white shadow-sm transition-all active:scale-95 ${editingTarif?.delete ? 'bg-rose-600 hover:bg-rose-700' : 'bg-slate-950 hover:bg-slate-800'
+                } disabled:bg-slate-300 disabled:cursor-not-allowed`}
+            >
+              {isSaving ? (
+                <>
+                  <ArrowPathIcon className="w-4 h-4 mr-2 animate-spin" />
+                  Traitement...
+                </>
+              ) : (
+                <>
+                  {editingTarif?.delete ? <TrashIcon className="w-4 h-4 mr-2" /> : <CheckIcon className="w-4 h-4 mr-2" />}
+                  {editingTarif?.delete ? "Supprimer définitivement" : "Confirmer le tarif"}
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { selectCurrentUser, logout } from "../store/slices/authSlice";
 import { useAgency } from "../hooks/useAgency";
 import { getLogoUrl } from "../utils/apiConfig";
+import { Bell, ChevronDown, Menu } from "lucide-react";
 
 const Header = ({ onToggleSidebar }) => {
   const dispatch = useDispatch();
@@ -10,176 +11,153 @@ const Header = ({ onToggleSidebar }) => {
   const { data: agencyData } = useAgency();
 
   const [showDropdown, setShowDropdown] = useState(false);
-  const [agencyName, setAgencyName] = useState(agencyData?.agence?.nom_agence ?? "Dashboard");
-  const [agencyLogo, setAgencyLogo] = useState(getLogoUrl(agencyData?.agence?.logo) ?? null);
+  const [agencyName, setAgencyName] = useState("Dashboard");
+  const [agencyLogo, setAgencyLogo] = useState(null);
 
   useEffect(() => {
-    // Fonction pour récupérer les données de l'agence depuis localStorage
     const getAgencyData = () => {
       try {
         const storedAgencyData = localStorage.getItem("agencyData");
-        if (storedAgencyData) {
-          const parsedData = JSON.parse(storedAgencyData);
-          return parsedData;
-        }
-      } catch (error) {
-        console.error(
-          "Erreur lors de la récupération des données de l'agence:",
-          error
-        );
+        return storedAgencyData ? JSON.parse(storedAgencyData) : null;
+      } catch {
+        return null;
       }
-      return null;
     };
-    console.log("agencyData:", agencyData);
-    // Mettre à jour le nom et logo de l'agence quand agencyData change
+
     if (agencyData?.agence?.nom_agence) {
       setAgencyName(agencyData.agence.nom_agence);
       setAgencyLogo(getLogoUrl(agencyData.agence.logo));
     } else {
-      // Essayer de récupérer depuis localStorage si pas disponible dans Redux
       const storedData = getAgencyData();
       if (storedData?.agence?.nom_agence) {
         setAgencyName(storedData.agence.nom_agence);
         setAgencyLogo(getLogoUrl(storedData.agence.logo));
-      } else {
-        setAgencyName("Dashboard"); // Revenir à "Dashboard" si aucune donnée disponible
-        setAgencyLogo(null);
       }
     }
   }, [agencyData]);
 
-  const handleLogout = () => {
-    dispatch(logout());
-  };
+  const handleLogout = () => dispatch(logout());
 
   const initials = (currentUser?.name || "")
     .split(" ")
-    .filter(Boolean)
     .map((n) => n[0])
     .join("")
     .toUpperCase();
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200 h-16 fixed top-0 left-0 right-0 z-50">
-      <div className="flex items-center justify-between h-full px-4 sm:px-6">
-        <div className="flex items-center min-w-0 flex-1">
-          {/* Mobile hamburger - always visible on mobile/tablet */}
+    <header className="h-16 fixed top-0 left-0 right-0 z-50 
+    bg-white/80 backdrop-blur-xl border-b border-slate-200/60">
+
+      <div className="h-full px-6 flex items-center justify-between">
+
+        {/* LEFT */}
+        <div className="flex items-center gap-4 min-w-0">
+
+          {/* Burger */}
           <button
-            onClick={() => onToggleSidebar && onToggleSidebar()}
-            className="lg:hidden mr-3 p-2 rounded-lg hover:bg-gray-100 transition-colors"
-            aria-label="Toggle sidebar"
+            onClick={onToggleSidebar}
+            className="lg:hidden p-2 rounded-xl hover:bg-slate-100 transition"
           >
-            <svg
-              className="w-6 h-6 text-gray-700"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M4 6h16M4 12h16M4 18h16"
-              />
-            </svg>
+            <Menu className="w-6 h-6 text-slate-700" />
           </button>
 
-          {/* Agency name and logo - responsive text size */}
-          <div className="flex items-center">
+          {/* Agency */}
+          <div className="flex items-center gap-3">
             {agencyLogo && (
-              <img
-                src={agencyLogo}
-                alt="Logo"
-                className="h-8 w-8 object-contain mr-2 rounded"
-              />
+              <div className="p-1 rounded-xl bg-gradient-to-br from-indigo-50 to-indigo-100">
+                <img
+                  src={agencyLogo}
+                  alt="logo"
+                  className="w-9 h-9 rounded-lg object-contain"
+                />
+              </div>
             )}
-            <h1 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">
-              {agencyName}
-            </h1>
+
+            <div className="leading-tight">
+              <h1 className="text-lg font-bold text-slate-900 truncate">
+                {agencyName}
+              </h1>
+              <p className="text-xs text-slate-400 hidden sm:block">
+                Backoffice Management
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Actions utilisateur - mobile-first layout */}
-        <div className="flex items-center space-x-2 sm:space-x-4">
-          {/* Notifications - hidden on very small screens */}
-          <button className="hidden sm:block relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
-            <span className="text-lg">🔔</span>
+        {/* RIGHT */}
+        <div className="flex items-center gap-3">
+
+          {/* Notifications */}
+          <button className="relative p-2 rounded-xl hover:bg-slate-100 transition">
+            <Bell className="w-5 h-5 text-slate-600" />
             <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
           </button>
 
-          {/* Profil utilisateur - compact on mobile */}
+          {/* USER */}
           <div className="relative">
             <button
               onClick={() => setShowDropdown(!showDropdown)}
-              className="flex items-center space-x-2 sm:space-x-3 p-2 rounded-lg hover:bg-gray-100 transition-colors"
-              aria-haspopup="true"
-              aria-expanded={showDropdown}
+              className="flex items-center gap-3 px-3 py-2 rounded-2xl hover:bg-slate-100 transition"
             >
-              <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
-                <span className="text-primary-600 font-medium text-sm">
-                  {initials}
-                </span>
+              {/* Avatar */}
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center shadow text-white font-bold text-sm">
+                {initials}
               </div>
-              {/* User info hidden on mobile, shown on larger screens */}
-              <div className="hidden lg:block text-left">
-                <p className="text-sm font-medium text-gray-900">
+
+              {/* Infos */}
+              <div className="hidden md:block text-left">
+                <p className="text-sm font-semibold text-slate-900">
                   {currentUser?.name}
                 </p>
-                <p className="text-xs text-gray-500">
-                  {currentUser?.role === "admin" ? "Administrateur" : "Agent"}
+                <p className="text-xs text-slate-500">
+                  {currentUser?.role === "admin"
+                    ? "Administrateur"
+                    : "Agent"}
                 </p>
               </div>
-              <span className="text-gray-400 text-sm">▼</span>
+
+              <ChevronDown className="w-4 h-4 text-slate-400" />
             </button>
 
-            {/* Dropdown menu */}
+            {/* DROPDOWN */}
             {showDropdown && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
-                <div className="px-4 py-2 border-b border-gray-100">
-                  <p className="text-sm font-medium text-gray-900">
+              <div className="absolute right-0 mt-3 w-64 
+              bg-white rounded-2xl shadow-xl border border-slate-200 p-2">
+
+                {/* User card */}
+                <div className="p-3 rounded-xl bg-slate-50 mb-2">
+                  <p className="font-semibold text-slate-900">
                     {currentUser?.name}
                   </p>
-                  <p className="text-xs text-gray-500">{currentUser?.email}</p>
+                  <p className="text-xs text-slate-500">
+                    {currentUser?.email}
+                  </p>
                 </div>
 
-                <button
-                  onClick={() => {
-                    setShowDropdown(false);
-                    // Navigation vers le profil
-                  }}
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                >
+                {/* Actions */}
+                <button className="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 text-sm">
                   👤 Mon profil
                 </button>
 
-                <button
-                  onClick={() => {
-                    setShowDropdown(false);
-                    // Navigation vers les paramètres
-                  }}
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                >
+                <button className="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 text-sm">
                   ⚙️ Paramètres
                 </button>
 
-                <div className="border-t border-gray-100">
-                  <button
-                    onClick={() => {
-                      setShowDropdown(false);
-                      handleLogout();
-                    }}
-                    className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                  >
-                    🚪 Se déconnecter
-                  </button>
-                </div>
+                <div className="h-px bg-slate-200 my-2" />
+
+                <button
+                  onClick={handleLogout}
+                  className="w-full text-left px-3 py-2 rounded-xl hover:bg-red-50 text-red-600 text-sm font-medium"
+                >
+                  🚪 Se déconnecter
+                </button>
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Overlay pour fermer le dropdown */}
+      {/* Overlay */}
       {showDropdown && (
         <div
           className="fixed inset-0 z-40"

@@ -2,6 +2,43 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { tarifsApi } from '../../utils/api/tarifs';
 
 // Thunks pour les opérations asynchrones
+const groupTarifsByIndice = (flatTarifs) => {
+  if (!Array.isArray(flatTarifs)) return [];
+
+  const grouped = {};
+
+  flatTarifs.forEach(item => {
+    const idx = item.indice;
+    if (!grouped[idx]) {
+      grouped[idx] = {
+        id: item.id,
+        indice: idx,
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        actif: item.actif,
+        prix_zones: []
+      };
+    }
+
+    // S'assurer que les zones ont la bonne structure
+    grouped[idx].prix_zones.push({
+      ...item,
+      zone_destination_id: item.zone_destination_id || `Z1`,
+      nom_zone: item.nom_zone || `Zone ${item.zone_destination_id?.replace('Z', '') || 'Inconnue'}`,
+      montant_base: parseFloat(item.montant_base) || 0,
+      pourcentage_prestation: parseFloat(item.pourcentage_prestation) || 0,
+      montant_prestation: parseFloat(item.montant_prestation) || 0,
+      montant_expedition: parseFloat(item.montant_expedition) || 0
+    });
+  });
+
+  return Object.values(grouped).sort((a, b) => {
+    const numA = parseFloat(a.indice) || 0;
+    const numB = parseFloat(b.indice) || 0;
+    return numA - numB;
+  });
+};
+
 export const fetchTarifs = createAsyncThunk(
   'tarifs/fetchTarifs',
   async (_, { rejectWithValue }) => {
@@ -34,53 +71,117 @@ export const fetchAgencyTarifs = createAsyncThunk(
 
 export const saveTarif = createAsyncThunk(
   'tarifs/saveTarif',
-  async (_, { getState, rejectWithValue }) => {
+  async (customData, { getState, rejectWithValue }) => {
     const state = getState();
-    const { selectedIndex, editingZones, tarifs } = state.tarifs;
+    const { selectedIndex, editingZones, existingTarifs } = state.tarifs;
 
-    if (selectedIndex === null) {
-      return rejectWithValue('Aucun tarif sélectionné');
+    // Utiliser les données passées (SaveTarifModal) ou celles du state (TarifConfigModal)
+    const dataToSave = customData || {
+      indice: selectedIndex,
+      prix_zones: editingZones
+    };
+
+    if (!dataToSave.indice || dataToSave.indice === 'new') {
+      return rejectWithValue('Aucun indice valide sélectionné');
     }
 
     try {
-      // Préparer les données à sauvegarder
-      const dataToSave = {
-        indice: selectedIndex === 'new'
-          ? Math.max(0, ...tarifs.map(t => t.indice)) + 1
-          : selectedIndex,
-        actif: true,
-        prix_zones: editingZones.map(zone => ({
-          zone_destination_id: zone.zone_destination_id,
-          nom_zone: zone.nom_zone,
-          montant_base: parseFloat(zone.montant_base) || 0,
-          pourcentage_prestation: parseFloat(zone.pourcentage_prestation) || 0,
-          montant_prestation: Math.round((parseFloat(zone.montant_base) * parseFloat(zone.pourcentage_prestation || 0)) / 100),
-          montant_expedition: Math.round(parseFloat(zone.montant_base) +
-            (parseFloat(zone.montant_base) * parseFloat(zone.pourcentage_prestation || 0)) / 100)
-        }))
+      const results = [];
+      const errors = [];
+      const targetIndice = parseFloat(dataToSave.indice);
+
+      // Déterminer s'il s'agit d'un indice déjà configuré par l'agence
+      // pour savoir si on fait des updates ou des creates
+      const isExistingInAgency = existingTarifs.some(t => parseFloat(t.indice) === targetIndice);
+
+      for (const zone of dataToSave.prix_zones) {
+        const percentage = parseFloat(zone.pourcentage_prestation) || 0;
+
+        let response;
+        // Si on n'est pas dans une création globale (customData) et que l'indice existe
+        // déjà chez l'agence, on fait un UPDATE sur l'ID de la ligne agence.
+        if (!customData && isExistingInAgency && zone.id) {
+          response = await tarifsApi.updateTarifSimple(zone.id, {
+            pourcentage_prestation: percentage
+          });
+        } else {
+          // Sinon c'est un AJOUT (ou un import de modèle).
+          // Le body doit contenir tarif_simple_id (ID du modèle de base) et le pourcentage.
+          response = await tarifsApi.createTarifSimple({
+            tarif_simple_id: zone.id,
+            pourcentage_prestation: percentage
+          });
+        }
+
+        if (response.success) {
+          results.push(response.data);
+        } else {
+          errors.push(`${zone.zone_destination_id}: ${response.message}`);
+        }
+      }
+
+      if (results.length === 0 && errors.length > 0) {
+        return rejectWithValue(errors.join(' | '));
+      }
+
+      return {
+        success: true,
+        data: results[0] || {},
+        isNew: !isExistingInAgency,
+        message: errors.length > 0
+          ? `Sauvegarde partielle (${results.length}/${dataToSave.prix_zones.length} zones).`
+          : 'Tarif sauvegardé avec succès'
       };
-
-      // Vérifier si on crée un nouveau tarif ou on en met un à jour un existant
-      const isNewTarif = selectedIndex === 'new';
-
-      let response;
-      if (isNewTarif) {
-        response = await tarifsApi.createTarifSimple(dataToSave);
-      } else {
-        response = await tarifsApi.updateTarifSimple(selectedIndex, dataToSave);
-      }
-
-      if (response.success) {
-        return {
-          data: response.data,
-          isNew: isNewTarif,
-          message: isNewTarif ? 'Tarif créé avec succès' : 'Tarif mis à jour avec succès'
-        };
-      }
-
-      return rejectWithValue(response.message || 'Erreur lors de la sauvegarde du tarif');
     } catch (error) {
       return rejectWithValue(error.message || 'Erreur lors de la sauvegarde');
+    }
+  }
+);
+
+export const updateSingleTarifZone = createAsyncThunk(
+  'tarifs/updateSingleTarifZone',
+  async ({ id, pourcentage_prestation }, { rejectWithValue }) => {
+    try {
+      const response = await tarifsApi.updateTarifSimple(id, {
+        pourcentage_prestation
+      });
+
+      if (response.success) {
+        return response.data;
+      }
+      return rejectWithValue(response.message);
+    } catch (error) {
+      return rejectWithValue(error.message || 'Erreur lors de la mise à jour de la zone');
+    }
+  }
+);
+
+export const deleteTarifSimple = createAsyncThunk(
+  'tarifs/deleteTarifSimple',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await tarifsApi.deleteTarif(id);
+      if (response.success) {
+        return id;
+      }
+      return rejectWithValue(response.message);
+    } catch (error) {
+      return rejectWithValue(error.message || 'Erreur lors de la suppression du tarif');
+    }
+  }
+);
+
+export const toggleTarifSimpleStatus = createAsyncThunk(
+  'tarifs/toggleTarifSimpleStatus',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await tarifsApi.toggleTarifStatus(id);
+      if (response.success) {
+        return { id, actif: response.data?.actif };
+      }
+      return rejectWithValue(response.message);
+    } catch (error) {
+      return rejectWithValue(error.message || 'Erreur lors du changement de statut');
     }
   }
 );
@@ -166,12 +267,34 @@ export const deleteTarifGroupage = createAsyncThunk(
 
 
 
+// Helpers pour le LocalStorage
+const saveTarifsToCache = (data) => {
+  try {
+    const currentCache = JSON.parse(localStorage.getItem('tarifs_cache') || '{}');
+    const newCache = { ...currentCache, ...data };
+    localStorage.setItem('tarifs_cache', JSON.stringify(newCache));
+  } catch (e) {
+    console.error('Erreur lors de la sauvegarde du cache tarifs:', e);
+  }
+};
+
+const loadTarifsFromCache = () => {
+  try {
+    const data = localStorage.getItem('tarifs_cache');
+    return data ? JSON.parse(data) : {};
+  } catch (e) {
+    return {};
+  }
+};
+
 // État initial
+const cachedData = loadTarifsFromCache();
+
 const initialState = {
-  tarifs: [], // tarifs standards
-  existingTarifs: [], // tarifs personnalisés de l'agence
-  groupageTarifs: [], // tarifs groupage
-  existingGroupageTarifs: [], // tarifs groupage de l'agence
+  tarifs: cachedData.tarifs || [], // tarifs standards
+  existingTarifs: cachedData.existingTarifs || [], // tarifs personnalisés de l'agence
+  groupageTarifs: cachedData.groupageTarifs || [], // tarifs groupage
+  existingGroupageTarifs: cachedData.existingGroupageTarifs || [], // tarifs groupage de l'agence
   loading: false,
   error: null,
   message: '',
@@ -181,11 +304,14 @@ const initialState = {
   newTarif: {
     indice: '',
     actif: true,
-    prix_zones: [
-      { zone_destination_id: 1, nom_zone: 'Zone 1', montant_base: 0, pourcentage_prestation: 0, montant_prestation: 0, montant_expedition: 0 },
-      { zone_destination_id: 2, nom_zone: 'Zone 2', montant_base: 0, pourcentage_prestation: 0, montant_prestation: 0, montant_expedition: 0 },
-      { zone_destination_id: 3, nom_zone: 'Zone 3', montant_base: 0, pourcentage_prestation: 0, montant_prestation: 0, montant_expedition: 0 }
-    ]
+    prix_zones: Array.from({ length: 8 }, (_, i) => ({
+      zone_destination_id: `Z${i + 1}`,
+      nom_zone: `Zone ${i + 1}`,
+      montant_base: 0,
+      pourcentage_prestation: 0,
+      montant_prestation: 0,
+      montant_expedition: 0
+    }))
   }
 };
 
@@ -222,7 +348,17 @@ const tarifsSlice = createSlice({
         return Math.abs(numA - numB) < 0.0001;
       };
 
-      // Trouver le tarif avec l'index sélectionné
+      // 1. D'abord chercher dans les tarifs de l'agence (priorité)
+      const existingAgencyTarif = state.existingTarifs.find(t => compareIndices(t.indice, normalizedIndex));
+
+      if (existingAgencyTarif) {
+        state.selectedIndex = existingAgencyTarif.indice;
+        state.editingZones = JSON.parse(JSON.stringify(existingAgencyTarif.prix_zones || []));
+        state.error = null;
+        return;
+      }
+
+      // 2. Sinon chercher dans les tarifs de base
       const selectedTarif = state.tarifs.find(t => compareIndices(t.indice, normalizedIndex));
 
       if (selectedTarif) {
@@ -232,7 +368,8 @@ const tarifsSlice = createSlice({
       } else {
         state.error = `Aucune donnée disponible pour l'indice ${index}`;
 
-        // Trouver l'index disponible le plus proche
+        // Trouver l'index disponible le plus proche (parmi les bases ou agence ?)
+        // On cherche généralement dans les bases pour proposer un modèle
         const availableIndices = [...new Set(state.tarifs.map(t => t.indice))]
           .sort((a, b) => {
             const numA = parseFloat(a) || 0;
@@ -293,18 +430,12 @@ const tarifsSlice = createSlice({
       .addCase(fetchTarifs.fulfilled, (state, action) => {
         state.loading = false;
 
-        // Traiter les tarifs
-        state.tarifs = action.payload.map(tarif => ({
-          ...tarif,
-          prix_zones: (tarif.prix_zones || []).map(zone => ({
-            zone_destination_id: zone.zone_destination_id || `z1`,
-            nom_zone: zone.nom_zone || `Zone ${zone.zone_destination_id || 'Inconnue'}`,
-            montant_base: parseFloat(zone.montant_base) || 0,
-            pourcentage_prestation: parseFloat(zone.pourcentage_prestation) || 0,
-            montant_prestation: parseFloat(zone.montant_prestation) || 0,
-            montant_expedition: parseFloat(zone.montant_expedition) || 0
-          }))
-        }));
+        // Traiter et grouper les tarifs par indice
+        const groupedTarifs = groupTarifsByIndice(action.payload);
+        state.tarifs = groupedTarifs;
+
+        // Sauvegarder dans le cache
+        saveTarifsToCache({ tarifs: groupedTarifs });
 
         // Sélectionner le premier index par défaut si aucun n'est sélectionné
         if (state.tarifs.length > 0 && state.selectedIndex === null) {
@@ -323,12 +454,18 @@ const tarifsSlice = createSlice({
       })
       .addCase(fetchAgencyTarifs.fulfilled, (state, action) => {
         state.loading = false;
-        state.existingTarifs = action.payload;
+
+        // Grouper les tarifs agence par indice
+        const groupedAgencyTarifs = groupTarifsByIndice(action.payload);
+        state.existingTarifs = groupedAgencyTarifs;
+
+        // Sauvegarder dans le cache
+        saveTarifsToCache({ existingTarifs: groupedAgencyTarifs });
 
         // Si aucun tarif n'est sélectionné, sélectionner le premier
-        if (action.payload.length > 0 && state.selectedIndex === null) {
-          state.selectedIndex = action.payload[0].indice;
-          state.editingZones = JSON.parse(JSON.stringify(action.payload[0].prix_zones || []));
+        if (state.existingTarifs.length > 0 && state.selectedIndex === null) {
+          state.selectedIndex = state.existingTarifs[0].indice;
+          state.editingZones = JSON.parse(JSON.stringify(state.existingTarifs[0].prix_zones || []));
         }
       })
       .addCase(fetchAgencyTarifs.rejected, (state, action) => {
@@ -367,8 +504,124 @@ const tarifsSlice = createSlice({
             return tarif;
           });
         }
+        saveTarifsToCache({ existingTarifs: state.existingTarifs });
       })
       .addCase(saveTarif.rejected, (state, action) => {
+        state.isSaving = false;
+        state.error = action.payload;
+      })
+
+      // Gestion de updateSingleTarifZone
+      .addCase(updateSingleTarifZone.pending, (state) => {
+        state.isSaving = true;
+        state.error = null;
+      })
+      .addCase(updateSingleTarifZone.fulfilled, (state, action) => {
+        state.isSaving = false;
+        state.message = 'Zone mise à jour avec succès';
+
+        const updatedZone = action.payload;
+        if (updatedZone && updatedZone.id) {
+          state.existingTarifs = state.existingTarifs.map(tarif => {
+            const zoneIndex = tarif.prix_zones?.findIndex(z => z.id === updatedZone.id);
+            if (zoneIndex !== -1 && tarif.prix_zones) {
+              const newZones = [...tarif.prix_zones];
+              newZones[zoneIndex] = {
+                ...newZones[zoneIndex],
+                ...updatedZone,
+                pourcentage_prestation: parseFloat(updatedZone.pourcentage_prestation),
+                montant_prestation: parseFloat(updatedZone.montant_prestation),
+                montant_expedition: parseFloat(updatedZone.montant_expedition)
+              };
+              return { ...tarif, prix_zones: newZones };
+            }
+            return tarif;
+          });
+
+          // Si on est en train d'éditer ce tarif, mettre à jour editingZones aussi
+          const currentEditingTarif = state.existingTarifs.find(t => t.indice === state.selectedIndex);
+          if (currentEditingTarif) {
+            // Check if the updated zone belongs to current editing selection
+            const isRelevant = currentEditingTarif.prix_zones.some(z => z.id === updatedZone.id);
+            if (isRelevant) {
+              state.editingZones = JSON.parse(JSON.stringify(currentEditingTarif.prix_zones));
+            }
+          }
+          saveTarifsToCache({ existingTarifs: state.existingTarifs });
+        }
+      })
+      .addCase(updateSingleTarifZone.rejected, (state, action) => {
+        state.isSaving = false;
+        state.error = action.payload;
+      })
+
+      // Gestion de deleteTarifSimple
+      .addCase(deleteTarifSimple.pending, (state) => {
+        state.isSaving = true;
+        state.error = null;
+      })
+      .addCase(deleteTarifSimple.fulfilled, (state, action) => {
+        state.isSaving = false;
+        state.message = 'Tarif supprimé avec succès';
+        // Supprimer le tarif de la liste existante
+        // Note: Comme les tarifs sont groupés par indice, si on supprime un tarif (une ligne spécifique d'un indice),
+        // on doit vérifier si l'indice a encore d'autres tarifs ou s'il faut le retirer.
+        // Mais ici l'ID passé semble être l'ID d'un tarif simple (une ligne de la table tarifs_simples).
+        // Cependant, l'affichage est groupé. Il faut voir comment l'API de suppression fonctionne.
+        // Si l'API supprime une entrée de la table, on doit la retirer de notre structure groupée.
+
+        // L'action renvoie l'ID supprimé.
+        // On doit parcourir existingTarifs (qui sont des groupes) et retirer l'élément correspondant dans prix_zones ou supprimer le groupe si c'était le représentatif ?
+        // Attendons, existingTarifs est un tableau de groupes : { indice, id, prix_zones: [...] }
+        // Si l'ID supprimé est "id" du groupe (le tarif représentatif), ça peut être délicat.
+        // Mais généralement "delete-tarif-simple/{id}" supprime un enregistrement spécifique.
+        // Si "id" correspond à l'ID d'un des éléments dans prix_zones.
+
+        // Simplification : On recharge souvent après suppression, mais pour l'UI optimiste :
+        // On va essayer de le retirer de prix_zones de tous les groupes
+        state.existingTarifs = state.existingTarifs.map(group => ({
+          ...group,
+          prix_zones: group.prix_zones.filter(z => z.id !== action.payload)
+        })).filter(group => group.prix_zones.length > 0); // Si plus de zones, on vire le groupe
+        saveTarifsToCache({ existingTarifs: state.existingTarifs });
+
+      })
+      .addCase(deleteTarifSimple.rejected, (state, action) => {
+        state.isSaving = false;
+        state.error = action.payload;
+      })
+
+      // Gestion de toggleTarifSimpleStatus
+      .addCase(toggleTarifSimpleStatus.pending, (state) => {
+        // On ne met pas forcément isSaving à true pour ne pas bloquer toute l'UI, ou alors si.
+        // state.isSaving = true; 
+        state.error = null;
+      })
+      .addCase(toggleTarifSimpleStatus.fulfilled, (state, action) => {
+        state.isSaving = false;
+        // action.payload contient { id, actif }
+        // On met à jour le statut dans la structure
+        const { id, actif } = action.payload;
+
+        state.existingTarifs = state.existingTarifs.map(group => {
+          // Vérifier si c'est le tarif principal du groupe
+          if (group.id === id) {
+            return { ...group, actif };
+          }
+          // Ou si c'est dans les zones (si chaque zone a un statut, ce qui est rare pour tarif simple, souvent c'est l'indice)
+          // Dans le doute, on update si on trouve
+          const zoneIndex = group.prix_zones.findIndex(z => z.id === id);
+          if (zoneIndex !== -1) {
+            const newZones = [...group.prix_zones];
+            newZones[zoneIndex] = { ...newZones[zoneIndex], actif };
+            return { ...group, prix_zones: newZones };
+          }
+          return group;
+        });
+        state.message = 'Statut modifié avec succès';
+        saveTarifsToCache({ existingTarifs: state.existingTarifs });
+      })
+      .addCase(toggleTarifSimpleStatus.rejected, (state, action) => {
         state.isSaving = false;
         state.error = action.payload;
       });
@@ -382,6 +635,7 @@ const tarifsSlice = createSlice({
       .addCase(fetchTarifsGroupage.fulfilled, (state, action) => {
         state.loading = false;
         state.groupageTarifs = action.payload;
+        saveTarifsToCache({ groupageTarifs: action.payload });
       })
       .addCase(fetchTarifsGroupage.rejected, (state, action) => {
         state.loading = false;
@@ -395,6 +649,7 @@ const tarifsSlice = createSlice({
       .addCase(fetchTarifGroupageAgence.fulfilled, (state, action) => {
         state.loading = false;
         state.existingGroupageTarifs = action.payload;
+        saveTarifsToCache({ existingGroupageTarifs: action.payload });
       })
       .addCase(fetchTarifGroupageAgence.rejected, (state, action) => {
         state.loading = false;
@@ -413,6 +668,7 @@ const tarifsSlice = createSlice({
         if (Array.isArray(action.payload)) {
           state.existingGroupageTarifs = action.payload;
         }
+        saveTarifsToCache({ existingGroupageTarifs: state.existingGroupageTarifs });
       })
       .addCase(createTarifGroupage.rejected, (state, action) => {
         state.isSaving = false;
@@ -433,6 +689,7 @@ const tarifsSlice = createSlice({
             t.id === action.payload.id ? action.payload : t
           );
         }
+        saveTarifsToCache({ existingGroupageTarifs: state.existingGroupageTarifs });
       })
       .addCase(updateTarifGroupage.rejected, (state, action) => {
         state.isSaving = false;
@@ -448,6 +705,7 @@ const tarifsSlice = createSlice({
         state.isSaving = false;
         state.message = 'Tarif groupage supprimé avec succès';
         state.existingGroupageTarifs = state.existingGroupageTarifs.filter(t => t.id !== action.payload);
+        saveTarifsToCache({ existingGroupageTarifs: state.existingGroupageTarifs });
       })
       .addCase(deleteTarifGroupage.rejected, (state, action) => {
         state.isSaving = false;

@@ -23,5 +23,24 @@ export const productsApi = {
                 message: error.message || "Erreur lors de la récupération des produits",
             };
         }
+    },
+    /**
+     * Lister toutes les catégories disponibles
+     * @returns {Promise<Object>}
+     */
+    async listCategories() {
+        try {
+            const response = await apiService.get(API_ENDPOINTS.PRODUCTS.LIST_CATEGORIES);
+
+            return {
+                success: response.success !== false,
+                data: response.categories || [],
+            };
+        } catch (error) {
+            return {
+                success: false,
+                message: error.message || "Erreur lors de la récupération des catégories",
+            };
+        }
     }
 };

@@ -150,10 +150,19 @@ export const toggleUserStatus = createAsyncThunk(
   }
 );
 
+const getInitialAgency = () => {
+  try {
+    const data = localStorage.getItem('agencyData');
+    return data ? JSON.parse(data) : null;
+  } catch (e) {
+    return null;
+  }
+};
+
 const initialState = {
-  data: null,
+  data: getInitialAgency(),
   users: [],
-  status: 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed'
+  status: localStorage.getItem('agencyData') ? 'succeeded' : 'idle',
   usersStatus: 'idle',
   error: null,
   usersError: null,
