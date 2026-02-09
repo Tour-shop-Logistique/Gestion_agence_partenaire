@@ -76,14 +76,20 @@ export const agenciesApi = {
    * @returns {Promise<Object>}
    */
   async updateAgency(agencyData) {
+    console.log("Données de l'agence (agence/update):", agencyData);
     try {
       let payload = agencyData;
+      let method = 'PUT';
 
-      // Si on a un logo ou si on veut forcer FormData
-      if (agencyData.logo instanceof File) {
+      // Vérifier si on a un fichier
+      const hasFile = Object.values(agencyData).some(val => val instanceof File);
+
+      // Si on a un logo ou tout autre fichier, on doit utiliser FormData
+      if (hasFile) {
         const formData = new FormData();
         Object.keys(agencyData).forEach(key => {
           if (agencyData[key] !== null && agencyData[key] !== undefined) {
+            // Pour les objets complexes (sauf les File), on stringify pour le FormData
             if (typeof agencyData[key] === 'object' && !(agencyData[key] instanceof File)) {
               formData.append(key, JSON.stringify(agencyData[key]));
             } else {
@@ -91,13 +97,18 @@ export const agenciesApi = {
             }
           }
         });
+
+        // Technique de spoofing pour Laravel/PHP: utiliser POST avec _method=PUT
+        // car le multipart/form-data n'est souvent pas supporté nativement via PUT
+        formData.append('_method', 'PUT');
         payload = formData;
+        method = 'POST';
       }
 
-      const response = await apiService.put(
-        API_ENDPOINTS.AGENCIES.UPDATE,
-        payload
-      );
+      // Utiliser apiService.post si on a spoofé la méthode, sinon .put standard
+      const response = method === 'POST'
+        ? await apiService.post(API_ENDPOINTS.AGENCIES.UPDATE, payload)
+        : await apiService.put(API_ENDPOINTS.AGENCIES.UPDATE, payload);
 
       return {
         success: response.success !== false,
@@ -105,6 +116,7 @@ export const agenciesApi = {
         message: response.message || "Agence mise à jour avec succès",
       };
     } catch (error) {
+      console.error("Erreur lors de l'update de l'agence:", error);
       return {
         success: false,
         message: error.message || "Erreur lors de la mise à jour de l'agence",

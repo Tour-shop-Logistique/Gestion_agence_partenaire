@@ -12,6 +12,26 @@ import {
   ArrowPathIcon
 } from "@heroicons/react/24/outline";
 
+const StatusToggle = ({ active, onClick, disabled }) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    title={active ? "Désactiver" : "Activer"}
+    className={`
+      relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2
+      ${active ? 'bg-emerald-500' : 'bg-slate-200'}
+      ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
+    `}
+  >
+    <span
+      className={`
+        pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out
+        ${active ? 'translate-x-4' : 'translate-x-0'}
+      `}
+    />
+  </button>
+);
+
 const TarifGroupageComponent = () => {
   const [showTarifGroupage, setShowTarifGroupage] = useState(false);
   const [activeTab, setActiveTab] = useState("agency"); // Changed default to "agency"
@@ -26,6 +46,7 @@ const TarifGroupageComponent = () => {
     existingGroupageTarifs,
     fetchTarifsGroupageBase,
     fetchTarifGroupageAgence,
+    toggleTarifGroupageStatus,
     clearMessage
   } = useTarifs();
 
@@ -72,6 +93,28 @@ const TarifGroupageComponent = () => {
     setShowTarifGroupage(true);
   };
 
+  const handleToggleStatus = async (tarif) => {
+    try {
+      if (tarif.id) {
+        await toggleTarifGroupageStatus(tarif.id);
+        // La mise à jour est gérée par Redux, mais on peut forcer un refresh si besoin
+      }
+    } catch (error) {
+      console.error("Erreur toggle status groupage:", error);
+    }
+  };
+
+  const handleRefresh = async () => {
+    try {
+      await Promise.all([
+        fetchTarifsGroupageBase(true),
+        fetchTarifGroupageAgence(true)
+      ]);
+    } catch (err) {
+      console.error("Erreur refresh groupage:", err);
+    }
+  };
+
   const groupedBaseTarifs = useMemo(() => groupRates(groupageTarifs), [groupageTarifs]);
   const groupedAgencyTarifs = useMemo(() => groupRates(existingGroupageTarifs), [existingGroupageTarifs]);
 
@@ -100,20 +143,31 @@ const TarifGroupageComponent = () => {
 
       {/* Action Bar - SaaS Style */}
       <div className="flex flex-col sm:flex-row justify-between items-center bg-white p-3 rounded-xl border border-slate-200 shadow-sm gap-3">
-        <div className="inline-flex w-full sm:w-auto p-1 bg-slate-100 rounded-lg">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="inline-flex flex-1 sm:flex-none p-1 bg-slate-100 rounded-lg">
+            <button
+              onClick={() => setActiveTab("agency")}
+              className={`flex-1 sm:flex-none px-4 py-2 text-[11px] font-bold rounded-md transition-all ${activeTab === "agency" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                }`}
+            >
+              Mes Groupages
+            </button>
+            <button
+              onClick={() => setActiveTab("base")}
+              className={`flex-1 sm:flex-none px-4 py-2 text-[11px] font-bold rounded-md transition-all ${activeTab === "base" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                }`}
+            >
+              Modèles
+            </button>
+          </div>
+
           <button
-            onClick={() => setActiveTab("agency")}
-            className={`flex-1 sm:flex-none px-4 py-2 text-[11px] font-bold rounded-md transition-all ${activeTab === "agency" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500 hover:text-slate-700"
-              }`}
+            onClick={handleRefresh}
+            disabled={loading}
+            className={`p-2.5 bg-white border border-slate-200 rounded-lg text-slate-600 hover:text-blue-600 hover:border-blue-100 transition-all shadow-none hover:shadow-sm active:scale-95 ${loading ? 'opacity-50' : ''}`}
+            title="Rafraîchir les données"
           >
-            Mes Groupages
-          </button>
-          <button
-            onClick={() => setActiveTab("base")}
-            className={`flex-1 sm:flex-none px-4 py-2 text-[11px] font-bold rounded-md transition-all ${activeTab === "base" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500 hover:text-slate-700"
-              }`}
-          >
-            Modèles
+            <ArrowPathIcon className={`w-4 h-4 ${loading ? 'animate-spin text-blue-600' : ''}`} />
           </button>
         </div>
 
@@ -194,11 +248,15 @@ const TarifGroupageComponent = () => {
                                     <span className="text-[10px] font-medium text-slate-400">FCFA</span>
                                   </div>
                                 </div>
-                                <div className="flex gap-1 opacity-0 group-hover/mode:opacity-100 transition-opacity">
-                                  <button onClick={() => handleEditTarif(mode)} className="p-1.5 text-slate-600 hover:text-indigo-600 hover:bg-slate-50 rounded transition-colors">
+                                <div className="flex gap-1 opacity-0 group-hover/mode:opacity-100 transition-opacity items-center">
+                                  <StatusToggle
+                                    active={mode.actif}
+                                    onClick={() => handleToggleStatus(mode)}
+                                  />
+                                  <button onClick={() => handleEditTarif(mode)} className="p-1.5 text-slate-600 hover:text-indigo-600 hover:bg-slate-50 rounded transition-colors" title="Modifier">
                                     <PencilSquareIcon className="w-4 h-4" />
                                   </button>
-                                  <button onClick={() => handleDeleteTarif(mode)} className="p-1.5 text-slate-600 hover:text-rose-600 hover:bg-slate-50 rounded transition-colors">
+                                  <button onClick={() => handleDeleteTarif(mode)} className="p-1.5 text-slate-600 hover:text-rose-600 hover:bg-slate-50 rounded transition-colors" title="Supprimer">
                                     <TrashIcon className="w-4 h-4" />
                                   </button>
                                 </div>
@@ -218,13 +276,13 @@ const TarifGroupageComponent = () => {
                   <div key={group.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                     <div className="flex items-start justify-between">
                       <div>
-                        <span className={`inline-flex px-2 py-0.5 mb-2 rounded text-[8px] font-black uppercase tracking-widest border ${group.type_expedition?.includes('dhd') ? 'bg-indigo-50 text-indigo-700 border-indigo-100' :
+                        <span className={`inline-flex px-2 py-0.5 mb-2 rounded text-[8px] font-bold uppercase tracking-widest border ${group.type_expedition?.includes('dhd') ? 'bg-indigo-50 text-indigo-700 border-indigo-100' :
                           group.type_expedition?.includes('afrique') ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
                             'bg-slate-100 text-slate-700 border-slate-200'
                           }`}>
                           {group.type_expedition?.replace('groupage_', '').toUpperCase() || 'GROUPAGE'}
                         </span>
-                        <h4 className="text-sm font-black text-slate-900">{group.categoryName}</h4>
+                        <h4 className="text-sm font-bold text-slate-900">{group.categoryName}</h4>
                         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">{group.pays}</p>
                       </div>
                     </div>
@@ -233,16 +291,20 @@ const TarifGroupageComponent = () => {
                       {group.modes.map((mode) => (
                         <div key={mode.id} className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between group">
                           <div>
-                            <p className="text-[10px] font-black text-slate-900 mb-1 flex items-center gap-2">
+                            <p className="text-[10px] font-bold text-slate-900 mb-1 flex items-center gap-2">
                               {mode.mode}
                               {mode.ligne && <span className="text-[9px] font-bold text-blue-500">{mode.ligne}</span>}
                             </p>
                             <div className="flex items-center gap-2">
-                              <span className="text-base font-black text-slate-900 font-mono tracking-tighter">{mode.montant_expedition?.toLocaleString()}</span>
-                              <span className="text-[10px] font-black text-indigo-600 bg-white border border-indigo-100 px-1.5 py-0.5 rounded shadow-sm">+{mode.pourcentage_prestation}%</span>
+                              <span className="text-base font-bold text-slate-900 font-mono tracking-tighter">{mode.montant_expedition?.toLocaleString()}</span>
+                              <span className="text-[10px] font-bold text-indigo-600 bg-white border border-indigo-100 px-1.5 py-0.5 rounded shadow-sm">+{mode.pourcentage_prestation}%</span>
                             </div>
                           </div>
-                          <div className="flex gap-1.5">
+                          <div className="flex gap-1.5 items-center">
+                            <StatusToggle
+                              active={mode.actif}
+                              onClick={() => handleToggleStatus(mode)}
+                            />
                             <button
                               onClick={() => handleEditTarif(mode)}
                               className="p-2 bg-white text-slate-600 border border-slate-200 rounded-lg shadow-sm"
@@ -324,10 +386,10 @@ const TarifGroupageComponent = () => {
                 <div key={group.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                   <div className="flex items-start justify-between">
                     <div>
-                      <span className="inline-flex px-2 py-0.5 mb-2 rounded text-[8px] font-black text-slate-500 bg-slate-100 uppercase tracking-widest border border-slate-200">
+                      <span className="inline-flex px-2 py-0.5 mb-2 rounded text-[8px] font-bold text-slate-500 bg-slate-100 uppercase tracking-widest border border-slate-200">
                         {group.type_expedition?.replace('groupage_', '').toUpperCase() || 'MOCKED'}
                       </span>
-                      <h4 className="text-sm font-black text-slate-900">{group.categoryName}</h4>
+                      <h4 className="text-sm font-bold text-slate-900">{group.categoryName}</h4>
                       <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">{group.pays}</p>
                     </div>
                   </div>
@@ -336,15 +398,15 @@ const TarifGroupageComponent = () => {
                     {group.modes.map((mode) => (
                       <div key={mode.id} className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
                         <div>
-                          <p className="text-[10px] font-black text-slate-900 mb-1 uppercase tracking-tighter">{mode.mode}</p>
+                          <p className="text-[10px] font-bold text-slate-900 mb-1 uppercase tracking-tighter">{mode.mode}</p>
                           <div className="flex items-center gap-1.5">
-                            <span className="text-base font-black text-slate-900 font-mono tracking-tighter">{mode.montant_base?.toLocaleString()}</span>
+                            <span className="text-base font-bold text-slate-900 font-mono tracking-tighter">{mode.montant_base?.toLocaleString()}</span>
                             <span className="text-[10px] font-bold text-slate-400 uppercase">FCFA</span>
                           </div>
                         </div>
                         <button
                           onClick={() => handleNewTarif(mode)}
-                          className="px-4 py-2 bg-white text-slate-950 text-[10px] font-black border border-slate-200 rounded-lg shadow-sm"
+                          className="px-4 py-2 bg-white text-slate-950 text-[10px] font-bold border border-slate-200 rounded-lg shadow-sm"
                         >
                           IMPORT
                         </button>

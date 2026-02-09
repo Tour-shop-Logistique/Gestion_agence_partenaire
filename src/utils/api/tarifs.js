@@ -152,6 +152,32 @@ export const tarifsApi = {
   },
 
   /**
+   * Changer le statut d'un tarif groupage (actif/inactif)
+   * @param {string|number} tarifId - ID du tarif
+   * @returns {Promise<Object>}
+   */
+  async toggleTarifGroupageStatus(tarifId) {
+    try {
+      const endpoint = API_ENDPOINTS.TARIFS.Status_GROUPAGE.replace(
+        ":tarif",
+        String(tarifId)
+      );
+      const response = await apiService.put(endpoint);
+
+      return {
+        success: response.success !== false,
+        data: response,
+        message: response.message || "Statut du tarif groupage modifié",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || "Erreur lors du changement de statut",
+      };
+    }
+  },
+
+  /**
    * Obtenir tous les tarifs publics avec filtres optionnels
    * @param {Object} filters - Filtres optionnels
    * @returns {Promise<Object>}

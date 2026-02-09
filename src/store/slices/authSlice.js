@@ -227,10 +227,9 @@ const authSlice = createSlice({
         state.currentUser = null;
         state.message = "Déconnexion réussie";
 
-        // Supprimer le token et l'utilisateur
+        // Tout vider (Token, Profil, Cache Tarifs, Agence Data, etc.)
         apiService.removeAuthToken();
-        localStorage.removeItem("auth_token");
-        localStorage.removeItem("auth_user");
+        localStorage.clear();
       })
       .addCase(logout.rejected, (state, action) => {
         state.status = "failed";
@@ -240,8 +239,7 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
         state.currentUser = null;
         apiService.removeAuthToken();
-        localStorage.removeItem("auth_token");
-        localStorage.removeItem("auth_user");
+        localStorage.clear();
       })
 
       // Fetch User Profile

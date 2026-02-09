@@ -18,7 +18,8 @@ import {
   clearMessage,
   updateSingleTarifZone,
   deleteTarifSimple,
-  toggleTarifSimpleStatus
+  toggleTarifSimpleStatus,
+  toggleTarifGroupageStatus
 } from '../store/slices/tarifsSlice';
 
 export const useTarifs = () => {
@@ -27,7 +28,9 @@ export const useTarifs = () => {
   // Sélecteurs Redux
   const {
     tarifs,
+    flatTarifs,
     existingTarifs,
+    flatExistingTarifs,
     groupageTarifs,
     existingGroupageTarifs,
     selectedIndex,
@@ -38,32 +41,38 @@ export const useTarifs = () => {
     message
   } = useSelector(selectTarifsState);
 
+
+
   const currentTarifData = useSelector(selectCurrentTarif);
 
   // Actions encapsulées
   const fetchAllTarifs = useCallback(async (forceRefresh = false) => {
-    if (!forceRefresh && tarifs && tarifs.length > 0) {
+    if (!forceRefresh && tarifs && tarifs.length > 0 && flatTarifs && flatTarifs.length > 0) {
       return { success: true, data: tarifs };
     }
+
     try {
       return await dispatch(fetchTarifs()).unwrap();
     } catch (error) {
       console.error('Erreur lors de la récupération des tarifs:', error);
       return { success: false, error };
     }
-  }, [dispatch, tarifs]);
+  }, [dispatch, tarifs, flatTarifs]);
+
 
   const fetchAgencyTarifsData = useCallback(async (forceRefresh = false) => {
-    if (!forceRefresh && existingTarifs && existingTarifs.length > 0) {
+    if (!forceRefresh && existingTarifs && existingTarifs.length > 0 && flatExistingTarifs && flatExistingTarifs.length > 0) {
       return { success: true, data: existingTarifs };
     }
+
     try {
       return await dispatch(fetchAgencyTarifs(forceRefresh)).unwrap();
     } catch (error) {
       console.error("Erreur lors de la récupération des tarifs de l'agence:", error);
       return { success: false, error };
     }
-  }, [dispatch, existingTarifs]);
+  }, [dispatch, existingTarifs, flatExistingTarifs]);
+
 
   // === TARIFS GROUPAGE ===
   const fetchAllTarifsGroupageBase = useCallback(async (forceRefresh = false) => {
@@ -188,6 +197,15 @@ export const useTarifs = () => {
     }
   }, [dispatch]);
 
+  const toggleTarifGroupageStatusData = useCallback(async (id) => {
+    try {
+      return await dispatch(toggleTarifGroupageStatus(id)).unwrap();
+    } catch (error) {
+      console.error('Erreur lors du changement de statut du tarif groupage:', error);
+      return { success: false, error };
+    }
+  }, [dispatch]);
+
 
   return {
     // État
@@ -195,8 +213,12 @@ export const useTarifs = () => {
     error,
     message,
     tarifs,
+    flatTarifs,
     existingTarifs,
+    flatExistingTarifs,
+
     groupageTarifs,
+
     existingGroupageTarifs,
     selectedIndex,
     editingZones,
@@ -218,6 +240,7 @@ export const useTarifs = () => {
     updateSingleTarifZone: updateSingleTarifZoneData,
     deleteTarifSimple: deleteTarifSimpleData,
     toggleTarifSimpleStatus: toggleTarifSimpleStatusData,
+    toggleTarifGroupageStatus: toggleTarifGroupageStatusData,
 
     // Selecteurs
     getCurrentTarif,

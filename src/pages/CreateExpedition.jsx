@@ -497,7 +497,7 @@ const CreateExpedition = () => {
                                                                         type="number"
                                                                         value={c.poids}
                                                                         onChange={(e) => handleColisChange(index, 'poids', e.target.value)}
-                                                                        className="w-full border-slate-300 rounded-md text-sm font-black text-slate-800 bg-slate-50 h-9 focus:ring-slate-500"
+                                                                        className="w-full border-slate-300 rounded-md text-sm font-bold text-slate-800 bg-slate-50 h-9 focus:ring-slate-500"
                                                                     />
                                                                 </div>
                                                             </div>

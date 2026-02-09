@@ -16,10 +16,12 @@ import { getLogoUrl } from "./utils/apiConfig";
 // Import des pages
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
-import Tarifs from "./pages/Tarifs";
 import AgencyProfile from "./pages/AgencyProfile";
 import Agents from "./pages/Agents";
 import CreateExpedition from "./pages/CreateExpedition";
+import TarifsSimples from "./pages/TarifsSimples";
+import TarifsGroupes from "./pages/TarifsGroupes";
+
 
 import Expeditions from "./pages/Expeditions";
 import ExpeditionDetails from "./pages/ExpeditionDetails";
@@ -131,13 +133,22 @@ function AppContent() {
           }
         />
         <Route
-          path="/tarifs"
+          path="/tarifs-simples"
           element={
             <ProtectedRoute>
-              <Tarifs />
+              <TarifsSimples />
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/tarifs-groupage"
+          element={
+            <ProtectedRoute>
+              <TarifsGroupes />
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/agency-profile"
           element={

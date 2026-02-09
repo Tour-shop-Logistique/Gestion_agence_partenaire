@@ -12,8 +12,10 @@ import {
   UsersIcon,
   BuildingOffice2Icon,
   XMarkIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  TableCellsIcon
 } from "@heroicons/react/24/outline";
+
 
 const Sidebar = ({ onClose }) => {
   const currentUser = useSelector(selectCurrentUser);
@@ -42,10 +44,16 @@ const Sidebar = ({ onClose }) => {
       icon: CubeIcon,
     },
     {
-      path: "/tarifs",
-      name: "Grille Tarifaire",
+      path: "/tarifs-simples",
+      name: "Tarifs Simples",
       icon: CurrencyDollarIcon,
     },
+    {
+      path: "/tarifs-groupage",
+      name: "Tarifs Groupage",
+      icon: TableCellsIcon,
+    },
+
     {
       path: "/agents",
       name: "Équipe & Agents",
@@ -75,10 +83,16 @@ const Sidebar = ({ onClose }) => {
       icon: CubeIcon,
     },
     {
-      path: "/tarifs",
-      name: "Tarifs",
+      path: "/tarifs-simples",
+      name: "Tarifs Simples",
       icon: CurrencyDollarIcon,
     },
+    {
+      path: "/tarifs-groupage",
+      name: "Tarifs Groupage",
+      icon: TableCellsIcon,
+    },
+
     {
       path: "/agency-profile",
       name: "Info Agence",

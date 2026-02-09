@@ -37,7 +37,7 @@ const TarifConfigModal = ({
                 <InformationCircleIcon className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-base font-black text-slate-900 leading-tight">
+                <h3 className="text-base font-bold text-slate-900 leading-tight">
                   Configuration du tarif - Indice {selectedIndex}
                 </h3>
                 <p className="text-xs font-medium text-slate-500">
@@ -64,18 +64,18 @@ const TarifConfigModal = ({
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200">
-                      <th className="px-6 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Zone</th>
-                      <th className="px-6 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Base</th>
-                      <th className="px-6 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">% Prestation</th>
-                      <th className="px-6 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Marge</th>
-                      <th className="px-6 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Total</th>
-                      <th className="px-6 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Action</th>
+                      <th className="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Zone</th>
+                      <th className="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Base</th>
+                      <th className="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">% Prestation</th>
+                      <th className="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Marge</th>
+                      <th className="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Total</th>
+                      <th className="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {editingZones.map((zone) => (
                       <tr key={zone.zone_destination_id} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="px-6 py-3 text-sm font-black text-slate-900 border-r border-slate-50">
+                        <td className="px-6 py-3 text-sm font-bold text-slate-900 border-r border-slate-50">
                           Zone {zone.zone_destination_id.replace(/z/i, "")}
                         </td>
                         <td className="px-6 py-3 text-sm font-medium text-slate-500">
@@ -91,13 +91,13 @@ const TarifConfigModal = ({
                               onChange={(e) => onZoneChange(zone.zone_destination_id, e.target.value)}
                               className="w-20 px-3 py-1.5 text-sm font-bold bg-white border border-slate-200 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                             />
-                            <span className="ml-2 text-xs font-black text-slate-400">%</span>
+                            <span className="ml-2 text-xs font-bold text-slate-400">%</span>
                           </div>
                         </td>
                         <td className="px-6 py-3 text-sm font-bold text-indigo-600">
                           {formatPrice(zone.montant_prestation || 0, "XOF")}
                         </td>
-                        <td className="px-6 py-3 text-sm font-black text-slate-900">
+                        <td className="px-6 py-3 text-sm font-bold text-slate-900">
                           {formatPrice(zone.montant_expedition || 0, "XOF")}
                         </td>
                         <td className="px-6 py-3 text-right">
@@ -129,7 +129,7 @@ const TarifConfigModal = ({
             <button
               onClick={onSave}
               disabled={isSaving || editingZones.length === 0}
-              className={`inline-flex items-center px-6 py-2 rounded-lg text-sm font-black text-white shadow-sm transition-all ${!isSaving && editingZones.length > 0
+              className={`inline-flex items-center px-6 py-2 rounded-lg text-sm font-bold text-white shadow-sm transition-all ${!isSaving && editingZones.length > 0
                 ? "bg-slate-950 hover:bg-slate-800"
                 : "bg-slate-300 cursor-not-allowed"
                 }`}

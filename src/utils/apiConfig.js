@@ -77,9 +77,50 @@ export const API_ENDPOINTS = {
  */
 export const getLogoUrl = (path) => {
   if (!path) return null;
-  if (path.startsWith("http")) return path;
+
+  // Sécurité: si path n'est pas une chaîne (ex: objet File lors d'un upload en cours)
+  if (typeof path !== 'string') {
+    if (path instanceof File || path instanceof Blob) {
+      try {
+        return URL.createObjectURL(path);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  // Si c'est une URL absolue (contient http)
+  if (path.startsWith("http")) {
+    // Si l'URL contient /storage/, on la transforme en chemin relatif pour passer par notre proxy local
+    // Cela règle les problèmes de certificats SSL non valides sur les hostnames AWS EC2 par défaut
+    if (path.includes("/storage/")) {
+      const storageMatch = path.match(/\/storage\/(.*)/);
+      if (storageMatch && storageMatch[1]) {
+        return `/storage/${storageMatch[1]}`;
+      }
+    }
+    return path;
+  }
+
   if (path.startsWith("data:")) return path; // Pour les previews base64
-  // Nettoyer le chemin s'il contient déjà /storage
-  const cleanPath = path.startsWith("/storage/") ? path.replace("/storage/", "") : path;
+
+  // Nettoyer le chemin pour éviter les doublons de /storage/
+  let cleanPath = path;
+  if (cleanPath.startsWith("/storage/")) {
+    cleanPath = cleanPath.substring(9);
+  } else if (cleanPath.startsWith("storage/")) {
+    cleanPath = cleanPath.substring(8);
+  }
+
+  // S'assurer qu'il n'y a pas de slash au début de cleanPath
+  if (cleanPath.startsWith("/")) {
+    cleanPath = cleanPath.substring(1);
+  }
+
+  // Retourner un chemin relatif vers le proxy Vite (/storage/...)
+  // Le proxy se chargera d'ajouter les headers nécessaires
   return `/storage/${cleanPath}`;
 };
+
+

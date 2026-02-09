@@ -202,7 +202,7 @@ const ExpeditionDetails = () => {
                                 <div className="px-2 sm:px-5">
                                     <p className="text-[9px] uppercase font-bold text-slate-400 text-right mb-0.5">Total</p>
                                     <div className="flex items-baseline justify-end gap-1">
-                                        <span className="text-base sm:text-2xl font-black text-slate-900 tracking-tight">
+                                        <span className="text-base sm:text-2xl font-bold text-slate-900 tracking-tight">
                                             {formatCurrency(expedition.montant_expedition).split(' ')[0]}
                                         </span>
                                         <span className="text-[9px] sm:text-xs font-bold text-slate-500 uppercase">CFA</span>
@@ -241,7 +241,7 @@ const ExpeditionDetails = () => {
                                         </div>
                                         <div>
                                             <p className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Départ</p>
-                                            <p className="text-base font-black text-slate-900">{expedition.pays_depart}</p>
+                                            <p className="text-base font-bold text-slate-900">{expedition.pays_depart}</p>
                                             <p className="text-[10px] font-medium text-slate-500">{expediteur.ville || 'Abidjan'}</p>
                                         </div>
                                     </div>
@@ -263,7 +263,7 @@ const ExpeditionDetails = () => {
                                         </div>
                                         <div>
                                             <p className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Arrivée</p>
-                                            <p className="text-base font-black text-slate-900">{expedition.pays_destination}</p>
+                                            <p className="text-base font-bold text-slate-900">{expedition.pays_destination}</p>
                                             <p className="text-[10px] font-medium text-slate-500">{destinataire.ville || expedition.destinataire?.ville}</p>
                                         </div>
                                     </div>

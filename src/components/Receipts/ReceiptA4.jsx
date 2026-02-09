@@ -25,7 +25,7 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
                         ) : (
                             <img src={CompanyLogo} alt="Logo Company" className="h-16 object-contain" />
                         )}
-                        {agency?.logo && <img src={CompanyLogo} alt="Logo Company" className="h-12 object-contain border-l border-slate-200 pl-4" />}
+                        {/* {agency?.logo && <img src={CompanyLogo} alt="Logo Company" className="h-12 object-contain border-l border-slate-200 pl-4" />} */}
                     </div>
                     <h1 className="text-2xl font-bold uppercase tracking-tighter">{agency?.nom_agence || agency?.name || 'VOTRE AGENCE'}</h1>
                     {agency?.adresse && <p className="text-xs font-bold text-slate-500 uppercase">{agency.adresse}</p>}

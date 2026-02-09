@@ -78,7 +78,7 @@ const Header = ({ onToggleSidebar }) => {
                 {agencyName}
               </h1>
               <p className="text-xs text-slate-400 hidden sm:block">
-                Backoffice Management
+                Gestion d'agence
               </p>
             </div>
           </div>

@@ -265,6 +265,21 @@ export const deleteTarifGroupage = createAsyncThunk(
   }
 );
 
+export const toggleTarifGroupageStatus = createAsyncThunk(
+  'tarifs/toggleTarifGroupageStatus',
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await tarifsApi.toggleTarifGroupageStatus(id);
+      if (response.success) {
+        return { id, actif: response.data?.actif };
+      }
+      return rejectWithValue(response.message);
+    } catch (e) {
+      return rejectWithValue(e.message);
+    }
+  }
+);
+
 
 
 // Helpers pour le LocalStorage
@@ -291,9 +306,13 @@ const loadTarifsFromCache = () => {
 const cachedData = loadTarifsFromCache();
 
 const initialState = {
-  tarifs: cachedData.tarifs || [], // tarifs standards
-  existingTarifs: cachedData.existingTarifs || [], // tarifs personnalisés de l'agence
+  tarifs: cachedData.tarifs || [], // tarifs standards (groupés)
+  flatTarifs: cachedData.flatTarifs || [], // tarifs standards (liste plate)
+  existingTarifs: cachedData.existingTarifs || [], // tarifs personnalisés de l'agence (groupés par indice)
+
+  flatExistingTarifs: cachedData.flatExistingTarifs || [], // tarifs personnalisés de l'agence (liste plate)
   groupageTarifs: cachedData.groupageTarifs || [], // tarifs groupage
+
   existingGroupageTarifs: cachedData.existingGroupageTarifs || [], // tarifs groupage de l'agence
   loading: false,
   error: null,
@@ -433,9 +452,14 @@ const tarifsSlice = createSlice({
         // Traiter et grouper les tarifs par indice
         const groupedTarifs = groupTarifsByIndice(action.payload);
         state.tarifs = groupedTarifs;
+        state.flatTarifs = action.payload;
 
         // Sauvegarder dans le cache
-        saveTarifsToCache({ tarifs: groupedTarifs });
+        saveTarifsToCache({
+          tarifs: groupedTarifs,
+          flatTarifs: action.payload
+        });
+
 
         // Sélectionner le premier index par défaut si aucun n'est sélectionné
         if (state.tarifs.length > 0 && state.selectedIndex === null) {
@@ -458,9 +482,14 @@ const tarifsSlice = createSlice({
         // Grouper les tarifs agence par indice
         const groupedAgencyTarifs = groupTarifsByIndice(action.payload);
         state.existingTarifs = groupedAgencyTarifs;
+        state.flatExistingTarifs = action.payload;
 
         // Sauvegarder dans le cache
-        saveTarifsToCache({ existingTarifs: groupedAgencyTarifs });
+        saveTarifsToCache({
+          existingTarifs: groupedAgencyTarifs,
+          flatExistingTarifs: action.payload
+        });
+
 
         // Si aucun tarif n'est sélectionné, sélectionner le premier
         if (state.existingTarifs.length > 0 && state.selectedIndex === null) {
@@ -592,28 +621,30 @@ const tarifsSlice = createSlice({
       })
 
       // Gestion de toggleTarifSimpleStatus
-      .addCase(toggleTarifSimpleStatus.pending, (state) => {
-        // On ne met pas forcément isSaving à true pour ne pas bloquer toute l'UI, ou alors si.
-        // state.isSaving = true; 
+      // Gestion optimiste de toggleTarifSimpleStatus
+      .addCase(toggleTarifSimpleStatus.pending, (state, action) => {
         state.error = null;
-      })
-      .addCase(toggleTarifSimpleStatus.fulfilled, (state, action) => {
-        state.isSaving = false;
-        // action.payload contient { id, actif }
-        // On met à jour le statut dans la structure
-        const { id, actif } = action.payload;
-
+        const id = action.meta.arg;
         state.existingTarifs = state.existingTarifs.map(group => {
-          // Vérifier si c'est le tarif principal du groupe
-          if (group.id === id) {
-            return { ...group, actif };
-          }
-          // Ou si c'est dans les zones (si chaque zone a un statut, ce qui est rare pour tarif simple, souvent c'est l'indice)
-          // Dans le doute, on update si on trouve
+          if (group.id === id) return { ...group, actif: !group.actif };
           const zoneIndex = group.prix_zones.findIndex(z => z.id === id);
           if (zoneIndex !== -1) {
             const newZones = [...group.prix_zones];
-            newZones[zoneIndex] = { ...newZones[zoneIndex], actif };
+            newZones[zoneIndex] = { ...newZones[zoneIndex], actif: !newZones[zoneIndex].actif };
+            return { ...group, prix_zones: newZones };
+          }
+          return group;
+        });
+      })
+      .addCase(toggleTarifSimpleStatus.fulfilled, (state, action) => {
+        state.isSaving = false;
+        const { id, actif } = action.payload;
+        state.existingTarifs = state.existingTarifs.map(group => {
+          if (group.id === id) return { ...group, actif: actif ?? group.actif };
+          const zoneIndex = group.prix_zones.findIndex(z => z.id === id);
+          if (zoneIndex !== -1) {
+            const newZones = [...group.prix_zones];
+            newZones[zoneIndex] = { ...newZones[zoneIndex], actif: actif ?? newZones[zoneIndex].actif };
             return { ...group, prix_zones: newZones };
           }
           return group;
@@ -623,8 +654,20 @@ const tarifsSlice = createSlice({
       })
       .addCase(toggleTarifSimpleStatus.rejected, (state, action) => {
         state.isSaving = false;
-        state.error = action.payload;
-      });
+        const id = action.meta.arg;
+        state.existingTarifs = state.existingTarifs.map(group => {
+          if (group.id === id) return { ...group, actif: !group.actif };
+          const zoneIndex = group.prix_zones.findIndex(z => z.id === id);
+          if (zoneIndex !== -1) {
+            const newZones = [...group.prix_zones];
+            newZones[zoneIndex] = { ...newZones[zoneIndex], actif: !newZones[zoneIndex].actif };
+            return { ...group, prix_zones: newZones };
+          }
+          return group;
+        });
+        state.error = action.payload || "Une erreur est survenue";
+        state.message = "Désolé, impossible de modifier le statut. Veuillez réessayer.";
+      })
 
 
     builder
@@ -710,6 +753,34 @@ const tarifsSlice = createSlice({
       .addCase(deleteTarifGroupage.rejected, (state, action) => {
         state.isSaving = false;
         state.error = action.payload;
+      })
+
+      // === Toggle Status Groupage (Optimistic Update) ===
+      .addCase(toggleTarifGroupageStatus.pending, (state, action) => {
+        state.error = null;
+        const id = action.meta.arg;
+        // Mise à jour optimiste : on inverse le statut immédiatement
+        state.existingGroupageTarifs = state.existingGroupageTarifs.map(t =>
+          t.id === id ? { ...t, actif: !t.actif } : t
+        );
+      })
+      .addCase(toggleTarifGroupageStatus.fulfilled, (state, action) => {
+        const { id, actif } = action.payload;
+        // On s'assure d'avoir la valeur réelle du serveur (même si normalement c'est déjà bon)
+        state.existingGroupageTarifs = state.existingGroupageTarifs.map(t =>
+          t.id === id ? { ...t, actif: actif ?? t.actif } : t
+        );
+        state.message = 'Statut du tarif groupage modifié avec succès';
+        saveTarifsToCache({ existingGroupageTarifs: state.existingGroupageTarifs });
+      })
+      .addCase(toggleTarifGroupageStatus.rejected, (state, action) => {
+        const id = action.meta.arg;
+        // En cas d'échec, on remet le statut comme il était (on ré-inverse)
+        state.existingGroupageTarifs = state.existingGroupageTarifs.map(t =>
+          t.id === id ? { ...t, actif: !t.actif } : t
+        );
+        state.error = action.payload || "Une erreur est survenue";
+        state.message = "Désolé, impossible de modifier le statut. Veuillez réessayer.";
       });
 
   }
