@@ -25,6 +25,7 @@ import TarifsGroupes from "./pages/TarifsGroupes";
 
 import Expeditions from "./pages/Expeditions";
 import ExpeditionDetails from "./pages/ExpeditionDetails";
+import Colis from "./pages/Colis";
 
 // Composant pour gérer la redirection automatique
 const AutoRedirect = ({ children }) => {
@@ -170,6 +171,14 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <Expeditions />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/colis"
+          element={
+            <ProtectedRoute>
+              <Colis />
             </ProtectedRoute>
           }
         />

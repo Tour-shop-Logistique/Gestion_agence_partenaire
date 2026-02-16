@@ -58,13 +58,21 @@ export const expeditionsApi = {
     },
 
     /**
-     * Lister les expéditions de l'agence avec pagination
-     * @param {number} page - Numéro de la page
+     * Lister les expéditions de l'agence avec pagination et filtres
+     * @param {Object} params - Paramètres de filtrage (page, date_debut, date_fin)
      * @returns {Promise<Object>}
      */
-    async listExpeditions(page = 1) {
+    async listExpeditions(params = {}) {
         try {
-            const response = await apiService.get(`${API_ENDPOINTS.EXPEDITIONS.LIST}?page=${page}`);
+            const queryParams = new URLSearchParams();
+            if (params.page) queryParams.append('page', params.page);
+            if (params.date_debut) queryParams.append('date_debut', params.date_debut);
+            if (params.date_fin) queryParams.append('date_fin', params.date_fin);
+
+            const queryString = queryParams.toString();
+            const url = `${API_ENDPOINTS.EXPEDITIONS.LIST}${queryString ? `?${queryString}` : ''}`;
+
+            const response = await apiService.get(url);
             console.log("response Liste Expeditions", response);
 
             return {
@@ -100,6 +108,38 @@ export const expeditionsApi = {
             return {
                 success: false,
                 message: error.message || "Erreur lors de la récupération des détails",
+            };
+        }
+    },
+
+    /**
+     * Lister tous les colis de l'agence avec pagination et filtres
+     * @param {Object} params - Paramètres de filtrage (page, date_debut, date_fin)
+     * @returns {Promise<Object>}
+     */
+    async listColis(params = {}) {
+        try {
+            const queryParams = new URLSearchParams();
+            if (params.page) queryParams.append('page', params.page);
+            if (params.date_debut) queryParams.append('date_debut', params.date_debut);
+            if (params.date_fin) queryParams.append('date_fin', params.date_fin);
+
+            const queryString = queryParams.toString();
+            const url = `${API_ENDPOINTS.EXPEDITIONS.LIST_COLIS}${queryString ? `?${queryString}` : ''}`;
+
+            const response = await apiService.get(url);
+            console.log("response Liste Colis", response);
+
+            return {
+                success: response.success !== false,
+                data: response.data || [],
+                meta: response.meta || null,
+                message: response.message
+            };
+        } catch (error) {
+            return {
+                success: false,
+                message: error.message || "Erreur lors de la récupération des colis",
             };
         }
     }

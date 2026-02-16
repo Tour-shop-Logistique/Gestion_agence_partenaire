@@ -29,8 +29,8 @@ export const checkAuthState = createAsyncThunk(
         const isAuthError = result.error?.status === 401 || result.error?.status === 403;
 
         if (isAuthError) {
-          localStorage.removeItem("auth_token");
-          localStorage.removeItem("auth_user");
+          localStorage.clear();
+          sessionStorage.clear();
           apiService.removeAuthToken();
           return rejectWithValue(result.message);
         }
@@ -50,8 +50,8 @@ export const checkAuthState = createAsyncThunk(
       const isAuthError = error.status === 401 || error.status === 403;
 
       if (isAuthError) {
-        localStorage.removeItem("auth_token");
-        localStorage.removeItem("auth_user");
+        localStorage.clear();
+        sessionStorage.clear();
         apiService.removeAuthToken();
       }
 
@@ -100,9 +100,32 @@ export const logout = createAsyncThunk(
   "auth/logout",
   async (_, { rejectWithValue }) => {
     try {
-      await authApi.logout();
+      // Tenter une déconnexion propre côté serveur (optionnel si le token est déjà mort)
+      try {
+        await authApi.logout();
+      } catch (e) {
+        console.warn("Erreur déconnexion serveur (ignorée):", e);
+      }
+
+      // 1. Nettoyer le Service API (Token en mémoire)
+      apiService.removeAuthToken();
+
+      // 2. Vider TOUT le LocalStorage (Profil, Tarifs, Agence, Cache, etc.)
+      localStorage.clear();
+
+      // 3. Optionnel: Vider le SessionStorage
+      sessionStorage.clear();
+
+      // 4. Forcer un reload complet pour vider toute la mémoire JS (Redux, Variables, etc.)
+      window.location.href = "/";
+
       return null;
     } catch (error) {
+      // En cas d'erreur critique, on force quand même le nettoyage local
+      apiService.removeAuthToken();
+      localStorage.clear();
+      sessionStorage.clear();
+      window.location.href = "/";
       return rejectWithValue(error.message || "Erreur lors de la déconnexion");
     }
   }

@@ -24,6 +24,34 @@ export const formatPrice = (price, currency = 'FCFA') => {
   }).format(price);
 };
 
+/**
+ * Convertir CFA en EUR
+ * @param {number} cfa - Montant en CFA
+ * @returns {number} Montant en Euro
+ */
+export const cfaToEur = (cfa) => {
+  const rate = parseFloat(localStorage.getItem('exchange_rate_cfa_eur')) || 655.957;
+  return parseFloat(cfa || 0) / rate;
+};
+
+/**
+ * Formater un prix en double devise (CFA & EUR)
+ * @param {number} priceCfa - Prix en CFA
+ * @returns {string} Prix formaté
+ */
+export const formatPriceDual = (priceCfa) => {
+  const priceEur = cfaToEur(priceCfa);
+  const formattedCfa = new Intl.NumberFormat('fr-FR').format(priceCfa);
+  const formattedEur = new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: 'EUR',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(priceEur);
+
+  return `${formattedCfa} CFA (${formattedEur})`;
+};
+
 
 /**
  * Valider un email

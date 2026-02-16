@@ -171,21 +171,37 @@ const CreateExpedition = () => {
 
     const handleColisChange = (index, field, value) => {
         const newColis = [...formData.colis];
+        newColis[index] = { ...newColis[index], [field]: value };
+        setFormData(prev => ({ ...prev, colis: newColis }));
+    };
 
-        if (field === 'articles') {
-            // On stocke la chaîne brute pour l'input, mais on préparera l'array pour l'API
-            newColis[index] = { ...newColis[index], articles_raw: value };
-        } else {
-            newColis[index] = { ...newColis[index], [field]: value };
+    const handleAddArticle = (colisIndex, productDesignation) => {
+        if (!productDesignation) return;
+        const newColis = [...formData.colis];
+        const currentArticles = newColis[colisIndex].articles || [];
+
+        if (!currentArticles.includes(productDesignation)) {
+            newColis[colisIndex] = {
+                ...newColis[colisIndex],
+                articles: [...currentArticles, productDesignation]
+            };
+            setFormData(prev => ({ ...prev, colis: newColis }));
         }
+    };
 
+    const handleRemoveArticle = (colisIndex, articleIndex) => {
+        const newColis = [...formData.colis];
+        newColis[colisIndex] = {
+            ...newColis[colisIndex],
+            articles: newColis[colisIndex].articles.filter((_, i) => i !== articleIndex)
+        };
         setFormData(prev => ({ ...prev, colis: newColis }));
     };
 
     const addColis = () => {
         setFormData(prev => ({
             ...prev,
-            colis: [...prev.colis, { designation: "", category_id: "", poids: "", longueur: "", largeur: "", hauteur: "", prix_emballage: 0, articles_raw: "" }]
+            colis: [...prev.colis, { designation: "", category_id: "", poids: "", longueur: "", largeur: "", hauteur: "", prix_emballage: 0, articles: [] }]
         }));
     };
 
@@ -220,9 +236,7 @@ const CreateExpedition = () => {
                     largeur: parseFloat(c.largeur) || 0,
                     hauteur: parseFloat(c.hauteur) || 0,
                     prix_emballage: parseFloat(c.prix_emballage) || 0,
-                    articles: c.articles_raw
-                        ? c.articles_raw.split(/[,\n]/).map(a => a.trim()).filter(a => a !== "")
-                        : []
+                    articles: c.articles || []
                 };
                 if (c.category_id) item.category_id = c.category_id;
 
@@ -249,9 +263,7 @@ const CreateExpedition = () => {
                     largeur: parseFloat(c.largeur) || 0,
                     hauteur: parseFloat(c.hauteur) || 0,
                     prix_emballage: parseFloat(c.prix_emballage) || 0,
-                    articles: c.articles_raw
-                        ? c.articles_raw.split(/[,\n]/).map(a => a.trim()).filter(a => a !== "")
-                        : []
+                    articles: c.articles || []
                 };
 
                 if (c.category_id) item.category_id = c.category_id;
@@ -503,15 +515,43 @@ const CreateExpedition = () => {
                                                             </div>
 
                                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                <div className="space-y-1">
+                                                                <div className="space-y-2">
                                                                     <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">Articles détaillés</label>
-                                                                    <textarea
-                                                                        value={c.articles_raw || ""}
-                                                                        onChange={(e) => handleColisChange(index, 'articles', e.target.value)}
-                                                                        placeholder="Liste des objets..."
-                                                                        rows="1"
-                                                                        className="w-full border-slate-300 rounded-md text-xs font-medium resize-none bg-slate-50 p-2 h-9 focus:h-16 focus:ring-slate-500"
-                                                                    ></textarea>
+
+                                                                    <div className="flex flex-col gap-2">
+                                                                        <select
+                                                                            onChange={(e) => {
+                                                                                if (e.target.value) {
+                                                                                    handleAddArticle(index, e.target.value);
+                                                                                    e.target.value = "";
+                                                                                }
+                                                                            }}
+                                                                            className="w-full border-slate-300 rounded-md text-xs font-bold h-9 focus:ring-slate-500 bg-white"
+                                                                        >
+                                                                            <option value="">+ Ajouter un article</option>
+                                                                            {Array.isArray(products) && products.map(p => (
+                                                                                <option key={p.id} value={p.designation}>{p.designation}</option>
+                                                                            ))}
+                                                                        </select>
+
+                                                                        <div className="flex flex-wrap gap-1.5 min-h-[36px] p-2 bg-slate-50 rounded-md border border-slate-200">
+                                                                            {(c.articles || []).length > 0 ? (
+                                                                                c.articles.map((art, artIdx) => (
+                                                                                    <span key={artIdx} className="inline-flex items-center gap-1.5 px-2 py-1 bg-slate-100 text-slate-700 text-[10px] font-bold rounded border border-slate-300 group/tag">
+                                                                                        {art}
+                                                                                        <button
+                                                                                            onClick={() => handleRemoveArticle(index, artIdx)}
+                                                                                            className="text-slate-400 hover:text-red-500 transition-colors"
+                                                                                        >
+                                                                                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                                                                        </button>
+                                                                                    </span>
+                                                                                ))
+                                                                            ) : (
+                                                                                <span className="text-[10px] text-slate-400 font-medium italic py-1">Aucun article</span>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
                                                                 <div className="grid grid-cols-4 gap-2">
                                                                     <div className="col-span-3 grid grid-cols-3 gap-1.5">

@@ -30,12 +30,6 @@ const Dashboard = () => {
   const { data: agencyData } = useAgency();
   const { expeditions, loadExpeditions, status: expeditionStatus } = useExpedition();
 
-  useEffect(() => {
-    if (!expeditions) {
-      loadExpeditions();
-    }
-  }, [loadExpeditions]);
-
   const [startDate] = useState(() => {
     const date = new Date();
     date.setDate(1);
@@ -45,6 +39,15 @@ const Dashboard = () => {
   const [endDate] = useState(() => {
     return new Date().toISOString().split('T')[0];
   });
+
+  useEffect(() => {
+    if (!expeditions || expeditions.length === 0) {
+      loadExpeditions({
+        date_debut: startDate,
+        date_fin: endDate
+      });
+    }
+  }, [loadExpeditions, startDate, endDate, expeditions]);
 
   const formatDateDisplay = (dateString) => {
     if (!dateString) return "N/A";

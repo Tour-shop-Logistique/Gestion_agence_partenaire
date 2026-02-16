@@ -5,18 +5,39 @@ import { useAgency } from "../hooks/useAgency";
 import { Link } from "react-router-dom";
 import PrintSuccessModal from "../components/Receipts/PrintSuccessModal";
 import { getLogoUrl } from "../utils/apiConfig";
+import { formatPriceDual } from "../utils/format";
 
 const Expeditions = () => {
     const { expeditions, meta, loadExpeditions, status } = useExpedition();
     const { agencyData, fetchAgencyData } = useAgency();
     const [currentPage, setCurrentPage] = useState(1);
+
+    // Helper to get today's date in YYYY-MM-DD
+    const getTodayDate = () => {
+        const now = new Date();
+        return now.toISOString().split('T')[0];
+    };
+
+    // Helper to get first day of current month in YYYY-MM-DD
+    const getFirstDayOfMonth = () => {
+        const now = new Date();
+        return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    };
+
+    const [dateDebut, setDateDebut] = useState(getFirstDayOfMonth());
+    const [dateFin, setDateFin] = useState(getTodayDate());
+    const [type, setType] = useState(""); // "" for all, "simple", "groupage"
     const [selectedExpedition, setSelectedExpedition] = useState(null);
     const [showPrintModal, setShowPrintModal] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
 
     useEffect(() => {
-        loadExpeditions(currentPage);
-    }, [currentPage, loadExpeditions]);
+        loadExpeditions({
+            page: currentPage,
+            date_debut: dateDebut,
+            date_fin: dateFin
+        });
+    }, [currentPage, dateDebut, dateFin, loadExpeditions]);
 
     useEffect(() => {
         fetchAgencyData();
@@ -47,16 +68,28 @@ const Expeditions = () => {
 
     const getStatusStyle = (status) => {
         switch (status) {
+            case 'en_attente':
+                return 'bg-amber-50/80 text-amber-700 border-amber-200/50 shadow-amber-100/50';
             case 'accepted':
                 return 'bg-emerald-50/80 text-emerald-700 border-emerald-200/50 shadow-emerald-100/50';
-            case 'pending':
-                return 'bg-amber-50/80 text-amber-700 border-amber-200/50 shadow-amber-100/50';
-            case 'cancelled':
+            case 'refused':
                 return 'bg-red-50/80 text-red-700 border-red-200/50 shadow-red-100/50';
-            case 'delivered':
+            case 'en_cours_enlevement':
+            case 'en_cours_depot':
+                return 'bg-sky-50/80 text-sky-700 border-sky-200/50 shadow-sky-100/50';
+            case 'recu_agence_depart':
+            case 'en_transit_entrepot':
                 return 'bg-blue-50/80 text-blue-700 border-blue-200/50 shadow-blue-100/50';
-            case 'in_transit':
+            case 'depart_expedition_succes':
                 return 'bg-indigo-50/80 text-indigo-700 border-indigo-200/50 shadow-indigo-100/50';
+            case 'arrivee_expedition_succes':
+            case 'recu_agence_destination':
+                return 'bg-purple-50/80 text-purple-700 border-purple-200/50 shadow-purple-100/50';
+            case 'en_cours_livraison':
+                return 'bg-pink-50/80 text-pink-700 border-pink-200/50 shadow-pink-100/50';
+            case 'termined':
+            case 'delivered':
+                return 'bg-emerald-100/80 text-emerald-800 border-emerald-200 shadow-emerald-100/50';
             default:
                 return 'bg-slate-50/80 text-slate-700 border-slate-200/50 shadow-slate-100/50';
         }
@@ -64,12 +97,48 @@ const Expeditions = () => {
 
     const getStatusLabel = (status) => {
         switch (status) {
+            case 'en_attente': return 'En attente';
             case 'accepted': return 'Acceptée';
-            case 'pending': return 'En attente';
-            case 'cancelled': return 'Annulée';
-            case 'delivered': return 'Livrée';
-            case 'in_transit': return 'En transit';
-            default: return status || 'Inconnu';
+            case 'refused': return 'Refusée';
+            case 'en_cours_enlevement': return 'En enlèvement';
+            case 'en_cours_depot': return 'Dépôt en cours';
+            case 'recu_agence_depart': return 'Reçu Agence Départ';
+            case 'en_transit_entrepot': return 'Transit Entrepôt';
+            case 'depart_expedition_succes': return 'En Transit (Air/Mer)';
+            case 'arrivee_expedition_succes': return 'Arrivée Destination';
+            case 'recu_agence_destination': return 'Reçu Agence Dest.';
+            case 'en_cours_livraison': return 'En livraison';
+            case 'termined':
+            case 'delivered': return 'Terminée';
+            default: return status?.replace(/_/g, ' ') || 'Inconnu';
+        }
+    };
+
+    const getTypeStyle = (type) => {
+        switch (type) {
+            case 'simple':
+                return 'bg-blue-50 text-blue-700 border-blue-200 shadow-blue-100/50';
+            case 'groupage_dhd_aerien':
+                return 'bg-sky-50 text-sky-700 border-sky-200 shadow-sky-100/50';
+            case 'groupage_dhd_maritine':
+                return 'bg-cyan-50 text-cyan-700 border-cyan-200 shadow-cyan-100/50';
+            case 'groupage_afrique':
+                return 'bg-orange-50 text-orange-700 border-orange-200 shadow-orange-100/50';
+            case 'groupage_ca':
+                return 'bg-purple-50 text-purple-700 border-purple-200 shadow-purple-100/50';
+            default:
+                return 'bg-slate-50 text-slate-700 border-slate-200 shadow-slate-100/50';
+        }
+    };
+
+    const getTypeLabel = (type) => {
+        switch (type) {
+            case 'simple': return 'Simple';
+            case 'groupage_dhd_aerien': return 'DHD Aérien';
+            case 'groupage_dhd_maritine': return 'DHD Maritime';
+            case 'groupage_afrique': return 'Afrique';
+            case 'groupage_ca': return 'CA';
+            default: return type || 'Inconnu';
         }
     };
 
@@ -86,18 +155,30 @@ const Expeditions = () => {
         }
     };
 
-    // Filter expeditions based on search query
+    // Filter expeditions based on search query and type (Client-side)
     const filteredExpeditions = useMemo(() => {
-        if (!searchQuery) return expeditions;
-        const lowerQuery = searchQuery.toLowerCase();
-        return expeditions.filter(exp =>
-            exp.reference?.toLowerCase().includes(lowerQuery) ||
-            exp.expediteur?.nom_prenom?.toLowerCase().includes(lowerQuery) ||
-            exp.destinataire?.nom_prenom?.toLowerCase().includes(lowerQuery) ||
-            exp.pays_depart?.toLowerCase().includes(lowerQuery) ||
-            exp.pays_destination?.toLowerCase().includes(lowerQuery)
-        );
-    }, [expeditions, searchQuery]);
+        let result = expeditions;
+
+        // Apply type filter
+        if (type) {
+            result = result.filter(exp => exp.type_expedition === type);
+        }
+
+        // Apply search filter
+        if (searchQuery) {
+            const lowerQuery = searchQuery.toLowerCase();
+            result = result.filter(exp =>
+                exp.reference?.toLowerCase().includes(lowerQuery) ||
+                exp.expediteur?.nom_prenom?.toLowerCase().includes(lowerQuery) ||
+                exp.destinataire?.nom_prenom?.toLowerCase().includes(lowerQuery) ||
+                exp.pays_depart?.toLowerCase().includes(lowerQuery) ||
+                exp.pays_destination?.toLowerCase().includes(lowerQuery) ||
+                exp.type_expedition?.toLowerCase().includes(lowerQuery)
+            );
+        }
+
+        return result;
+    }, [expeditions, searchQuery, type]);
 
     return (
         <DashboardLayout>
@@ -113,6 +194,59 @@ const Expeditions = () => {
                         </p>
                     </div>
                     <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
+                        {/* Date Filters */}
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <div className="relative group flex-1 sm:w-40">
+                                <span className="absolute -top-2 left-3 px-1 bg-white text-[10px] font-bold text-slate-400 uppercase tracking-wider z-10">Du</span>
+                                <input
+                                    type="date"
+                                    className="block w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
+                                    value={dateDebut}
+                                    onChange={(e) => {
+                                        setDateDebut(e.target.value);
+                                        setCurrentPage(1);
+                                    }}
+                                />
+                            </div>
+                            <div className="relative group flex-1 sm:w-40">
+                                <span className="absolute -top-2 left-3 px-1 bg-white text-[10px] font-bold text-slate-400 uppercase tracking-wider z-10">Au</span>
+                                <input
+                                    type="date"
+                                    className="block w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
+                                    value={dateFin}
+                                    onChange={(e) => {
+                                        setDateFin(e.target.value);
+                                        setCurrentPage(1);
+                                    }}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Type Filter */}
+                        <div className="relative group w-full sm:w-40">
+                            <span className="absolute -top-2 left-3 px-1 bg-white text-[10px] font-bold text-slate-400 uppercase tracking-wider z-10">Type</span>
+                            <select
+                                className="block w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm appearance-none cursor-pointer"
+                                value={type}
+                                onChange={(e) => {
+                                    setType(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                            >
+                                <option value="">Tous les types</option>
+                                <option value="simple">Simple</option>
+                                <option value="groupage_dhd_aerien">Groupage DHD Aérien</option>
+                                <option value="groupage_dhd_maritine">Groupage DHD Maritime</option>
+                                <option value="groupage_afrique">Groupage Afrique</option>
+                                <option value="groupage_ca">Groupage CA</option>
+                            </select>
+                            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </div>
+
                         {/* Search Bar */}
                         <div className="relative group w-full sm:w-64 lg:w-80">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -178,7 +312,12 @@ const Expeditions = () => {
                                             {/* Header Card */}
                                             <div className="flex justify-between items-start gap-4">
                                                 <div className="flex flex-col">
-                                                    <span className="text-sm font-bold text-slate-900 tracking-tight">{exp.reference}</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-sm font-bold text-slate-900 tracking-tight">{exp.reference}</span>
+                                                        <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter border shadow-sm ${getTypeStyle(exp.type_expedition)}`}>
+                                                            {getTypeLabel(exp.type_expedition)}
+                                                        </span>
+                                                    </div>
                                                     <span className="text-[10px] font-medium text-slate-400">{formatDate(exp.created_at)}</span>
                                                 </div>
                                                 <div className="flex flex-col items-end gap-1">
@@ -220,8 +359,8 @@ const Expeditions = () => {
                                             <div className="pt-3 border-t border-slate-100 flex items-end justify-between">
                                                 <div className="flex flex-col">
                                                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total</span>
-                                                    <span className="text-lg font-bold text-slate-900 tracking-tight tabular-nums">
-                                                        {parseFloat(exp.montant_expedition).toLocaleString()} <span className="text-[10px] font-bold text-slate-400">CFA</span>
+                                                    <span className="text-sm font-bold text-slate-900 tracking-tight tabular-nums">
+                                                        {formatPriceDual(exp.montant_expedition)}
                                                     </span>
                                                 </div>
                                                 <div className="flex gap-2">
@@ -360,23 +499,27 @@ const Expeditions = () => {
                                             </td>
                                             <td className="px-8 py-6">
                                                 <div className="flex flex-col gap-1">
-                                                    <span className="text-base font-bold text-slate-900 tracking-tight tabular-nums">
-                                                        {parseFloat(exp.montant_expedition).toLocaleString()}
-                                                        <span className="text-xs font-bold text-slate-400 ml-1">CFA</span>
+                                                    <span className="text-sm font-bold text-slate-900 tracking-tight tabular-nums">
+                                                        {formatPriceDual(exp.montant_expedition)}
                                                     </span>
-                                                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.1em]">
-                                                        {exp.colis?.length || 0} Colis
-                                                    </span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.1em]">
+                                                            {exp.colis?.length || 0} Colis
+                                                        </span>
+                                                        <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase border shadow-sm ${getTypeStyle(exp.type_expedition)}`}>
+                                                            {getTypeLabel(exp.type_expedition)}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </td>
                                             <td className="px-8 py-6">
-                                                <div className="flex flex-col gap-2">
-                                                    <span className={`inline-flex items-center justify-center px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-[0.1em] border shadow-sm ${getStatusStyle(exp.statut_expedition)}`}>
+                                                <div className="flex  gap-2">
+                                                    <span className={`inline-flex items-center justify-center px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em] border ${getStatusStyle(exp.statut_expedition)}`}>
                                                         {getStatusLabel(exp.statut_expedition)}
                                                     </span>
-                                                    <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-lg text-[9px] font-semibold uppercase tracking-wider border ${getPaymentStatusStyle(exp.statut_paiement)}`}>
+                                                    {/* <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-lg text-[9px] font-semibold uppercase tracking-wider border ${getPaymentStatusStyle(exp.statut_paiement)}`}>
                                                         {exp.statut_paiement === 'en_attente' ? 'En attente' : exp.statut_paiement}
-                                                    </span>
+                                                    </span> */}
                                                 </div>
                                             </td>
                                             <td className="px-8 py-6 text-right">

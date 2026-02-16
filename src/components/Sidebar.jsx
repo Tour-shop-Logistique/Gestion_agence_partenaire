@@ -3,7 +3,6 @@ import { Link, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { selectCurrentUser, selectIsAdmin } from "../store/slices/authSlice";
 import { useAgency } from "../hooks/useAgency";
-import { getLogoUrl } from "../utils/apiConfig";
 import {
   ChartBarIcon,
   ClipboardDocumentListIcon,
@@ -13,8 +12,10 @@ import {
   BuildingOffice2Icon,
   XMarkIcon,
   ChevronRightIcon,
-  TableCellsIcon
+  TableCellsIcon,
+  TruckIcon
 } from "@heroicons/react/24/outline";
+import { getLogoUrl } from "../utils/apiConfig";
 
 
 const Sidebar = ({ onClose }) => {
@@ -41,6 +42,11 @@ const Sidebar = ({ onClose }) => {
     {
       path: "/expeditions",
       name: "Expéditions",
+      icon: TruckIcon,
+    },
+    {
+      path: "/colis",
+      name: "Colis",
       icon: CubeIcon,
     },
     {
@@ -80,6 +86,11 @@ const Sidebar = ({ onClose }) => {
     {
       path: "/expeditions",
       name: "Expéditions",
+      icon: TruckIcon,
+    },
+    {
+      path: "/colis",
+      name: "Colis",
       icon: CubeIcon,
     },
     {
@@ -117,11 +128,12 @@ const Sidebar = ({ onClose }) => {
               <img
                 src={getLogoUrl(agencyData.agence.logo)}
                 alt="Logo"
-                className="w-full h-full object-contain filter invert brightness-0"
+                className="w-full h-full object-contain "
               />
             ) : (
               <BuildingOffice2Icon className="w-5 h-5 text-white" />
             )}
+
           </div>
           <span className="font-bold text-slate-900 tracking-tight text-lg">
             {agencyData?.agence?.nom_agence || "Tous Shop"}

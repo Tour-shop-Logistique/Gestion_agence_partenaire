@@ -60,6 +60,7 @@ export const API_ENDPOINTS = {
     CREATE: "/expedition/agence/create",
     SIMULATE: "/expedition/agence/simulate",
     LIST: "/expedition/agence/list",
+    LIST_COLIS: "/agence/list-colis",
     SHOW: "/expedition/agence/show/:id",
   },
 
@@ -92,6 +93,10 @@ export const getLogoUrl = (path) => {
 
   // Si c'est une URL absolue (contient http)
   if (path.startsWith("http")) {
+    // Si c'est une URL Supabase, on la laisse telle quelle
+    if (path.includes("supabase.co")) {
+      return path;
+    }
     // Si l'URL contient /storage/, on la transforme en chemin relatif pour passer par notre proxy local
     // Cela règle les problèmes de certificats SSL non valides sur les hostnames AWS EC2 par défaut
     if (path.includes("/storage/")) {

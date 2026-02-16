@@ -15,7 +15,7 @@ export const productsApi = {
 
             return {
                 success: response.success !== false,
-                data: response.data || response.produits || response,
+                data: response.data || response.products || response.produits || response,
             };
         } catch (error) {
             return {
