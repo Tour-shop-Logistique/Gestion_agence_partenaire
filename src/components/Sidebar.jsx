@@ -13,7 +13,8 @@ import {
   XMarkIcon,
   ChevronRightIcon,
   TableCellsIcon,
-  TruckIcon
+  TruckIcon,
+  InboxArrowDownIcon
 } from "@heroicons/react/24/outline";
 import { getLogoUrl } from "../utils/apiConfig";
 
@@ -35,7 +36,7 @@ const Sidebar = ({ onClose }) => {
       icon: ChartBarIcon,
     },
     {
-      path: "/requests",
+      path: "/demandes",
       name: "Demandes",
       icon: ClipboardDocumentListIcon,
     },
@@ -48,6 +49,11 @@ const Sidebar = ({ onClose }) => {
       path: "/colis",
       name: "Colis",
       icon: CubeIcon,
+    },
+    {
+      path: "/reception-colis",
+      name: "Réception Colis",
+      icon: InboxArrowDownIcon,
     },
     {
       path: "/tarifs-simples",
@@ -79,7 +85,7 @@ const Sidebar = ({ onClose }) => {
       icon: ChartBarIcon,
     },
     {
-      path: "/requests",
+      path: "/demandes",
       name: "Demandes",
       icon: ClipboardDocumentListIcon,
     },
@@ -92,6 +98,11 @@ const Sidebar = ({ onClose }) => {
       path: "/colis",
       name: "Colis",
       icon: CubeIcon,
+    },
+    {
+      path: "/reception-colis",
+      name: "Réception Colis",
+      icon: InboxArrowDownIcon,
     },
     {
       path: "/tarifs-simples",

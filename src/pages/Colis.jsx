@@ -186,7 +186,7 @@ const Colis = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
-                                    {loadingColis ? (
+                                    {loadingColis && colis.length === 0 ? (
                                         Array(5).fill(0).map((_, i) => (
                                             <tr key={i} className="animate-pulse">
                                                 <td className="px-6 py-6" colSpan="6">
@@ -262,7 +262,7 @@ const Colis = () => {
 
                     {/* Mobile & Tablet Card View */}
                     <div className="lg:hidden space-y-4">
-                        {loadingColis ? (
+                        {loadingColis && colis.length === 0 ? (
                             Array(3).fill(0).map((_, i) => (
                                 <div key={i} className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm animate-pulse space-y-3">
                                     <div className="h-5 bg-slate-100 rounded w-1/3"></div>

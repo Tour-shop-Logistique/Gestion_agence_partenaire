@@ -14,6 +14,7 @@ import {
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import SingleInitializeModal from "../components/SingleInitializeModal";
+import { toast } from "../utils/toast";
 
 
 const TableSkeleton = () => (
@@ -90,6 +91,22 @@ const TarifSimpleComponent = () => {
     fetchTarifs();
     fetchAgencyTarifs();
   }, [fetchTarifs, fetchAgencyTarifs]);
+
+  // Trigger Toasts for messages and errors
+  useEffect(() => {
+    if (message) {
+      if (message.toLowerCase().includes("erreur") || message.toLowerCase().includes("désolé") || message.toLowerCase().includes("impossible")) {
+        toast.error(message);
+      } else {
+        toast.success(message);
+      }
+      clearMessage();
+    }
+    if (error) {
+      toast.error(typeof error === 'string' ? error : "Une erreur est survenue");
+      clearMessage();
+    }
+  }, [message, error, clearMessage]);
 
 
 
@@ -177,7 +194,6 @@ const TarifSimpleComponent = () => {
       }
     } catch (error) {
       console.error("Erreur suppression:", error);
-      await fetchAgencyTarifs(true);
     }
   }, [deleteTarifSimple, fetchAgencyTarifs]);
 
@@ -185,11 +201,11 @@ const TarifSimpleComponent = () => {
     try {
       if (tarif.id) {
         await toggleTarifSimpleStatus(tarif.id);
+        // On rafraîchit en arrière plan pour être sûr des données
         fetchAgencyTarifs(true);
       }
     } catch (error) {
       console.error("Erreur statut:", error);
-      await fetchAgencyTarifs(true);
     }
   }, [toggleTarifSimpleStatus, fetchAgencyTarifs]);
 
@@ -285,12 +301,6 @@ const TarifSimpleComponent = () => {
         </button>
       </div>
 
-      {message && (
-        <div className={`p-3 rounded-lg border text-[11px] font-bold flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-300 ${message.includes("succès") ? "bg-emerald-50 border-emerald-100 text-emerald-700" : "bg-rose-50 border-rose-100 text-rose-700"}`}>
-          <div className={`w-1.5 h-1.5 rounded-full ${message.includes("succès") ? "bg-emerald-500" : "bg-rose-500"}`}></div>
-          {message}
-        </div>
-      )}
 
       {/* Main Table Section */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden transition-all">

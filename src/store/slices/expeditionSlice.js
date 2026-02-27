@@ -92,6 +92,73 @@ export const fetchColis = createAsyncThunk(
     }
 );
 
+// Lister les demandes clients
+export const fetchDemandesClients = createAsyncThunk(
+    "expedition/fetchDemandes",
+    async (params = { page: 1 }, { rejectWithValue }) => {
+        try {
+            const result = await expeditionsApi.listDemandes(params);
+            if (!result.success) {
+                return rejectWithValue(result.message);
+            }
+            return {
+                data: result.data,
+                meta: result.meta
+            };
+        } catch (error) {
+            return rejectWithValue(error.message || "Erreur lors du chargement des demandes");
+        }
+    }
+);
+
+// Accepter une demande client
+export const acceptDemandeClient = createAsyncThunk(
+    "expedition/acceptDemande",
+    async (id, { rejectWithValue }) => {
+        try {
+            const result = await expeditionsApi.acceptDemande(id);
+            if (!result.success) {
+                return rejectWithValue(result.message);
+            }
+            return { id, message: result.message };
+        } catch (error) {
+            return rejectWithValue(error.message || "Erreur lors de l'acceptation");
+        }
+    }
+);
+
+// Refuser une demande client
+export const refuseDemandeClient = createAsyncThunk(
+    "expedition/refuseDemande",
+    async ({ id, data = {} }, { rejectWithValue }) => {
+        try {
+            const result = await expeditionsApi.refuseDemande(id, data);
+            if (!result.success) {
+                return rejectWithValue(result.message);
+            }
+            return { id, message: result.message };
+        } catch (error) {
+            return rejectWithValue(error.message || "Erreur lors du refus");
+        }
+    }
+);
+
+// Confirmer la réception départ
+export const confirmExpeditionReception = createAsyncThunk(
+    "expedition/confirmReception",
+    async (id, { rejectWithValue }) => {
+        try {
+            const result = await expeditionsApi.confirmReception(id);
+            if (!result.success) {
+                return rejectWithValue(result.message);
+            }
+            return { id, message: result.message };
+        } catch (error) {
+            return rejectWithValue(error.message || "Erreur lors de la confirmation");
+        }
+    }
+);
+
 const expeditionSlice = createSlice({
     name: "expedition",
     initialState: {
@@ -116,6 +183,14 @@ const expeditionSlice = createSlice({
         message: null,
         lastFilters: null,
         lastColisFilters: null,
+        lastDemandesFilters: null,
+        demandes: [],
+        demandesMeta: {
+            current_page: 1,
+            last_page: 1,
+            per_page: 20,
+            total: 0
+        },
     },
     reducers: {
         clearExpeditionStatus: (state) => {
@@ -131,6 +206,9 @@ const expeditionSlice = createSlice({
         },
         setCurrentExpedition: (state, action) => {
             state.currentExpedition = action.payload;
+        },
+        clearCurrentExpedition: (state) => {
+            state.currentExpedition = null;
         }
     },
     extraReducers: (builder) => {
@@ -171,7 +249,9 @@ const expeditionSlice = createSlice({
 
             // Fetch Expeditions
             .addCase(fetchExpeditions.pending, (state) => {
-                state.status = "loading";
+                if (!state.expeditions || state.expeditions.length === 0) {
+                    state.status = "loading";
+                }
                 state.error = null;
             })
             .addCase(fetchExpeditions.fulfilled, (state, action) => {
@@ -187,7 +267,9 @@ const expeditionSlice = createSlice({
 
             // Fetch Colis
             .addCase(fetchColis.pending, (state) => {
-                state.colisStatus = "loading";
+                if (!state.colis || state.colis.length === 0) {
+                    state.colisStatus = "loading";
+                }
                 state.error = null;
             })
             .addCase(fetchColis.fulfilled, (state, action) => {
@@ -202,8 +284,13 @@ const expeditionSlice = createSlice({
             })
 
             // Fetch Expedition Details
-            .addCase(fetchExpeditionById.pending, (state) => {
-                state.status = "loading";
+            .addCase(fetchExpeditionById.pending, (state, action) => {
+                // On ne met le status en loading que si on n'a pas déjà l'expédition courante
+                // ou si l'ID est différent
+                const idRequested = action.meta.arg;
+                if (!state.currentExpedition || String(state.currentExpedition.id) !== String(idRequested)) {
+                    state.status = "loading";
+                }
                 state.error = null;
             })
             .addCase(fetchExpeditionById.fulfilled, (state, action) => {
@@ -213,10 +300,73 @@ const expeditionSlice = createSlice({
             .addCase(fetchExpeditionById.rejected, (state, action) => {
                 state.status = "failed";
                 state.error = action.payload;
+            })
+
+            // Fetch Demandes Clients
+            .addCase(fetchDemandesClients.pending, (state) => {
+                if (!state.demandes || state.demandes.length === 0) {
+                    state.status = "loading";
+                }
+                state.error = null;
+            })
+            .addCase(fetchDemandesClients.fulfilled, (state, action) => {
+                state.status = "succeeded";
+                state.demandes = action.payload.data;
+                state.demandesMeta = action.payload.meta || state.demandesMeta;
+                state.lastDemandesFilters = action.meta.arg;
+            })
+            .addCase(fetchDemandesClients.rejected, (state, action) => {
+                state.status = "failed";
+                state.error = action.payload;
+            })
+
+            // Accept Demande
+            .addCase(acceptDemandeClient.pending, (state) => {
+                state.status = "loading";
+            })
+            .addCase(acceptDemandeClient.fulfilled, (state, action) => {
+                state.status = "succeeded";
+                state.message = action.payload.message;
+                state.demandes = state.demandes.filter(d => d.id !== action.payload.id);
+                if (state.demandesMeta) state.demandesMeta.total -= 1;
+            })
+            .addCase(acceptDemandeClient.rejected, (state, action) => {
+                state.status = "failed";
+                state.error = action.payload;
+            })
+
+            // Refuse Demande
+            .addCase(refuseDemandeClient.pending, (state) => {
+                state.status = "loading";
+            })
+            .addCase(refuseDemandeClient.fulfilled, (state, action) => {
+                state.status = "succeeded";
+                state.message = action.payload.message;
+                state.demandes = state.demandes.filter(d => d.id !== action.payload.id);
+                if (state.demandesMeta) state.demandesMeta.total -= 1;
+            })
+            .addCase(refuseDemandeClient.rejected, (state, action) => {
+                state.status = "failed";
+                state.error = action.payload;
+            })
+
+            // Confirm Reception
+            .addCase(confirmExpeditionReception.pending, (state) => {
+                state.status = "loading";
+            })
+            .addCase(confirmExpeditionReception.fulfilled, (state, action) => {
+                state.status = "succeeded";
+                state.message = action.payload.message;
+                // Si on est sur une liste, on peut mettre à jour localement ou recharger
+                // Pour l'instant on se contente du message
+            })
+            .addCase(confirmExpeditionReception.rejected, (state, action) => {
+                state.status = "failed";
+                state.error = action.payload;
             });
     },
 });
 
-export const { clearExpeditionStatus, setCurrentExpedition, clearSimulation } = expeditionSlice.actions;
+export const { clearExpeditionStatus, setCurrentExpedition, clearSimulation, clearCurrentExpedition } = expeditionSlice.actions;
 
 export default expeditionSlice.reducer;

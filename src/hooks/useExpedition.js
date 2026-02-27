@@ -6,9 +6,14 @@ import {
     fetchExpeditions,
     fetchColis,
     fetchExpeditionById,
-    clearExpeditionStatus,
     clearSimulation,
-    setCurrentExpedition
+    clearExpeditionStatus,
+    setCurrentExpedition,
+    fetchDemandesClients,
+    acceptDemandeClient,
+    refuseDemandeClient,
+    clearCurrentExpedition,
+    confirmExpeditionReception
 } from "../store/slices/expeditionSlice";
 import { fetchProducts, fetchCategories } from "../store/slices/productSlice";
 
@@ -24,7 +29,8 @@ export const useExpedition = () => {
         colis, colisMeta, colisStatus,
         simulationStatus, simulationResult,
         currentExpedition, error, message,
-        lastFilters, lastColisFilters
+        lastFilters, lastColisFilters, lastDemandesFilters,
+        demandes, demandesMeta
     } = useSelector(state => state.expedition);
     const { list: products, categories, status: productStatus } = useSelector(state => state.products);
 
@@ -33,34 +39,27 @@ export const useExpedition = () => {
     const simulateExpedition = useCallback((data) => dispatch(simulateExpeditionThunk(data)), [dispatch]);
 
     const loadExpeditions = useCallback((params = { page: 1 }, forceRefresh = false) => {
-        // Optimisation : ne pas recharger si les paramètres sont identiques
-        const filtersMatch = JSON.stringify(params) === JSON.stringify(lastFilters);
-
-        if (!forceRefresh && status === 'succeeded' && expeditions.length > 0 && filtersMatch) {
-            return;
-        }
         return dispatch(fetchExpeditions(params));
-    }, [dispatch, expeditions.length, lastFilters, status]);
+    }, [dispatch]);
 
     const loadColis = useCallback((params = { page: 1 }, forceRefresh = false) => {
-        const filtersMatch = JSON.stringify(params) === JSON.stringify(lastColisFilters);
-
-        if (!forceRefresh && colisStatus === 'succeeded' && colis.length > 0 && filtersMatch) {
-            return;
-        }
         return dispatch(fetchColis(params));
-    }, [dispatch, colis.length, lastColisFilters, colisStatus]);
+    }, [dispatch]);
 
     const getExpeditionDetails = useCallback((id) => {
-        // Optimisation : si l'expédition est déjà dans la liste, on l'utilise directement
-        const existingExpedition = expeditions.find(e => e.id === id);
+        // Optimisation : si l'expédition est déjà dans l'une des listes, on l'utilise directement
+        const existingExpedition = expeditions.find(e => String(e.id) === String(id)) ||
+            demandes.find(d => String(d.id) === String(id));
+
         if (existingExpedition) {
             dispatch(setCurrentExpedition(existingExpedition));
+            // On lance quand même un refresh en arrière-plan pour avoir les toutes dernières infos
+            dispatch(fetchExpeditionById(id));
             return Promise.resolve({ payload: existingExpedition });
         }
         // Sinon on la récupère depuis l'API
         return dispatch(fetchExpeditionById(id));
-    }, [dispatch, expeditions]);
+    }, [dispatch, expeditions, demandes]);
 
     const resetStatus = useCallback(() => dispatch(clearExpeditionStatus()), [dispatch]);
     const cleanSimulation = useCallback(() => dispatch(clearSimulation()), [dispatch]);
@@ -95,6 +94,8 @@ export const useExpedition = () => {
         productStatus,
         error,
         message,
+        demandes,
+        demandesMeta,
         loading: status === 'loading',
         loadingColis: colisStatus === 'loading',
         simulating: simulationStatus === 'loading',
@@ -107,7 +108,14 @@ export const useExpedition = () => {
         getExpeditionDetails,
         resetStatus,
         cleanSimulation,
+        clearCurrentExpedition: useCallback(() => dispatch(clearCurrentExpedition()), [dispatch]),
         loadProducts,
-        loadCategories
+        loadCategories,
+        loadDemandes: useCallback((params = { page: 1 }, forceRefresh = false) => {
+            return dispatch(fetchDemandesClients(params));
+        }, [dispatch]),
+        acceptDemande: useCallback((id) => dispatch(acceptDemandeClient(id)), [dispatch]),
+        refuseDemande: useCallback((id, data) => dispatch(refuseDemandeClient({ id, data })), [dispatch]),
+        confirmReception: useCallback((id) => dispatch(confirmExpeditionReception(id)), [dispatch]),
     };
 };

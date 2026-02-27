@@ -11,6 +11,7 @@ import {
   ChevronRightIcon,
   ArrowPathIcon
 } from "@heroicons/react/24/outline";
+import { toast } from "../utils/toast";
 
 const StatusToggle = ({ active, onClick, disabled }) => (
   <button
@@ -54,6 +55,22 @@ const TarifGroupageComponent = () => {
     fetchTarifsGroupageBase();
     fetchTarifGroupageAgence();
   }, [fetchTarifsGroupageBase, fetchTarifGroupageAgence]); // Added dependencies
+
+  // Trigger Toasts for messages and errors
+  useEffect(() => {
+    if (message) {
+      if (message.toLowerCase().includes("erreur") || message.toLowerCase().includes("désolé") || message.toLowerCase().includes("impossible")) {
+        toast.error(message);
+      } else {
+        toast.success(message);
+      }
+      clearMessage();
+    }
+    if (error) {
+      toast.error(typeof error === 'string' ? error : "Une erreur est survenue");
+      clearMessage();
+    }
+  }, [message, error, clearMessage]);
 
   const groupRates = (rates) => {
     if (!rates || !Array.isArray(rates)) return [];
@@ -181,21 +198,10 @@ const TarifGroupageComponent = () => {
       </div>
 
       {/* Alerts - Refined */}
-      {message && (
-        <div className={`p-4 rounded-xl border flex items-center shadow-sm ${message.includes("succès")
-          ? "bg-emerald-50 border-emerald-100 text-emerald-800"
-          : "bg-blue-50 border-blue-100 text-blue-800"
-          }`}>
-          <div className={`mr-3 p-1 rounded-full ${message.includes("succès") ? "bg-emerald-100" : "bg-blue-100"}`}>
-            <ArrowPathIcon className={`w-4 h-4 ${message.includes("succès") ? "text-emerald-600" : "text-blue-600"}`} />
-          </div>
-          <p className="text-xs font-bold">{message}</p>
-        </div>
-      )}
 
       {/* Main Grid / Data Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        {loading ? (
+        {loading && (!groupedAgencyTarifs.length && !groupedBaseTarifs.length) ? (
           <div className="p-10 space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {[1, 2].map((i) => (

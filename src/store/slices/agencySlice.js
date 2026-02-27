@@ -195,7 +195,9 @@ const agencySlice = createSlice({
 
       // Fetch Agency Data
       .addCase(fetchAgency.pending, (state) => {
-        state.status = 'loading';
+        if (!state.data) {
+          state.status = 'loading';
+        }
         state.error = null;
       })
       .addCase(fetchAgency.fulfilled, (state, action) => {
@@ -243,7 +245,9 @@ const agencySlice = createSlice({
 
       // Fetch Users
       .addCase(fetchUsers.pending, (state) => {
-        state.usersStatus = 'loading';
+        if (!state.users || state.users.length === 0) {
+          state.usersStatus = 'loading';
+        }
         state.usersError = null;
       })
       .addCase(fetchUsers.fulfilled, (state, action) => {

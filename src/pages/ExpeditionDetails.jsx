@@ -1,7 +1,9 @@
 import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import DashboardLayout from '../components/DashboardLayout';
+import ConfirmationModal from '../components/ConfirmationModal';
 import { useExpedition } from '../hooks/useExpedition';
+import { toast } from '../utils/toast';
 import {
     ArrowLeft,
     CheckCircle2,
@@ -58,15 +60,40 @@ const ExpeditionDetails = () => {
     const {
         currentExpedition: expedition,
         getExpeditionDetails,
+        acceptDemande,
+        refuseDemande,
+        confirmReception,
         status,
-        error
+        message,
+        error,
+        resetStatus
     } = useExpedition();
+
+    const [isRefuseModalOpen, setIsRefuseModalOpen] = React.useState(false);
+    const [isAcceptModalOpen, setIsAcceptModalOpen] = React.useState(false);
+    const [isConfirmReceptionModalOpen, setIsConfirmReceptionModalOpen] = React.useState(false);
+    const [isProcessing, setIsProcessing] = React.useState(false);
+    const [motifRefus, setMotifRefus] = React.useState("");
 
     useEffect(() => {
         if (id) {
             getExpeditionDetails(id);
         }
     }, [id, getExpeditionDetails]);
+
+    useEffect(() => {
+        if (message) {
+            toast.success(message);
+            resetStatus();
+        }
+    }, [message, resetStatus]);
+
+    useEffect(() => {
+        if (error) {
+            toast.error(error);
+            resetStatus();
+        }
+    }, [error, resetStatus]);
 
     if (status === 'loading') {
         return (
@@ -79,25 +106,6 @@ const ExpeditionDetails = () => {
         );
     }
 
-    if (error) {
-        return (
-            <DashboardLayout>
-                <div className="flex items-center justify-center min-h-[400px] p-4">
-                    <div className="max-w-md w-full bg-white border border-slate-200 p-6 text-center">
-                        <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-4" />
-                        <h3 className="text-sm font-bold text-slate-900 uppercase mb-2">Erreur système</h3>
-                        <p className="text-xs text-slate-500 mb-6">{error}</p>
-                        <button
-                            onClick={() => navigate('/expeditions')}
-                            className="text-xs font-bold text-indigo-600 uppercase tracking-widest hover:underline"
-                        >
-                            Retour à la liste
-                        </button>
-                    </div>
-                </div>
-            </DashboardLayout>
-        );
-    }
 
     if (!expedition) return null;
 
@@ -139,38 +147,64 @@ const ExpeditionDetails = () => {
 
     return (
         <DashboardLayout>
-            <div className="min-h-screen bg-slate-50/50 -mt-6 -mx-8 px-8 py-6">
+            <div className="min-h-screen bg-slate-50/50 -mt-6 -mx-4 sm:-mx-8 px-4 sm:px-8 py-6">
 
                 {/* --- HEADER: TMS DOCUMENT STYLE --- */}
-                <div className="bg-white border border-slate-200 mb-6">
-                    <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                        <div className="flex items-center gap-4">
+                <div className="bg-white border border-slate-200 mb-6 rounded-2xl lg:rounded-none overflow-hidden sm:overflow-visible">
+                    <div className="px-4 sm:px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-3 sm:gap-4">
                             <button
-                                onClick={() => navigate('/expeditions')}
-                                className="p-2 hover:bg-slate-50 rounded border border-slate-200 transition-colors"
+                                onClick={() => navigate(-1)}
+                                className="p-2 hover:bg-slate-50 rounded border border-slate-200 transition-colors shrink-0"
                             >
                                 <ArrowLeft className="w-4 h-4 text-slate-600" />
                             </button>
-                            <div>
-                                <div className="flex items-center gap-2 mb-0.5">
-                                    <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">Dossier Expédition</span>
+                            <div className="min-w-0">
+                                <div className="flex items-center gap-2 mb-0.5 overflow-x-auto no-scrollbar">
+                                    <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest whitespace-nowrap">Dossier Expédition</span>
                                     <span className="text-slate-300">•</span>
-                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{expedition.type_expedition?.replace(/_/g, ' ')}</span>
+                                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">{expedition.type_expedition?.replace(/_/g, ' ')}</span>
                                 </div>
-                                <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                                <h1 className="text-lg sm:text-xl font-bold text-slate-900 flex items-center gap-2 truncate">
                                     {expedition.reference}
-                                    <button className="text-slate-300 hover:text-slate-500 transition-colors">
+                                    <button className="text-slate-300 hover:text-slate-500 transition-colors shrink-0">
                                         <Copy className="w-3.5 h-3.5" />
                                     </button>
                                 </h1>
                             </div>
                         </div>
-                        <div className="flex items-center gap-6 text-right">
+                        <div className="flex flex-wrap items-center gap-4 sm:gap-6 sm:text-right">
+                            {expedition.statut_expedition === 'en_attente' && (
+                                <div className="flex items-center gap-2 mr-4">
+                                    <button
+                                        onClick={() => setIsRefuseModalOpen(true)}
+                                        className="px-3 py-1.5 border border-red-200 text-red-600 rounded text-[10px] font-bold uppercase tracking-widest hover:bg-red-50 transition-colors"
+                                    >
+                                        Refuser
+                                    </button>
+                                    <button
+                                        onClick={() => setIsAcceptModalOpen(true)}
+                                        className="px-3 py-1.5 bg-emerald-600 text-white rounded text-[10px] font-bold uppercase tracking-widest hover:bg-emerald-700 transition-colors"
+                                    >
+                                        Accepter
+                                    </button>
+                                </div>
+                            )}
+                            {expedition.statut_expedition === 'accepted' && (
+                                <div className="flex items-center gap-2 mr-4">
+                                    <button
+                                        onClick={() => setIsConfirmReceptionModalOpen(true)}
+                                        className="px-3 py-1.5 bg-indigo-600 text-white rounded text-[10px] font-bold uppercase tracking-widest hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200"
+                                    >
+                                        Confirmer Réception
+                                    </button>
+                                </div>
+                            )}
                             <div>
                                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Créé le</p>
                                 <p className="text-xs font-semibold text-slate-700">{formatDate(expedition.created_at)}</p>
                             </div>
-                            <div className="h-8 w-px bg-slate-100"></div>
+                            <div className="hidden sm:block h-8 w-px bg-slate-100"></div>
                             <div>
                                 <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Statut</p>
                                 <StatusBadge status={expedition.statut_expedition} />
@@ -178,24 +212,24 @@ const ExpeditionDetails = () => {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-4 divide-x divide-slate-100 bg-slate-50/30">
-                        <div className="px-6 py-3">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-slate-100 bg-slate-50/30">
+                        <div className="px-4 sm:px-6 py-3 border-r lg:border-r-0 lg:border-none">
                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Trajet</p>
-                            <p className="text-xs font-bold text-slate-900 uppercase">
+                            <p className="text-[11px] sm:text-xs font-bold text-slate-900 uppercase truncate">
                                 {expedition.pays_depart} → {expedition.pays_destination}
                             </p>
                         </div>
-                        <div className="px-6 py-3">
+                        <div className="px-4 sm:px-6 py-3">
                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Poids Total</p>
-                            <p className="text-xs font-bold text-slate-900">{expedition.colis?.reduce((sum, c) => sum + parseFloat(c.poids || 0), 0)} KG</p>
+                            <p className="text-[11px] sm:text-xs font-bold text-slate-900">{expedition.colis?.reduce((sum, c) => sum + parseFloat(c.poids || 0), 0)} KG</p>
                         </div>
-                        <div className="px-6 py-3">
+                        <div className="px-4 sm:px-6 py-3 border-r lg:border-r-0">
                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Nombre Colis</p>
-                            <p className="text-xs font-bold text-slate-900">{expedition.colis?.length || 0} Unités</p>
+                            <p className="text-[11px] sm:text-xs font-bold text-slate-900">{expedition.colis?.length || 0} Unités</p>
                         </div>
-                        <div className="px-6 py-3">
+                        <div className="px-4 sm:px-6 py-3">
                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Net</p>
-                            <p className="text-sm font-bold text-indigo-700">{formatCurrency(expedition.montant_expedition)}</p>
+                            <p className="text-xs sm:text-sm font-bold text-indigo-700 truncate">{formatCurrency(expedition.montant_expedition)}</p>
                         </div>
                     </div>
                 </div>
@@ -206,12 +240,12 @@ const ExpeditionDetails = () => {
                     <div className="col-span-12 lg:col-span-8 space-y-6">
 
                         {/* 1. TIMELINE PROFESSIONNELLE */}
-                        <div className="bg-white border border-slate-200">
-                            <div className="px-6 py-3 border-b border-slate-100 flex items-center justify-between">
+                        <div className="bg-white border border-slate-200 rounded-2xl lg:rounded-none overflow-hidden sm:overflow-visible">
+                            <div className="px-4 sm:px-6 py-3 border-b border-slate-100 flex items-center justify-between">
                                 <h2 className="text-[10px] font-bold text-slate-800 uppercase tracking-widest">Suivi d'exécution</h2>
                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Temps réel</span>
                             </div>
-                            <div className="p-8">
+                            <div className="p-6 sm:p-8">
                                 <div className="space-y-0 relative">
                                     <div className="absolute left-[7px] top-1 bottom-1 w-px bg-slate-200"></div>
 
@@ -242,45 +276,47 @@ const ExpeditionDetails = () => {
                         </div>
 
                         {/* 2. TABLE DATA PRO (COLIS) */}
-                        <div className="bg-white border border-slate-200 overflow-hidden">
-                            <div className="px-6 py-3 border-b border-slate-100 bg-slate-50/50">
+                        <div className="bg-white border border-slate-200 rounded-2xl lg:rounded-none overflow-hidden">
+                            <div className="px-4 sm:px-6 py-3 border-b border-slate-100 bg-slate-50/50">
                                 <h2 className="text-[10px] font-bold text-slate-800 uppercase tracking-widest">Inventaire Détaillé</h2>
                             </div>
-                            <table className="w-full text-left border-collapse">
-                                <thead>
-                                    <tr className="border-b border-slate-100 bg-slate-50/30">
-                                        <th className="px-6 py-3 text-[9px] font-bold text-slate-400 uppercase tracking-widest">Code Colis</th>
-                                        <th className="px-6 py-3 text-[9px] font-bold text-slate-400 uppercase tracking-widest">Désignation</th>
-                                        <th className="px-6 py-3 text-[9px] font-bold text-slate-400 uppercase tracking-widest text-right">Poids</th>
-                                        <th className="px-6 py-3 text-[9px] font-bold text-slate-400 uppercase tracking-widest text-right">Valeur</th>
-                                        <th className="px-6 py-3 text-[9px] font-bold text-slate-400 uppercase tracking-widest text-right">Frais</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-50">
-                                    {(expedition.colis || []).map((parcel, idx) => (
-                                        <tr key={parcel.id} className="hover:bg-slate-50/50 transition-colors">
-                                            <td className="px-6 py-4 text-[11px] font-mono font-semibold text-slate-600">
-                                                {parcel.code_colis || `COL-${idx + 1}`}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <p className="text-xs font-bold text-slate-900 leading-none">{parcel.designation}</p>
-                                                <p className="text-[9px] text-slate-400 font-medium mt-1 uppercase tracking-tight truncate max-w-[200px]">
-                                                    {Array.isArray(parcel.articles) ? parcel.articles.join(', ') : parcel.articles}
-                                                </p>
-                                            </td>
-                                            <td className="px-6 py-4 text-xs font-bold text-slate-700 text-right">
-                                                {parcel.poids} KG
-                                            </td>
-                                            <td className="px-6 py-4 text-xs font-bold text-slate-700 text-right uppercase">
-                                                {parcel.category?.nom || '-'}
-                                            </td>
-                                            <td className="px-6 py-4 text-xs font-bold text-slate-900 text-right">
-                                                {formatCurrency(parcel.montant_colis_total)}
-                                            </td>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse min-w-[600px] sm:min-w-0">
+                                    <thead>
+                                        <tr className="border-b border-slate-100 bg-slate-50/30">
+                                            <th className="px-6 py-3 text-[9px] font-bold text-slate-400 uppercase tracking-widest">Code Colis</th>
+                                            <th className="px-6 py-3 text-[9px] font-bold text-slate-400 uppercase tracking-widest">Désignation</th>
+                                            <th className="px-6 py-3 text-[9px] font-bold text-slate-400 uppercase tracking-widest text-right">Poids</th>
+                                            <th className="px-6 py-3 text-[9px] font-bold text-slate-400 uppercase tracking-widest text-right">Valeur</th>
+                                            <th className="px-6 py-3 text-[9px] font-bold text-slate-400 uppercase tracking-widest text-right">Frais</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50">
+                                        {(expedition.colis || []).map((parcel, idx) => (
+                                            <tr key={parcel.id} className="hover:bg-slate-50/50 transition-colors">
+                                                <td className="px-4 sm:px-6 py-4 text-[11px] font-mono font-semibold text-slate-600">
+                                                    {parcel.code_colis || `COL-${idx + 1}`}
+                                                </td>
+                                                <td className="px-4 sm:px-6 py-4">
+                                                    <p className="text-xs font-bold text-slate-900 leading-none">{parcel.designation}</p>
+                                                    <p className="text-[9px] text-slate-400 font-medium mt-1 uppercase tracking-tight truncate max-w-[150px] sm:max-w-[200px]">
+                                                        {Array.isArray(parcel.articles) ? parcel.articles.join(', ') : parcel.articles}
+                                                    </p>
+                                                </td>
+                                                <td className="px-4 sm:px-6 py-4 text-xs font-bold text-slate-700 text-right whitespace-nowrap">
+                                                    {parcel.poids} KG
+                                                </td>
+                                                <td className="px-4 sm:px-6 py-4 text-xs font-bold text-slate-700 text-right uppercase">
+                                                    {parcel.category?.nom || '-'}
+                                                </td>
+                                                <td className="px-4 sm:px-6 py-4 text-xs font-bold text-slate-900 text-right whitespace-nowrap">
+                                                    {formatCurrency(parcel.montant_colis_total)}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                             {(!expedition.colis || expedition.colis.length === 0) && (
                                 <div className="px-6 py-8 text-center text-xs font-medium text-slate-400 border-t border-slate-50">
                                     Aucun colis enregistré dans ce dossier.
@@ -294,13 +330,13 @@ const ExpeditionDetails = () => {
                     <div className="col-span-12 lg:col-span-4 space-y-6">
 
                         {/* 1. FICHE CONTACT CRM */}
-                        <div className="bg-white border border-slate-200">
-                            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                        <div className="bg-white border border-slate-200 rounded-2xl lg:rounded-none overflow-hidden sm:overflow-visible">
+                            <div className="px-4 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                                 <h2 className="text-[10px] font-bold text-slate-800 uppercase tracking-widest">Informations Contacts</h2>
                             </div>
 
                             <div className="divide-y divide-slate-100">
-                                <div className="p-6">
+                                <div className="p-4 sm:p-6">
                                     <div className="flex items-center gap-2 mb-4">
                                         <div className="w-1.5 h-3 bg-indigo-600 rounded-full"></div>
                                         <h3 className="text-[10px] font-bold text-slate-900 uppercase tracking-widest">Expéditeur</h3>
@@ -321,7 +357,7 @@ const ExpeditionDetails = () => {
                                     </div>
                                 </div>
 
-                                <div className="p-6">
+                                <div className="p-4 sm:p-6">
                                     <div className="flex items-center gap-2 mb-4">
                                         <div className="w-1.5 h-3 bg-blue-600 rounded-full"></div>
                                         <h3 className="text-[10px] font-bold text-slate-900 uppercase tracking-widest">Destinataire</h3>
@@ -351,11 +387,11 @@ const ExpeditionDetails = () => {
                         </div>
 
                         {/* 2. FINANCE: STYLE FACTURATION */}
-                        <div className="bg-white border border-slate-200 shadow-sm">
-                            <div className="px-6 py-4 border-b border-slate-100">
+                        <div className="bg-white border border-slate-200 shadow-sm rounded-2xl lg:rounded-none overflow-hidden sm:overflow-visible">
+                            <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
                                 <h2 className="text-[10px] font-bold text-slate-800 uppercase tracking-widest">Résumé Financier</h2>
                             </div>
-                            <div className="p-6 space-y-4">
+                            <div className="p-4 sm:p-6 space-y-4">
                                 <div className="space-y-2 text-xs font-medium">
                                     <div className="flex justify-between text-slate-500">
                                         <span>Frais de transport</span>
@@ -406,6 +442,73 @@ const ExpeditionDetails = () => {
 
                 </div>
             </div>
+
+            <ConfirmationModal
+                isOpen={isRefuseModalOpen}
+                onClose={() => {
+                    setIsRefuseModalOpen(false);
+                    setMotifRefus("");
+                }}
+                onConfirm={async () => {
+                    setIsProcessing(true);
+                    await refuseDemande(expedition.id, { motif_refus: motifRefus });
+                    await getExpeditionDetails(expedition.id);
+                    setIsProcessing(false);
+                    setIsRefuseModalOpen(false);
+                    setMotifRefus("");
+                }}
+                title="Refuser la demande"
+                message="Êtes-vous sûr de vouloir refuser cette demande ? Veuillez indiquer le motif du refus ci-dessous."
+                confirmText="Confirmer le refus"
+                type="danger"
+                isLoading={isProcessing}
+            >
+                <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                        Motif du refus
+                    </label>
+                    <textarea
+                        value={motifRefus}
+                        onChange={(e) => setMotifRefus(e.target.value)}
+                        placeholder="Ex: Articles non autorisés, poids incorrect, etc..."
+                        className="w-full h-24 px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-red-500/10 focus:border-red-500 transition-all resize-none"
+                    />
+                </div>
+            </ConfirmationModal>
+
+            <ConfirmationModal
+                isOpen={isAcceptModalOpen}
+                onClose={() => setIsAcceptModalOpen(false)}
+                onConfirm={async () => {
+                    setIsProcessing(true);
+                    await acceptDemande(expedition.id);
+                    await getExpeditionDetails(expedition.id);
+                    setIsProcessing(false);
+                    setIsAcceptModalOpen(false);
+                }}
+                title="Accepter la demande"
+                message="Voulez-vous accepter cette demande d'expédition ? Elle passera en statut 'Acceptée'."
+                confirmText="Accepter la demande"
+                type="success"
+                isLoading={isProcessing}
+            />
+
+            <ConfirmationModal
+                isOpen={isConfirmReceptionModalOpen}
+                onClose={() => setIsConfirmReceptionModalOpen(false)}
+                onConfirm={async () => {
+                    setIsProcessing(true);
+                    await confirmReception(expedition.id);
+                    await getExpeditionDetails(expedition.id);
+                    setIsProcessing(false);
+                    setIsConfirmReceptionModalOpen(false);
+                }}
+                title="Confirmer la réception"
+                message="Confirmez-vous que les colis de cette expédition ont bien été reçus à l'agence de départ ?"
+                confirmText="Confirmer la réception"
+                type="info"
+                isLoading={isProcessing}
+            />
         </DashboardLayout>
     );
 };

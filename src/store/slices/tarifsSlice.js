@@ -443,7 +443,9 @@ const tarifsSlice = createSlice({
     builder
       // Gestion de fetchTarifs
       .addCase(fetchTarifs.pending, (state) => {
-        state.loading = true;
+        if (!state.flatTarifs || state.flatTarifs.length === 0) {
+          state.loading = true;
+        }
         state.error = null;
       })
       .addCase(fetchTarifs.fulfilled, (state, action) => {
@@ -474,7 +476,9 @@ const tarifsSlice = createSlice({
 
       // Gestion de fetchAgencyTarifs
       .addCase(fetchAgencyTarifs.pending, (state) => {
-        state.loading = true;
+        if (!state.flatExistingTarifs || state.flatExistingTarifs.length === 0) {
+          state.loading = true;
+        }
       })
       .addCase(fetchAgencyTarifs.fulfilled, (state, action) => {
         state.loading = false;
@@ -513,11 +517,15 @@ const tarifsSlice = createSlice({
 
         // Si c'est un nouveau tarif, l'ajouter à la liste des tarifs existants
         if (action.payload.isNew) {
-          state.existingTarifs.push({
+          const newGroup = {
             ...action.payload.data,
             indice: action.payload.data.indice || state.selectedIndex,
             prix_zones: state.editingZones
-          });
+          };
+          state.existingTarifs.push(newGroup);
+
+          // Ajouter également à la liste plate
+          state.flatExistingTarifs = [...state.flatExistingTarifs, ...state.editingZones];
 
           // Mettre à jour l'indice sélectionné avec celui du nouveau tarif
           state.selectedIndex = action.payload.data.indice || state.selectedIndex;
@@ -532,8 +540,18 @@ const tarifsSlice = createSlice({
             }
             return tarif;
           });
+
+          // Mettre à jour la liste plate
+          const updatedZoneIds = state.editingZones.map(z => z.id).filter(Boolean);
+          state.flatExistingTarifs = state.flatExistingTarifs.map(z => {
+            const updated = state.editingZones.find(ez => ez.id === z.id);
+            return updated ? { ...z, ...updated } : z;
+          });
         }
-        saveTarifsToCache({ existingTarifs: state.existingTarifs });
+        saveTarifsToCache({
+          existingTarifs: state.existingTarifs,
+          flatExistingTarifs: state.flatExistingTarifs
+        });
       })
       .addCase(saveTarif.rejected, (state, action) => {
         state.isSaving = false;
@@ -551,6 +569,18 @@ const tarifsSlice = createSlice({
 
         const updatedZone = action.payload;
         if (updatedZone && updatedZone.id) {
+          // Mettre à jour la liste plate
+          state.flatExistingTarifs = state.flatExistingTarifs.map(z =>
+            z.id === updatedZone.id ? {
+              ...z,
+              ...updatedZone,
+              pourcentage_prestation: parseFloat(updatedZone.pourcentage_prestation),
+              montant_prestation: parseFloat(updatedZone.montant_prestation),
+              montant_expedition: parseFloat(updatedZone.montant_expedition)
+            } : z
+          );
+
+          // Mettre à jour la liste groupée
           state.existingTarifs = state.existingTarifs.map(tarif => {
             const zoneIndex = tarif.prix_zones?.findIndex(z => z.id === updatedZone.id);
             if (zoneIndex !== -1 && tarif.prix_zones) {
@@ -570,13 +600,15 @@ const tarifsSlice = createSlice({
           // Si on est en train d'éditer ce tarif, mettre à jour editingZones aussi
           const currentEditingTarif = state.existingTarifs.find(t => t.indice === state.selectedIndex);
           if (currentEditingTarif) {
-            // Check if the updated zone belongs to current editing selection
             const isRelevant = currentEditingTarif.prix_zones.some(z => z.id === updatedZone.id);
             if (isRelevant) {
               state.editingZones = JSON.parse(JSON.stringify(currentEditingTarif.prix_zones));
             }
           }
-          saveTarifsToCache({ existingTarifs: state.existingTarifs });
+          saveTarifsToCache({
+            existingTarifs: state.existingTarifs,
+            flatExistingTarifs: state.flatExistingTarifs
+          });
         }
       })
       .addCase(updateSingleTarifZone.rejected, (state, action) => {
@@ -592,28 +624,20 @@ const tarifsSlice = createSlice({
       .addCase(deleteTarifSimple.fulfilled, (state, action) => {
         state.isSaving = false;
         state.message = 'Tarif supprimé avec succès';
-        // Supprimer le tarif de la liste existante
-        // Note: Comme les tarifs sont groupés par indice, si on supprime un tarif (une ligne spécifique d'un indice),
-        // on doit vérifier si l'indice a encore d'autres tarifs ou s'il faut le retirer.
-        // Mais ici l'ID passé semble être l'ID d'un tarif simple (une ligne de la table tarifs_simples).
-        // Cependant, l'affichage est groupé. Il faut voir comment l'API de suppression fonctionne.
-        // Si l'API supprime une entrée de la table, on doit la retirer de notre structure groupée.
 
-        // L'action renvoie l'ID supprimé.
-        // On doit parcourir existingTarifs (qui sont des groupes) et retirer l'élément correspondant dans prix_zones ou supprimer le groupe si c'était le représentatif ?
-        // Attendons, existingTarifs est un tableau de groupes : { indice, id, prix_zones: [...] }
-        // Si l'ID supprimé est "id" du groupe (le tarif représentatif), ça peut être délicat.
-        // Mais généralement "delete-tarif-simple/{id}" supprime un enregistrement spécifique.
-        // Si "id" correspond à l'ID d'un des éléments dans prix_zones.
+        // Mettre à jour la liste plate
+        state.flatExistingTarifs = state.flatExistingTarifs.filter(z => z.id !== action.payload);
 
-        // Simplification : On recharge souvent après suppression, mais pour l'UI optimiste :
-        // On va essayer de le retirer de prix_zones de tous les groupes
+        // Mettre à jour la liste groupée
         state.existingTarifs = state.existingTarifs.map(group => ({
           ...group,
           prix_zones: group.prix_zones.filter(z => z.id !== action.payload)
-        })).filter(group => group.prix_zones.length > 0); // Si plus de zones, on vire le groupe
-        saveTarifsToCache({ existingTarifs: state.existingTarifs });
+        })).filter(group => group.prix_zones.length > 0);
 
+        saveTarifsToCache({
+          existingTarifs: state.existingTarifs,
+          flatExistingTarifs: state.flatExistingTarifs
+        });
       })
       .addCase(deleteTarifSimple.rejected, (state, action) => {
         state.isSaving = false;
@@ -625,6 +649,12 @@ const tarifsSlice = createSlice({
       .addCase(toggleTarifSimpleStatus.pending, (state, action) => {
         state.error = null;
         const id = action.meta.arg;
+
+        // Update flat list optimistically
+        state.flatExistingTarifs = state.flatExistingTarifs.map(z =>
+          z.id === id ? { ...z, actif: !z.actif } : z
+        );
+
         state.existingTarifs = state.existingTarifs.map(group => {
           if (group.id === id) return { ...group, actif: !group.actif };
           const zoneIndex = group.prix_zones.findIndex(z => z.id === id);
@@ -639,6 +669,12 @@ const tarifsSlice = createSlice({
       .addCase(toggleTarifSimpleStatus.fulfilled, (state, action) => {
         state.isSaving = false;
         const { id, actif } = action.payload;
+
+        // Update flat list
+        state.flatExistingTarifs = state.flatExistingTarifs.map(z =>
+          z.id === id ? { ...z, actif: actif ?? z.actif } : z
+        );
+
         state.existingTarifs = state.existingTarifs.map(group => {
           if (group.id === id) return { ...group, actif: actif ?? group.actif };
           const zoneIndex = group.prix_zones.findIndex(z => z.id === id);
@@ -650,11 +686,20 @@ const tarifsSlice = createSlice({
           return group;
         });
         state.message = 'Statut modifié avec succès';
-        saveTarifsToCache({ existingTarifs: state.existingTarifs });
+        saveTarifsToCache({
+          existingTarifs: state.existingTarifs,
+          flatExistingTarifs: state.flatExistingTarifs
+        });
       })
       .addCase(toggleTarifSimpleStatus.rejected, (state, action) => {
         state.isSaving = false;
         const id = action.meta.arg;
+
+        // Rollback flat list
+        state.flatExistingTarifs = state.flatExistingTarifs.map(z =>
+          z.id === id ? { ...z, actif: !z.actif } : z
+        );
+
         state.existingTarifs = state.existingTarifs.map(group => {
           if (group.id === id) return { ...group, actif: !group.actif };
           const zoneIndex = group.prix_zones.findIndex(z => z.id === id);
@@ -673,7 +718,9 @@ const tarifsSlice = createSlice({
     builder
       // === Base groupage ===
       .addCase(fetchTarifsGroupage.pending, (state) => {
-        state.loading = true;
+        if (!state.groupageTarifs || state.groupageTarifs.length === 0) {
+          state.loading = true;
+        }
       })
       .addCase(fetchTarifsGroupage.fulfilled, (state, action) => {
         state.loading = false;
@@ -687,7 +734,9 @@ const tarifsSlice = createSlice({
 
       // === Groupage agence ===
       .addCase(fetchTarifGroupageAgence.pending, (state) => {
-        state.loading = true;
+        if (!state.existingGroupageTarifs || state.existingGroupageTarifs.length === 0) {
+          state.loading = true;
+        }
       })
       .addCase(fetchTarifGroupageAgence.fulfilled, (state, action) => {
         state.loading = false;

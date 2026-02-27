@@ -47,9 +47,6 @@ export const useTarifs = () => {
 
   // Actions encapsulées
   const fetchAllTarifs = useCallback(async (forceRefresh = false) => {
-    if (!forceRefresh && tarifs && tarifs.length > 0 && flatTarifs && flatTarifs.length > 0) {
-      return { success: true, data: tarifs };
-    }
 
     try {
       return await dispatch(fetchTarifs()).unwrap();
@@ -61,9 +58,6 @@ export const useTarifs = () => {
 
 
   const fetchAgencyTarifsData = useCallback(async (forceRefresh = false) => {
-    if (!forceRefresh && existingTarifs && existingTarifs.length > 0 && flatExistingTarifs && flatExistingTarifs.length > 0) {
-      return { success: true, data: existingTarifs };
-    }
 
     try {
       return await dispatch(fetchAgencyTarifs(forceRefresh)).unwrap();
@@ -76,9 +70,6 @@ export const useTarifs = () => {
 
   // === TARIFS GROUPAGE ===
   const fetchAllTarifsGroupageBase = useCallback(async (forceRefresh = false) => {
-    if (!forceRefresh && groupageTarifs && groupageTarifs.length > 0) {
-      return { success: true, data: groupageTarifs };
-    }
     try {
       return await dispatch(fetchTarifsGroupage()).unwrap();
     } catch (error) {
@@ -88,9 +79,6 @@ export const useTarifs = () => {
   }, [dispatch, groupageTarifs]);
 
   const fetchAgencyTarifsGroupage = useCallback(async (forceRefresh = false) => {
-    if (!forceRefresh && existingGroupageTarifs && existingGroupageTarifs.length > 0) {
-      return { success: true, data: existingGroupageTarifs };
-    }
     try {
       return await dispatch(fetchTarifGroupageAgence()).unwrap();
     } catch (error) {

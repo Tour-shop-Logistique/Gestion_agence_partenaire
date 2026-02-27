@@ -5,6 +5,7 @@ import DashboardLayout from "../components/DashboardLayout";
 import AgentCardMobile from "../components/AgentCardMobile";
 import AgentCardDesktop from "../components/AgentCardDesktop";
 import { XMarkIcon } from "@heroicons/react/24/outline";
+import { toast } from "../utils/toast";
 
 const Agents = () => {
   const { isAdmin } = useAuth();
@@ -29,7 +30,6 @@ const Agents = () => {
     type: "agence",
   });
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
   const [updatingAgent, setUpdatingAgent] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -44,18 +44,14 @@ const Agents = () => {
     try {
       const result = await toggleUserStatus(agent.id);
       if (result.payload.success) {
-        setMessage(
-          `Agent ${!agent.actif ? "activé" : "désactivé"} avec succès`
-        );
-        setTimeout(() => setMessage(""), 3000);
+        toast.success(`Agent ${!agent.actif ? "activé" : "désactivé"} avec succès`);
       } else {
         throw new Error(
           result.error || "Erreur lors de la mise à jour du statut"
         );
       }
     } catch (error) {
-      setMessage(`Erreur: ${error.message}`);
-      setTimeout(() => setMessage(""), 3000);
+      toast.error(`Erreur: ${error.message}`);
     } finally {
       setUpdatingAgent(null);
     }
@@ -89,10 +85,8 @@ const Agents = () => {
 
         if (result.payload.success) {
           await fetchUsers();
-          setMessage("Agent mis à jour avec succès");
+          toast.success("Agent mis à jour avec succès");
           closeModal();
-          // Actualiser la liste après modification
-          setTimeout(() => setMessage(""), 3000);
         } else {
           closeModal();
           throw new Error(result.error || "Erreur lors de la mise à jour");
@@ -112,19 +106,15 @@ const Agents = () => {
 
         if (result.payload.success) {
           await fetchUsers();
-          setMessage("Agent créé avec succès");
+          toast.success("Agent créé avec succès");
           closeModal();
-          // Actualiser la liste après création
-
-          setTimeout(() => setMessage(""), 3000);
         } else {
           closeModal();
           throw new Error(result.error || "Erreur lors de la création");
         }
       }
     } catch (error) {
-      setMessage(error.message || "Une erreur est survenue");
-      setTimeout(() => setMessage(""), 3000);
+      toast.error(error.message || "Une erreur est survenue");
     } finally {
       setLoading(false);
     }
@@ -161,17 +151,14 @@ const Agents = () => {
       const result = await deleteUser(agentToDelete.id);
 
       if (result.payload.success) {
-        setMessage(result.message || "Agent supprimé avec succès");
+        toast.success(result.message || "Agent supprimé avec succès");
         setShowDeleteModal(false);
-        // Actualiser la liste après suppression
-        setTimeout(() => setMessage(""), 3000);
         await fetchUsers();
       } else {
         throw new Error(result.error || "Erreur lors de la suppression");
       }
     } catch (error) {
-      setMessage(error.message || "Erreur lors de la suppression");
-      setTimeout(() => setMessage(""), 3000);
+      toast.error(error.message || "Erreur lors de la suppression");
     } finally {
       setLoading(false);
       setAgentToDelete(null);
@@ -212,11 +199,9 @@ const Agents = () => {
     setRefreshing(true);
     try {
       await fetchUsers();
-      setMessage("Liste des agents actualisée");
-      setTimeout(() => setMessage(""), 3000);
+      toast.info("Liste des agents actualisée");
     } catch (error) {
-      setMessage("Erreur lors de l'actualisation");
-      setTimeout(() => setMessage(""), 3000);
+      toast.error("Erreur lors de l'actualisation");
     } finally {
       setRefreshing(false);
     }
@@ -354,20 +339,10 @@ const Agents = () => {
         </div>
       )}
 
-      {message && (
-        <div
-          className={`mb-6 p-4 rounded-lg ${message.includes("succès")
-              ? "bg-green-50 border border-green-200 text-green-600"
-              : "bg-red-50 border border-red-200 text-red-600"
-            }`}
-        >
-          {message}
-        </div>
-      )}
 
       {/* Liste des agents - Design responsive : lignes sur desktop, cards sur mobile */}
       <div className="bg-white shadow-sm rounded-lg border border-gray-100 overflow-hidden">
-        {usersStatus === "loading" ? (
+        {usersStatus === "loading" && (!agencyUsers || agencyUsers.length === 0) ? (
           <div className="p-6">
             <div className="animate-pulse space-y-4">
               {Array.from({ length: 3 }).map((_, index) => (

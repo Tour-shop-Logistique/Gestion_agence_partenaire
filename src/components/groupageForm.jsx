@@ -127,7 +127,7 @@ const AddAgencyTarifModal = ({ show, onClose, editingTarif, selectedBaseRate }) 
         });
       }
       if (result && result.success !== false) {
-        if (!editingTarif?.delete) await fetchTarifGroupageAgence(true);
+        await fetchTarifGroupageAgence(true);
         handleClose();
       }
     } catch (err) {

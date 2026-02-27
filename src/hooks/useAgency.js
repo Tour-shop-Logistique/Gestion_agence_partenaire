@@ -53,11 +53,8 @@ export const useAgency = () => {
   }, [dispatch]);
 
   const fetchAgencyData = useCallback((forceRefresh = false) => {
-    if (!forceRefresh && status === 'succeeded' && agencyData) {
-      return Promise.resolve({ success: true, data: agencyData });
-    }
     return dispatch(fetchAgency());
-  }, [dispatch, status, agencyData]);
+  }, [dispatch]);
 
   const updateAgencyData = useCallback((agencyData) => {
     return dispatch(updateAgency(agencyData));
@@ -69,11 +66,8 @@ export const useAgency = () => {
 
   // Actions pour les utilisateurs
   const fetchAgencyUsers = useCallback((forceRefresh = false) => {
-    if (!forceRefresh && usersStatus === 'succeeded' && users && users.length > 0) {
-      return Promise.resolve({ success: true, data: users });
-    }
     return dispatch(fetchUsers());
-  }, [dispatch, usersStatus, users]);
+  }, [dispatch]);
 
   const createAgencyUser = useCallback((userData) => {
     return dispatch(createUser(userData));

@@ -41,13 +41,11 @@ const Dashboard = () => {
   });
 
   useEffect(() => {
-    if (!expeditions || expeditions.length === 0) {
-      loadExpeditions({
-        date_debut: startDate,
-        date_fin: endDate
-      });
-    }
-  }, [loadExpeditions, startDate, endDate, expeditions]);
+    loadExpeditions({
+      date_debut: startDate,
+      date_fin: endDate
+    });
+  }, [loadExpeditions, startDate, endDate]);
 
   const formatDateDisplay = (dateString) => {
     if (!dateString) return "N/A";
@@ -111,7 +109,9 @@ const Dashboard = () => {
     [currentUser?.nom, currentUser?.prenoms].filter(Boolean).join(" ") ||
     "Utilisateur";
 
-  if (expeditionStatus === 'loading') {
+  const isLoading = expeditionStatus === 'loading' && expeditionsList.length === 0;
+
+  if (isLoading) {
     return (
       <DashboardLayout>
         <div className="animate-pulse space-y-6">

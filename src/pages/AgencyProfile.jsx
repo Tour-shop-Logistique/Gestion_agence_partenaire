@@ -4,6 +4,7 @@ import DashboardLayout from "../components/DashboardLayout";
 import { useAgency } from "../hooks/useAgency";
 import { selectIsAdmin } from "../store/slices/authSlice";
 import { getLogoUrl } from "../utils/apiConfig";
+import { toast } from "../utils/toast";
 
 import {
   BuildingOffice2Icon,
@@ -34,7 +35,6 @@ const AgencyProfile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [message, setMessage] = useState({ type: "", text: "" });
   const [formData, setFormData] = useState({
     name: "",
     code_agence: "",
@@ -118,7 +118,7 @@ const AgencyProfile = () => {
 
   useEffect(() => {
     if (agencyError) {
-      setMessage({ type: "error", text: agencyError });
+      toast.error(agencyError);
     }
   }, [agencyError]);
 
@@ -145,7 +145,7 @@ const AgencyProfile = () => {
 
   const getCurrentLocation = () => {
     if (navigator.geolocation) {
-      setMessage({ type: "info", text: "Récupération de votre position..." });
+      toast.info("Récupération de votre position...");
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setFormData((prev) => ({
@@ -153,11 +153,10 @@ const AgencyProfile = () => {
             latitude: position.coords.latitude.toFixed(6),
             longitude: position.coords.longitude.toFixed(6),
           }));
-          setMessage({ type: "success", text: "Localisation récupérée avec succès !" });
-          setTimeout(() => setMessage({ type: "", text: "" }), 3000);
+          toast.success("Localisation récupérée avec succès !");
         },
         () => {
-          setMessage({ type: "error", text: "Impossible de récupérer la localisation." });
+          toast.error("Impossible de récupérer la localisation.");
         }
       );
     }
@@ -167,7 +166,6 @@ const AgencyProfile = () => {
     e.preventDefault();
     if (!isAdmin) return;
     setSaving(true);
-    setMessage({ type: "", text: "" });
 
     try {
       const agencyPayload = {
@@ -190,13 +188,12 @@ const AgencyProfile = () => {
       const result = hasAgencyId ? await updateAgencyData(agencyPayload) : await setupAgency(agencyPayload);
 
       if (result.type?.includes("fulfilled") || result.success) {
-        setMessage({ type: "success", text: "Profil agence mis à jour avec succès !" });
+        toast.success("Profil agence mis à jour avec succès !");
         setIsEditing(false);
         await fetchAgencyData();
-        setTimeout(() => setMessage({ type: "", text: "" }), 5000);
       }
     } catch (error) {
-      setMessage({ type: "error", text: "Erreur lors de la sauvegarde." });
+      toast.error("Erreur lors de la sauvegarde.");
     } finally {
       setSaving(false);
     }
@@ -206,7 +203,6 @@ const AgencyProfile = () => {
     if (isEditing) {
       if (originalFormData) setFormData({ ...originalFormData });
       setIsEditing(false);
-      setMessage({ type: "", text: "" });
     } else {
       setOriginalFormData({ ...formData });
       setIsEditing(true);
@@ -288,19 +284,6 @@ const AgencyProfile = () => {
         </div>
 
         {/* Notifications */}
-        {message.text && (
-          <div className={`p-4 rounded-2xl border flex items-center gap-4 animate-in slide-in-from-top-4 duration-300 ${message.type === "success" ? "bg-emerald-50 border-emerald-100 text-emerald-800" :
-            message.type === "error" ? "bg-rose-50 border-rose-100 text-rose-800" :
-              "bg-indigo-50 border-indigo-100 text-indigo-800"
-            }`}>
-            <div className={`p-2 rounded-xl ${message.type === "success" ? "bg-emerald-100" :
-              message.type === "error" ? "bg-rose-100" : "bg-indigo-100"
-              }`}>
-              {message.type === "success" ? <CheckIcon className="w-5 h-5" /> : <ArrowPathIcon className="w-5 h-5" />}
-            </div>
-            <p className="text-sm font-bold uppercase tracking-tight">{message.text}</p>
-          </div>
-        )}
 
         <form onSubmit={handleSubmit} className="space-y-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

@@ -28,7 +28,7 @@ const ToastManager = () => {
         'in_progress': `Demande de ${clientName} en cours`,
         'completed': `Demande de ${clientName} terminée`
       };
-      
+
       if (statusMessages[status]) {
         addToast({
           id: Date.now(),
@@ -39,12 +39,24 @@ const ToastManager = () => {
       }
     };
 
+    const handleToast = (event) => {
+      const { message, type, duration } = event.detail;
+      addToast({
+        id: Date.now(),
+        message: message || 'Notification',
+        type: type || 'info',
+        duration: duration || 5000
+      });
+    };
+
     window.addEventListener('new-message', handleNewMessage);
     window.addEventListener('request-update', handleRequestUpdate);
+    window.addEventListener('toast', handleToast);
 
     return () => {
       window.removeEventListener('new-message', handleNewMessage);
       window.removeEventListener('request-update', handleRequestUpdate);
+      window.removeEventListener('toast', handleToast);
     };
   }, []);
 

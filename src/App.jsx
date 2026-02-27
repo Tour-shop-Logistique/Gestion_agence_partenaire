@@ -24,8 +24,11 @@ import TarifsGroupes from "./pages/TarifsGroupes";
 
 
 import Expeditions from "./pages/Expeditions";
+import Demandes from "./pages/Demandes";
 import ExpeditionDetails from "./pages/ExpeditionDetails";
 import Colis from "./pages/Colis";
+import ReceptionColis from "./pages/ReceptionColis";
+import ToastManager from "./components/ToastManager";
 
 // Composant pour gérer la redirection automatique
 const AutoRedirect = ({ children }) => {
@@ -113,6 +116,7 @@ function AppContent() {
 
   return (
     <AutoRedirect>
+      <ToastManager />
       <Routes>
         {/* Routes publiques */}
         <Route
@@ -175,10 +179,26 @@ function AppContent() {
           }
         />
         <Route
+          path="/demandes"
+          element={
+            <ProtectedRoute>
+              <Demandes />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/colis"
           element={
             <ProtectedRoute>
               <Colis />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/reception-colis"
+          element={
+            <ProtectedRoute>
+              <ReceptionColis />
             </ProtectedRoute>
           }
         />

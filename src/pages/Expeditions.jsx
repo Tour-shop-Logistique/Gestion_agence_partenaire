@@ -4,13 +4,17 @@ import { useExpedition } from "../hooks/useExpedition";
 import { useAgency } from "../hooks/useAgency";
 import { Link } from "react-router-dom";
 import PrintSuccessModal from "../components/Receipts/PrintSuccessModal";
+import ConfirmationModal from "../components/ConfirmationModal";
 import { getLogoUrl } from "../utils/apiConfig";
 import { formatPriceDual } from "../utils/format";
 
 const Expeditions = () => {
-    const { expeditions, meta, loadExpeditions, status } = useExpedition();
+    const { expeditions, meta, loadExpeditions, confirmReception, status } = useExpedition();
     const { agencyData, fetchAgencyData } = useAgency();
     const [currentPage, setCurrentPage] = useState(1);
+    const [isConfirmReceptionModalOpen, setIsConfirmReceptionModalOpen] = useState(false);
+    const [expeditionToConfirm, setExpeditionToConfirm] = useState(null);
+    const [isConfirming, setIsConfirming] = useState(false);
 
     // Helper to get today's date in YYYY-MM-DD
     const getTodayDate = () => {
@@ -52,6 +56,25 @@ const Expeditions = () => {
     const handlePrintReceipt = (expedition) => {
         setSelectedExpedition(expedition);
         setShowPrintModal(true);
+    };
+
+    const handleConfirmReception = (expedition) => {
+        setExpeditionToConfirm(expedition);
+        setIsConfirmReceptionModalOpen(true);
+    };
+
+    const processConfirmReception = async () => {
+        if (!expeditionToConfirm) return;
+        setIsConfirming(true);
+        await confirmReception(expeditionToConfirm.id);
+        await loadExpeditions({
+            page: currentPage,
+            date_debut: dateDebut,
+            date_fin: dateFin
+        });
+        setIsConfirming(false);
+        setIsConfirmReceptionModalOpen(false);
+        setExpeditionToConfirm(null);
     };
 
     const formatDate = (dateString) => {
@@ -286,7 +309,7 @@ const Expeditions = () => {
                     <div className="relative overflow-x-auto">
                         {/* Mobile View (Cards) */}
                         <div className="block lg:hidden space-y-4 p-4">
-                            {status === 'loading' ? (
+                            {status === 'loading' && expeditions.length === 0 ? (
                                 Array(3).fill(0).map((_, i) => (
                                     <div key={i} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 animate-pulse space-y-4">
                                         <div className="flex justify-between items-start">
@@ -364,6 +387,17 @@ const Expeditions = () => {
                                                     </span>
                                                 </div>
                                                 <div className="flex gap-2">
+                                                    {exp.statut_expedition === 'accepted' && (
+                                                        <button
+                                                            onClick={() => handleConfirmReception(exp)}
+                                                            className="p-2 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100 shadow-sm"
+                                                            title="Confirmer Réception"
+                                                        >
+                                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                            </svg>
+                                                        </button>
+                                                    )}
                                                     <button
                                                         onClick={() => handlePrintReceipt(exp)}
                                                         className="p-2 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-sm"
@@ -405,7 +439,7 @@ const Expeditions = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100/60">
-                                {status === 'loading' ? (
+                                {status === 'loading' && expeditions.length === 0 ? (
                                     // Premium Skeleton Loading
                                     Array(5).fill(0).map((_, i) => (
                                         <tr key={i} className="animate-pulse">
@@ -524,6 +558,20 @@ const Expeditions = () => {
                                             </td>
                                             <td className="px-8 py-6 text-right">
                                                 <div className="flex items-center justify-end gap-2">
+                                                    {/* Confirm Reception Action */}
+                                                    {exp.statut_expedition === 'accepted' && (
+                                                        <button
+                                                            onClick={() => handleConfirmReception(exp)}
+                                                            className="group/btn relative p-2.5 hover:bg-white rounded-xl transition-all duration-200 text-slate-400 hover:text-indigo-600 border border-transparent hover:border-slate-200 hover:shadow-lg hover:shadow-indigo-200/50"
+                                                            title="Confirmer la réception en agence"
+                                                        >
+                                                            <svg className="w-5 h-5 transition-transform duration-200 group-hover/btn:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                            </svg>
+                                                            <div className="absolute inset-0 rounded-xl bg-indigo-500/0 group-hover/btn:bg-indigo-500/5 transition-colors duration-200"></div>
+                                                        </button>
+                                                    )}
+
                                                     {/* View Details Button */}
                                                     <Link
                                                         to={`/expeditions/${exp.id}`}
@@ -645,6 +693,20 @@ const Expeditions = () => {
                     }}
                 />
             )}
+
+            <ConfirmationModal
+                isOpen={isConfirmReceptionModalOpen}
+                onClose={() => {
+                    setIsConfirmReceptionModalOpen(false);
+                    setExpeditionToConfirm(null);
+                }}
+                onConfirm={processConfirmReception}
+                title="Confirmer la réception"
+                message={`Confirmez-vous avoir reçu les colis pour l'expédition ${expeditionToConfirm?.reference} à votre agence ?`}
+                confirmText="Confirmer la réception"
+                type="info"
+                isLoading={isConfirming}
+            />
         </DashboardLayout>
     );
 };

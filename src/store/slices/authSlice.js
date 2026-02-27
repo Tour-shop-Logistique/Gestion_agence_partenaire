@@ -17,15 +17,11 @@ export const checkAuthState = createAsyncThunk(
         return rejectWithValue("No token found");
       }
 
-      // S'assurer que le token est présent dans le service API
       apiService.setAuthToken(token);
 
-      // Récupérer le profil utilisateur pour valider le token
       const result = await authApi.getProfile();
 
       if (!result.success) {
-        // On ne déconnecte que si c'est une erreur d'authentification (401/403)
-        // ou si l'API nous dit explicitement que le token est invalide
         const isAuthError = result.error?.status === 401 || result.error?.status === 403;
 
         if (isAuthError) {

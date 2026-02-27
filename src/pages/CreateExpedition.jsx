@@ -6,6 +6,7 @@ import { useTarifs } from "../hooks/useTarifs";
 import { useAgency } from "../hooks/useAgency";
 import PrintSuccessModal from "../components/Receipts/PrintSuccessModal";
 import { getLogoUrl } from "../utils/apiConfig";
+import { toast } from "../utils/toast";
 
 const CreateExpedition = () => {
     const navigate = useNavigate();
@@ -24,6 +25,7 @@ const CreateExpedition = () => {
         message,
         resetStatus,
         cleanSimulation,
+        clearCurrentExpedition,
         currentExpedition
     } = useExpedition();
 
@@ -73,6 +75,8 @@ const CreateExpedition = () => {
     });
 
     useEffect(() => {
+        resetStatus();
+        clearCurrentExpedition();
         loadProducts();
         loadCategories();
         fetchTarifGroupageAgence();
@@ -103,17 +107,20 @@ const CreateExpedition = () => {
     }, [formData.type_expedition]);
 
     // Effet pour la navigation retardée améliorée
-    /* useEffect(() => {
-        if (status === 'succeeded') {
-            const timer = setTimeout(() => {
-                resetStatus();
-                cleanSimulation();
-                navigate("/dashboard");
-            }, 10000); // On laisse 10s pour voir la modale ou on l'enlève carrément
-            return () => clearTimeout(timer);
+    useEffect(() => {
+        if (message) {
+            toast.success(message);
+            resetStatus();
         }
-    }, [status]); */
-    // On commente l'auto redirect pour laisser l'utilisateur choisir dans la modale de succès
+    }, [message, resetStatus]);
+
+    useEffect(() => {
+        if (error) {
+            toast.error(error);
+            resetStatus();
+        }
+    }, [error, resetStatus]);
+
     useEffect(() => {
         console.log("Expedition Status:", status);
         console.log("Current Expedition Data:", currentExpedition);
@@ -215,7 +222,7 @@ const CreateExpedition = () => {
     const handleSimulate = async () => {
         console.log("Simulation Payload:", formData);
         if (!formData.pays_destination || !formData.destinataire_ville) {
-            alert("Veuillez renseigner le pays et la ville de destination.");
+            toast.info("Veuillez renseigner le pays et la ville de destination.");
             return;
         }
 
@@ -312,8 +319,6 @@ const CreateExpedition = () => {
                         </div>
                     </div>
 
-                    {message && <div className="mb-4 p-3 bg-green-50 border-l-4 border-green-500 text-green-700 text-sm font-bold rounded">✅ {message}</div>}
-                    {error && <div className="mb-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm font-bold rounded">⚠️ {error}</div>}
 
                     <div className={simulationResult && step === 1 ? "grid grid-cols-1 lg:grid-cols-3 gap-6" : "space-y-6"}>
                         <div className={simulationResult && step === 1 ? "lg:col-span-2 space-y-6" : "space-y-6"}>
