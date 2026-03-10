@@ -159,6 +159,73 @@ export const confirmExpeditionReception = createAsyncThunk(
     }
 );
 
+// Marquer des colis comme reçus au départ
+export const receiveColisDepart = createAsyncThunk(
+    "expedition/receiveColisDepart",
+    async (codes, { rejectWithValue }) => {
+        try {
+            const result = await expeditionsApi.receiveColisDepart(codes);
+            if (!result.success) {
+                return rejectWithValue(result.message);
+            }
+            return { codes, message: result.message };
+        } catch (error) {
+            return rejectWithValue(error.message || "Erreur lors de la réception des colis");
+        }
+    }
+);
+
+// Lister les expéditions à réceptionner
+export const fetchExpeditionsReception = createAsyncThunk(
+    "expedition/fetchReception",
+    async (params = { page: 1 }, { rejectWithValue }) => {
+        try {
+            const result = await expeditionsApi.listExpeditionsReception(params);
+            if (!result.success) {
+                return rejectWithValue(result.message);
+            }
+            return {
+                data: result.data,
+                meta: result.meta
+            };
+        } catch (error) {
+            return rejectWithValue(error.message || "Erreur lors de la récupération des expéditions à réceptionner");
+        }
+    }
+);
+
+// Marquer des colis comme reçus à destination
+export const receiveColisDestination = createAsyncThunk(
+    "expedition/receiveColisDestination",
+    async (codes, { rejectWithValue }) => {
+        try {
+            const result = await expeditionsApi.receiveColisDestination(codes);
+            if (!result.success) {
+                return rejectWithValue(result.message);
+            }
+            return { codes, message: result.message };
+        } catch (error) {
+            return rejectWithValue(error.message || "Erreur lors de la réception des colis à destination");
+        }
+    }
+);
+
+// Envoyer des colis à l'entrepôt
+export const sendColisToEntrepot = createAsyncThunk(
+    "expedition/sendColisToEntrepot",
+    async (codes, { rejectWithValue }) => {
+        try {
+            const result = await expeditionsApi.sendColisToEntrepot(codes);
+            if (!result.success) {
+                return rejectWithValue(result.message);
+            }
+            return { codes, message: result.message };
+        } catch (error) {
+            return rejectWithValue(error.message || "Erreur lors de l'envoi vers l'entrepôt");
+        }
+    }
+);
+
 const expeditionSlice = createSlice({
     name: "expedition",
     initialState: {
@@ -179,6 +246,7 @@ const expeditionSlice = createSlice({
         currentExpedition: null,
         simulationResult: null,
         simulationStatus: "idle", // 'idle' | 'loading' | 'succeeded' | 'failed'
+        status: "idle", // 'idle' | 'loading' | 'succeeded' | 'failed'
         error: null,
         message: null,
         lastFilters: null,
@@ -191,6 +259,14 @@ const expeditionSlice = createSlice({
             per_page: 20,
             total: 0
         },
+        reception: [],
+        receptionMeta: {
+            current_page: 1,
+            last_page: 1,
+            per_page: 20,
+            total: 0
+        },
+        lastReceptionFilters: null,
     },
     reducers: {
         clearExpeditionStatus: (state) => {
@@ -361,6 +437,111 @@ const expeditionSlice = createSlice({
                 // Pour l'instant on se contente du message
             })
             .addCase(confirmExpeditionReception.rejected, (state, action) => {
+                state.status = "failed";
+                state.error = action.payload;
+            })
+
+            .addCase(receiveColisDepart.pending, (state) => {
+                state.status = "loading";
+            })
+            .addCase(receiveColisDepart.fulfilled, (state, action) => {
+                state.status = "succeeded";
+                state.message = action.payload.message;
+                const { codes } = action.payload;
+
+                if (state.expeditions && codes) {
+                    state.expeditions = state.expeditions.map(exp => ({
+                        ...exp,
+                        colis: exp.colis.map(c =>
+                            codes.includes(c.code_colis)
+                                ? { ...c, is_received_by_agence_depart: true }
+                                : c
+                        )
+                    }));
+                }
+            })
+            .addCase(receiveColisDepart.rejected, (state, action) => {
+                state.status = "failed";
+                state.error = action.payload;
+            })
+
+            // Fetch Expeditions Reception
+            .addCase(fetchExpeditionsReception.pending, (state) => {
+                if (!state.reception || state.reception.length === 0) {
+                    state.status = "loading";
+                }
+                state.error = null;
+            })
+            .addCase(fetchExpeditionsReception.fulfilled, (state, action) => {
+                state.status = "succeeded";
+                state.reception = action.payload.data;
+                state.receptionMeta = action.payload.meta || state.receptionMeta;
+                state.lastReceptionFilters = action.meta.arg;
+            })
+            .addCase(fetchExpeditionsReception.rejected, (state, action) => {
+                state.status = "failed";
+                state.error = action.payload;
+            })
+
+            // Receive Colis Destination
+            .addCase(receiveColisDestination.pending, (state) => {
+                state.status = "loading";
+            })
+            .addCase(receiveColisDestination.fulfilled, (state, action) => {
+                state.status = "succeeded";
+                state.message = action.payload.message;
+                const { codes } = action.payload;
+
+                // Mise à jour de l'onglet réception
+                if (state.reception && codes) {
+                    state.reception = state.reception.map(exp => ({
+                        ...exp,
+                        colis: exp.colis.map(c =>
+                            codes.includes(c.code_colis)
+                                ? { ...c, is_received_by_agence_destination: true }
+                                : c
+                        )
+                    }));
+                }
+
+                // Mise à jour de la liste générale des expéditions
+                if (state.expeditions && codes) {
+                    state.expeditions = state.expeditions.map(exp => ({
+                        ...exp,
+                        colis: exp.colis.map(c =>
+                            codes.includes(c.code_colis)
+                                ? { ...c, is_received_by_agence_destination: true }
+                                : c
+                        )
+                    }));
+                }
+            })
+            .addCase(receiveColisDestination.rejected, (state, action) => {
+                state.status = "failed";
+                state.error = action.payload;
+            })
+
+            // Send Colis To Entrepot
+            .addCase(sendColisToEntrepot.pending, (state) => {
+                state.status = "loading";
+            })
+            .addCase(sendColisToEntrepot.fulfilled, (state, action) => {
+                state.status = "succeeded";
+                state.message = action.payload.message;
+                const { codes } = action.payload;
+
+                if (state.expeditions && codes) {
+                    state.expeditions = state.expeditions.map(exp => ({
+                        ...exp,
+                        colis: exp.colis.map(c =>
+                            codes.includes(c.code_colis)
+                                ? { ...c, is_expedie_vers_entrepot: true }
+                                : c
+                        )
+                    }));
+                }
+            })
+            .addCase(sendColisToEntrepot.rejected, (state, action) => {
                 state.status = "failed";
                 state.error = action.payload;
             });

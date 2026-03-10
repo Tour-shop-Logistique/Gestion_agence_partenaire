@@ -7,14 +7,11 @@ import PrintSuccessModal from "../components/Receipts/PrintSuccessModal";
 import ConfirmationModal from "../components/ConfirmationModal";
 import { getLogoUrl } from "../utils/apiConfig";
 import { formatPriceDual } from "../utils/format";
+import { ArrowPathIcon, MagnifyingGlassIcon, CalendarIcon, FunnelIcon } from "@heroicons/react/24/outline";
 
 const Expeditions = () => {
-    const { expeditions, meta, loadExpeditions, confirmReception, status } = useExpedition();
+    const { expeditions, meta, loadExpeditions, confirmReception, status, lastFilters } = useExpedition();
     const { agencyData, fetchAgencyData } = useAgency();
-    const [currentPage, setCurrentPage] = useState(1);
-    const [isConfirmReceptionModalOpen, setIsConfirmReceptionModalOpen] = useState(false);
-    const [expeditionToConfirm, setExpeditionToConfirm] = useState(null);
-    const [isConfirming, setIsConfirming] = useState(false);
 
     // Helper to get today's date in YYYY-MM-DD
     const getTodayDate = () => {
@@ -28,14 +25,21 @@ const Expeditions = () => {
         return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
     };
 
-    const [dateDebut, setDateDebut] = useState(getFirstDayOfMonth());
-    const [dateFin, setDateFin] = useState(getTodayDate());
+    const [currentPage, setCurrentPage] = useState(lastFilters?.page || 1);
+    const [isConfirmReceptionModalOpen, setIsConfirmReceptionModalOpen] = useState(false);
+    const [expeditionToConfirm, setExpeditionToConfirm] = useState(null);
+    const [isConfirming, setIsConfirming] = useState(false);
+
+    const [dateDebut, setDateDebut] = useState(lastFilters?.date_debut || getFirstDayOfMonth());
+    const [dateFin, setDateFin] = useState(lastFilters?.date_fin || getTodayDate());
     const [type, setType] = useState(""); // "" for all, "simple", "groupage"
     const [selectedExpedition, setSelectedExpedition] = useState(null);
     const [showPrintModal, setShowPrintModal] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
 
     useEffect(() => {
+        // Le hook useExpedition.loadExpeditions gère déjà l'optimisation en interne
+        // en comparant lastFilters avec les nouveaux paramètres.
         loadExpeditions({
             page: currentPage,
             date_debut: dateDebut,
@@ -71,7 +75,7 @@ const Expeditions = () => {
             page: currentPage,
             date_debut: dateDebut,
             date_fin: dateFin
-        });
+        }, true);
         setIsConfirming(false);
         setIsConfirmReceptionModalOpen(false);
         setExpeditionToConfirm(null);
@@ -273,9 +277,7 @@ const Expeditions = () => {
                         {/* Search Bar */}
                         <div className="relative group w-full sm:w-64 lg:w-80">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <svg className="h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                </svg>
+                                <MagnifyingGlassIcon className="h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
                             </div>
                             <input
                                 type="text"
@@ -285,6 +287,16 @@ const Expeditions = () => {
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
+
+                        {/* Refresh Button */}
+                        <button
+                            onClick={() => loadExpeditions({ page: currentPage, date_debut: dateDebut, date_fin: dateFin }, true)}
+                            disabled={status === 'loading'}
+                            className="p-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm active:scale-95 disabled:opacity-50"
+                            title="Rafraîchir"
+                        >
+                            <ArrowPathIcon className={`w-5 h-5 ${status === 'loading' ? 'animate-spin' : ''}`} />
+                        </button>
 
                         <div className="hidden sm:block group relative bg-gradient-to-br from-white to-slate-50/50 px-5 py-3 rounded-2xl border border-slate-200/60 shadow-sm hover:shadow-md transition-all duration-200">
                             <div className="flex items-center gap-3">
@@ -614,9 +626,9 @@ const Expeditions = () => {
                                                         </svg>
                                                     </div>
                                                 </div>
-                                                <h3 className="text-xl font-bold text-slate-900 mb-2 tracking-tight">Aucune expédition</h3>
+                                                <h3 className="text-xl font-bold text-slate-900 mb-2 tracking-tight">Désolé aucune donnée disponible</h3>
                                                 <p className="text-sm font-medium text-slate-500 leading-relaxed">
-                                                    Commencez par créer votre première expédition pour suivre vos envois en temps réel.
+                                                    Aucune expédition ne correspond à vos critères de recherche pour le moment.
                                                 </p>
                                             </div>
                                         </td>

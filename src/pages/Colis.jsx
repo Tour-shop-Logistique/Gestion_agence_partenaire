@@ -16,8 +16,15 @@ import {
 } from "@heroicons/react/24/outline";
 
 const Colis = () => {
-    const { colis, colisMeta, loadColis, loadingColis } = useExpedition();
-    const [currentPage, setCurrentPage] = useState(1);
+    const {
+        expeditions, meta, loadExpeditions, status, lastFilters,
+        receiveColisDepart, sendColisToEntrepot, resetStatus, message, error
+    } = useExpedition();
+    const loadingColis = status === 'loading';
+    const [currentPage, setCurrentPage] = useState(lastFilters?.page || 1);
+    const [selectedCodes, setSelectedCodes] = useState([]);
+    const [processing, setProcessing] = useState(false);
+    const [activeTab, setActiveTab] = useState('agence'); // 'agence' or 'entrepot'
 
     // Helper to get today's date in YYYY-MM-DD
     const getTodayDate = () => {
@@ -31,24 +38,57 @@ const Colis = () => {
         return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
     };
 
-    const [dateDebut, setDateDebut] = useState(getFirstDayOfMonth());
-    const [dateFin, setDateFin] = useState(getTodayDate());
     const [searchQuery, setSearchQuery] = useState("");
 
     const fetchColisData = (force = false) => {
-        loadColis({
+        loadExpeditions({
             page: currentPage,
-            date_debut: dateDebut,
-            date_fin: dateFin
+            date_debut: lastFilters?.date_debut || getFirstDayOfMonth(),
+            date_fin: lastFilters?.date_fin || getTodayDate()
         }, force);
     };
 
     useEffect(() => {
         fetchColisData();
-    }, [currentPage, dateDebut, dateFin, loadColis]);
+    }, [currentPage, loadExpeditions]);
+
+    useEffect(() => {
+        if (message || error) {
+            if (message) {
+                // On ne rafraîchit plus systématiquement si le state Redux est déjà à jour
+                // fetchColisData(true); 
+                setSelectedCodes([]);
+            }
+            const timer = setTimeout(() => resetStatus(), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [message, error, resetStatus]);
+
+    // Transformer les expéditions en liste de colis
+    const allColis = useMemo(() => {
+        if (!expeditions) return [];
+        return expeditions.flatMap(exp =>
+            (exp.colis || []).map(item => ({
+                ...item,
+                expedition: exp,
+                expedition_id: exp.id,
+                is_received: item.is_received_by_agence_depart === true || item.is_received_by_agence_destination === true || item.is_received_by_agence === true,
+                is_sent: item.is_expedie_vers_entrepot === true
+            }))
+        );
+    }, [expeditions]);
+
+    // Filtrer les colis selon l'onglet actif
+    const tabColis = useMemo(() => {
+        if (activeTab === 'agence') {
+            return allColis.filter(c => !c.is_received);
+        } else {
+            return allColis.filter(c => c.is_received);
+        }
+    }, [allColis, activeTab]);
 
     const handlePageChange = (page) => {
-        if (page >= 1 && page <= (colisMeta?.last_page || 1)) {
+        if (page >= 1 && page <= (meta?.last_page || 1)) {
             setCurrentPage(page);
         }
     };
@@ -69,16 +109,47 @@ const Colis = () => {
 
     // Filter parcels based on search query (local filter for instant response)
     const filteredColis = useMemo(() => {
-        if (!searchQuery) return colis;
+        if (!searchQuery) return tabColis;
         const lowerQuery = searchQuery.toLowerCase();
-        return colis.filter(item =>
+        return tabColis.filter(item =>
             item.code_colis?.toLowerCase().includes(lowerQuery) ||
             item.designation?.toLowerCase().includes(lowerQuery) ||
             item.expedition?.reference?.toLowerCase().includes(lowerQuery) ||
             item.category?.nom?.toLowerCase().includes(lowerQuery) ||
-            item.articles?.some(a => a.toLowerCase().includes(lowerQuery))
+            item.articles?.some(a => String(a).toLowerCase().includes(lowerQuery))
         );
-    }, [colis, searchQuery]);
+    }, [tabColis, searchQuery]);
+
+    const selectableColis = useMemo(() =>
+        filteredColis.filter(c => activeTab === 'agence' ? !c.is_received : !c.is_sent),
+        [filteredColis, activeTab]);
+
+    const toggleSelect = (code) => {
+        setSelectedCodes(prev =>
+            prev.includes(code)
+                ? prev.filter(c => c !== code)
+                : [...prev, code]
+        );
+    };
+
+    const toggleSelectAll = () => {
+        if (selectedCodes.length === selectableColis.length) {
+            setSelectedCodes([]);
+        } else {
+            setSelectedCodes(selectableColis.map(c => c.code_colis));
+        }
+    };
+
+    const handleBulkAction = async () => {
+        if (selectedCodes.length === 0) return;
+        setProcessing(true);
+        if (activeTab === 'agence') {
+            await receiveColisDepart(selectedCodes);
+        } else {
+            await sendColisToEntrepot(selectedCodes);
+        }
+        setProcessing(false);
+    };
 
     return (
         <DashboardLayout>
@@ -90,45 +161,41 @@ const Colis = () => {
                             <div className="p-2 bg-indigo-600 rounded-lg shrink-0">
                                 <CubeIcon className="w-5 h-5 sm:w-6 h-6 text-white" />
                             </div>
-                            <h1 className="text-2xl sm:text-4xl font-bold text-slate-900 tracking-tight leading-none">
-                                Liste des Colis
-                            </h1>
+                            <div className="flex flex-col">
+                                <h1 className="text-2xl sm:text-4xl font-bold text-slate-900 tracking-tight leading-none">
+                                    Gestion des Colis
+                                </h1>
+                                {selectedCodes.length > 0 && (
+                                    <span className="text-indigo-600 font-bold text-xs mt-1 animate-pulse">
+                                        {selectedCodes.length} colis sélectionné(s)
+                                    </span>
+                                )}
+                            </div>
                         </div>
                         <p className="text-xs sm:text-sm font-medium text-slate-500 tracking-wide ml-10 sm:ml-12">
-                            Visualisez et gérez l'ensemble des colis expédiés par votre agence
+                            {activeTab === 'agence'
+                                ? "Confirmez la réception des colis arrivant à l'agence"
+                                : "Préparez et initiez l'envoi des colis vers l'entrepôt"}
                         </p>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row items-center bg-slate-100/50 p-1 rounded-2xl border border-slate-200/60 self-start lg:self-center">
+                        <button
+                            onClick={() => { setActiveTab('agence'); setSelectedCodes([]); }}
+                            className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'agence' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            En agence
+                        </button>
+                        <button
+                            onClick={() => { setActiveTab('entrepot'); setSelectedCodes([]); }}
+                            className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'entrepot' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                            Envoi pour expedition
+                        </button>
                     </div>
 
                     <div className="flex flex-col gap-3 w-full lg:w-auto">
                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                            {/* Date Filters */}
-                            <div className="flex items-center gap-2 w-full sm:w-auto">
-                                <div className="relative group flex-1 sm:w-36 lg:w-40">
-                                    <span className="absolute -top-2 left-3 px-1 bg-white text-[10px] font-bold text-slate-400 uppercase tracking-wider z-10">Du</span>
-                                    <input
-                                        type="date"
-                                        className="block w-full px-2 sm:px-3 py-2 sm:py-2.5 bg-white border border-slate-200 rounded-xl text-[12px] sm:text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
-                                        value={dateDebut}
-                                        onChange={(e) => {
-                                            setDateDebut(e.target.value);
-                                            setCurrentPage(1);
-                                        }}
-                                    />
-                                </div>
-                                <div className="relative group flex-1 sm:w-36 lg:w-40">
-                                    <span className="absolute -top-2 left-3 px-1 bg-white text-[10px] font-bold text-slate-400 uppercase tracking-wider z-10">Au</span>
-                                    <input
-                                        type="date"
-                                        className="block w-full px-2 sm:px-3 py-2 sm:py-2.5 bg-white border border-slate-200 rounded-xl text-[12px] sm:text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
-                                        value={dateFin}
-                                        onChange={(e) => {
-                                            setDateFin(e.target.value);
-                                            setCurrentPage(1);
-                                        }}
-                                    />
-                                </div>
-                            </div>
-
                             {/* Search Bar */}
                             <div className="relative group w-full sm:w-64 lg:w-80">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -142,29 +209,6 @@ const Colis = () => {
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                 />
                             </div>
-
-                            {/* Refresh Button */}
-                            <button
-                                onClick={handleRefresh}
-                                className="hidden sm:flex p-2.5 bg-white border border-slate-200 rounded-xl text-slate-600 hover:text-indigo-600 hover:border-indigo-200 hover:shadow-md transition-all group"
-                                title="Rafraîchir"
-                            >
-                                <ArrowPathIcon className={`w-5 h-5 ${loadingColis ? 'animate-spin text-indigo-600' : 'group-active:rotate-180 transition-transform duration-500'}`} />
-                            </button>
-                        </div>
-
-                        {/* Mobile Stats & Refresh */}
-                        <div className="flex sm:hidden items-center justify-between gap-3">
-                            <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm flex-1">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total:</span>
-                                <span className="text-sm font-bold text-slate-900">{colisMeta?.total || 0}</span>
-                            </div>
-                            <button
-                                onClick={handleRefresh}
-                                className="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-600 shadow-sm active:bg-slate-50"
-                            >
-                                <ArrowPathIcon className={`w-5 h-5 ${loadingColis ? 'animate-spin text-indigo-600' : ''}`} />
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -177,26 +221,54 @@ const Colis = () => {
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="bg-slate-50/80 border-b border-slate-200">
+                                        <th className="px-4 py-5 w-10">
+                                            <input
+                                                type="checkbox"
+                                                className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-all cursor-pointer"
+                                                checked={selectableColis.length > 0 && selectedCodes.length === selectableColis.length}
+                                                onChange={toggleSelectAll}
+                                            />
+                                        </th>
                                         <th className="px-6 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Colis Info</th>
                                         <th className="px-6 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Catégorie & Détails</th>
                                         <th className="px-6 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Expédition</th>
                                         <th className="px-6 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">Dimensions & Poids</th>
                                         <th className="px-6 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Montant Total</th>
-                                        <th className="px-6 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Actions</th>
+                                        <th className="px-6 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Détails</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
-                                    {loadingColis && colis.length === 0 ? (
+                                    {loadingColis && allColis.length === 0 ? (
                                         Array(5).fill(0).map((_, i) => (
                                             <tr key={i} className="animate-pulse">
-                                                <td className="px-6 py-6" colSpan="6">
+                                                <td className="px-6 py-6" colSpan="7">
                                                     <div className="h-12 bg-slate-50 rounded-xl w-full"></div>
                                                 </td>
                                             </tr>
                                         ))
                                     ) : filteredColis.length > 0 ? (
                                         filteredColis.map((item) => (
-                                            <tr key={item.id} className="hover:bg-slate-50/30 transition-colors group">
+                                            <tr
+                                                key={item.id}
+                                                className={`hover:bg-slate-50/30 transition-colors group ${selectedCodes.includes(item.code_colis) ? 'bg-indigo-50/30' : ''}`}
+                                                onClick={() => toggleSelect(item.code_colis)}
+                                            >
+                                                <td className="px-4 py-6" onClick={(e) => e.stopPropagation()}>
+                                                    {(activeTab === 'agence' ? item.is_received : item.is_sent) ? (
+                                                        <div className="flex justify-center">
+                                                            <div className="p-1 px-2 rounded-md bg-emerald-50 text-emerald-600 border border-emerald-100">
+                                                                <IdentificationIcon className="w-4 h-4" />
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <input
+                                                            type="checkbox"
+                                                            className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-all cursor-pointer"
+                                                            checked={selectedCodes.includes(item.code_colis)}
+                                                            onChange={() => toggleSelect(item.code_colis)}
+                                                        />
+                                                    )}
+                                                </td>
                                                 <td className="px-6 py-6 font-bold text-slate-900">
                                                     <div className="flex flex-col">
                                                         <span className="text-indigo-600">{item.code_colis}</span>
@@ -245,24 +317,57 @@ const Colis = () => {
                                                 <td className="px-6 py-6 text-right">
                                                     <Link
                                                         to={`/expeditions/${item.expedition_id}`}
-                                                        className="inline-flex items-center justify-center p-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-900 hover:text-white transition-all shadow-sm"
+                                                        className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg shadow-slate-200"
                                                     >
-                                                        <ArrowPathIcon className="w-5 h-5 rotate-45" />
+                                                        Détails
                                                     </Link>
                                                 </td>
                                             </tr>
                                         ))
                                     ) : (
-                                        <tr><td colSpan="6" className="py-20 text-center font-bold text-slate-400 italic">Aucun colis trouvé</td></tr>
+                                        <tr><td colSpan="7" className="py-20 text-center font-bold text-slate-400 italic">Aucun colis trouvé</td></tr>
                                     )}
                                 </tbody>
                             </table>
                         </div>
                     </div>
 
+                    {/* Multi-select Action Bar */}
+                    {selectedCodes.length > 0 && (
+                        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-2xl animate-in slide-in-from-bottom-8 duration-300">
+                            <div className="bg-slate-900 text-white rounded-2xl px-6 py-4 shadow-2xl shadow-indigo-500/20 border border-slate-800 flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-4">
+                                    <div className="bg-indigo-600 px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest">
+                                        {selectedCodes.length} sélectionnés
+                                    </div>
+                                    <button
+                                        onClick={() => setSelectedCodes([])}
+                                        className="text-xs font-bold text-slate-400 hover:text-white transition-colors"
+                                    >
+                                        Annuler
+                                    </button>
+                                </div>
+                                <button
+                                    onClick={handleBulkAction}
+                                    disabled={processing}
+                                    className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-indigo-600/20 flex items-center gap-2 group"
+                                >
+                                    {processing ? (
+                                        <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                        <ArrowPathIcon className="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" />
+                                    )}
+                                    <span>
+                                        {activeTab === 'agence' ? "Confirmer la réception" : "Envoyer à l'entrepôt"}
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Mobile & Tablet Card View */}
                     <div className="lg:hidden space-y-4">
-                        {loadingColis && colis.length === 0 ? (
+                        {loadingColis && allColis.length === 0 ? (
                             Array(3).fill(0).map((_, i) => (
                                 <div key={i} className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm animate-pulse space-y-3">
                                     <div className="h-5 bg-slate-100 rounded w-1/3"></div>
@@ -271,70 +376,113 @@ const Colis = () => {
                                 </div>
                             ))
                         ) : filteredColis.length > 0 ? (
-                            filteredColis.map((item) => (
-                                <div key={item.id} className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden active:scale-[0.98] transition-all">
-                                    <div className="p-4 sm:p-5 border-b border-slate-50 bg-slate-50/40">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <div className="flex flex-col">
-                                                <span className="text-sm font-bold text-indigo-600 tracking-tight">{item.code_colis}</span>
-                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Ref: {item.expedition?.reference}</span>
+                            <div className="space-y-4 pb-20">
+                                {filteredColis.map((item) => {
+                                    const isProcessed = activeTab === 'agence' ? item.is_received : item.is_sent;
+                                    return (
+                                        <div
+                                            key={item.id}
+                                            className={`bg-white rounded-2xl border transition-all active:scale-[0.98] overflow-hidden ${selectedCodes.includes(item.code_colis) ? 'border-indigo-500 ring-4 ring-indigo-500/10 shadow-lg shadow-indigo-500/10' : 'border-slate-200/60 shadow-sm'}`}
+                                            onClick={() => !isProcessed && toggleSelect(item.code_colis)}
+                                        >
+                                            <div className="p-4 sm:p-5 border-b border-slate-50 bg-slate-50/40 flex items-start gap-4">
+                                                <div className="pt-0.5" onClick={(e) => e.stopPropagation()}>
+                                                    {isProcessed ? (
+                                                        <div className="p-1 rounded-md bg-emerald-50 text-emerald-600 border border-emerald-100">
+                                                            <IdentificationIcon className="w-5 h-5" />
+                                                        </div>
+                                                    ) : (
+                                                        <input
+                                                            type="checkbox"
+                                                            className="w-5 h-5 rounded-lg border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-all cursor-pointer"
+                                                            checked={selectedCodes.includes(item.code_colis)}
+                                                            onChange={() => toggleSelect(item.code_colis)}
+                                                        />
+                                                    )}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-sm font-bold text-indigo-600 tracking-tight">{item.code_colis}</span>
+                                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Ref: {item.expedition?.reference}</span>
+                                                        </div>
+                                                        <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-bold uppercase border border-indigo-100">
+                                                            {item.category?.nom}
+                                                        </span>
+                                                    </div>
+                                                    <h3 className="text-sm font-bold text-slate-900 line-clamp-1">{item.designation}</h3>
+                                                    <p className="text-[11px] text-slate-500 line-clamp-1 font-medium italic mt-1">{item.articles?.join(', ')}</p>
+                                                </div>
                                             </div>
-                                            <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-bold uppercase border border-indigo-100">
-                                                {item.category?.nom}
-                                            </span>
-                                        </div>
-                                        <h3 className="text-sm font-bold text-slate-900 line-clamp-1">{item.designation}</h3>
-                                        <p className="text-[11px] text-slate-500 line-clamp-1 font-medium italic mt-1">{item.articles?.join(', ')}</p>
-                                    </div>
 
-                                    <div className="p-4 sm:p-5 grid grid-cols-2 gap-4">
-                                        <div className="space-y-1">
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase">Dimensions</p>
-                                            <p className="text-xs font-bold text-slate-900 tabular-nums">
-                                                {parseFloat(item.hauteur)}x{parseFloat(item.largeur)}x{parseFloat(item.longueur)} cm
-                                            </p>
-                                            <p className="text-[10px] font-bold text-slate-500 uppercase">{parseFloat(item.volume).toLocaleString()} cm³</p>
-                                        </div>
-                                        <div className="space-y-1 text-right">
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase">Poids</p>
-                                            <p className="text-xs font-bold text-slate-900 uppercase">{parseFloat(item.poids)} KG</p>
-                                        </div>
-                                        <div className="space-y-1 col-span-2 pt-2 border-t border-slate-50">
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase">Montant Total</p>
-                                            <div className="flex items-baseline justify-between">
-                                                <p className="text-sm font-bold text-slate-900 tabular-nums">
-                                                    {formatPriceDual(item.montant_colis_total)}
-                                                </p>
-                                                <Link
-                                                    to={`/expeditions/${item.expedition_id}`}
-                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-slate-200"
-                                                >
-                                                    Détails
-                                                </Link>
+                                            <div className="p-4 sm:p-5 grid grid-cols-2 gap-4">
+                                                <div className="space-y-1">
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase">Dimensions</p>
+                                                    <p className="text-xs font-bold text-slate-900 tabular-nums">
+                                                        {parseFloat(item.hauteur)}x{parseFloat(item.largeur)}x{parseFloat(item.longueur)} cm
+                                                    </p>
+                                                    <p className="text-[10px] font-bold text-slate-500 uppercase">{parseFloat(item.volume).toLocaleString()} cm³</p>
+                                                </div>
+                                                <div className="space-y-1 text-right">
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase">Poids</p>
+                                                    <p className="text-xs font-bold text-slate-900 uppercase">{parseFloat(item.poids)} KG</p>
+                                                </div>
+                                                <div className="space-y-1 col-span-2 pt-2 border-t border-slate-50">
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase">Montant Total</p>
+                                                    <div className="flex items-baseline justify-between">
+                                                        <p className="text-sm font-bold text-slate-900 tabular-nums">
+                                                            {formatPriceDual(item.montant_colis_total)}
+                                                        </p>
+                                                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                                            {isProcessed ? (
+                                                                <span className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-[10px] font-bold uppercase border border-emerald-100">
+                                                                    <IdentificationIcon className="w-3.5 h-3.5" />
+                                                                    {activeTab === 'agence' ? 'Reçu' : 'Expédié'}
+                                                                </span>
+                                                            ) : selectedCodes.length === 0 && (
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setSelectedCodes([item.code_colis]);
+                                                                        handleBulkAction();
+                                                                    }}
+                                                                    className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-indigo-600 hover:text-white transition-all border border-indigo-100 shadow-sm"
+                                                                >
+                                                                    {activeTab === 'agence' ? 'Recevoir' : 'Envoyer'}
+                                                                </button>
+                                                            )}
+                                                            <Link
+                                                                to={`/expeditions/${item.expedition_id}`}
+                                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-slate-200"
+                                                            >
+                                                                Détails
+                                                            </Link>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                </div>
-                            ))
+                                    );
+                                })}
+                            </div>
                         ) : (
                             <div className="bg-white rounded-2xl p-10 text-center border border-slate-100 shadow-sm italic text-slate-400 font-bold">
-                                Aucun colis trouvé
+                                Désolé aucune donnée disponible
                             </div>
                         )}
                     </div>
 
                     {/* Pagination */}
-                    {colisMeta && colisMeta.last_page > 1 && (
+                    {meta && meta.last_page > 1 && (
                         <div className="mt-6 sm:mt-8 px-4 sm:px-8 py-5 sm:py-6 bg-white rounded-2xl sm:rounded-3xl border border-slate-200/60 shadow-lg shadow-slate-200/40 flex flex-col items-center gap-4">
                             <div className="flex items-center gap-2">
                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Page</span>
-                                <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-900 text-xs font-bold">{colisMeta.current_page} / {colisMeta.last_page}</span>
+                                <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-900 text-xs font-bold">{meta.current_page} / {meta.last_page}</span>
                             </div>
 
                             <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
                                 <button
-                                    onClick={() => handlePageChange(colisMeta.current_page - 1)}
-                                    disabled={colisMeta.current_page === 1}
+                                    onClick={() => handlePageChange(meta.current_page - 1)}
+                                    disabled={meta.current_page === 1}
                                     className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase border border-slate-200 bg-white text-slate-600 disabled:opacity-50 transition-all font-bold"
                                 >
                                     <ChevronLeftIcon className="w-4 h-4" />
@@ -342,8 +490,8 @@ const Colis = () => {
                                 </button>
 
                                 <button
-                                    onClick={() => handlePageChange(colisMeta.current_page + 1)}
-                                    disabled={colisMeta.current_page === colisMeta.last_page}
+                                    onClick={() => handlePageChange(meta.current_page + 1)}
+                                    disabled={meta.current_page === meta.last_page}
                                     className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase bg-slate-900 text-white shadow-lg shadow-slate-200 disabled:opacity-50 transition-all font-bold"
                                 >
                                     <span>Suivant</span>

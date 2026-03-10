@@ -242,5 +242,109 @@ export const expeditionsApi = {
                 message: error.message || "Erreur lors de la confirmation de la réception",
             };
         }
+    },
+
+    /**
+     * Marquer des colis comme reçus à l'agence pour le départ
+     * @param {Array<string>} codes - Liste des codes colis
+     * @returns {Promise<Object>}
+     */
+    async receiveColisDepart(codes) {
+        try {
+            const response = await apiService.put(
+                API_ENDPOINTS.EXPEDITIONS.RECEIVE_COLIS_DEPART,
+                { codes }
+            );
+
+            return {
+                success: response.success !== false,
+                data: response.data || response,
+                message: response.message || "Colis marqués comme reçus"
+            };
+        } catch (error) {
+            return {
+                success: false,
+                message: error.message || "Erreur lors de la réception des colis",
+            };
+        }
+    },
+
+    /**
+     * Lister les expéditions à réceptionner
+     * @param {Object} params - Paramètres de filtrage (page)
+     * @returns {Promise<Object>}
+     */
+    async listExpeditionsReception(params = {}) {
+        try {
+            const queryParams = new URLSearchParams();
+            if (params.page) queryParams.append('page', params.page);
+
+            const queryString = queryParams.toString();
+            const url = `${API_ENDPOINTS.EXPEDITIONS.LIST_RECEPTION}${queryString ? `&${queryString}` : ''}`;
+
+            const response = await apiService.get(url);
+
+            return {
+                success: response.success !== false,
+                data: response.data || [],
+                meta: response.meta || null,
+                message: response.message
+            };
+        } catch (error) {
+            return {
+                success: false,
+                message: error.message || "Erreur lors de la récupération des expéditions à réceptionner",
+            };
+        }
+    },
+
+    /**
+     * Valider la réception des colis à destination
+     * @param {Array<string>} codes - Liste des codes colis
+     * @returns {Promise<Object>}
+     */
+    async receiveColisDestination(codes) {
+        try {
+            const response = await apiService.put(
+                API_ENDPOINTS.EXPEDITIONS.RECEIVE_COLIS_DESTINATION,
+                { codes }
+            );
+
+            return {
+                success: response.success !== false,
+                data: response.data || response,
+                message: response.message || "Colis marqués comme reçus à destination"
+            };
+        } catch (error) {
+            return {
+                success: false,
+                message: error.message || "Erreur lors de la réception des colis à destination",
+            };
+        }
+    },
+
+    /**
+     * Envoyer des colis à l'entrepôt
+     * @param {Array<string>} codes - Liste des codes colis
+     * @returns {Promise<Object>}
+     */
+    async sendColisToEntrepot(codes) {
+        try {
+            const response = await apiService.put(
+                API_ENDPOINTS.EXPEDITIONS.SEND_COLIS_TO_ENTREPOT,
+                { codes }
+            );
+
+            return {
+                success: response.success !== false,
+                data: response.data || response,
+                message: response.message || "Colis envoyés à l'entrepôt"
+            };
+        } catch (error) {
+            return {
+                success: false,
+                message: error.message || "Erreur lors de l'envoi des colis à l'entrepôt",
+            };
+        }
     }
 };

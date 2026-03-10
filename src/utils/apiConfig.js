@@ -64,7 +64,11 @@ export const API_ENDPOINTS = {
     ACCEPT: "/expedition/agence/accept/:id",
     REFUSE: "/expedition/agence/refuse/:id",
     CONFIRM_RECEPTION: "/expedition/agence/confirm-reception-depart/:id",
+    RECEIVE_COLIS_DEPART: "/agence/receive-colis-depart",
     LIST_COLIS: "/agence/list-colis",
+    LIST_RECEPTION: "/expedition/agence/list?mode=reception",
+    RECEIVE_COLIS_DESTINATION: "/agence/receive-colis-destination",
+    SEND_COLIS_TO_ENTREPOT: "/agence/send-colis-to-entrepot",
     SHOW: "/expedition/agence/show/:id",
   },
 

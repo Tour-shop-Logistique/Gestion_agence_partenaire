@@ -13,7 +13,11 @@ import {
     acceptDemandeClient,
     refuseDemandeClient,
     clearCurrentExpedition,
-    confirmExpeditionReception
+    confirmExpeditionReception,
+    receiveColisDepart as receiveColisDepartThunk,
+    fetchExpeditionsReception,
+    receiveColisDestination as receiveColisDestinationThunk,
+    sendColisToEntrepot as sendColisToEntrepotThunk
 } from "../store/slices/expeditionSlice";
 import { fetchProducts, fetchCategories } from "../store/slices/productSlice";
 
@@ -30,7 +34,8 @@ export const useExpedition = () => {
         simulationStatus, simulationResult,
         currentExpedition, error, message,
         lastFilters, lastColisFilters, lastDemandesFilters,
-        demandes, demandesMeta
+        demandes, demandesMeta,
+        reception, receptionMeta, lastReceptionFilters
     } = useSelector(state => state.expedition);
     const { list: products, categories, status: productStatus } = useSelector(state => state.products);
 
@@ -39,12 +44,29 @@ export const useExpedition = () => {
     const simulateExpedition = useCallback((data) => dispatch(simulateExpeditionThunk(data)), [dispatch]);
 
     const loadExpeditions = useCallback((params = { page: 1 }, forceRefresh = false) => {
+        // Optimisation : ne pas recharger si les filtres sont identiques et qu'on a déjà une réponse (même vide)
+        const isSameParams = lastFilters &&
+            String(params.page) === String(lastFilters.page) &&
+            String(params.date_debut) === String(lastFilters.date_debut) &&
+            String(params.date_fin) === String(lastFilters.date_fin);
+
+        if (!forceRefresh && lastFilters && isSameParams && status === 'succeeded') {
+            return; // On ne fait rien, les données sont déjà là (qu'elles soient vides ou pas)
+        }
         return dispatch(fetchExpeditions(params));
-    }, [dispatch]);
+    }, [dispatch, lastFilters, status]);
 
     const loadColis = useCallback((params = { page: 1 }, forceRefresh = false) => {
+        const isSameParams = lastColisFilters &&
+            String(params.page) === String(lastColisFilters.page) &&
+            params.date_debut === lastColisFilters.date_debut &&
+            params.date_fin === lastColisFilters.date_fin;
+
+        if (!forceRefresh && lastColisFilters && isSameParams && colisStatus === 'succeeded') {
+            return Promise.resolve({ payload: { data: colis, meta: colisMeta } });
+        }
         return dispatch(fetchColis(params));
-    }, [dispatch]);
+    }, [dispatch, colis, colisMeta, lastColisFilters, colisStatus]);
 
     const getExpeditionDetails = useCallback((id) => {
         // Optimisation : si l'expédition est déjà dans l'une des listes, on l'utilise directement
@@ -61,7 +83,6 @@ export const useExpedition = () => {
         return dispatch(fetchExpeditionById(id));
     }, [dispatch, expeditions, demandes]);
 
-    const resetStatus = useCallback(() => dispatch(clearExpeditionStatus()), [dispatch]);
     const cleanSimulation = useCallback(() => dispatch(clearSimulation()), [dispatch]);
 
     const loadProducts = useCallback((forceRefresh = false) => {
@@ -96,6 +117,12 @@ export const useExpedition = () => {
         message,
         demandes,
         demandesMeta,
+        reception,
+        receptionMeta,
+        lastReceptionFilters,
+        lastFilters,
+        lastColisFilters,
+        lastDemandesFilters,
         loading: status === 'loading',
         loadingColis: colisStatus === 'loading',
         simulating: simulationStatus === 'loading',
@@ -106,16 +133,34 @@ export const useExpedition = () => {
         loadExpeditions,
         loadColis,
         getExpeditionDetails,
-        resetStatus,
         cleanSimulation,
         clearCurrentExpedition: useCallback(() => dispatch(clearCurrentExpedition()), [dispatch]),
         loadProducts,
         loadCategories,
         loadDemandes: useCallback((params = { page: 1 }, forceRefresh = false) => {
+            const isSameParams = lastDemandesFilters &&
+                String(params.page) === String(lastDemandesFilters.page);
+
+            if (!forceRefresh && lastDemandesFilters && isSameParams && status === 'succeeded') {
+                return Promise.resolve({ payload: { data: demandes, meta: demandesMeta } });
+            }
             return dispatch(fetchDemandesClients(params));
-        }, [dispatch]),
+        }, [dispatch, demandes, demandesMeta, lastDemandesFilters, status]),
         acceptDemande: useCallback((id) => dispatch(acceptDemandeClient(id)), [dispatch]),
         refuseDemande: useCallback((id, data) => dispatch(refuseDemandeClient({ id, data })), [dispatch]),
         confirmReception: useCallback((id) => dispatch(confirmExpeditionReception(id)), [dispatch]),
+        receiveColisDepart: useCallback((codes) => dispatch(receiveColisDepartThunk(codes)), [dispatch]),
+        loadReception: useCallback((params = { page: 1 }, forceRefresh = false) => {
+            const isSameParams = lastReceptionFilters &&
+                String(params.page) === String(lastReceptionFilters.page);
+
+            if (!forceRefresh && lastReceptionFilters && isSameParams && status === 'succeeded') {
+                return Promise.resolve({ payload: { data: reception, meta: receptionMeta } });
+            }
+            return dispatch(fetchExpeditionsReception(params));
+        }, [dispatch, reception, receptionMeta, lastReceptionFilters, status]),
+        receiveColisDestination: useCallback((codes) => dispatch(receiveColisDestinationThunk(codes)), [dispatch]),
+        sendColisToEntrepot: useCallback((codes) => dispatch(sendColisToEntrepotThunk(codes)), [dispatch]),
+        resetStatus: useCallback(() => dispatch(clearExpeditionStatus()), [dispatch]),
     };
 };

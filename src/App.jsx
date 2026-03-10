@@ -28,6 +28,7 @@ import Demandes from "./pages/Demandes";
 import ExpeditionDetails from "./pages/ExpeditionDetails";
 import Colis from "./pages/Colis";
 import ReceptionColis from "./pages/ReceptionColis";
+import ColisAReceptionner from "./pages/ColisAReceptionner";
 import ToastManager from "./components/ToastManager";
 
 // Composant pour gérer la redirection automatique
@@ -199,6 +200,14 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <ReceptionColis />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/colis-a-receptionner"
+          element={
+            <ProtectedRoute>
+              <ColisAReceptionner />
             </ProtectedRoute>
           }
         />

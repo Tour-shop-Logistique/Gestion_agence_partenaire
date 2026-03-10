@@ -21,13 +21,11 @@ import {
 } from '../store/slices/agencySlice';
 
 /**
- * Hook personnalisé pour gérer l'agence avec Redux
+ * Hook pour gérer l'agence avec Redux
  * Conforme au slice agencySlice
  */
 export const useAgency = () => {
   const dispatch = useDispatch();
-
-  // Sélecteurs d'état depuis le slice
   const agencyData = useSelector(selectAgency);
   const status = useSelector(selectAgencyStatus);
   const error = useSelector(selectAgencyError);
@@ -53,8 +51,11 @@ export const useAgency = () => {
   }, [dispatch]);
 
   const fetchAgencyData = useCallback((forceRefresh = false) => {
+    if (!forceRefresh && agencyData && status === 'succeeded') {
+      return;
+    }
     return dispatch(fetchAgency());
-  }, [dispatch]);
+  }, [dispatch, agencyData, status]);
 
   const updateAgencyData = useCallback((agencyData) => {
     return dispatch(updateAgency(agencyData));

@@ -51,8 +51,8 @@ const Sidebar = ({ onClose }) => {
       icon: CubeIcon,
     },
     {
-      path: "/reception-colis",
-      name: "Réception Colis",
+      path: "/colis-a-receptionner",
+      name: "Colis à réceptionner",
       icon: InboxArrowDownIcon,
     },
     {
@@ -100,8 +100,8 @@ const Sidebar = ({ onClose }) => {
       icon: CubeIcon,
     },
     {
-      path: "/reception-colis",
-      name: "Réception Colis",
+      path: "/colis-a-receptionner",
+      name: "Colis à réceptionner",
       icon: InboxArrowDownIcon,
     },
     {
