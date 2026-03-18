@@ -29,6 +29,7 @@ import ExpeditionDetails from "./pages/ExpeditionDetails";
 import Colis from "./pages/Colis";
 import ReceptionColis from "./pages/ReceptionColis";
 import ColisAReceptionner from "./pages/ColisAReceptionner";
+import RetraitColis from "./pages/RetraitColis";
 import ToastManager from "./components/ToastManager";
 
 // Composant pour gérer la redirection automatique
@@ -228,6 +229,14 @@ function AppContent() {
           }
         />
 
+        <Route
+          path="/retrait-colis"
+          element={
+            <ProtectedRoute>
+              <RetraitColis />
+            </ProtectedRoute>
+          }
+        />
         {/* Route par défaut */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

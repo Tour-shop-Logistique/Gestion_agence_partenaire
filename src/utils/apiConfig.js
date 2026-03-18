@@ -55,7 +55,6 @@ export const API_ENDPOINTS = {
     Status_GROUPAGE: "/agence/status-tarif-groupage/:tarif",
   },
 
-  // Expéditions
   EXPEDITIONS: {
     CREATE: "/expedition/agence/create",
     SIMULATE: "/expedition/agence/simulate",
@@ -66,9 +65,11 @@ export const API_ENDPOINTS = {
     CONFIRM_RECEPTION: "/expedition/agence/confirm-reception-depart/:id",
     RECEIVE_COLIS_DEPART: "/agence/receive-colis-depart",
     LIST_COLIS: "/agence/list-colis",
-    LIST_RECEPTION: "/expedition/agence/list?mode=reception",
+    LIST_RECEPTION: "/agence/list-colis?a_receptionner=true",
     RECEIVE_COLIS_DESTINATION: "/agence/receive-colis-destination",
     SEND_COLIS_TO_ENTREPOT: "/agence/send-colis-to-entrepot",
+    INITIATE_RECUP: "/agence/initier-retrait-colis",
+    VERIFY_RECUP: "/agence/valider-retrait-colis",
     SHOW: "/expedition/agence/show/:id",
   },
 

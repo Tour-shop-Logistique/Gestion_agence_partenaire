@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import DashboardLayout from "../components/DashboardLayout";
 import {
     InboxArrowDownIcon,
@@ -10,105 +10,109 @@ import {
     PhoneIcon,
     CalendarIcon,
     CubeIcon,
-    InformationCircleIcon
+    InformationCircleIcon,
+    CheckIcon
 } from "@heroicons/react/24/outline";
-import { formatPriceDual } from "../utils/format";
-
-// Mock data for the demo
-const INITIAL_MOCK_DATA = [
-    {
-        id: 1,
-        code_colis: "CL-230501-A1",
-        reference_expedition: "EXP-24001",
-        client_nom: "Jean Dupont",
-        client_telephone: "+33 6 12 34 56 78",
-        pays_origine: "France",
-        ville_destination: "Abidjan",
-        designation: "Vêtements et accessoires",
-        poids: "12.5 kg",
-        date_expedition: "2024-02-15",
-        statut: "En transit", // En transit, Arrivé, Livré
-        created_at: "2024-02-15T10:30:00Z"
-    },
-    {
-        id: 2,
-        code_colis: "CL-230501-B2",
-        reference_expedition: "EXP-24002",
-        client_nom: "Marie Kouassi",
-        client_telephone: "+225 07 45 89 23",
-        pays_origine: "France",
-        ville_destination: "Abidjan",
-        designation: "Ordinateur Portable Dell",
-        poids: "3.2 kg",
-        date_expedition: "2024-02-18",
-        statut: "En transit",
-        created_at: "2024-02-18T14:20:00Z"
-    },
-    {
-        id: 3,
-        code_colis: "CL-230501-C3",
-        reference_expedition: "EXP-24003",
-        client_nom: "Alain Traoré",
-        client_telephone: "+226 70 12 34 56",
-        pays_origine: "Chine",
-        ville_destination: "Ouagadougou",
-        designation: "Matériel électronique",
-        poids: "45.0 kg",
-        date_expedition: "2024-02-10",
-        statut: "Arrivé",
-        created_at: "2024-02-10T09:15:00Z"
-    },
-    {
-        id: 4,
-        code_colis: "CL-230501-D4",
-        reference_expedition: "EXP-24004",
-        client_nom: "Fatima Sidibé",
-        client_telephone: "+223 66 77 88 99",
-        pays_origine: "Turquie",
-        ville_destination: "Bamako",
-        designation: "Tissus et Wax",
-        poids: "25.5 kg",
-        date_expedition: "2024-02-20",
-        statut: "En transit",
-        created_at: "2024-02-20T16:45:00Z"
-    }
-];
+import { useExpedition } from "../hooks/useExpedition";
+import { toast } from "../utils/toast";
 
 const ReceptionColis = () => {
-    const [colis, setColis] = useState(INITIAL_MOCK_DATA);
     const [searchQuery, setSearchQuery] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
+    const [selectedColis, setSelectedColis] = useState([]);
+    const [localLoading, setLocalLoading] = useState(false);
+
+    const {
+        reception,
+        loadReception,
+        receiveColisDestination,
+        loading,
+        message,
+        error,
+        resetStatus
+    } = useExpedition();
+
+    // Fetch data on mount
+    useEffect(() => {
+        loadReception({ page: 1 }, true);
+    }, [loadReception]);
+
+    // Handle toast messages
+    useEffect(() => {
+        if (message) {
+            toast.success(message);
+            setSelectedColis([]);
+            resetStatus();
+        }
+        if (error) {
+            toast.error(error);
+            resetStatus();
+        }
+    }, [message, error, resetStatus]);
+
+    // Ensure reception is an array
+    const colisList = Array.isArray(reception) ? reception : [];
 
     // Filter logic
     const filteredColis = useMemo(() => {
-        if (!searchQuery) return colis;
+        if (!searchQuery) return colisList;
         const lowQuery = searchQuery.toLowerCase();
-        return colis.filter(item =>
-            item.code_colis.toLowerCase().includes(lowQuery) ||
-            item.client_nom.toLowerCase().includes(lowQuery) ||
-            item.reference_expedition.toLowerCase().includes(lowQuery) ||
-            item.pays_origine.toLowerCase().includes(lowQuery)
+        return colisList.filter(item =>
+            item.code_colis?.toLowerCase().includes(lowQuery) ||
+            item.expedition?.reference?.toLowerCase().includes(lowQuery) ||
+            item.expedition?.pays_depart?.toLowerCase().includes(lowQuery) ||
+            item.designation?.toLowerCase().includes(lowQuery)
         );
-    }, [colis, searchQuery]);
+    }, [colisList, searchQuery]);
 
-    const handleValidateReception = (id) => {
-        setIsLoading(true);
-        // Simulate API call
-        setTimeout(() => {
-            setColis(prev => prev.map(item =>
-                item.id === id ? { ...item, statut: "Arrivé" } : item
-            ));
-            setIsLoading(false);
-        }, 1000);
+    const handleValidateReception = async (code_colis) => {
+        setLocalLoading(true);
+        await receiveColisDestination([code_colis]);
+        setLocalLoading(false);
+    };
+
+    const handleValidateMultiple = async () => {
+        if (selectedColis.length === 0) return;
+        setLocalLoading(true);
+        await receiveColisDestination(selectedColis);
+        setLocalLoading(false);
+    };
+
+    const toggleSelection = (code_colis) => {
+        setSelectedColis(prev =>
+            prev.includes(code_colis)
+                ? prev.filter(c => c !== code_colis)
+                : [...prev, code_colis]
+        );
+    };
+
+    const selectAll = () => {
+        const selectable = filteredColis
+            .filter(c => !c.is_received_by_agence_destination)
+            .map(c => c.code_colis);
+        if (selectedColis.length === selectable.length && selectable.length > 0) {
+            setSelectedColis([]);
+        } else {
+            setSelectedColis(selectable);
+        }
     };
 
     const formatDate = (dateString) => {
+        if (!dateString) return "-";
         return new Date(dateString).toLocaleDateString('fr-FR', {
             day: '2-digit',
             month: 'long',
             year: 'numeric'
         });
     };
+
+    const isRefreshing = loading || localLoading;
+
+    // Calculs de statistiques
+    const statsEnAttente = colisList.filter(c => !c.is_received_by_agence_destination).length;
+    const statsRecus = colisList.filter(c => c.is_received_by_agence_destination).length;
+    const statsTotal = colisList.length;
+
+    const completableList = filteredColis.filter(c => !c.is_received_by_agence_destination);
 
     return (
         <DashboardLayout>
@@ -125,7 +129,7 @@ const ReceptionColis = () => {
                             </h1>
                         </div>
                         <p className="text-sm font-medium text-slate-500 tracking-wide ml-1 ml-14">
-                            Gérez l'arrivée des colis internationaux à votre agence
+                            Gérez l'arrivée des colis à votre agence (Destination)
                         </p>
                     </div>
 
@@ -138,20 +142,18 @@ const ReceptionColis = () => {
                             <input
                                 type="text"
                                 className="block w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-bold placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all shadow-sm"
-                                placeholder="Rechercher par code, client ou pays..."
+                                placeholder="Rechercher par code, pays, expédition..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
 
                         <button
-                            onClick={() => {
-                                setIsLoading(true);
-                                setTimeout(() => setIsLoading(false), 800);
-                            }}
-                            className="p-3 bg-white border border-slate-200 rounded-2xl text-slate-600 hover:text-indigo-600 hover:border-indigo-200 hover:shadow-md transition-all active:scale-95"
+                            onClick={() => loadReception({ page: 1 }, true)}
+                            disabled={isRefreshing}
+                            className="p-3 bg-white border border-slate-200 rounded-2xl text-slate-600 hover:text-indigo-600 hover:border-indigo-200 hover:shadow-md transition-all active:scale-95 disabled:opacity-50"
                         >
-                            <ArrowPathIcon className={`w-5 h-5 ${isLoading ? 'animate-spin text-indigo-600' : ''}`} />
+                            <ArrowPathIcon className={`w-5 h-5 ${isRefreshing ? 'animate-spin text-indigo-600' : ''}`} />
                         </button>
                     </div>
                 </div>
@@ -159,9 +161,9 @@ const ReceptionColis = () => {
                 {/* Stats Summary */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     {[
-                        { label: "En Transit", count: colis.filter(c => c.statut === "En transit").length, color: "bg-amber-50 text-amber-700 border-amber-100" },
-                        { label: "Reçus à l'agence", count: colis.filter(c => c.statut === "Arrivé").length, color: "bg-indigo-50 text-indigo-700 border-indigo-100" },
-                        { label: "Total en attente", count: colis.length, color: "bg-slate-50 text-slate-700 border-slate-100" }
+                        { label: "En attente à l'agence", count: statsEnAttente, color: "bg-amber-50 text-amber-700 border-amber-100" },
+                        { label: "Colis reçus", count: statsRecus, color: "bg-indigo-50 text-indigo-700 border-indigo-100" },
+                        { label: "Total à traiter", count: statsTotal, color: "bg-slate-50 text-slate-700 border-slate-100" }
                     ].map((stat, idx) => (
                         <div key={idx} className={`p-4 rounded-2xl border ${stat.color} flex items-center justify-between`}>
                             <span className="text-sm font-bold uppercase tracking-wider">{stat.label}</span>
@@ -170,116 +172,174 @@ const ReceptionColis = () => {
                     ))}
                 </div>
 
+                {/* Bulk Actions */}
+                {completableList.length > 0 && (
+                    <div className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={selectAll}
+                                className={`w-6 h-6 rounded flex items-center justify-center border transition-colors ${selectedColis.length > 0 && selectedColis.length === completableList.length
+                                        ? 'bg-indigo-600 border-indigo-600'
+                                        : 'bg-white border-slate-300 hover:border-indigo-400'
+                                    }`}
+                            >
+                                {selectedColis.length > 0 && selectedColis.length === completableList.length && (
+                                    <CheckIcon className="w-4 h-4 text-white" />
+                                )}
+                            </button>
+                            <span className="text-sm font-bold text-slate-700">
+                                {selectedColis.length} sélectionné(s)
+                            </span>
+                        </div>
+                        {selectedColis.length > 0 && (
+                            <button
+                                onClick={handleValidateMultiple}
+                                disabled={isRefreshing}
+                                className="px-6 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-md shadow-indigo-200 active:scale-95 disabled:opacity-50"
+                            >
+                                {isRefreshing ? "Validation..." : "Valider la sélection"}
+                            </button>
+                        )}
+                    </div>
+                )}
+
                 {/* Main List */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {filteredColis.length > 0 ? (
-                        filteredColis.map((item) => (
-                            <div
-                                key={item.id}
-                                className={`bg-white rounded-3xl border transition-all duration-300 overflow-hidden ${item.statut === 'Arrivé' ? 'border-indigo-100 bg-indigo-50/10' : 'border-slate-200 hover:shadow-xl hover:shadow-slate-200/50'
-                                    }`}
-                            >
-                                <div className="p-6 space-y-4">
-                                    {/* Top Section: Badges and Code */}
-                                    <div className="flex justify-between items-start">
-                                        <div className="space-y-1">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-xs font-black text-indigo-600 tracking-wider uppercase">#{item.code_colis}</span>
-                                                {item.statut === 'Arrivé' && (
-                                                    <span className="flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded-full border border-green-200">
-                                                        <CheckCircleIcon className="w-3 h-3" />
-                                                        REÇU
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <p className="text-lg font-bold text-slate-900">{item.designation}</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <span className="inline-block px-3 py-1 bg-slate-900 text-white text-[10px] font-bold rounded-lg uppercase tracking-widest">
-                                                {item.poids}
-                                            </span>
-                                            <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase">Exp: {item.reference_expedition}</p>
-                                        </div>
-                                    </div>
+                        filteredColis.map((item) => {
+                            const isReceived = item.is_received_by_agence_destination;
+                            const isSelected = selectedColis.includes(item.code_colis);
 
-                                    {/* Client Info Grid */}
-                                    <div className="grid grid-cols-2 gap-4 py-4 border-y border-slate-100">
-                                        <div className="space-y-3">
-                                            <div className="flex items-center gap-2">
-                                                <div className="p-1.5 bg-slate-100 rounded-lg">
-                                                    <UserIcon className="w-4 h-4 text-slate-600" />
-                                                </div>
-                                                <div className="min-w-0">
-                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter leading-none">Client</p>
-                                                    <p className="text-sm font-bold text-slate-900 truncate">{item.client_nom}</p>
-                                                </div>
+                            return (
+                                <div
+                                    key={item.id || item.code_colis}
+                                    className={`relative bg-white rounded-3xl border transition-all duration-300 overflow-hidden ${isReceived ? 'border-indigo-100 bg-indigo-50/10' :
+                                            isSelected ? 'border-indigo-400 ring-2 ring-indigo-400/20' : 'border-slate-200 hover:shadow-xl hover:shadow-slate-200/50'
+                                        }`}
+                                >
+                                    {/* Selection Toggle Mask */}
+                                    {!isReceived && (
+                                        <button
+                                            onClick={() => toggleSelection(item.code_colis)}
+                                            className="absolute top-4 left-4 z-10 p-1"
+                                        >
+                                            <div className={`w-6 h-6 rounded flex items-center justify-center border transition-colors ${isSelected ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-slate-300'}`}>
+                                                {isSelected && <CheckIcon className="w-4 h-4 text-white" />}
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <div className="p-1.5 bg-slate-100 rounded-lg">
-                                                    <PhoneIcon className="w-4 h-4 text-slate-600" />
-                                                </div>
-                                                <div className="min-w-0">
-                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter leading-none">Contact</p>
-                                                    <p className="text-sm font-bold text-slate-900 truncate">{item.client_telephone}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="space-y-3">
-                                            <div className="flex items-center gap-2">
-                                                <div className="p-1.5 bg-slate-100 rounded-lg">
-                                                    <MapPinIcon className="w-4 h-4 text-slate-600" />
-                                                </div>
-                                                <div className="min-w-0">
-                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter leading-none">Trajet</p>
-                                                    <p className="text-sm font-bold text-slate-900 truncate">
-                                                        {item.pays_origine} → {item.ville_destination}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <div className="p-1.5 bg-slate-100 rounded-lg">
-                                                    <CalendarIcon className="w-4 h-4 text-slate-600" />
-                                                </div>
-                                                <div className="min-w-0">
-                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter leading-none">Date Exp.</p>
-                                                    <p className="text-sm font-bold text-slate-900 truncate">{formatDate(item.date_expedition)}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                        </button>
+                                    )}
 
-                                    {/* Action Button */}
-                                    <div className="flex items-center justify-between pt-2">
-                                        <div className="flex items-center gap-2 text-slate-500">
-                                            <InformationCircleIcon className="w-4 h-4" />
-                                            <span className="text-[11px] font-medium italic">En attente de réception physique</span>
+                                    <div className="p-6 space-y-4">
+                                        {/* Top Section: Badges and Code */}
+                                        <div className="flex justify-between items-start">
+                                            <div className="space-y-1 pl-8">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs font-black text-indigo-600 tracking-wider uppercase">#{item.code_colis}</span>
+                                                    {isReceived && (
+                                                        <span className="flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded-full border border-green-200">
+                                                            <CheckCircleIcon className="w-3 h-3" />
+                                                            REÇU
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <p className="text-lg font-bold text-slate-900 capitalize">{item.designation || 'Colis'}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <span className="inline-block px-3 py-1 bg-slate-900 text-white text-[10px] font-bold rounded-lg uppercase tracking-widest">
+                                                    {item.poids || 0} KG
+                                                </span>
+                                                <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase">Exp: {item.expedition?.reference || '-'}</p>
+                                            </div>
                                         </div>
 
-                                        {item.statut === 'En transit' ? (
-                                            <button
-                                                onClick={() => handleValidateReception(item.id)}
-                                                className="px-6 py-2.5 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 active:scale-95 flex items-center gap-2"
-                                            >
-                                                Valider la réception
-                                            </button>
-                                        ) : (
-                                            <div className="px-6 py-2.5 bg-green-50 text-green-700 text-xs font-bold rounded-xl border border-green-100 flex items-center gap-2">
-                                                <CheckCircleIcon className="w-4 h-4" />
-                                                Colis réceptionné
+                                        {/* Additional Info / Grid */}
+                                        <div className="grid grid-cols-2 gap-4 py-4 border-y border-slate-100 pl-8">
+                                            <div className="space-y-3">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="p-1.5 bg-slate-100 rounded-lg shrink-0">
+                                                        <UserIcon className="w-4 h-4 text-slate-600" />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter leading-none">Client</p>
+                                                        <p className="text-sm font-bold text-slate-900 truncate">Contactez le Hub</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="p-1.5 bg-slate-100 rounded-lg shrink-0">
+                                                        <MapPinIcon className="w-4 h-4 text-slate-600" />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter leading-none">Trajet</p>
+                                                        <p className="text-sm font-bold text-slate-600 truncate">
+                                                            {item.expedition?.pays_depart || '-'} → {item.expedition?.pays_destination || '-'}
+                                                        </p>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        )}
+                                            <div className="space-y-3">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="p-1.5 bg-slate-100 rounded-lg shrink-0">
+                                                        <CalendarIcon className="w-4 h-4 text-slate-600" />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter leading-none">Création</p>
+                                                        <p className="text-sm font-bold text-slate-900 truncate">{formatDate(item.created_at)}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="p-1.5 bg-slate-100 rounded-lg shrink-0">
+                                                        <InformationCircleIcon className="w-4 h-4 text-slate-600" />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter leading-none">Contenu</p>
+                                                        <p className="text-xs font-bold text-slate-900 truncate">
+                                                            {Array.isArray(item.articles) ? item.articles.join(', ') : (item.articles || '-')}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Action Button */}
+                                        <div className="flex items-center justify-between pt-2 pl-8">
+                                            <div className="flex items-center gap-2 text-slate-500">
+                                                <InformationCircleIcon className="w-4 h-4" />
+                                                <span className="text-[11px] font-medium italic">
+                                                    {isReceived ? 'Colis arrivé à destination.' : 'En attente de réception physique'}
+                                                </span>
+                                            </div>
+
+                                            {!isReceived ? (
+                                                <button
+                                                    onClick={() => handleValidateReception(item.code_colis)}
+                                                    disabled={isRefreshing}
+                                                    className="px-6 py-2.5 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 active:scale-95 disabled:opacity-50 flex items-center gap-2"
+                                                >
+                                                    Valider la réception
+                                                </button>
+                                            ) : (
+                                                <div className="px-6 py-2.5 bg-green-50 text-green-700 text-xs font-bold rounded-xl border border-green-100 flex items-center gap-2">
+                                                    <CheckCircleIcon className="w-4 h-4" />
+                                                    Colis réceptionné
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))
+                            );
+                        })
                     ) : (
                         <div className="col-span-full py-20 text-center space-y-4">
                             <div className="p-4 bg-slate-50 rounded-full w-fit mx-auto">
                                 <CubeIcon className="w-12 h-12 text-slate-300" />
                             </div>
                             <div className="space-y-1">
-                                <p className="text-xl font-bold text-slate-900">Aucun colis trouvé</p>
-                                <p className="text-sm text-slate-500 font-medium">Réessayez avec d'autres termes de recherche</p>
+                                <p className="text-xl font-bold text-slate-900">
+                                    {isRefreshing ? 'Chargement en cours...' : 'Aucun colis trouvé'}
+                                </p>
+                                <p className="text-sm text-slate-500 font-medium">
+                                    {isRefreshing ? 'Veuillez patienter.' : 'Réessayez avec d\'autres termes de recherche ou rafraîchissez.'}
+                                </p>
                             </div>
                         </div>
                     )}
@@ -290,9 +350,9 @@ const ReceptionColis = () => {
                     <div className="relative z-10 space-y-4 max-w-2xl">
                         <h3 className="text-xl sm:text-2xl font-bold">Besoin d'aide avec la réception ?</h3>
                         <p className="text-indigo-100/80 text-sm font-medium leading-relaxed">
-                            Cette page est une démonstration de l'interface de réception. Une fois le colis validé,
-                            le client recevra automatiquement une notification (Email/SMS) l'informant que son colis
-                            est prêt à être retiré à votre agence.
+                            Cette page affiche la liste des colis rattachés aux expéditions en cours de transit vers votre agence.
+                            Une fois qu'un colis arrive physiquement, vous pouvez valider sa réception. Le statut du colis
+                            sera alors mis à jour sur tout le réseau.
                         </p>
                         <button className="flex items-center gap-2 text-xs font-black uppercase tracking-widest bg-white text-indigo-900 px-6 py-3 rounded-xl hover:bg-indigo-50 transition-colors">
                             Consulter le guide

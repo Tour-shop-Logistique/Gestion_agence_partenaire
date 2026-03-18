@@ -226,6 +226,38 @@ export const sendColisToEntrepot = createAsyncThunk(
     }
 );
 
+// Initier le retrait client
+export const initiateRecupColis = createAsyncThunk(
+    "expedition/initiateRecup",
+    async (codes, { rejectWithValue }) => {
+        try {
+            const result = await expeditionsApi.initiateRecupColis(codes);
+            if (!result.success) {
+                return rejectWithValue(result.message);
+            }
+            return { codes, message: result.message };
+        } catch (error) {
+            return rejectWithValue(error.message || "Erreur lors de l'envoi du code");
+        }
+    }
+);
+
+// Vérifier le retrait client
+export const verifyRecupColis = createAsyncThunk(
+    "expedition/verifyRecup",
+    async ({ codes, otp }, { rejectWithValue }) => {
+        try {
+            const result = await expeditionsApi.verifyRecupColis(codes, otp);
+            if (!result.success) {
+                return rejectWithValue(result.message);
+            }
+            return { codes, message: result.message };
+        } catch (error) {
+            return rejectWithValue(error.message || "Erreur lors de la validation");
+        }
+    }
+);
+
 const expeditionSlice = createSlice({
     name: "expedition",
     initialState: {
@@ -371,7 +403,9 @@ const expeditionSlice = createSlice({
             })
             .addCase(fetchExpeditionById.fulfilled, (state, action) => {
                 state.status = "succeeded";
-                state.currentExpedition = action.payload;
+                // Unwrap potentially nested expedition data from API response
+                const expeditionData = action.payload?.expedition || action.payload?.data || action.payload;
+                state.currentExpedition = expeditionData;
             })
             .addCase(fetchExpeditionById.rejected, (state, action) => {
                 state.status = "failed";
@@ -494,14 +528,11 @@ const expeditionSlice = createSlice({
 
                 // Mise à jour de l'onglet réception
                 if (state.reception && codes) {
-                    state.reception = state.reception.map(exp => ({
-                        ...exp,
-                        colis: exp.colis.map(c =>
-                            codes.includes(c.code_colis)
-                                ? { ...c, is_received_by_agence_destination: true }
-                                : c
-                        )
-                    }));
+                    state.reception = state.reception.map(colis =>
+                        codes.includes(colis.code_colis)
+                            ? { ...colis, is_received_by_agence_destination: true }
+                            : colis
+                    );
                 }
 
                 // Mise à jour de la liste générale des expéditions
@@ -542,6 +573,47 @@ const expeditionSlice = createSlice({
                 }
             })
             .addCase(sendColisToEntrepot.rejected, (state, action) => {
+                state.status = "failed";
+                state.error = action.payload;
+            })
+
+            // Initiate Recovery
+            .addCase(initiateRecupColis.pending, (state) => {
+                state.status = "loading";
+                state.error = null;
+            })
+            .addCase(initiateRecupColis.fulfilled, (state, action) => {
+                state.status = "succeeded";
+                state.message = action.payload.message;
+            })
+            .addCase(initiateRecupColis.rejected, (state, action) => {
+                state.status = "failed";
+                state.error = action.payload;
+            })
+
+            // Verify Recovery
+            .addCase(verifyRecupColis.pending, (state) => {
+                state.status = "loading";
+                state.error = null;
+            })
+            .addCase(verifyRecupColis.fulfilled, (state, action) => {
+                state.status = "succeeded";
+                state.message = action.payload.message;
+                const { codes } = action.payload;
+
+                // On peut mettre à jour localement si besoin
+                if (state.expeditions && codes) {
+                    state.expeditions = state.expeditions.map(exp => ({
+                        ...exp,
+                        colis: exp.colis.map(c =>
+                            codes.includes(c.code_colis)
+                                ? { ...c, is_collected_by_client: true }
+                                : c
+                        )
+                    }));
+                }
+            })
+            .addCase(verifyRecupColis.rejected, (state, action) => {
                 state.status = "failed";
                 state.error = action.payload;
             });

@@ -52,9 +52,19 @@ const ColisAReceptionner = () => {
         }
     }, [message, error, resetStatus]);
 
-    // Transformer les expéditions en liste de colis pour un affichage à plat ou groupé par expédition
+    // Transformer les données en liste de colis à plat pour la recherche/filtre
     const flatColis = useMemo(() => {
-        if (!reception) return [];
+        if (!reception || !Array.isArray(reception)) return [];
+        
+        // Si c'est déjà une liste de colis (le format envoyé par l'API maintenant)
+        if (reception.length > 0 && !reception[0].colis) {
+            return reception.map(item => ({
+                ...item,
+                is_received: item.is_received_by_agence_destination === true
+            }));
+        }
+
+        // Ancien format : liste d'expéditions contenant des colis
         return reception.flatMap(exp =>
             (exp.colis || []).map(item => ({
                 ...item,
@@ -63,6 +73,33 @@ const ColisAReceptionner = () => {
                 is_received: item.is_received_by_agence_destination === true
             }))
         );
+    }, [reception]);
+
+    // Regrouper les colis par expédition pour l'affichage structuré
+    const groupedExpeditions = useMemo(() => {
+        if (!reception || !Array.isArray(reception)) return [];
+
+        // Si c'est déjà groupé (ancien format)
+        if (reception.length > 0 && reception[0].colis) {
+            return reception;
+        }
+
+        // Regrouper le format plat par expédition
+        const groups = {};
+        reception.forEach(item => {
+            const expId = item.expedition_id || item.expedition?.id;
+            if (!expId) return;
+            
+            if (!groups[expId]) {
+                groups[expId] = {
+                    ...(item.expedition || {}),
+                    id: expId,
+                    colis: []
+                };
+            }
+            groups[expId].colis.push(item);
+        });
+        return Object.values(groups);
     }, [reception]);
 
     // Filtrer les colis basés sur la recherche
@@ -225,7 +262,7 @@ const ColisAReceptionner = () => {
                                     ))
                                 ) : filteredColis.length > 0 ? (
                                     // Grouping display like the image
-                                    (reception || []).map((exp) => {
+                                    groupedExpeditions.map((exp) => {
                                         const expColis = (exp.colis || []).map(c => ({
                                             ...c,
                                             expedition: exp,

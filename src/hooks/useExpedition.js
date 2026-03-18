@@ -17,7 +17,9 @@ import {
     receiveColisDepart as receiveColisDepartThunk,
     fetchExpeditionsReception,
     receiveColisDestination as receiveColisDestinationThunk,
-    sendColisToEntrepot as sendColisToEntrepotThunk
+    sendColisToEntrepot as sendColisToEntrepotThunk,
+    initiateRecupColis as initiateRecupColisThunk,
+    verifyRecupColis as verifyRecupColisThunk
 } from "../store/slices/expeditionSlice";
 import { fetchProducts, fetchCategories } from "../store/slices/productSlice";
 
@@ -44,14 +46,14 @@ export const useExpedition = () => {
     const simulateExpedition = useCallback((data) => dispatch(simulateExpeditionThunk(data)), [dispatch]);
 
     const loadExpeditions = useCallback((params = { page: 1 }, forceRefresh = false) => {
-        // Optimisation : ne pas recharger si les filtres sont identiques et qu'on a déjà une réponse (même vide)
+        // Optimisation : ne pas recharger si les filtres sont identiques et qu'on a déjà une réponse (même vide) ou chargement en cours
         const isSameParams = lastFilters &&
             String(params.page) === String(lastFilters.page) &&
             String(params.date_debut) === String(lastFilters.date_debut) &&
             String(params.date_fin) === String(lastFilters.date_fin);
 
-        if (!forceRefresh && lastFilters && isSameParams && status === 'succeeded') {
-            return; // On ne fait rien, les données sont déjà là (qu'elles soient vides ou pas)
+        if (!forceRefresh && lastFilters && isSameParams && (status === 'succeeded' || status === 'loading')) {
+            return; // On ne fait rien, les données sont déjà là (qu'elles soient vides ou pas), ou en cours de chargement
         }
         return dispatch(fetchExpeditions(params));
     }, [dispatch, lastFilters, status]);
@@ -62,7 +64,7 @@ export const useExpedition = () => {
             params.date_debut === lastColisFilters.date_debut &&
             params.date_fin === lastColisFilters.date_fin;
 
-        if (!forceRefresh && lastColisFilters && isSameParams && colisStatus === 'succeeded') {
+        if (!forceRefresh && lastColisFilters && isSameParams && (colisStatus === 'succeeded' || colisStatus === 'loading')) {
             return Promise.resolve({ payload: { data: colis, meta: colisMeta } });
         }
         return dispatch(fetchColis(params));
@@ -141,7 +143,7 @@ export const useExpedition = () => {
             const isSameParams = lastDemandesFilters &&
                 String(params.page) === String(lastDemandesFilters.page);
 
-            if (!forceRefresh && lastDemandesFilters && isSameParams && status === 'succeeded') {
+            if (!forceRefresh && lastDemandesFilters && isSameParams && (status === 'succeeded' || status === 'loading')) {
                 return Promise.resolve({ payload: { data: demandes, meta: demandesMeta } });
             }
             return dispatch(fetchDemandesClients(params));
@@ -154,13 +156,15 @@ export const useExpedition = () => {
             const isSameParams = lastReceptionFilters &&
                 String(params.page) === String(lastReceptionFilters.page);
 
-            if (!forceRefresh && lastReceptionFilters && isSameParams && status === 'succeeded') {
+            if (!forceRefresh && lastReceptionFilters && isSameParams && (status === 'succeeded' || status === 'loading')) {
                 return Promise.resolve({ payload: { data: reception, meta: receptionMeta } });
             }
             return dispatch(fetchExpeditionsReception(params));
         }, [dispatch, reception, receptionMeta, lastReceptionFilters, status]),
         receiveColisDestination: useCallback((codes) => dispatch(receiveColisDestinationThunk(codes)), [dispatch]),
         sendColisToEntrepot: useCallback((codes) => dispatch(sendColisToEntrepotThunk(codes)), [dispatch]),
+        initiateRecupColis: useCallback((codes) => dispatch(initiateRecupColisThunk(codes)), [dispatch]),
+        verifyRecupColis: useCallback((data) => dispatch(verifyRecupColisThunk(data)), [dispatch]),
         resetStatus: useCallback(() => dispatch(clearExpeditionStatus()), [dispatch]),
     };
 };

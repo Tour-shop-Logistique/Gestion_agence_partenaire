@@ -14,7 +14,8 @@ import {
   ChevronRightIcon,
   TableCellsIcon,
   TruckIcon,
-  InboxArrowDownIcon
+  InboxArrowDownIcon,
+  UserCircleIcon
 } from "@heroicons/react/24/outline";
 import { getLogoUrl } from "../utils/apiConfig";
 
@@ -49,6 +50,11 @@ const Sidebar = ({ onClose }) => {
       path: "/colis",
       name: "Colis",
       icon: CubeIcon,
+    },
+    {
+      path: "/retrait-colis",
+      name: "Retrait Colis",
+      icon: UserCircleIcon,
     },
     {
       path: "/colis-a-receptionner",
@@ -98,6 +104,11 @@ const Sidebar = ({ onClose }) => {
       path: "/colis",
       name: "Colis",
       icon: CubeIcon,
+    },
+    {
+      path: "/retrait-colis",
+      name: "Retrait Colis",
+      icon: UserCircleIcon,
     },
     {
       path: "/colis-a-receptionner",

@@ -120,9 +120,12 @@ export const expeditionsApi = {
     async listColis(params = {}) {
         try {
             const queryParams = new URLSearchParams();
-            if (params.page) queryParams.append('page', params.page);
-            if (params.date_debut) queryParams.append('date_debut', params.date_debut);
-            if (params.date_fin) queryParams.append('date_fin', params.date_fin);
+            // Append all params to query string
+            Object.keys(params).forEach(key => {
+                if (params[key] !== undefined && params[key] !== null && params[key] !== '') {
+                    queryParams.append(key, params[key]);
+                }
+            });
 
             const queryString = queryParams.toString();
             const url = `${API_ENDPOINTS.EXPEDITIONS.LIST_COLIS}${queryString ? `?${queryString}` : ''}`;
@@ -277,12 +280,18 @@ export const expeditionsApi = {
     async listExpeditionsReception(params = {}) {
         try {
             const queryParams = new URLSearchParams();
-            if (params.page) queryParams.append('page', params.page);
+            // Append all params to query string
+            Object.keys(params).forEach(key => {
+                if (params[key] !== undefined && params[key] !== null && params[key] !== '') {
+                    queryParams.append(key, params[key]);
+                }
+            });
 
             const queryString = queryParams.toString();
             const url = `${API_ENDPOINTS.EXPEDITIONS.LIST_RECEPTION}${queryString ? `&${queryString}` : ''}`;
 
             const response = await apiService.get(url);
+            console.log("response Liste Expeditions Reception", response);
 
             return {
                 success: response.success !== false,
@@ -330,7 +339,7 @@ export const expeditionsApi = {
      */
     async sendColisToEntrepot(codes) {
         try {
-            const response = await apiService.put(
+            const response = await apiService.put (
                 API_ENDPOINTS.EXPEDITIONS.SEND_COLIS_TO_ENTREPOT,
                 { codes }
             );
@@ -344,6 +353,55 @@ export const expeditionsApi = {
             return {
                 success: false,
                 message: error.message || "Erreur lors de l'envoi des colis à l'entrepôt",
+            };
+        }
+    },
+
+    /**
+     * Initier le retrait de colis (Envoi OTP)
+     * @param {Array<string>} codes - Liste des codes colis
+     * @returns {Promise<Object>}
+     */
+    async initiateRecupColis(codes) {
+        try {
+            const response = await apiService.post(
+                API_ENDPOINTS.EXPEDITIONS.INITIATE_RECUP,
+                { codes }
+            );
+            return {
+                success: response.success !== false,
+                data: response.data || response,
+                message: response.message || "Code de validation envoyé au client"
+            };
+        } catch (error) {
+            return {
+                success: false,
+                message: error.message || "Erreur lors de l'envoi du code de validation",
+            };
+        }
+    },
+
+    /**
+     * Valider le retrait de colis avec OTP
+     * @param {Array<string>} codes - Liste des codes colis
+     * @param {string} otp - Code OTP
+     * @returns {Promise<Object>}
+     */
+    async verifyRecupColis(codes, otp) {
+        try {
+            const response = await apiService.post(
+                API_ENDPOINTS.EXPEDITIONS.VERIFY_RECUP,
+                { codes, otp }
+            );
+            return {
+                success: response.success !== false,
+                data: response.data || response,
+                message: response.message || "Colis marqués comme retirés avec succès"
+            };
+        } catch (error) {
+            return {
+                success: false,
+                message: error.message || "Erreur lors de la validation du retrait",
             };
         }
     }
