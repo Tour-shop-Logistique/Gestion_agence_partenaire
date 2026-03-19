@@ -78,6 +78,11 @@ export const API_ENDPOINTS = {
     LIST: "/produits/list",
     LIST_CATEGORIES: "/produits/list-categories",
   },
+
+  // Comptabilité
+  ACCOUNTING: {
+    GET_STATS: "/agence/accounting",
+  },
 };
 
 /**

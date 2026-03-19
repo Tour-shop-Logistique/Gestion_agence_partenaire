@@ -106,7 +106,6 @@ const ExpeditionDetails = () => {
         );
     }
 
-
     if (!expedition) return null;
 
     const formatDate = (dateString) => {
@@ -387,59 +386,107 @@ const ExpeditionDetails = () => {
                         </div>
 
                         {/* 2. FINANCE: STYLE FACTURATION */}
-                        <div className="bg-white border border-slate-200 shadow-sm rounded-2xl lg:rounded-none overflow-hidden sm:overflow-visible">
-                            <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
-                                <h2 className="text-[10px] font-bold text-slate-800 uppercase tracking-widest">Résumé Financier</h2>
-                            </div>
-                            <div className="p-4 sm:p-6 space-y-4">
-                                <div className="space-y-2 text-xs font-medium">
-                                    <div className="flex justify-between text-slate-500">
-                                        <span>Frais de transport</span>
-                                        <span>{formatCurrency(expedition.montant_base)}</span>
-                                    </div>
-                                    <div className="flex justify-between text-slate-500">
-                                        <span>Frais d'emballage</span>
-                                        <span>{formatCurrency(expedition.frais_emballage)}</span>
-                                    </div>
-                                    {parseFloat(expedition.montant_prestation) > 0 && (
-                                        <div className="flex justify-between text-emerald-600">
-                                            <span>Frais de service (Agence)</span>
-                                            <span>+{formatCurrency(expedition.montant_prestation)}</span>
-                                        </div>
-                                    )}
-                                </div>
+                        <div className="bg-white border border-slate-200 shadow-sm rounded-2xl lg:rounded-none overflow-hidden sm:overflow-visible text-right">
+                             <div className="px-4 sm:px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                                 <h2 className="text-[10px] font-bold text-slate-800 uppercase tracking-widest">Résumé Financier</h2>
+                             </div>
+                             <div className="p-4 sm:p-6 space-y-4">
+                                 <div className="space-y-2 text-[11px] font-medium">
+                                     <div className="flex justify-between text-slate-500">
+                                         <span>Frais de transport</span>
+                                         <span className="font-bold">{formatCurrency(expedition.montant_base)}</span>
+                                     </div>
+                                     <div className="flex justify-between text-slate-500">
+                                         <span>Frais d'emballage</span>
+                                         <span className="font-bold">{formatCurrency(expedition.frais_emballage)}</span>
+                                     </div>
+                                     {parseFloat(expedition.montant_prestation) > 0 && (
+                                         <div className="flex justify-between text-emerald-600">
+                                             <span>Frais de service (Agence)</span>
+                                             <span className="font-black">+{formatCurrency(expedition.montant_prestation)}</span>
+                                         </div>
+                                     )}
+                                 </div>
 
-                                <div className="h-px bg-slate-100"></div>
+                                 <div className="h-px bg-slate-100"></div>
 
-                                <div className="flex flex-col items-end">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Montant Net à Payer</span>
-                                    <div className="flex flex-col items-end gap-0.5">
-                                        <div className="flex items-baseline gap-1 text-indigo-700">
-                                            <span className="text-2xl font-bold tracking-tight">{new Intl.NumberFormat('fr-FR').format(expedition.montant_expedition)}</span>
-                                            <span className="text-[10px] font-bold uppercase">CFA</span>
-                                        </div>
-                                        <span className="text-sm font-bold text-slate-500 italic">
-                                            ≈ {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(expedition.montant_expedition / 655.957)}
-                                        </span>
-                                    </div>
-                                </div>
+                                 <div className="flex flex-col items-end pt-2">
+                                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Montant Net à Payer</span>
+                                     <div className="flex flex-col items-end gap-0.5">
+                                         <div className="flex items-baseline gap-1 text-indigo-700">
+                                             <span className="text-2xl font-black tracking-tight">{new Intl.NumberFormat('fr-FR').format(expedition.montant_expedition)}</span>
+                                             <span className="text-[10px] font-bold uppercase">CFA</span>
+                                         </div>
+                                         <span className="text-[10px] font-bold text-slate-400 italic">
+                                             ≈ {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(expedition.montant_expedition / 655.957)}
+                                         </span>
+                                     </div>
+                                 </div>
 
-                                <div className="pt-4">
-                                    <div className={`flex items-center justify-center gap-2 py-3 border rounded ${expedition.statut_paiement === 'paye' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-amber-50 border-amber-100 text-amber-700'}`}>
-                                        <CreditCard className="w-4 h-4" />
-                                        <span className="text-[11px] font-bold uppercase tracking-widest">
-                                            Paiement : {expedition.statut_paiement === 'paye' ? 'Effectué' : 'En attente'}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 text-center">
-                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Document généré par le système • {new Date().getFullYear()}</p>
-                            </div>
+                                 <div className="pt-2">
+                                     <div className={`flex items-center justify-center gap-2 py-3 border rounded-xl ${expedition.statut_paiement === 'paye' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-amber-50 border-amber-100 text-amber-700'}`}>
+                                         <CreditCard className="w-4 h-4" />
+                                         <span className="text-[10px] font-black uppercase tracking-widest">
+                                             Paiement : {expedition.statut_paiement === 'paye' ? 'Effectué' : 'En attente'}
+                                         </span>
+                                     </div>
+                                 </div>
+                             </div>
+                             <div className="px-6 py-3 bg-slate-50/50 border-t border-slate-100 text-center">
+                                 <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Document Certifié par Tous Shop</p>
+                             </div>
                         </div>
+                        
+                        {/* 3. COMMISSIONS AGENCE (Internal) */}
+                        {expedition.commission_details && (
+                             <div className="bg-slate-900 border border-slate-800 shadow-xl rounded-2xl lg:rounded-none overflow-hidden sm:overflow-visible transition-all hover:shadow-indigo-500/10">
+                                 <div className="px-4 sm:px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+                                     <h2 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Ma Commission Agence</h2>
+                                     <div className="px-2 py-0.5 bg-indigo-500/10 rounded border border-indigo-500/20">
+                                        <span className="text-[8px] font-bold text-indigo-400 uppercase tracking-tighter">Vue Interne</span>
+                                     </div>
+                                 </div>
+                                 <div className="p-4 sm:p-6 space-y-4">
+                                     <div className="grid grid-cols-2 gap-4">
+                                         <div className="p-3 bg-white/5 rounded-xl border border-white/5">
+                                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Enlèvement</p>
+                                             <p className="text-xs font-bold text-white">{new Intl.NumberFormat('fr-FR').format(expedition.commission_details.enlevement?.agence || 0)} <span className="text-[10px]">CFA</span></p>
+                                         </div>
+                                         <div className="p-3 bg-white/5 rounded-xl border border-white/5">
+                                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Livraison</p>
+                                             <p className="text-xs font-bold text-white">{new Intl.NumberFormat('fr-FR').format(expedition.commission_details.livraison?.agence || 0)} <span className="text-[10px]">CFA</span></p>
+                                         </div>
+                                         <div className="p-3 bg-white/5 rounded-xl border border-white/5">
+                                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Emballage</p>
+                                             <p className="text-xs font-bold text-white">{new Intl.NumberFormat('fr-FR').format(expedition.commission_details.emballage?.agence || 0)} <span className="text-[10px]">CFA</span></p>
+                                         </div>
+                                         <div className="p-3 bg-white/5 rounded-xl border border-white/5">
+                                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Autres (Retards)</p>
+                                             <p className="text-xs font-bold text-white">{new Intl.NumberFormat('fr-FR').format(expedition.commission_details.retard?.agence || 0)} <span className="text-[10px]">CFA</span></p>
+                                         </div>
+                                     </div>
 
+                                     <div className="h-px bg-white/5"></div>
+
+                                     <div className="flex flex-col items-end pt-2">
+                                         <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1">Total Commission Agence</span>
+                                         <div className="flex items-baseline gap-1 text-white">
+                                             <span className="text-2xl font-black tracking-tight">
+                                                 {new Intl.NumberFormat('fr-FR').format(
+                                                     (expedition.commission_details.enlevement?.agence || 0) +
+                                                     (expedition.commission_details.livraison?.agence || 0) +
+                                                     (expedition.commission_details.emballage?.agence || 0) +
+                                                     (expedition.commission_details.retard?.agence || 0)
+                                                 )}
+                                             </span>
+                                             <span className="text-[10px] font-bold uppercase text-indigo-400">CFA</span>
+                                         </div>
+                                         <p className="text-[9px] text-slate-500 font-medium italic mt-1">Calculé sur la base de la grille tarifaire agence</p>
+                                     </div>
+                                 </div>
+                             </div>
+                        )}
                     </div>
-
                 </div>
             </div>
 
@@ -509,9 +556,9 @@ const ExpeditionDetails = () => {
                 type="info"
                 isLoading={isProcessing}
             />
+
         </DashboardLayout>
     );
 };
 
 export default ExpeditionDetails;
-

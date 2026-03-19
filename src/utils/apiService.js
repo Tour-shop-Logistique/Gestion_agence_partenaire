@@ -47,13 +47,14 @@ class ApiService {
    * Gérer les erreurs de réponse
    */
   async handleResponse(response) {
-    console.log(`[ApiService] Response from ${response.url}: ${response.status} ${response.statusText}`);
+    // Log de succès (désactivé pour réduire le bruit)
+    // console.log(`[ApiService] Response from ${response.url}: ${response.status}`);
     const contentType = response.headers.get("content-type");
     const isJson = contentType && contentType.includes("application/json");
 
     let data;
     const text = await response.text();
-    console.log(`[ApiService] Raw body (first 100 chars):`, text.substring(0, 100));
+    // console.log(`[ApiService] Raw body (first 100 chars):`, text.substring(0, 100));
 
     try {
       data = text ? JSON.parse(text) : {};
@@ -82,8 +83,6 @@ class ApiService {
       error.success = false;
       throw error;
     }
-
-    console.log(data);
 
     return data;
   }

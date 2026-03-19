@@ -17,7 +17,7 @@ export const expeditionsApi = {
                 expeditionData
             );
 
-            console.log("API Response for createExpedition:", response);
+            // console.log("API Response for createExpedition:", response);
 
             return {
                 success: response.success !== false,
@@ -68,6 +68,7 @@ export const expeditionsApi = {
             if (params.page) queryParams.append('page', params.page);
             if (params.date_debut) queryParams.append('date_debut', params.date_debut);
             if (params.date_fin) queryParams.append('date_fin', params.date_fin);
+            queryParams.append('mode', 'depart');
 
             const queryString = queryParams.toString();
             const url = `${API_ENDPOINTS.EXPEDITIONS.LIST}${queryString ? `?${queryString}` : ''}`;
@@ -131,7 +132,7 @@ export const expeditionsApi = {
             const url = `${API_ENDPOINTS.EXPEDITIONS.LIST_COLIS}${queryString ? `?${queryString}` : ''}`;
 
             const response = await apiService.get(url);
-            console.log("response Liste Colis", response);
+            // console.log("response Liste Colis", response);
 
             return {
                 success: response.success !== false,
@@ -162,7 +163,7 @@ export const expeditionsApi = {
             const url = `${API_ENDPOINTS.EXPEDITIONS.LIST_DEMANDES}${queryString ? `&${queryString}` : ''}`;
 
             const response = await apiService.get(url);
-            console.log("response Liste Demandes Clients", response);
+            // console.log("response Liste Demandes Clients", response);
 
             return {
                 success: response.success !== false,

@@ -21,6 +21,8 @@ const CreateExpedition = () => {
         simulationStatus,
         simulationResult,
         simulating,
+        productStatus,
+        productError,
         error,
         message,
         resetStatus,
@@ -113,6 +115,12 @@ const CreateExpedition = () => {
             resetStatus();
         }
     }, [message, resetStatus]);
+
+    useEffect(() => {
+        if (productError) {
+            toast.error("Erreur produits: " + productError);
+        }
+    }, [productError]);
 
     useEffect(() => {
         if (error) {

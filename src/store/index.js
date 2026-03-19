@@ -4,6 +4,7 @@ import agencyReducer from './slices/agencySlice';
 import tarifsReducer from './slices/tarifsSlice';
 import expeditionReducer from './slices/expeditionSlice';
 import productReducer from './slices/productSlice';
+import accountingReducer from './slices/accountingSlice';
 
 /**
  * Root Reducer avec logique de reset
@@ -14,6 +15,7 @@ const appReducer = combineReducers({
   tarifs: tarifsReducer,
   expedition: expeditionReducer,
   products: productReducer,
+  accounting: accountingReducer,
 });
 
 const rootReducer = (state, action) => {

@@ -39,32 +39,41 @@ export const useExpedition = () => {
         demandes, demandesMeta,
         reception, receptionMeta, lastReceptionFilters
     } = useSelector(state => state.expedition);
-    const { list: products, categories, status: productStatus } = useSelector(state => state.products);
+    const { list: products, categories, status: productStatus, error: productError } = useSelector(state => state.products);
 
     // Actions
     const createExpedition = useCallback((data) => dispatch(createExpeditionThunk(data)), [dispatch]);
     const simulateExpedition = useCallback((data) => dispatch(simulateExpeditionThunk(data)), [dispatch]);
 
     const loadExpeditions = useCallback((params = { page: 1 }, forceRefresh = false) => {
-        // Optimisation : ne pas recharger si les filtres sont identiques et qu'on a déjà une réponse (même vide) ou chargement en cours
+        // Si on est déjà en cours de chargement, on ne relance pas l'appel (sauf forceRefresh)
+        if (!forceRefresh && status === "loading") {
+            return;
+        }
+
+        // Optimisation : ne pas recharger si les filtres sont identiques et qu'on a déjà réussi
         const isSameParams = lastFilters &&
             String(params.page) === String(lastFilters.page) &&
             String(params.date_debut) === String(lastFilters.date_debut) &&
             String(params.date_fin) === String(lastFilters.date_fin);
 
-        if (!forceRefresh && lastFilters && isSameParams && (status === 'succeeded' || status === 'loading')) {
-            return; // On ne fait rien, les données sont déjà là (qu'elles soient vides ou pas), ou en cours de chargement
+        if (!forceRefresh && lastFilters && isSameParams && status === 'succeeded') {
+            return;
         }
         return dispatch(fetchExpeditions(params));
     }, [dispatch, lastFilters, status]);
 
     const loadColis = useCallback((params = { page: 1 }, forceRefresh = false) => {
+        if (!forceRefresh && (colisStatus === 'loading')) {
+            return;
+        }
+
         const isSameParams = lastColisFilters &&
             String(params.page) === String(lastColisFilters.page) &&
             params.date_debut === lastColisFilters.date_debut &&
             params.date_fin === lastColisFilters.date_fin;
 
-        if (!forceRefresh && lastColisFilters && isSameParams && (colisStatus === 'succeeded' || colisStatus === 'loading')) {
+        if (!forceRefresh && lastColisFilters && isSameParams && colisStatus === 'succeeded') {
             return Promise.resolve({ payload: { data: colis, meta: colisMeta } });
         }
         return dispatch(fetchColis(params));
@@ -115,6 +124,7 @@ export const useExpedition = () => {
         simulationResult,
         currentExpedition,
         productStatus,
+        productError,
         error,
         message,
         demandes,
@@ -140,10 +150,13 @@ export const useExpedition = () => {
         loadProducts,
         loadCategories,
         loadDemandes: useCallback((params = { page: 1 }, forceRefresh = false) => {
+            if (!forceRefresh && status === 'loading') {
+                return;
+            }
             const isSameParams = lastDemandesFilters &&
                 String(params.page) === String(lastDemandesFilters.page);
 
-            if (!forceRefresh && lastDemandesFilters && isSameParams && (status === 'succeeded' || status === 'loading')) {
+            if (!forceRefresh && lastDemandesFilters && isSameParams && status === 'succeeded') {
                 return Promise.resolve({ payload: { data: demandes, meta: demandesMeta } });
             }
             return dispatch(fetchDemandesClients(params));
@@ -153,10 +166,13 @@ export const useExpedition = () => {
         confirmReception: useCallback((id) => dispatch(confirmExpeditionReception(id)), [dispatch]),
         receiveColisDepart: useCallback((codes) => dispatch(receiveColisDepartThunk(codes)), [dispatch]),
         loadReception: useCallback((params = { page: 1 }, forceRefresh = false) => {
+            if (!forceRefresh && status === 'loading') {
+                return;
+            }
             const isSameParams = lastReceptionFilters &&
                 String(params.page) === String(lastReceptionFilters.page);
 
-            if (!forceRefresh && lastReceptionFilters && isSameParams && (status === 'succeeded' || status === 'loading')) {
+            if (!forceRefresh && lastReceptionFilters && isSameParams && status === 'succeeded') {
                 return Promise.resolve({ payload: { data: reception, meta: receptionMeta } });
             }
             return dispatch(fetchExpeditionsReception(params));

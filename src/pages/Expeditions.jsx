@@ -182,6 +182,15 @@ const Expeditions = () => {
         }
     };
 
+    const getAgencyCommission = (exp) => {
+        if (!exp.commission_details) return 0;
+        const c = exp.commission_details;
+        return (c.enlevement?.agence || 0) + 
+               (c.livraison?.agence || 0) + 
+               (c.emballage?.agence || 0) + 
+               (c.retard?.agence || 0);
+    };
+
     // Filter expeditions based on search query and type (Client-side)
     const filteredExpeditions = useMemo(() => {
         let result = expeditions;
@@ -391,18 +400,26 @@ const Expeditions = () => {
                                             </div>
 
                                             {/* Footer Card */}
-                                            <div className="pt-3 border-t border-slate-100 flex items-end justify-between">
+                                            <div className="pt-3 border-t border-slate-100 flex flex-wrap items-end justify-between gap-3">
                                                 <div className="flex flex-col">
-                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total</span>
+                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-tight">Total</span>
                                                     <span className="text-sm font-bold text-slate-900 tracking-tight tabular-nums">
                                                         {formatPriceDual(exp.montant_expedition)}
                                                     </span>
                                                 </div>
-                                                <div className="flex gap-2">
+                                                
+                                                <div className="flex flex-col items-center px-3 py-1 bg-indigo-50 border border-indigo-100 rounded-lg">
+                                                    <span className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest leading-tight">Ma Com.</span>
+                                                    <span className="text-xs font-black text-indigo-600 tracking-tight">
+                                                        {new Intl.NumberFormat('fr-FR').format(getAgencyCommission(exp))} <span className="text-[8px]">CFA</span>
+                                                    </span>
+                                                </div>
+
+                                                <div className="flex gap-1.5 ml-auto">
                                                     {exp.statut_expedition === 'accepted' && (
                                                         <button
                                                             onClick={() => handleConfirmReception(exp)}
-                                                            className="p-2 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100 shadow-sm"
+                                                            className="p-2 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100 shadow-sm transition-transform active:scale-90"
                                                             title="Confirmer Réception"
                                                         >
                                                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -412,7 +429,7 @@ const Expeditions = () => {
                                                     )}
                                                     <button
                                                         onClick={() => handlePrintReceipt(exp)}
-                                                        className="p-2 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-sm"
+                                                        className="p-2 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-sm transition-transform active:scale-90"
                                                     >
                                                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
                                                     </button>
@@ -446,6 +463,7 @@ const Expeditions = () => {
                                     <th className="px-8 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em]">Expéditeur / Destinataire</th>
                                     <th className="px-8 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em]">Trajet</th>
                                     <th className="px-8 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em]">Montant</th>
+                                    <th className="px-8 py-5 text-[10px] font-bold text-indigo-500 uppercase tracking-[0.15em] bg-indigo-50/30">Ma Commission</th>
                                     <th className="px-8 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em]">Statuts</th>
                                     <th className="px-8 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em] text-right">Actions</th>
                                 </tr>
@@ -556,6 +574,14 @@ const Expeditions = () => {
                                                             {getTypeLabel(exp.type_expedition)}
                                                         </span>
                                                     </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-6 bg-indigo-50/10">
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-black text-indigo-600 tracking-tight tabular-nums">
+                                                        {new Intl.NumberFormat('fr-FR').format(getAgencyCommission(exp))} <span className="text-[10px] font-bold uppercase">CFA</span>
+                                                    </span>
+                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Votre gain agence</span>
                                                 </div>
                                             </td>
                                             <td className="px-8 py-6">

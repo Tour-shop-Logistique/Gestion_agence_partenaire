@@ -15,7 +15,8 @@ import {
   TableCellsIcon,
   TruckIcon,
   InboxArrowDownIcon,
-  UserCircleIcon
+  UserCircleIcon,
+  BanknotesIcon
 } from "@heroicons/react/24/outline";
 import { getLogoUrl } from "../utils/apiConfig";
 
@@ -60,6 +61,11 @@ const Sidebar = ({ onClose }) => {
       path: "/colis-a-receptionner",
       name: "Colis à réceptionner",
       icon: InboxArrowDownIcon,
+    },
+    {
+      path: "/comptabilite",
+      name: "Comptabilité",
+      icon: BanknotesIcon,
     },
     {
       path: "/tarifs-simples",
@@ -114,6 +120,11 @@ const Sidebar = ({ onClose }) => {
       path: "/colis-a-receptionner",
       name: "Colis à réceptionner",
       icon: InboxArrowDownIcon,
+    },
+    {
+      path: "/comptabilite",
+      name: "Comptabilité",
+      icon: BanknotesIcon,
     },
     {
       path: "/tarifs-simples",

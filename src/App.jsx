@@ -21,6 +21,7 @@ import Agents from "./pages/Agents";
 import CreateExpedition from "./pages/CreateExpedition";
 import TarifsSimples from "./pages/TarifsSimples";
 import TarifsGroupes from "./pages/TarifsGroupes";
+import Comptabilite from "./pages/Comptabilite";
 
 
 import Expeditions from "./pages/Expeditions";
@@ -161,6 +162,14 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <AgencyProfile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/comptabilite"
+          element={
+            <ProtectedRoute>
+              <Comptabilite />
             </ProtectedRoute>
           }
         />
