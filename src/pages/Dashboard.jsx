@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import DashboardLayout from "../components/DashboardLayout";
 import {
   PlusIcon,
   ArrowUpRightIcon,
@@ -113,21 +112,17 @@ const Dashboard = () => {
 
   if (isLoading) {
     return (
-      <DashboardLayout>
         <div className="animate-pulse space-y-6">
           <div className="h-8 w-48 bg-slate-200 rounded"></div>
           <div className="grid grid-cols-4 gap-4">
             {[1, 2, 3, 4].map(i => <div key={i} className="h-24 bg-slate-100 rounded-xl"></div>)}
           </div>
         </div>
-      </DashboardLayout>
     );
   }
 
-  return (
-    <DashboardLayout>
+    return (
       <div className="max-w-[1600px] mx-auto space-y-6 pb-12">
-
         {/* --- COMPACT HEADER --- */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-2">
           <div className="flex items-center gap-4">
@@ -362,8 +357,7 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
-    </DashboardLayout>
-  );
+    );
 };
 
 export default Dashboard;

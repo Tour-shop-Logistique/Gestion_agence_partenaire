@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { useAgency } from "../hooks/useAgency";
-import DashboardLayout from "../components/DashboardLayout";
 import AgentCardMobile from "../components/AgentCardMobile";
 import AgentCardDesktop from "../components/AgentCardDesktop";
 import { XMarkIcon } from "@heroicons/react/24/outline";
@@ -68,7 +67,6 @@ const Agents = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setMessage("");
 
     try {
       if (editingAgent) {
@@ -121,7 +119,6 @@ const Agents = () => {
   };
 
   const handleEdit = (agent) => {
-    console.log("Editing agent:", agent); // Debug log
     setEditingAgent(agent);
     setFormData({
       nom: agent.nom || "",
@@ -136,7 +133,6 @@ const Agents = () => {
   };
 
   const handleDelete = (agent) => {
-    // Récupérer les informations complètes de l'agent depuis la liste
     const fullAgentInfo = agencyUsers.find((u) => u.id === agent.id);
     setAgentToDelete(fullAgentInfo || agent);
     setShowDeleteModal(true);
@@ -209,22 +205,20 @@ const Agents = () => {
 
   if (!isAdmin) {
     return (
-      <DashboardLayout>
-        <div className="text-center py-12">
-          <div className="text-6xl mb-4">🚫</div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Accès refusé
-          </h1>
-          <p className="text-gray-600">
-            Vous devez être administrateur pour accéder à cette page.
-          </p>
-        </div>
-      </DashboardLayout>
+      <div className="text-center py-12">
+        <div className="text-6xl mb-4">🚫</div>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          Accès refusé
+        </h1>
+        <p className="text-gray-600">
+          Vous devez être administrateur pour accéder à cette page.
+        </p>
+      </div>
     );
   }
 
   return (
-    <DashboardLayout>
+    <>
       <div className="mb-6 sm:mb-8">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
@@ -634,24 +628,6 @@ const Agents = () => {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
-                      {/* <div className="space-y-2">
-                        <label htmlFor="type" className="block text-sm font-medium text-gray-700">
-                          Type <span className="text-red-500">*</span>
-                        </label>
-                        <select
-                          id="type"
-                          name="type"
-                          value={formData.type}
-                          onChange={handleChange}
-                          required
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors bg-white"
-                        >
-                          <option value="agence">🏢 Agence</option>
-                          <option value="manager">👔 Manager</option>
-                          <option value="admin">👑 Administrateur</option>
-                        </select>
-                      </div> */}
-
                       <div className="space-y-2">
                         <label
                           htmlFor="password"
@@ -715,7 +691,6 @@ const Agents = () => {
                   <button
                     type="submit"
                     disabled={loading}
-                    onClick={() => console.log("Button clicked")}
                     className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 border border-transparent rounded-lg text-sm font-medium text-white hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
                   >
                     {loading ? (
@@ -801,69 +776,47 @@ const Agents = () => {
                 <svg
                   className="w-6 h-6"
                   fill="none"
-                  viewBox="0 0 24 24"
                   stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth="2"
                     d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                  ></path>
+                  />
                 </svg>
               </div>
-              <h3 className="text-lg font-bold text-gray-900 text-center mb-2">
+              <h3 className="text-xl font-bold text-gray-900 text-center mb-2">
                 Supprimer l'agent ?
               </h3>
-              <p className="text-sm text-gray-500 text-center mb-6">
+              <p className="text-gray-500 text-center mb-6">
                 Êtes-vous sûr de vouloir supprimer{" "}
                 <span className="font-bold text-gray-900">
                   {agentToDelete?.nom} {agentToDelete?.prenoms}
                 </span>{" "}
                 ? Cette action est irréversible.
               </p>
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={cancelDelete}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 font-bold rounded-lg hover:bg-gray-200 transition-colors"
                 >
                   Annuler
                 </button>
                 <button
                   onClick={confirmDelete}
                   disabled={loading}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors flex items-center justify-center"
+                  className="flex-1 px-4 py-2.5 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
                 >
-                  {loading ? (
-                    <svg
-                      className="animate-spin h-4 w-4 text-white"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                  ) : (
-                    "Supprimer"
-                  )}
+                  {loading ? "Suppression..." : "Supprimer"}
                 </button>
               </div>
             </div>
           </div>
         </div>
       )}
-    </DashboardLayout>
+    </>
   );
 };
 

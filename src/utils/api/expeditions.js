@@ -132,7 +132,7 @@ export const expeditionsApi = {
             const url = `${API_ENDPOINTS.EXPEDITIONS.LIST_COLIS}${queryString ? `?${queryString}` : ''}`;
 
             const response = await apiService.get(url);
-            // console.log("response Liste Colis", response);
+             console.log("response Liste Colis", response);
 
             return {
                 success: response.success !== false,
@@ -388,11 +388,15 @@ export const expeditionsApi = {
      * @param {string} otp - Code OTP
      * @returns {Promise<Object>}
      */
-    async verifyRecupColis(codes, otp) {
+    async verifyRecupColis(codes, otp, statut_paiement = null) {
         try {
+            const body = { codes, otp };
+            if (statut_paiement) {
+                body.statut_paiement = statut_paiement;
+            }
             const response = await apiService.post(
                 API_ENDPOINTS.EXPEDITIONS.VERIFY_RECUP,
-                { codes, otp }
+                body
             );
             return {
                 success: response.success !== false,

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
-import DashboardLayout from "../components/DashboardLayout";
+
 import { useExpedition } from "../hooks/useExpedition";
 import { useAgency } from "../hooks/useAgency";
 import { Link } from "react-router-dom";
@@ -217,7 +217,7 @@ const Expeditions = () => {
     }, [expeditions, searchQuery, type]);
 
     return (
-        <DashboardLayout>
+        <>
             <div className="space-y-8 max-w-[1600px] mx-auto">
                 {/* Premium Header Section */}
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
@@ -717,7 +717,6 @@ const Expeditions = () => {
                 </div>
             </div>
 
-            {/* Print Modal */}
             {showPrintModal && selectedExpedition && (
                 <PrintSuccessModal
                     expedition={selectedExpedition}
@@ -745,7 +744,7 @@ const Expeditions = () => {
                 type="info"
                 isLoading={isConfirming}
             />
-        </DashboardLayout>
+        </>
     );
 };
 

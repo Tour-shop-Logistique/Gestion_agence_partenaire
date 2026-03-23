@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useEffect } from "react";
-import DashboardLayout from "../components/DashboardLayout";
 import {
     MagnifyingGlassIcon,
     ArrowPathIcon,
@@ -10,7 +9,9 @@ import {
     CheckIcon,
     UserCircleIcon,
     ArrowRightCircleIcon,
-    ShieldCheckIcon
+    ShieldCheckIcon,
+    ChevronRightIcon,
+    XMarkIcon
 } from "@heroicons/react/24/outline";
 import { useExpedition } from "../hooks/useExpedition";
 import { toast } from "../utils/toast";
@@ -23,6 +24,11 @@ const RetraitColis = () => {
     const [searchResults, setSearchResults] = useState([]);
     const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
     const [otp, setOtp] = useState("");
+    const [isPaid, setIsPaid] = useState(false);
+
+    const hasPendingPayment = useMemo(() => {
+        return searchResults.some(item => selectedColis.includes(item.code_colis) && item.expedition?.statut_paiement === 'en_attente');
+    }, [searchResults, selectedColis]);
 
     const {
         loadColis,
@@ -51,7 +57,6 @@ const RetraitColis = () => {
         if (!searchQuery) return;
 
         setLocalLoading(true);
-        // On utilise loadColis avec search et is_collected=false
         const result = await loadColis({ 
             search: searchQuery, 
             is_collected: false 
@@ -70,6 +75,7 @@ const RetraitColis = () => {
         const res = await initiateRecupColis(selectedColis);
         setLocalLoading(false);
         if (res?.meta?.requestStatus === 'fulfilled') {
+            setIsPaid(false); // Reset for modal
             setIsOtpModalOpen(true);
         }
     };
@@ -80,13 +86,16 @@ const RetraitColis = () => {
             return;
         }
         setLocalLoading(true);
-        const res = await verifyRecupColis({ codes: selectedColis, otp });
+        const res = await verifyRecupColis({ 
+            codes: selectedColis, 
+            otp,
+            statut_paiement: isPaid ? 'paye' : null
+        });
         setLocalLoading(false);
         if (res?.meta?.requestStatus === 'fulfilled') {
             setIsOtpModalOpen(false);
             setOtp("");
             setSelectedColis([]);
-            // Refresh search results
             handleSearch();
         }
     };
@@ -111,183 +120,194 @@ const RetraitColis = () => {
     const isRefreshing = loading || localLoading;
 
     return (
-        <DashboardLayout>
-            <div className="space-y-6 sm:space-y-8 max-w-[1600px] mx-auto px-1 sm:px-0">
-                {/* Header Section */}
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                    <div className="space-y-2">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2.5 bg-emerald-600 rounded-xl shadow-lg shadow-emerald-200">
-                                <UserCircleIcon className="w-6 h-6 text-white" />
-                            </div>
-                            <h1 className="text-2xl sm:text-4xl font-bold text-slate-900 tracking-tight leading-none">
-                                Retrait Client
-                            </h1>
-                        </div>
-                        <p className="text-sm font-medium text-slate-500 tracking-wide ml-14">
-                            Validez la remise physique des colis aux clients
-                        </p>
-                    </div>
-
-                    <form onSubmit={handleSearch} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full lg:w-auto">
-                        <div className="relative group flex-1 sm:w-80 lg:w-96">
-                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <MagnifyingGlassIcon className="h-5 w-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
-                            </div>
-                            <input
-                                type="text"
-                                className="block w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-bold placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all shadow-sm"
-                                placeholder="Téléphone client ou Code Colis..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                        </div>
-                        <button
-                            type="submit"
-                            disabled={isRefreshing || !searchQuery}
-                            className="px-6 py-3 bg-emerald-600 text-white rounded-2xl font-bold text-sm hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200 disabled:opacity-50 flex items-center justify-center gap-2"
-                        >
-                            <ArrowPathIcon className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                            Rechercher
-                        </button>
-                    </form>
+        <div className="max-w-[1700px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-slate-200 pb-8">
+                <div>
+                    <h1 className="text-xl font-semibold text-slate-900 leading-none">
+                        Retrait Colis
+                    </h1>
+                    <p className="text-sm text-slate-500 mt-2">
+                        Validation de la remise physique des colis aux clients après authentification.
+                    </p>
                 </div>
 
-                {/* Main Content Areas */}
-                {searchResults.length > 0 ? (
-                    <div className="space-y-6">
-                        {/* Summary & Bulk Action */}
-                        <div className="flex items-center justify-between p-4 bg-emerald-50 border border-emerald-100 rounded-2xl">
-                            <div className="flex items-center gap-3">
-                                <button
-                                    onClick={selectAll}
-                                    className={`w-6 h-6 rounded flex items-center justify-center border transition-colors ${selectedColis.length > 0 && selectedColis.length === searchResults.length
-                                            ? 'bg-emerald-600 border-emerald-600'
-                                            : 'bg-white border-slate-300 hover:border-emerald-400'
-                                        }`}
-                                >
-                                    {selectedColis.length > 0 && selectedColis.length === searchResults.length && (
-                                        <CheckIcon className="w-4 h-4 text-white" />
-                                    )}
-                                </button>
-                                <span className="text-sm font-bold text-emerald-800">
-                                    {selectedColis.length} colis sélectionné(s) sur {searchResults.length} trouvé(s)
-                                </span>
-                            </div>
-                            {selectedColis.length > 0 && (
-                                <button
-                                    onClick={handleInitiateRecup}
-                                    disabled={isRefreshing}
-                                    className="px-6 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl hover:bg-emerald-700 transition-all shadow-md shadow-emerald-200 flex items-center gap-2"
-                                >
-                                    <ArrowRightCircleIcon className="w-5 h-5" />
-                                    Initier le retrait
-                                </button>
-                            )}
+                <form onSubmit={handleSearch} className="flex items-center gap-3 w-full md:w-auto">
+                    <div className="relative flex-1 md:w-80">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <MagnifyingGlassIcon className="h-4 w-4 text-slate-400" />
                         </div>
+                        <input
+                            type="text"
+                            className="block w-full pl-9 pr-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400"
+                            placeholder="Rechercher (Tél ou Code)..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+                    <button
+                        type="submit"
+                        disabled={isRefreshing || !searchQuery}
+                        className="inline-flex items-center justify-center px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-semibold hover:bg-slate-800 transition-colors disabled:opacity-50"
+                    >
+                         {isRefreshing ? <ArrowPathIcon className="w-4 h-4 animate-spin mr-2" /> : <ArrowPathIcon className="w-4 h-4 mr-2" />}
+                        Actualiser
+                    </button>
+                </form>
+            </div>
 
-                        {/* Results Grid */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Results Section */}
+            {searchResults.length > 0 ? (
+                <div className="space-y-4">
+                    {/* Bulk Action Header */}
+                    <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg">
+                        <div className="flex items-center gap-3">
+                            <input 
+                                type="checkbox"
+                                checked={selectedColis.length > 0 && selectedColis.length === searchResults.length}
+                                onChange={selectAll}
+                                className="w-4 h-4 text-slate-900 border-slate-300 rounded focus:ring-slate-500 cursor-pointer"
+                            />
+                            <span className="text-xs font-semibold text-slate-700">
+                                {selectedColis.length} colis sélectionné(s) sur {searchResults.length}
+                            </span>
+                        </div>
+                        {selectedColis.length > 0 && (
+                            <button
+                                onClick={handleInitiateRecup}
+                                disabled={isRefreshing}
+                                className="px-4 py-1.5 bg-slate-900 text-white text-xs font-semibold rounded hover:bg-slate-800 transition-colors flex items-center gap-2"
+                            >
+                                Initier le retrait ({selectedColis.length})
+                                <ArrowRightCircleIcon className="w-4 h-4" />
+                            </button>
+                        )}
+                    </div>
+
+                    {/* List of Colis (ERP Style) */}
+                    <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+                        <div className="divide-y divide-slate-100">
                             {searchResults.map((item) => {
                                 const isSelected = selectedColis.includes(item.code_colis);
                                 return (
-                                    <div
+                                    <div 
                                         key={item.id}
                                         onClick={() => toggleSelection(item.code_colis)}
-                                        className={`cursor-pointer bg-white p-6 rounded-3xl border transition-all duration-300 flex flex-col gap-4 relative ${
-                                            isSelected ? 'border-emerald-500 ring-2 ring-emerald-500/10 bg-emerald-50/5' : 'border-slate-200 hover:shadow-xl'
-                                        }`}
+                                        className={`flex flex-col sm:flex-row sm:items-center gap-4 p-4 transition-colors cursor-pointer hover:bg-slate-50 ${isSelected ? 'bg-slate-50/80' : ''}`}
                                     >
-                                        <div className="flex justify-between items-start">
-                                            <div className="space-y-1">
-                                                <div className="flex items-center gap-2">
-                                                    <div className={`w-5 h-5 rounded border flex items-center justify-center ${isSelected ? 'bg-emerald-600 border-emerald-600' : 'bg-white border-slate-300'}`}>
-                                                        {isSelected && <CheckIcon className="w-3 h-3 text-white" />}
-                                                    </div>
-                                                    <span className="text-xs font-black text-emerald-600 uppercase">#{item.code_colis}</span>
-                                                </div>
-                                                <h3 className="text-lg font-bold text-slate-900">{item.designation}</h3>
-                                            </div>
-                                            <div className="text-right">
-                                                <span className="text-[10px] font-bold text-slate-400 uppercase">Expédition</span>
-                                                <p className="text-xs font-bold text-slate-900">{item.expedition?.reference || '-'}</p>
+                                        <div className="flex items-center gap-4 sm:flex-[0_0_auto]">
+                                            <input 
+                                                type="checkbox"
+                                                checked={isSelected}
+                                                readOnly
+                                                className="w-4 h-4 text-slate-900 border-slate-300 rounded focus:ring-slate-500 cursor-pointer"
+                                            />
+                                            <div className="flex flex-col">
+                                                <span className="text-xs font-bold text-slate-400 uppercase tracking-tight">#{item.code_colis}</span>
+                                                <span className="text-sm font-semibold text-slate-900">{item.designation}</span>
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center gap-4 py-3 border-y border-slate-50">
-                                            <div className="flex-1 space-y-2">
-                                                <div className="flex items-center gap-2">
-                                                    <PhoneIcon className="w-3.5 h-3.5 text-slate-400" />
-                                                    <span className="text-xs font-bold text-slate-700">{item.expedition?.destinataire_telephone || 'N/A'}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <UserIcon className="w-3.5 h-3.5 text-slate-400" />
-                                                    <span className="text-xs font-bold text-slate-700">{item.expedition?.destinataire_nom_prenom || 'N/A'}</span>
-                                                </div>
+                                        <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] text-slate-400 font-bold uppercase">Client</span>
+                                                <span className="text-xs font-semibold text-slate-700">{item.expedition?.destinataire_nom_prenom || 'n/a'}</span>
                                             </div>
-                                            <div className="w-px h-8 bg-slate-100"></div>
-                                            <div className="flex-1 text-right">
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Poids</p>
-                                                <span className="text-sm font-black text-slate-900">{item.poids} KG</span>
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] text-slate-400 font-bold uppercase">Téléphone</span>
+                                                <span className="text-xs font-semibold text-slate-700">{item.expedition?.destinataire_telephone || 'n/a'}</span>
+                                            </div>
+                                            <div className="flex flex-col sm:items-end">
+                                                <span className="text-[10px] text-slate-400 font-bold uppercase">Poids</span>
+                                                <span className="text-xs font-semibold text-slate-900">{item.poids} kg</span>
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center gap-2 text-[11px] font-medium text-slate-500">
-                                            <InformationCircleIcon className="w-4 h-4 text-slate-400" />
-                                            <span>Statut d'expédition : <span className="text-slate-900 font-bold">{item.expedition?.statut_expedition?.replace(/_/g, ' ')}</span></span>
+                                        <div className="sm:w-32 flex sm:justify-end items-center">
+                                            <span className={`text-[11px] font-bold ${item.expedition?.statut_paiement === 'paye' ? 'text-emerald-600' : 'text-red-600'}`}>
+                                                {item.expedition?.statut_paiement === 'paye' ? 'PAYÉ' : 'À PAYER'}
+                                            </span>
                                         </div>
                                     </div>
                                 );
                             })}
                         </div>
                     </div>
-                ) : (
-                    <div className="bg-white border-2 border-dashed border-slate-200 rounded-[2.5rem] py-24 text-center space-y-6">
-                        <div className="p-6 bg-slate-50 rounded-full w-fit mx-auto">
-                            <CubeIcon className="w-16 h-16 text-slate-300" />
-                        </div>
-                        <div className="max-w-md mx-auto space-y-2">
-                            <h2 className="text-2xl font-bold text-slate-900">Prêt pour un retrait ?</h2>
-                            <p className="text-slate-500 font-medium">
-                                Recherchez un numéro de téléphone ou un code colis pour lister les articles éligibles au retrait.
-                            </p>
-                        </div>
-                    </div>
-                )}
+                </div>
+            ) : (
+                <div className="flex flex-col items-center justify-center py-20 bg-white border border-slate-200 rounded-lg">
+                    <CubeIcon className="w-10 h-10 text-slate-200 mb-4" />
+                    <p className="text-sm font-medium text-slate-500">
+                        Entrez un numéro de téléphone ou un code colis pour commencer.
+                    </p>
+                </div>
+            )}
 
-                {/* OTP Modal */}
-                <ConfirmationModal
-                    isOpen={isOtpModalOpen}
-                    onClose={() => setIsOtpModalOpen(false)}
-                    onConfirm={handleVerifyOtp}
-                    title="Validation du retrait"
-                    confirmText="Confirmer le retrait"
-                    type="success"
-                    isLoading={isRefreshing}
-                >
-                    <div className="space-y-4">
-                        <div className="p-4 bg-emerald-50 rounded-2xl flex gap-3 items-start">
-                            <ShieldCheckIcon className="w-6 h-6 text-emerald-600 shrink-0" />
-                            <p className="text-xs font-medium text-emerald-800 leading-relaxed">
-                                Un code de validation à 6 chiffres a été envoyé au client par SMS/Email. 
-                                Veuillez le saisir pour finaliser la remise des {selectedColis.length} colis.
-                            </p>
+            {/* OTP Modal (Professional Version) */}
+            {isOtpModalOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40">
+                    <div className="w-full max-w-md bg-white rounded-lg shadow-xl border border-slate-200 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                            <h3 className="text-base font-bold text-slate-900">Validation Sécurisée</h3>
+                            <button onClick={() => setIsOtpModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                                <XMarkIcon className="w-5 h-5" />
+                            </button>
                         </div>
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Code de validation (OTP)</label>
-                            <input
-                                type="text"
-                                maxLength={6}
-                                value={otp}
-                                onChange={(e) => setOtp(e.target.value)}
-                                className="w-full text-center text-3xl font-black tracking-[0.5em] py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all"
-                                placeholder="000000"
-                            />
+                        
+                        <div className="p-6 space-y-6">
+                            <div className="text-xs text-slate-600 leading-relaxed font-medium">
+                                Un code OTP à 6 chiffres a été envoyé au client. Saisissez-le ci-dessous pour confirmer la remise physique des colis.
+                            </div>
+
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase">Code de validation (OTP)</label>
+                                <input
+                                    type="text"
+                                    maxLength={6}
+                                    value={otp}
+                                    onChange={(e) => setOtp(e.target.value)}
+                                    className="w-full text-center text-3xl font-mono py-3 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-400 tracking-[0.2em]"
+                                    placeholder="000000"
+                                />
+                            </div>
+
+                            {hasPendingPayment && (
+                                <div className="pt-4 border-t border-slate-100">
+                                    <label className="flex items-center gap-3 cursor-pointer group">
+                                        <input 
+                                            type="checkbox"
+                                            checked={isPaid}
+                                            onChange={() => setIsPaid(!isPaid)}
+                                            className="w-4 h-4 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500"
+                                        />
+                                        <div className="flex flex-col">
+                                            <span className="text-xs font-bold text-slate-800">Confirmer le paiement reçu</span>
+                                            <span className="text-[10px] text-slate-500 font-medium">Le statut de l'expédition passera à "Payé"</span>
+                                        </div>
+                                    </label>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-3">
+                            <button 
+                                onClick={() => setIsOtpModalOpen(false)}
+                                className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors"
+                            >
+                                Annuler
+                            </button>
+                            <button 
+                                onClick={handleVerifyOtp}
+                                disabled={isRefreshing || !otp}
+                                className="px-5 py-2 bg-slate-900 text-white rounded-md text-xs font-bold uppercase tracking-wider hover:bg-slate-800 disabled:opacity-50"
+                            >
+                                {isRefreshing ? "Validation..." : "Confirmer le retrait"}
+                            </button>
                         </div>
                     </div>
-                </ConfirmationModal>
-            </div>
-        </DashboardLayout>
+                </div>
+            )}
+        </div>
     );
 };
 

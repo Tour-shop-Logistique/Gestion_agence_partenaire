@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import DashboardLayout from "../components/DashboardLayout";
+
 import { useExpedition } from "../hooks/useExpedition";
 import { useTarifs } from "../hooks/useTarifs";
 import { useAgency } from "../hooks/useAgency";
@@ -305,7 +305,7 @@ const CreateExpedition = () => {
     }, [simulationResult]);
 
     return (
-        <DashboardLayout>
+        <>
             <div className="min-h-screen bg-slate-50/50">
                 <div className="max-w-7xl mx-auto px-4 py-8">
                     {/* Header Moderne */}
@@ -837,7 +837,7 @@ const CreateExpedition = () => {
                     }}
                 />
             )}
-        </DashboardLayout>
+        </>
     );
 };
 

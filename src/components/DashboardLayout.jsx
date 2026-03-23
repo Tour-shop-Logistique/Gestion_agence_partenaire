@@ -1,12 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
 
-const DashboardLayout = ({ children }) => {
+const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  // Les données de l'agence sont maintenant chargées dans App.jsx au niveau global
-  // Plus besoin de les charger ici pour éviter les appels multiples
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -43,7 +41,7 @@ const DashboardLayout = ({ children }) => {
           <Header onToggleSidebar={() => setSidebarOpen(open => !open)} />
           <main className="flex-1 overflow-y-auto pt-16 pb-4">
             <div className="px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10 max-w-full">
-              {children}
+              <Outlet />
             </div>
           </main>
         </div>

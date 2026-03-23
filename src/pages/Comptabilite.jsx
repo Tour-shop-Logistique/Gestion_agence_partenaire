@@ -1,24 +1,26 @@
 import React, { useEffect, useState, useMemo } from "react";
-import DashboardLayout from "../components/DashboardLayout";
 import { useAccounting } from "../hooks/useAccounting";
 import { useAgency } from "../hooks/useAgency";
-import { Link } from "react-router-dom";
-import { formatPriceDual } from "../utils/format";
 import { 
   ArrowPathIcon, 
   MagnifyingGlassIcon, 
-  CurrencyDollarIcon,
-  BuildingOfficeIcon,
   BanknotesIcon,
   TruckIcon,
-  ArrowTrendingUpIcon,
-  CalendarIcon,
-  FunnelIcon
+  BuildingOfficeIcon,
+  FunnelIcon,
+  XMarkIcon,
+  InformationCircleIcon,
+  ReceiptPercentIcon,
+  CheckCircleIcon,
+  ShoppingBagIcon,
+  UserIcon,
+  MapPinIcon,
+  ChevronRightIcon
 } from "@heroicons/react/24/outline";
 
 const Comptabilite = () => {
   const { data, summary, status, loadAccounting, lastFilters } = useAccounting();
-  const { agencyData, fetchAgencyData } = useAgency();
+  const { fetchAgencyData } = useAgency();
 
   // Helper to get today's date in YYYY-MM-DD
   const getTodayDate = () => {
@@ -36,6 +38,8 @@ const Comptabilite = () => {
   const [dateFin, setDateFin] = useState(lastFilters?.date_fin || getTodayDate());
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [selectedExpedition, setSelectedExpedition] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     loadAccounting({
@@ -49,7 +53,7 @@ const Comptabilite = () => {
   }, [fetchAgencyData]);
 
   const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
+    if (!dateString) return "n/a";
     const date = new Date(dateString);
     return date.toLocaleDateString('fr-FR', {
       day: '2-digit',
@@ -61,11 +65,11 @@ const Comptabilite = () => {
   const getStatusStyle = (status) => {
     switch (status) {
       case 'paye':
-        return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+        return 'text-emerald-600';
       case 'en_attente':
-        return 'bg-amber-50 text-amber-700 border-amber-100';
+        return 'text-amber-600';
       default:
-        return 'bg-slate-50 text-slate-700 border-slate-100';
+        return 'text-slate-500';
     }
   };
 
@@ -77,8 +81,12 @@ const Comptabilite = () => {
     }
   };
 
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('fr-FR').format(amount || 0);
+  };
+
   const filteredData = useMemo(() => {
-    let result = data;
+    let result = Array.isArray(data) ? data : [];
     
     if (searchQuery) {
       const lowerQuery = searchQuery.toLowerCase();
@@ -96,287 +104,318 @@ const Comptabilite = () => {
     return result;
   }, [data, searchQuery, statusFilter]);
 
+  const handleRowClick = (expedition) => {
+    setSelectedExpedition(expedition);
+    setIsModalOpen(true);
+  };
+
   return (
-    <DashboardLayout>
-      <div className="space-y-8 max-w-[1600px] mx-auto pb-10">
-        {/* Header Section */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-1">
-            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
-              Gestion Comptable
-            </h1>
-            <p className="text-slate-500 font-medium">
-              Suivi des revenus, commissions et répartition des gains
-            </p>
-          </div>
-          
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-2 bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm">
-              <div className="relative">
-                <input
-                  type="date"
-                  className="pl-3 pr-2 py-2 text-sm font-bold bg-transparent border-none focus:ring-0 cursor-pointer"
-                  value={dateDebut}
-                  onChange={(e) => setDateDebut(e.target.value)}
-                />
-              </div>
-              <div className="h-4 w-px bg-slate-200"></div>
-              <div className="relative">
-                <input
-                  type="date"
-                  className="pl-3 pr-2 py-2 text-sm font-bold bg-transparent border-none focus:ring-0 cursor-pointer"
-                  value={dateFin}
-                  onChange={(e) => setDateFin(e.target.value)}
-                />
-              </div>
-            </div>
-            
-            <button
-              onClick={() => loadAccounting({ date_debut: dateDebut, date_fin: dateFin }, true)}
-              disabled={status === 'loading'}
-              className="p-3 bg-white border border-slate-200 text-slate-600 rounded-2xl hover:bg-slate-50 transition-all shadow-sm active:scale-95 disabled:opacity-50"
-            >
-              <ArrowPathIcon className={`w-5 h-5 ${status === 'loading' ? 'animate-spin' : ''}`} />
-            </button>
-          </div>
+    <div className="max-w-[1700px] mx-auto px-1 sm:px-6 lg:px-8 py-1 space-y-8">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-slate-200 pb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+            Comptabilité
+          </h1>
+          <p className="text-sm text-slate-500 mt-1">
+            Gestion des flux financiers et répartition des revenus agence.
+          </p>
         </div>
-
-        {/* KPI Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Total Client Card */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-all group">
-            <div className="flex items-start justify-between mb-4">
-              <div className="p-3 bg-blue-50 rounded-2xl text-blue-600 group-hover:scale-110 transition-transform">
-                <BanknotesIcon className="w-6 h-6" />
-              </div>
-              <div className="flex items-center text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
-                <ArrowTrendingUpIcon className="w-4 h-4 mr-1" />
-                <span className="text-xs font-bold">Total</span>
-              </div>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">Total Client</p>
-              <h3 className="text-2xl font-black text-slate-900 tabular-nums">
-                {summary.total_client_due ? new Intl.NumberFormat('fr-FR').format(summary.total_client_due) : 0} <span className="text-sm font-bold text-slate-400">FCFA</span>
-              </h3>
-            </div>
-          </div>
-
-          {/* Part Agence Card (Highlighted) */}
-          <div className="bg-slate-900 p-6 rounded-3xl border border-slate-800 shadow-xl shadow-slate-200/50 hover:translate-y-[-4px] transition-all group relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
-            <div className="relative z-10">
-              <div className="flex items-start justify-between mb-4">
-                <div className="p-3 bg-blue-500/20 rounded-2xl text-blue-400 group-hover:scale-110 transition-transform">
-                  <BuildingOfficeIcon className="w-6 h-6" />
-                </div>
-                <span className="px-3 py-1 bg-blue-500 text-white rounded-full text-[10px] font-black uppercase tracking-widest">
-                  Principal
-                </span>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-bold text-slate-400 uppercase tracking-wider">Part Agence</p>
-                <h3 className="text-2xl font-black text-white tabular-nums">
-                  {summary.total_agence ? new Intl.NumberFormat('fr-FR').format(summary.total_agence) : 0} <span className="text-sm font-bold text-slate-500">FCFA</span>
-                </h3>
-                <p className="text-[10px] text-blue-400 font-bold uppercase tracking-tighter mt-2 flex items-center">
-                  <span className="w-1.5 h-1.5 bg-blue-400 rounded-full mr-2"></span>
-                  Gains nets de l'agence
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Part Backoffice Card */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-all group">
-            <div className="flex items-start justify-between mb-4">
-              <div className="p-3 bg-slate-50 rounded-2xl text-slate-600 group-hover:scale-110 transition-transform font-bold">
-                BO
-              </div>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">Part Backoffice</p>
-              <h3 className="text-2xl font-black text-slate-900 tabular-nums">
-                {summary.total_backoffice ? new Intl.NumberFormat('fr-FR').format(summary.total_backoffice) : 0} <span className="text-sm font-bold text-slate-400">FCFA</span>
-              </h3>
-            </div>
-          </div>
-
-          {/* Part Livreurs Card */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-all group">
-            <div className="flex items-start justify-between mb-4">
-              <div className="p-3 bg-orange-50 rounded-2xl text-orange-600 group-hover:scale-110 transition-transform">
-                <TruckIcon className="w-6 h-6" />
-              </div>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-bold text-slate-500 uppercase tracking-wider">Part Livreurs</p>
-              <h3 className="text-2xl font-black text-slate-900 tabular-nums">
-                {summary.total_livreur ? new Intl.NumberFormat('fr-FR').format(summary.total_livreur) : 0} <span className="text-sm font-bold text-slate-400">FCFA</span>
-              </h3>
-            </div>
-          </div>
-        </div>
-
-        {/* Table Controls */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="relative group w-full sm:w-96">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <MagnifyingGlassIcon className="h-5 w-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-            </div>
+        
+        <div className="flex items-center gap-3">
+          <div className="flex items-center bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
             <input
-              type="text"
-              className="block w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-bold placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all shadow-sm group-hover:shadow-md"
-              placeholder="Rechercher par référence, expéditeur..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              type="date"
+              className="px-3 py-1.5 text-xs font-semibold text-slate-700 border-none focus:ring-0"
+              value={dateDebut}
+              onChange={(e) => setDateDebut(e.target.value)}
+            />
+            <div className="w-px h-4 bg-slate-200"></div>
+            <input
+              type="date"
+              className="px-3 py-1.5 text-xs font-semibold text-slate-700 border-none focus:ring-0"
+              value={dateFin}
+              onChange={(e) => setDateFin(e.target.value)}
             />
           </div>
-
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <div className="relative group flex-1 sm:w-48">
-              <select
-                className="block w-full pl-4 pr-10 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-bold focus:outline-none focus:ring-4 focus:ring-blue-500/5 focus:border-blue-500 transition-all shadow-sm appearance-none cursor-pointer"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="">Tous les statuts</option>
-                <option value="paye">Payé</option>
-                <option value="en_attente">En attente</option>
-              </select>
-              <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                <FunnelIcon className="h-4 w-4 text-slate-400" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Desktop Table View */}
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/40 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50/50 border-b border-slate-200">
-                  <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Expédition</th>
-                  <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Date</th>
-                  <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Trajet</th>
-                  <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Montant Client</th>
-                  <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Revenu BO</th>
-                  <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Part Agence</th>
-                  <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Part Livreur</th>
-                  <th className="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Statut</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {status === 'loading' && data.length === 0 ? (
-                  Array(5).fill(0).map((_, i) => (
-                    <tr key={i} className="animate-pulse">
-                      {Array(8).fill(0).map((_, j) => (
-                        <td key={j} className="px-6 py-6">
-                          <div className="h-4 bg-slate-100 rounded-lg w-full"></div>
-                        </td>
-                      ))}
-                    </tr>
-                  ))
-                ) : filteredData.length > 0 ? (
-                  filteredData.map((item) => (
-                    <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
-                      <td className="px-6 py-6">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
-                            {item.reference}
-                          </span>
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
-                            {item.expediteur?.nom_prenom || "N/A"}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-6 font-bold text-slate-600 text-sm whitespace-nowrap">
-                        {formatDate(item.created_at)}
-                      </td>
-                      <td className="px-6 py-6">
-                        <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-tighter">
-                          <span className="text-slate-500">{item.pays_depart}</span>
-                          <svg className="w-3 h-3 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                          </svg>
-                          <span className="text-blue-600">{item.pays_destination}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-6 font-black text-slate-900 text-sm tabular-nums">
-                        {new Intl.NumberFormat('fr-FR').format(item.accounting_details?.total_client_due || 0)}
-                      </td>
-                      <td className="px-6 py-6 font-black text-slate-500 text-sm tabular-nums">
-                        {new Intl.NumberFormat('fr-FR').format(item.accounting_details?.backoffice || 0)}
-                      </td>
-                      <td className="px-6 py-6">
-                        <span className="text-sm font-black text-blue-600 tabular-nums">
-                          {new Intl.NumberFormat('fr-FR').format(item.accounting_details?.agence || 0)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-6 font-black text-slate-400 text-sm tabular-nums text-center lg:text-left">
-                        {new Intl.NumberFormat('fr-FR').format(item.accounting_details?.livreur || 0)}
-                      </td>
-                      <td className="px-6 py-6">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${getStatusStyle(item.statut_paiement)}`}>
-                          {getStatusLabel(item.statut_paiement)}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="8" className="px-6 py-20 text-center">
-                      <div className="flex flex-col items-center max-w-xs mx-auto">
-                        <div className="p-4 bg-slate-50 rounded-3xl mb-4">
-                          <BanknotesIcon className="w-10 h-10 text-slate-300" />
-                        </div>
-                        <h4 className="text-lg font-bold text-slate-900 mb-1">Aucune transaction</h4>
-                        <p className="text-sm text-slate-500 font-medium leading-relaxed">
-                          Il n'y a pas encore de données comptables sur cette période.
-                        </p>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Mobile View - Cards Layout (Hidden on Desktop) */}
-        <div className="lg:hidden space-y-4">
-          {filteredData.map((item) => (
-            <div key={item.id} className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-              <div className="flex justify-between items-start">
-                <div className="flex flex-col">
-                  <span className="text-sm font-black text-slate-900">{item.reference}</span>
-                  <span className="text-[10px] font-bold text-slate-400">{formatDate(item.created_at)}</span>
-                </div>
-                <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest border ${getStatusStyle(item.statut_paiement)}`}>
-                  {getStatusLabel(item.statut_paiement)}
-                </span>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-50">
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Client</p>
-                  <p className="text-sm font-black text-slate-900">
-                    {new Intl.NumberFormat('fr-FR').format(item.accounting_details?.total_client_due || 0)} <span className="text-[10px]">CFA</span>
-                  </p>
-                </div>
-                <div className="space-y-1 text-right">
-                  <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Ma Part</p>
-                  <p className="text-sm font-black text-blue-600">
-                    {new Intl.NumberFormat('fr-FR').format(item.accounting_details?.agence || 0)} <span className="text-[10px]">CFA</span>
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))}
+          
+          <button
+            onClick={() => loadAccounting({ date_debut: dateDebut, date_fin: dateFin }, true)}
+            disabled={status === 'loading'}
+            className="inline-flex items-center justify-center w-9 h-9 bg-white border border-slate-200 text-slate-500 rounded-lg hover:bg-slate-50 hover:text-slate-900 transition-colors disabled:opacity-50"
+          >
+            <ArrowPathIcon className={`w-4 h-4 ${status === 'loading' ? 'animate-spin' : ''}`} />
+          </button>
         </div>
       </div>
-    </DashboardLayout>
+
+      {/* KPI Cards Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: "Total Client", value: summary.total_client_due, sub: "Chiffre d'affaires brut" },
+          { label: "Part Agence", value: summary.total_agence, sub: "Revenu net agence", highlight: true },
+          { label: "Part Backoffice", value: summary.total_backoffice, sub: "Commissions système" },
+          { label: "Part Livreurs", value: summary.total_livreur, sub: "Prestations logistiques" }
+        ].map((kpi, idx) => (
+          <div key={idx} className="bg-white p-5 rounded-lg border border-slate-200 transition-all">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+              {kpi.label}
+            </p>
+            <div className="flex items-baseline gap-1">
+              <span className="text-xl font-bold text-slate-900 tabular-nums">
+                {formatCurrency(kpi.value)}
+              </span>
+              <span className="text-[10px] font-bold text-slate-400">FCFA</span>
+            </div>
+            {kpi.sub && <p className="text-[10px] text-slate-500 mt-1 font-medium">{kpi.sub}</p>}
+          </div>
+        ))}
+      </div>
+
+      {/* Table Controls */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-2">
+        <div className="relative w-full sm:w-80">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <MagnifyingGlassIcon className="h-4 w-4 text-slate-400" />
+          </div>
+          <input
+            type="text"
+            className="block w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all"
+            placeholder="Référence, expéditeur..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+
+        <div className="relative w-full sm:w-48">
+          <select
+            className="block w-full pl-3 pr-10 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 appearance-none cursor-pointer"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="">Tous les statuts</option>
+            <option value="paye">Payé</option>
+            <option value="en_attente">En attente</option>
+          </select>
+          <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+            <FunnelIcon className="h-3.5 w-3.5 text-slate-400" />
+          </div>
+        </div>
+      </div>
+
+      {/* Table Section */}
+      <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-slate-200 text-left">
+            <thead className="bg-slate-50">
+              <tr>
+                <th scope="col" className="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-normal">Expédition</th>
+                <th scope="col" className="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-normal">Date</th>
+                <th scope="col" className="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-normal">Destination</th>
+                <th scope="col" className="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-normal text-right">CA Client</th>
+                <th scope="col" className="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-normal text-right">Système</th>
+                <th scope="col" className="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-normal text-right">Part Agence</th>
+                <th scope="col" className="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-normal text-right">Livreur</th>
+                <th scope="col" className="px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-normal text-center">Paiement</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200 bg-white">
+              {status === 'loading' && filteredData.length === 0 ? (
+                Array(5).fill(0).map((_, i) => (
+                  <tr key={i}>
+                    {Array(8).fill(0).map((_, j) => (
+                      <td key={j} className="px-5 py-4 whitespace-nowrap">
+                        <div className="h-4 bg-slate-100 rounded w-full animate-pulse opacity-50"></div>
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              ) : filteredData.length > 0 ? (
+                filteredData.map((item) => (
+                  <tr 
+                    key={item.id} 
+                    className="hover:bg-slate-50 transition-colors cursor-pointer group"
+                    onClick={() => handleRowClick(item)}
+                  >
+                    <td className="px-5 py-3">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-semibold text-slate-900 leading-tight">
+                          {item.reference}
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-medium">
+                          {item.expediteur?.nom_prenom || "n/a"}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-3 text-sm text-slate-600 font-medium whitespace-nowrap">
+                      {formatDate(item.created_at)}
+                    </td>
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+                        <span className="text-slate-400">{item.pays_depart}</span>
+                        <ChevronRightIcon className="w-3 h-3 text-slate-300" />
+                        <span className="text-blue-600">{item.pays_destination}</span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-3 text-sm text-slate-900 font-mono text-right">
+                      {formatCurrency(item.accounting_details?.total_client_due)}
+                    </td>
+                    <td className="px-5 py-3 text-sm text-slate-500 font-mono text-right">
+                      {formatCurrency(item.accounting_details?.backoffice)}
+                    </td>
+                    <td className="px-5 py-3 text-sm text-blue-600 font-bold font-mono text-right">
+                      {formatCurrency(item.accounting_details?.agence)}
+                    </td>
+                    <td className="px-5 py-3 text-sm text-slate-400 font-mono text-right">
+                      {formatCurrency(item.accounting_details?.livreur)}
+                    </td>
+                    <td className="px-5 py-3 text-center">
+                      <span className={`text-[11px] font-bold ${getStatusStyle(item.statut_paiement)}`}>
+                        {getStatusLabel(item.statut_paiement)}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="8" className="px-5 py-12 text-center">
+                    <div className="flex flex-col items-center">
+                      <div className="p-3 bg-slate-50 rounded-lg mb-3">
+                        <BanknotesIcon className="w-6 h-6 text-slate-300" />
+                      </div>
+                      <p className="text-sm font-medium text-slate-500">Aucune expédition trouvée.</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Accounting Details Modal */}
+      {isModalOpen && selectedExpedition && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40">
+          <div 
+            className="w-full max-w-2xl bg-white rounded-lg shadow-xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Détails Financiers</h3>
+                <p className="text-xs text-slate-500 font-medium">
+                  Réf: {selectedExpedition.reference} — {formatDate(selectedExpedition.created_at)}
+                </p>
+              </div>
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-colors"
+              >
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              
+              {/* Summary Section */}
+              <div className="bg-slate-50 p-6 rounded-lg border border-slate-200">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-normal mb-1">Chiffre d'affaires brut</p>
+                    <p className="text-2xl font-bold text-slate-900 tabular-nums">
+                      {formatCurrency(selectedExpedition.accounting_details?.total_client_due)} <span className="text-xs text-slate-400">FCFA</span>
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-normal mb-1">Statut Paiement</p>
+                    <span className={`text-xs font-bold ${getStatusStyle(selectedExpedition.statut_paiement)}`}>
+                      {getStatusLabel(selectedExpedition.statut_paiement)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Grid 2 Columns */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Section Frais */}
+                <div className="space-y-3">
+                  <h4 className="text-[11px] font-bold text-slate-900 uppercase tracking-normal border-b border-slate-100 pb-2 flex items-center gap-2">
+                    <InformationCircleIcon className="w-3.5 h-3.5 text-slate-400" />
+                    Détail des Frais
+                  </h4>
+                  <div className="space-y-2">
+                    {[
+                      { label: "Montant de base", val: selectedExpedition.montant_base },
+                      { label: "Frais Enlèvement", val: selectedExpedition.frais_enlevement_domicile },
+                      { label: "Frais Livraison", val: selectedExpedition.frais_livraison_domicile },
+                      { label: "Frais Emballage", val: selectedExpedition.frais_emballage },
+                      { label: "Autres Frais", val: selectedExpedition.frais_annexes }
+                    ].filter(f => parseFloat(f.val || 0) > 0).map((f, i) => (
+                      <div key={i} className="flex justify-between text-xs py-1">
+                        <span className="text-slate-500 font-medium">{f.label}</span>
+                        <span className="text-slate-900 font-mono">{formatCurrency(f.val)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Section Commissions */}
+                <div className="space-y-3">
+                  <h4 className="text-[11px] font-bold text-slate-900 uppercase tracking-normal border-b border-slate-100 pb-2 flex items-center gap-2">
+                    <ReceiptPercentIcon className="w-3.5 h-3.5 text-blue-500" />
+                    Répartition Revenus
+                  </h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs py-1 border-b border-dashed border-slate-100">
+                      <span className="text-blue-600 font-bold">Ma Part (Agence)</span>
+                      <span className="text-blue-600 font-bold font-mono">{formatCurrency(selectedExpedition.accounting_details?.agence)}</span>
+                    </div>
+                    <div className="flex justify-between text-xs py-1">
+                      <span className="text-slate-600 font-medium">Commissions Système</span>
+                      <span className="text-slate-900 font-mono">{formatCurrency(selectedExpedition.accounting_details?.backoffice)}</span>
+                    </div>
+                    <div className="flex justify-between text-xs py-1">
+                      <span className="text-slate-600 font-medium">Prestations Livreurs</span>
+                      <span className="text-slate-900 font-mono">{formatCurrency(selectedExpedition.accounting_details?.livreur)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Contacts info */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100">
+                <div className="space-y-2">
+                   <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase">
+                     <UserIcon className="w-3 h-3" /> Expéditeur
+                   </div>
+                   <p className="text-sm font-bold text-slate-800 leading-tight">{selectedExpedition.expediteur?.nom_prenom}</p>
+                   <p className="text-xs text-slate-500">{selectedExpedition.expediteur?.telephone || "Sans téléphone"}</p>
+                </div>
+                <div className="space-y-2">
+                   <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase">
+                     <MapPinIcon className="w-3 h-3" /> Destinataire
+                   </div>
+                   <p className="text-sm font-bold text-slate-800 leading-tight">{selectedExpedition.destinataire?.nom_prenom}</p>
+                   <p className="text-xs text-slate-500">{selectedExpedition.destinataire?.ville}, {selectedExpedition.pays_destination}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="px-4 py-2 bg-slate-900 text-white rounded-md text-xs font-bold uppercase tracking-wider hover:bg-slate-800 transition-colors shadow-sm"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

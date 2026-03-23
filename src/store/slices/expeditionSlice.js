@@ -245,9 +245,9 @@ export const initiateRecupColis = createAsyncThunk(
 // Vérifier le retrait client
 export const verifyRecupColis = createAsyncThunk(
     "expedition/verifyRecup",
-    async ({ codes, otp }, { rejectWithValue }) => {
+    async ({ codes, otp, statut_paiement }, { rejectWithValue }) => {
         try {
-            const result = await expeditionsApi.verifyRecupColis(codes, otp);
+            const result = await expeditionsApi.verifyRecupColis(codes, otp, statut_paiement);
             if (!result.success) {
                 return rejectWithValue(result.message);
             }

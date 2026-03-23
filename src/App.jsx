@@ -32,6 +32,7 @@ import ReceptionColis from "./pages/ReceptionColis";
 import ColisAReceptionner from "./pages/ColisAReceptionner";
 import RetraitColis from "./pages/RetraitColis";
 import ToastManager from "./components/ToastManager";
+import DashboardLayout from "./components/DashboardLayout";
 
 // Composant pour gérer la redirection automatique
 const AutoRedirect = ({ children }) => {
@@ -132,120 +133,22 @@ function AppContent() {
         />
 
         {/* Routes protégées */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/tarifs-simples"
-          element={
-            <ProtectedRoute>
-              <TarifsSimples />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/tarifs-groupage"
-          element={
-            <ProtectedRoute>
-              <TarifsGroupes />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/agency-profile"
-          element={
-            <ProtectedRoute>
-              <AgencyProfile />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/comptabilite"
-          element={
-            <ProtectedRoute>
-              <Comptabilite />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/agents"
-          element={
-            <ProtectedRoute>
-              <Agents />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/expeditions"
-          element={
-            <ProtectedRoute>
-              <Expeditions />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/demandes"
-          element={
-            <ProtectedRoute>
-              <Demandes />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/colis"
-          element={
-            <ProtectedRoute>
-              <Colis />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/reception-colis"
-          element={
-            <ProtectedRoute>
-              <ReceptionColis />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/colis-a-receptionner"
-          element={
-            <ProtectedRoute>
-              <ColisAReceptionner />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/expeditions/:id"
-          element={
-            <ProtectedRoute>
-              <ExpeditionDetails />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/create-expedition"
-          element={
-            <ProtectedRoute>
-              <CreateExpedition />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/retrait-colis"
-          element={
-            <ProtectedRoute>
-              <RetraitColis />
-            </ProtectedRoute>
-          }
-        />
+        <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/tarifs-simples" element={<TarifsSimples />} />
+          <Route path="/tarifs-groupage" element={<TarifsGroupes />} />
+          <Route path="/agency-profile" element={<AgencyProfile />} />
+          <Route path="/comptabilite" element={<Comptabilite />} />
+          <Route path="/agents" element={<Agents />} />
+          <Route path="/expeditions" element={<Expeditions />} />
+          <Route path="/demandes" element={<Demandes />} />
+          <Route path="/colis" element={<Colis />} />
+          <Route path="/reception-colis" element={<ReceptionColis />} />
+          <Route path="/colis-a-receptionner" element={<ColisAReceptionner />} />
+          <Route path="/expeditions/:id" element={<ExpeditionDetails />} />
+          <Route path="/create-expedition" element={<CreateExpedition />} />
+          <Route path="/retrait-colis" element={<RetraitColis />} />
+        </Route>
         {/* Route par défaut */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
