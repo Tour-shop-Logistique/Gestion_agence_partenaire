@@ -150,6 +150,22 @@ export const toggleUserStatus = createAsyncThunk(
   }
 );
 
+// Lister les transactions
+export const fetchTransactions = createAsyncThunk(
+  'agency/fetchTransactions',
+  async (params, { rejectWithValue }) => {
+    try {
+      const result = await agenciesApi.listTransactions(params);
+      if (!result.success) {
+        return rejectWithValue(result.message);
+      }
+      return result; // return full result with data and summary
+    } catch (error) {
+      return rejectWithValue(error.message || 'Erreur lors de la récupération des transactions');
+    }
+  }
+);
+
 const getInitialAgency = () => {
   try {
     const data = localStorage.getItem('agencyData');
@@ -166,6 +182,10 @@ const initialState = {
   usersStatus: 'idle',
   error: null,
   usersError: null,
+  transactions: [],
+  transactionsSummary: null,
+  transactionsStatus: 'idle',
+  transactionsError: null,
 };
 
 const agencySlice = createSlice({
@@ -317,6 +337,21 @@ const agencySlice = createSlice({
       .addCase(toggleUserStatus.rejected, (state, action) => {
         state.usersStatus = 'failed';
         state.usersError = action.payload;
+      })
+
+      // Fetch Transactions
+      .addCase(fetchTransactions.pending, (state) => {
+        state.transactionsStatus = 'loading';
+        state.transactionsError = null;
+      })
+      .addCase(fetchTransactions.fulfilled, (state, action) => {
+        state.transactionsStatus = 'succeeded';
+        state.transactions = action.payload.data || [];
+        state.transactionsSummary = action.payload.summary;
+      })
+      .addCase(fetchTransactions.rejected, (state, action) => {
+        state.transactionsStatus = 'failed';
+        state.transactionsError = action.payload;
       });
   },
 });
@@ -330,6 +365,10 @@ export const selectAgencyError = (state) => state.agency.error;
 export const selectAgencyUsers = (state) => state.agency.users;
 export const selectUsersStatus = (state) => state.agency.usersStatus;
 export const selectUsersError = (state) => state.agency.usersError;
+export const selectTransactions = (state) => state.agency.transactions;
+export const selectTransactionsSummary = (state) => state.agency.transactionsSummary;
+export const selectTransactionsStatus = (state) => state.agency.transactionsStatus;
+export const selectTransactionsError = (state) => state.agency.transactionsError;
 
 export default agencySlice.reducer;
 

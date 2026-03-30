@@ -19,7 +19,8 @@ import {
     receiveColisDestination as receiveColisDestinationThunk,
     sendColisToEntrepot as sendColisToEntrepotThunk,
     initiateRecupColis as initiateRecupColisThunk,
-    verifyRecupColis as verifyRecupColisThunk
+    verifyRecupColis as verifyRecupColisThunk,
+    recordTransaction as recordTransactionThunk
 } from "../store/slices/expeditionSlice";
 import { fetchProducts, fetchCategories } from "../store/slices/productSlice";
 
@@ -181,6 +182,7 @@ export const useExpedition = () => {
         sendColisToEntrepot: useCallback((codes) => dispatch(sendColisToEntrepotThunk(codes)), [dispatch]),
         initiateRecupColis: useCallback((codes) => dispatch(initiateRecupColisThunk(codes)), [dispatch]),
         verifyRecupColis: useCallback((data) => dispatch(verifyRecupColisThunk(data)), [dispatch]),
+        recordTransaction: useCallback((data) => dispatch(recordTransactionThunk(data)), [dispatch]),
         resetStatus: useCallback(() => dispatch(clearExpeditionStatus()), [dispatch]),
     };
 };

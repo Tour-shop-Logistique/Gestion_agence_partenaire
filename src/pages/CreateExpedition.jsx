@@ -28,7 +28,8 @@ const CreateExpedition = () => {
         resetStatus,
         cleanSimulation,
         clearCurrentExpedition,
-        currentExpedition
+        currentExpedition,
+        recordTransaction
     } = useExpedition();
 
     const { existingGroupageTarifs, fetchTarifGroupageAgence } = useTarifs();
@@ -36,6 +37,8 @@ const CreateExpedition = () => {
 
     // État pour la navigation interne (1: Config & Colis, 2: Contacts & Finalize)
     const [step, setStep] = useState(1);
+    const [paymentMethod, setPaymentMethod] = useState("cash");
+    const [paymentReference, setPaymentReference] = useState("");
 
     const [formData, setFormData] = useState({
         type_expedition: "SIMPLE",
@@ -292,7 +295,23 @@ const CreateExpedition = () => {
         };
 
         console.log("creation Payload (Clean):", payload);
-        createExpedition(payload);
+        const result = await createExpedition(payload);
+
+        // Retrieve ID from result data and trigger transaction if not credit
+        if (result?.payload?.success && !formData.is_paiement_credit) {
+            // result.payload.data usually contains the created expedition
+            const expData = result.payload.data;
+            const amount = parseFloat(simulationTarif?.montant_expedition || simulationResult?.total_price || simulationResult?.amount || 0) + totalEmballage;
+            
+            await recordTransaction({
+                expedition_id: expData.id,
+                amount: amount,
+                payment_method: paymentMethod,
+                payment_object: "montant_expedition",
+                type: "encaissement",
+                reference: paymentMethod === 'mobile_money' ? paymentReference : null
+            });
+        }
     };
 
     const totalWeight = formData.colis.reduce((sum, c) => sum + (parseFloat(c.poids) || 0), 0);
@@ -793,11 +812,44 @@ const CreateExpedition = () => {
                                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Montant à régler</p>
                                                 <div className="flex items-baseline gap-2">
                                                     <span className="text-2xl font-mono font-bold">
-                                                        {(parseFloat(simulationTarif?.montant_expedition || 0) + totalEmballage).toLocaleString()}
+                                                        {(parseFloat(simulationTarif?.montant_expedition || simulationResult?.total_price || simulationResult?.amount || 0) + totalEmballage).toLocaleString()}
                                                     </span>
                                                     <span className="text-[10px] font-sans text-slate-400 font-bold">CFA</span>
                                                 </div>
                                             </div>
+
+                                            {!formData.is_paiement_credit && (
+                                                <div className="mb-6 space-y-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                                                    <div className="space-y-2">
+                                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Mode de règlement immédiat</label>
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            {['cash', 'mobile_money'].map(m => (
+                                                                <button
+                                                                    key={m}
+                                                                    type="button"
+                                                                    onClick={() => setPaymentMethod(m)}
+                                                                    className={`py-2 text-[10px] font-bold uppercase rounded border transition-all ${paymentMethod === m ? 'bg-slate-800 text-white border-slate-800 shadow-md' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}
+                                                                >
+                                                                    {m === 'cash' ? 'Espèces' : 'Mobile Money'}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+
+                                                    {paymentMethod === 'mobile_money' && (
+                                                        <div className="space-y-2 animate-in fade-in duration-200">
+                                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Référence Transaction</label>
+                                                            <input 
+                                                                type="text"
+                                                                value={paymentReference}
+                                                                onChange={(e) => setPaymentReference(e.target.value)}
+                                                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-slate-400"
+                                                                placeholder="Ex: OM-123456789"
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
 
                                             <button
                                                 onClick={handleSubmit}

@@ -71,14 +71,54 @@ const ExpeditionDetails = () => {
     const [isRefuseModalOpen, setIsRefuseModalOpen] = React.useState(false);
     const [isAcceptModalOpen, setIsAcceptModalOpen] = React.useState(false);
     const [isConfirmReceptionModalOpen, setIsConfirmReceptionModalOpen] = React.useState(false);
+    const [isTransactionModalOpen, setIsTransactionModalOpen] = React.useState(false);
+    const [transactionType, setTransactionType] = React.useState(null);
+    const [paymentMethod, setPaymentMethod] = React.useState('cash');
+    const [paymentReference, setPaymentReference] = React.useState("");
     const [isProcessing, setIsProcessing] = React.useState(false);
     const [motifRefus, setMotifRefus] = React.useState("");
+
+    const { recordTransaction } = useExpedition();
 
     useEffect(() => {
         if (id) {
             getExpeditionDetails(id);
         }
     }, [id, getExpeditionDetails]);
+
+    const handleRecordTransaction = (type) => {
+        setTransactionType(type);
+        setPaymentReference("");
+        setIsTransactionModalOpen(true);
+    };
+
+    const confirmTransaction = async () => {
+        setIsProcessing(true);
+        try {
+            const amount = transactionType === 'frais_annexes' 
+                ? expedition.frais_annexes 
+                : expedition.montant_expedition;
+
+            const result = await recordTransaction({
+                expedition_id: expedition.id,
+                amount: amount,
+                payment_method: paymentMethod,
+                reference: paymentMethod === 'mobile_money' ? paymentReference : null,
+                payment_object: transactionType,
+                type: "encaissement"
+            });
+
+            if (result.payload?.success || !result.error) {
+                toast.success("Transaction enregistrée avec succès");
+                getExpeditionDetails(expedition.id);
+                setIsTransactionModalOpen(false);
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setIsProcessing(false);
+        }
+    };
 
     useEffect(() => {
         if (message) {
@@ -227,6 +267,19 @@ const ExpeditionDetails = () => {
                         <p className="text-xs sm:text-sm font-bold text-indigo-700 truncate">{formatCurrency(expedition.montant_expedition)}</p>
                     </div>
                 </div>
+
+                {/* --- WORKFLOW BLOCKAGE ALERT --- */}
+                {parseFloat(expedition.frais_annexes || 0) > 0 && expedition.statut_paiement_frais === 'en_attente' && (
+                    <div className="bg-amber-600 px-6 py-3 flex items-center justify-between text-white animate-pulse">
+                        <div className="flex items-center gap-3">
+                            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                            <div className="text-xs font-bold uppercase tracking-widest">
+                                Expédition bloquée au HUB : Frais annexes impayés ({formatCurrency(expedition.frais_annexes)})
+                            </div>
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-tighter bg-white/20 px-2 py-0.5 rounded leading-none">Blocage Sécurisé</span>
+                    </div>
+                )}
             </div>
 
             <div className="grid grid-cols-12 gap-6">
@@ -249,18 +302,21 @@ const ExpeditionDetails = () => {
                                     const steps = [
                                         { label: 'Enregistrement dossier', date: expedition.created_at, done: true },
                                         { label: 'Traitement Agence Départ', date: null, done: !['en_attente', 'refused'].includes(s) },
-                                        { label: 'Transport International', date: null, done: ['depart_expedition_succes', 'arrivee_expedition_succes', 'recu_agence_destination', 'en_cours_livraison', 'termined'].includes(s) },
+                                        { label: 'Contrôle & HUB (Backoffice)', date: null, done: s === 'depart_expedition_succes' || ['arrivee_expedition_succes', 'recu_agence_destination', 'en_cours_livraison', 'termined'].includes(s), blocked: parseFloat(expedition.frais_annexes || 0) > 0 && expedition.statut_paiement_frais === 'en_attente' },
                                         { label: 'Arrivée Agence Destination', date: null, done: ['arrivee_expedition_succes', 'recu_agence_destination', 'en_cours_livraison', 'termined'].includes(s) },
                                         { label: 'Livraison Finale', date: null, done: ['termined', 'delivered'].includes(s) }
                                     ];
 
                                     return steps.map((step, i) => (
                                         <div key={i} className="flex gap-6 pb-8 last:pb-0 relative">
-                                            <div className={`w-3.5 h-3.5 rounded-full border-2 z-10 bg-white ${step.done ? 'border-indigo-600' : 'border-slate-200'}`}>
-                                                {step.done && <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full m-auto mt-[1px]"></div>}
+                                            <div className={`w-3.5 h-3.5 rounded-full border-2 z-10 bg-white ${step.blocked ? 'border-amber-500 bg-amber-500 animate-pulse' : (step.done ? 'border-indigo-600' : 'border-slate-200')}`}>
+                                                {step.done && !step.blocked && <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full m-auto mt-[1px]"></div>}
                                             </div>
                                             <div className="flex-1 -mt-1">
-                                                <p className={`text-xs font-bold uppercase tracking-tight ${step.done ? 'text-slate-900' : 'text-slate-400'}`}>{step.label}</p>
+                                                <div className="flex items-center gap-2">
+                                                    <p className={`text-xs font-bold uppercase tracking-tight ${step.blocked ? 'text-amber-600' : (step.done ? 'text-slate-900' : 'text-slate-400')}`}>{step.label}</p>
+                                                    {step.blocked && <span className="px-1.5 py-0.5 rounded bg-amber-100 text-[8px] font-black text-amber-700 uppercase leading-none">Action Requise</span>}
+                                                </div>
                                                 {step.date && <p className="text-[10px] text-slate-500 font-medium mt-0.5">{formatDate(step.date)}</p>}
                                             </div>
                                         </div>
@@ -383,23 +439,22 @@ const ExpeditionDetails = () => {
 
                     {/* 2. FINANCE: STYLE FACTURATION */}
                     <div className="bg-white border border-slate-200 shadow-sm rounded-2xl lg:rounded-none overflow-hidden sm:overflow-visible text-right">
-                         <div className="px-4 sm:px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                         <div className="px-4 sm:px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
                              <h2 className="text-[10px] font-bold text-slate-800 uppercase tracking-widest">Résumé Financier</h2>
+                             {expedition.is_paiement_credit && (
+                                 <span className="px-2 py-0.5 bg-rose-50 border border-rose-200 text-rose-700 text-[8px] font-black uppercase rounded tracking-widest">Paiement Crédit</span>
+                             )}
                          </div>
                          <div className="p-4 sm:p-6 space-y-4">
                              <div className="space-y-2 text-[11px] font-medium">
                                  <div className="flex justify-between text-slate-500">
-                                     <span>Frais de transport</span>
-                                     <span className="font-bold">{formatCurrency(expedition.montant_base)}</span>
+                                     <span>Frais de transport principal</span>
+                                     <span className="font-bold">{formatCurrency(expedition.montant_expedition)}</span>
                                  </div>
-                                 <div className="flex justify-between text-slate-500">
-                                     <span>Frais d'emballage</span>
-                                     <span className="font-bold">{formatCurrency(expedition.frais_emballage)}</span>
-                                 </div>
-                                 {parseFloat(expedition.montant_prestation) > 0 && (
-                                     <div className="flex justify-between text-emerald-600">
-                                         <span>Frais de service (Agence)</span>
-                                         <span className="font-black">+{formatCurrency(expedition.montant_prestation)}</span>
+                                 {parseFloat(expedition.frais_annexes || 0) > 0 && (
+                                     <div className="flex justify-between text-rose-500 font-bold">
+                                         <span>Frais annexes (Backoffice)</span>
+                                         <span>+{formatCurrency(expedition.frais_annexes)}</span>
                                      </div>
                                  )}
                              </div>
@@ -407,25 +462,53 @@ const ExpeditionDetails = () => {
                              <div className="h-px bg-slate-100"></div>
 
                              <div className="flex flex-col items-end pt-2">
-                                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Montant Net à Payer</span>
+                                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total à encaisser</span>
                                  <div className="flex flex-col items-end gap-0.5">
-                                     <div className="flex items-baseline gap-1 text-indigo-700">
-                                         <span className="text-2xl font-black tracking-tight">{new Intl.NumberFormat('fr-FR').format(expedition.montant_expedition)}</span>
+                                     <div className="flex items-baseline gap-1 text-slate-900">
+                                         <span className="text-2xl font-black tracking-tight">
+                                            {new Intl.NumberFormat('fr-FR').format(
+                                                parseFloat(expedition.montant_expedition || 0) + parseFloat(expedition.frais_annexes || 0)
+                                            )}
+                                         </span>
                                          <span className="text-[10px] font-bold uppercase">CFA</span>
                                      </div>
-                                     <span className="text-[10px] font-bold text-slate-400 italic">
-                                         ≈ {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(expedition.montant_expedition / 655.957)}
-                                     </span>
                                  </div>
                              </div>
 
-                             <div className="pt-2">
-                                 <div className={`flex items-center justify-center gap-2 py-3 border rounded-xl ${expedition.statut_paiement === 'paye' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-amber-50 border-amber-100 text-amber-700'}`}>
-                                     <CreditCard className="w-4 h-4" />
-                                     <span className="text-[10px] font-black uppercase tracking-widest">
-                                         Paiement : {expedition.statut_paiement === 'paye' ? 'Effectué' : 'En attente'}
-                                     </span>
+                             <div className="space-y-3 pt-4">
+                                 {/* Statut Paiement Expédition */}
+                                 <div className="flex flex-col gap-1.5 text-left">
+                                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-1">Paiement Expédition</span>
+                                     <div className={`flex items-center justify-between px-3 py-2 border rounded-xl ${expedition.statut_paiement_expedition === 'paye' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-amber-50 border-amber-100 text-amber-700'}`}>
+                                         <span className="text-[10px] font-black uppercase tracking-widest">
+                                             {expedition.statut_paiement_expedition === 'paye' ? 'Effectué' : 'En attente'}
+                                         </span>
+                                         {expedition.statut_paiement_expedition !== 'paye' && !expedition.is_paiement_credit && (
+                                              <button 
+                                                onClick={() => handleRecordTransaction('montant_expedition')}
+                                                className="px-2 py-0.5 bg-amber-600 text-white text-[8px] font-black uppercase rounded shadow-sm hover:bg-amber-700"
+                                              > Régler </button>
+                                         )}
+                                     </div>
                                  </div>
+
+                                 {/* Statut Paiement Frais Annexes */}
+                                 {parseFloat(expedition.frais_annexes || 0) > 0 && (
+                                    <div className="flex flex-col gap-1.5 text-left">
+                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-1">Frais Annexes / Douane</span>
+                                        <div className={`flex items-center justify-between px-3 py-2 border rounded-xl ${expedition.statut_paiement_frais === 'paye' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-amber-50 border-amber-100 text-amber-700'}`}>
+                                            <span className="text-[10px] font-black uppercase tracking-widest">
+                                                {expedition.statut_paiement_frais === 'paye' ? 'Réglé' : 'En attente'}
+                                            </span>
+                                            {expedition.statut_paiement_frais !== 'paye' && (
+                                                 <button 
+                                                    onClick={() => handleRecordTransaction('frais_annexes')}
+                                                    className="px-2 py-0.5 bg-indigo-600 text-white text-[8px] font-black uppercase rounded shadow-sm hover:bg-indigo-700"
+                                                 > Régler </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                 )}
                              </div>
                          </div>
                          <div className="px-6 py-3 bg-slate-50/50 border-t border-slate-100 text-center">
@@ -551,6 +634,95 @@ const ExpeditionDetails = () => {
                 type="info"
                 isLoading={isProcessing}
             />
+
+<ConfirmationModal
+    isOpen={isTransactionModalOpen}
+    onClose={() => setIsTransactionModalOpen(false)}
+    onConfirm={confirmTransaction}
+    title="Enregistrer un encaissement"
+    message={`Confirmez-vous l'encaissement de ${formatCurrency(
+        transactionType === 'frais_annexes'
+            ? expedition.frais_annexes
+            : expedition.montant_expedition
+    )} au titre de : ${
+        transactionType === 'frais_annexes'
+            ? 'Frais annexes / HUB'
+            : 'Frais de transport'
+    } ?`}
+    confirmText="Confirmer"
+    type="success"
+    isLoading={isProcessing}
+>
+    <div className="space-y-5">
+
+        {/* Montant */}
+        <div className="border border-slate-200 rounded-lg px-4 py-3 bg-white">
+            <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-500 font-medium">
+                    Montant
+                </span>
+                <span className="text-base font-semibold text-slate-900">
+                    {formatCurrency(
+                        transactionType === 'frais_annexes'
+                            ? expedition.frais_annexes
+                            : expedition.montant_expedition
+                    )}
+                </span>
+            </div>
+        </div>
+
+        {/* Type */}
+        <div className="flex items-center justify-between text-xs text-slate-500">
+            <span>Type</span>
+            <span className="font-medium text-slate-700">
+                {transactionType === 'frais_annexes'
+                    ? 'Frais annexes / HUB'
+                    : 'Frais de transport'}
+            </span>
+        </div>
+
+        {/* Méthode paiement */}
+        <div className="space-y-1.5">
+            <label className="text-xs font-medium text-slate-600">
+                Méthode de paiement
+            </label>
+
+            <select
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+                className="w-full px-3 py-2.5 border border-slate-300 rounded-md text-sm bg-white
+                focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition"
+            >
+                <option value="cash">Espèces</option>
+                <option value="mobile_money">Mobile Money</option>
+            </select>
+        </div>
+
+        {/* Référence */}
+        {paymentMethod === 'mobile_money' && (
+            <div className="space-y-1.5">
+                <label className="text-xs font-medium text-slate-600">
+                    Référence transaction
+                </label>
+
+                <input
+                    type="text"
+                    value={paymentReference}
+                    onChange={(e) => setPaymentReference(e.target.value)}
+                    placeholder="Ex: OM-123456789"
+                    className="w-full px-3 py-2.5 border border-slate-300 rounded-md text-sm font-mono
+                    focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition"
+                />
+            </div>
+        )}
+
+        {/* Note */}
+        <div className="text-[11px] text-slate-500 border-t pt-3">
+            Vérifiez que le paiement a bien été reçu avant validation.
+        </div>
+
+    </div>
+</ConfirmationModal>
 
         </div>
     );

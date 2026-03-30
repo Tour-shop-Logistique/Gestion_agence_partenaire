@@ -1,362 +1,311 @@
-import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import React, { useEffect, useState, useMemo } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  PlusIcon,
-  ArrowUpRightIcon,
-  ArrowDownRightIcon,
-  CalendarIcon,
-  ArrowRightIcon,
-  AdjustmentsHorizontalIcon,
-  CubeIcon,
-  TruckIcon,
-  ShoppingBagIcon,
-  EyeIcon,
-  ClockIcon,
-  CheckCircleIcon
+    PlusIcon,
+    ArrowUpRightIcon,
+    ArrowDownRightIcon,
+    CalendarIcon,
+    AdjustmentsHorizontalIcon,
+    CubeIcon,
+    TruckIcon,
+    CheckCircleIcon,
+    ClockIcon,
+    CurrencyDollarIcon,
+    ArrowPathIcon,
+    MapPinIcon,
+    UserGroupIcon,
+    ArchiveBoxIcon,
+    QrCodeIcon,
+    ArrowRightIcon
 } from "@heroicons/react/24/outline";
 
-// Import du hook personnalisé pour l'authentification
 import { useAuth } from "../hooks/useAuth";
-// Import du hook personnalisé pour l'agence
 import { useAgency } from "../hooks/useAgency";
-import { getLogoUrl } from "../utils/apiConfig";
-// Import du hook pour les expéditions
 import { useExpedition } from "../hooks/useExpedition";
+import { getLogoUrl } from "../utils/apiConfig";
+import { formatPriceDual } from "../utils/format";
 
 const Dashboard = () => {
-  const { currentUser, isAdmin } = useAuth();
-  const { data: agencyData } = useAgency();
-  const { expeditions, loadExpeditions, status: expeditionStatus } = useExpedition();
+    const navigate = useNavigate();
+    const { currentUser } = useAuth();
+    const { data: agencyData, fetchAgencyData } = useAgency();
+    const { expeditions, meta, loadExpeditions, status: expeditionStatus } = useExpedition();
 
-  const [startDate] = useState(() => {
-    const date = new Date();
-    date.setDate(1);
-    return date.toISOString().split('T')[0];
-  });
+    // Helper helpers
+    const getTodayDate = () => new Date().toISOString().split('T')[0];
+    const getFirstDayOfMonth = () => {
+        const now = new Date();
+        return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    };
 
-  const [endDate] = useState(() => {
-    return new Date().toISOString().split('T')[0];
-  });
-
-  useEffect(() => {
-    loadExpeditions({
-      date_debut: startDate,
-      date_fin: endDate
+    // -- Dates Configuration --
+    const [dateDebut] = useState(() => {
+        const saved = sessionStorage.getItem('expeditions_date_debut');
+        return saved || getFirstDayOfMonth();
     });
-  }, [loadExpeditions, startDate, endDate]);
+    const [dateFin] = useState(() => {
+        const saved = sessionStorage.getItem('expeditions_date_fin');
+        return saved || getTodayDate();
+    });
 
-  const formatDateDisplay = (dateString) => {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
-  };
+    useEffect(() => {
+        loadExpeditions({
+            date_debut: dateDebut,
+            date_fin: dateFin,
+            per_page: 50 
+        });
+        fetchAgencyData();
+    }, [loadExpeditions, fetchAgencyData, dateDebut, dateFin]);
 
-  const expeditionsList = Array.isArray(expeditions) ? expeditions : [];
+    const expeditionsList = useMemo(() => Array.isArray(expeditions) ? expeditions : [], [expeditions]);
 
-  const statsData = {
-    total: expeditionsList.length,
-    newRequests: expeditionsList.filter(e => e.statut_expedition === 'accepted' || e.statut_expedition === 'pending').length,
-    inTransit: expeditionsList.filter(e => e.statut_expedition === 'in_transit').length,
-    delivered: expeditionsList.filter(e => e.statut_expedition === 'delivered').length,
-  };
+    // -- Advanced Stats Calculation --
+    const stats = useMemo(() => {
+        const totals = {
+            count: expeditionsList.length,
+            commissions: 0,
+            toReceive: 0, 
+            toDeliver: 0, 
+            pendingPayment: 0
+        };
 
-  const stats = [
-    {
-      title: isAdmin ? "Demandes" : "Mes Expéditions",
-      value: isAdmin ? statsData.newRequests : statsData.total,
-      trend: "+12%",
-      isUp: true,
-      icon: isAdmin ? <ShoppingBagIcon /> : <CubeIcon />,
-      color: "text-blue-600",
-      bg: "bg-blue-50",
-      border: "border-blue-100"
-    },
-    {
-      title: isAdmin ? "Total Cargo" : "En Transit",
-      value: isAdmin ? statsData.total : statsData.inTransit,
-      trend: "+5%",
-      isUp: true,
-      icon: isAdmin ? <CubeIcon /> : <TruckIcon />,
-      color: "text-slate-600",
-      bg: "bg-slate-50",
-      border: "border-slate-200"
-    },
-    {
-      title: "Revenu",
-      value: "2.4M",
-      trend: "+8%",
-      isUp: true,
-      icon: <ArrowUpRightIcon />,
-      color: "text-emerald-600",
-      bg: "bg-emerald-50",
-      border: "border-emerald-100"
-    },
-    {
-      title: "Volume",
-      value: "84%",
-      trend: "-2%",
-      isUp: false,
-      icon: <AdjustmentsHorizontalIcon />,
-      color: "text-slate-500",
-      bg: "bg-slate-50",
-      border: "border-slate-200"
+        expeditionsList.forEach(exp => {
+            if (exp.commission_details) {
+                const c = exp.commission_details;
+                totals.commissions += (c.enlevement?.agence || 0) + 
+                                     (c.livraison?.agence || 0) + 
+                                     (c.emballage?.agence || 0) + 
+                                     (c.retard?.agence || 0);
+            }
+            if (exp.statut_expedition === 'accepted') totals.toReceive++;
+            if (exp.statut_expedition === 'recu_agence_destination' || exp.statut_expedition === 'arrivee_expedition_succes') totals.toDeliver++;
+            if (exp.statut_paiement_expedition !== 'paye') totals.pendingPayment++;
+        });
+
+        return totals;
+    }, [expeditionsList]);
+
+    const displayName = currentUser?.name || 
+                       [currentUser?.nom, currentUser?.prenoms].filter(Boolean).join(" ") || 
+                       "Agent";
+
+    const isLoading = expeditionStatus === 'loading' && expeditionsList.length === 0;
+
+    if (isLoading) {
+        return (
+            <div className="flex flex-col gap-6 animate-pulse p-6">
+                <div className="h-20 w-full bg-slate-100 rounded-xl"></div>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    {[1, 2, 3, 4].map(i => <div key={i} className="h-32 bg-slate-100 rounded-xl"></div>)}
+                </div>
+                <div className="h-96 bg-slate-50 rounded-xl"></div>
+            </div>
+        );
     }
-  ];
-
-  const displayName = currentUser?.name ||
-    [currentUser?.nom, currentUser?.prenoms].filter(Boolean).join(" ") ||
-    "Utilisateur";
-
-  const isLoading = expeditionStatus === 'loading' && expeditionsList.length === 0;
-
-  if (isLoading) {
-    return (
-        <div className="animate-pulse space-y-6">
-          <div className="h-8 w-48 bg-slate-200 rounded"></div>
-          <div className="grid grid-cols-4 gap-4">
-            {[1, 2, 3, 4].map(i => <div key={i} className="h-24 bg-slate-100 rounded-xl"></div>)}
-          </div>
-        </div>
-    );
-  }
 
     return (
-      <div className="max-w-[1600px] mx-auto space-y-6 pb-12">
-        {/* --- COMPACT HEADER --- */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-2">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-white shadow-sm border border-slate-200 p-2 flex items-center justify-center overflow-hidden">
-              {agencyData?.agence?.logo ? (
-                <img
-                  src={getLogoUrl(agencyData.agence.logo)}
-                  alt="Logo"
-                  className="w-full h-full object-contain"
-                />
-              ) : (
-                <div className="w-full h-full bg-slate-900 rounded-lg flex items-center justify-center">
-                  <span className="text-xl font-bold text-white">{(agencyData?.agence?.nom_agence || "T")[0]}</span>
-                </div>
-              )}
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-                Bonjour, {displayName.split(' ')[0]} 👋
-              </h1>
-              <p className="text-sm text-slate-500 font-medium">
-                {agencyData?.agence?.nom_agence || "Tous Shop"}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <div className="hidden md:flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
-              <CalendarIcon className="w-4 h-4 text-slate-400" />
-              <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">{formatDateDisplay(startDate)}</span>
-              <span className="text-slate-300 mx-1">—</span>
-              <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">{formatDateDisplay(endDate)}</span>
-            </div>
-
-            <Link
-              to="/create-expedition"
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-blue-600 text-white rounded-lg font-bold shadow-sm hover:bg-blue-700 transition-all text-sm"
-            >
-              <PlusIcon className="w-4 h-4" />
-              Expédition
-            </Link>
-          </div>
-        </div>
-
-        {/* --- STATS GRID --- */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-          {stats.map((stat, index) => (
-            <div
-              key={index}
-              className="bg-white rounded-xl p-3 md:p-5 shadow-sm border border-slate-200 hover:border-slate-300 transition-all group"
-            >
-              <div className="flex justify-between items-start mb-2 md:mb-4">
-                <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg ${stat.bg} ${stat.border} flex items-center justify-center ${stat.color} shadow-sm`}>
-                  <div className="w-4 h-4 md:w-5 md:h-5">{stat.icon}</div>
-                </div>
-                <div className={`text-[9px] md:text-[10px] font-bold px-1.5 md:px-2 py-0.5 rounded-full ${stat.isUp ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
-                  {stat.trend}
-                </div>
-              </div>
-
-              <div className="space-y-0.5">
-                <p className="text-[10px] md:text-[11px] font-bold text-slate-400 uppercase tracking-wider truncate">{stat.title}</p>
-                <h3 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">{stat.value}</h3>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* --- CONTENT SECTION --- */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-          {/* Activity Donut (Simple) - Hidden on very small screens to save space, shown from sm up */}
-          <div className="hidden sm:flex bg-white rounded-xl p-6 shadow-sm border border-slate-200 flex-col items-center">
-            <div className="w-full flex items-center justify-between mb-8">
-              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-widest">Performance</h3>
-              <button className="text-slate-400 hover:text-slate-600">
-                <AdjustmentsHorizontalIcon className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="relative w-44 h-44 flex items-center justify-center">
-              <svg className="w-full h-full" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="44" fill="none" stroke="#f8fafc" strokeWidth="8" />
-                <motion.circle
-                  cx="50" cy="50" r="44"
-                  fill="none"
-                  stroke="#2563eb"
-                  strokeWidth="8"
-                  strokeDasharray="276"
-                  initial={{ strokeDashoffset: 276 }}
-                  animate={{ strokeDashoffset: 276 * 0.3 }}
-                  transition={{ duration: 1.2, ease: "easeOut" }}
-                  strokeLinecap="round"
-                  transform="rotate(-90 50 50)"
-                />
-              </svg>
-              <div className="absolute text-center">
-                <span className="text-4xl font-bold text-slate-900 tracking-tighter">70%</span>
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Succès</p>
-              </div>
-            </div>
-
-            <div className="mt-8 grid grid-cols-2 gap-6 w-full pt-6 border-t border-slate-50">
-              <div className="text-center">
-                <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Livrés</p>
-                <p className="text-base font-bold text-slate-900">82.4%</p>
-              </div>
-              <div className="text-center">
-                <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">En cours</p>
-                <p className="text-base font-bold text-slate-900">17.6%</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Recent Table / Cards on mobile */}
-          <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/30">
-              <div>
-                <h3 className="text-sm font-bold text-slate-900">Dernières Expéditions</h3>
-              </div>
-              <Link to="/expeditions" className="text-[10px] font-bold text-blue-600 uppercase hover:underline">Tout voir</Link>
-            </div>
-
-            {/* Desktop View (Table) */}
-            <div className="hidden sm:block overflow-x-auto">
-              <table className="w-full text-left">
-                <thead className="bg-slate-50 sticky top-0">
-                  <tr>
-                    <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Référence</th>
-                    <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Destinataire</th>
-                    <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Statut</th>
-                    <th className="px-6 py-3 text-right text-[10px] font-bold text-slate-400 uppercase tracking-wider">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {expeditionsList.length > 0 ? (
-                    [...expeditionsList].reverse().slice(0, 6).map((exp, idx) => (
-                      <tr key={exp.id || idx} className="hover:bg-slate-50/50 transition-colors group">
-                        <td className="px-6 py-3 whitespace-nowrap">
-                          <span className="text-xs font-bold text-slate-900">
-                            {exp.reference || `EXP-${String(exp.id).padStart(4, '0')}`}
-                          </span>
-                          <div className="text-[9px] text-slate-400 uppercase font-medium mt-0.5">
-                            {formatDateDisplay(exp.created_at)}
-                          </div>
-                        </td>
-                        <td className="px-6 py-3">
-                          <div className="flex flex-col">
-                            <span className="text-xs font-bold text-slate-700">{exp.destinataire?.nom_prenom || exp.destinataire_nom_prenom}</span>
-                            <span className="text-[10px] text-slate-400">{exp.destinataire?.ville || exp.destinataire_ville || '—'}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-3 whitespace-nowrap">
-                          {(() => {
-                            const statut = (exp.statut_expedition || 'pending').toLowerCase();
-                            const variants = {
-                              delivered: "bg-emerald-50 text-emerald-700 border-emerald-100",
-                              in_transit: "bg-blue-50 text-blue-700 border-blue-100",
-                              accepted: "bg-sky-50 text-sky-700 border-sky-100",
-                              pending: "bg-amber-50 text-amber-700 border-amber-100"
-                            };
-                            return (
-                              <span className={`px-2 py-0.5 text-[9px] font-bold rounded border uppercase tracking-tighter ${variants[statut] || variants.pending}`}>
-                                {statut.replace('_', ' ')}
-                              </span>
-                            );
-                          })()}
-                        </td>
-                        <td className="px-6 py-3 text-right">
-                          <Link to={`/expeditions/${exp.id}`} className="inline-flex p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-900 rounded-lg transition-all">
-                            <EyeIcon className="w-4 h-4" />
-                          </Link>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="4" className="px-6 py-12 text-center text-slate-400 text-xs font-bold uppercase tracking-widest">
-                        Aucune donnée
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Mobile View (Cards) */}
-            <div className="sm:hidden divide-y divide-slate-100">
-              {expeditionsList.length > 0 ? (
-                [...expeditionsList].reverse().slice(0, 5).map((exp, idx) => (
-                  <Link
-                    key={exp.id || idx}
-                    to={`/expeditions/${exp.id}`}
-                    className="block p-4 active:bg-slate-50"
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex flex-col">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">
-                          {exp.reference || `EXP-${String(exp.id).padStart(4, '0')}`}
-                        </span>
-                        <span className="text-sm font-bold text-slate-900">
-                          {exp.destinataire?.nom_prenom || exp.destinataire_nom_prenom}
-                        </span>
-                      </div>
-                      {(() => {
-                        const statut = (exp.statut_expedition || 'pending').toLowerCase();
-                        const variants = {
-                          delivered: "bg-emerald-50 text-emerald-700 border-emerald-100",
-                          in_transit: "bg-blue-50 text-blue-700 border-blue-100",
-                          accepted: "bg-sky-50 text-sky-700 border-sky-100",
-                          pending: "bg-amber-50 text-amber-700 border-amber-100"
-                        };
-                        return (
-                          <span className={`px-2 py-0.5 text-[8px] font-bold rounded border uppercase ${variants[statut] || variants.pending}`}>
-                            {statut.replace('_', ' ')}
-                          </span>
-                        );
-                      })()}
+        <div className="max-w-[1600px] mx-auto space-y-6 pb-12 px-4 sm:px-6">
+            
+            {/* --- 1. HERO SECTION (SOBRE) --- */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6 shadow-sm">
+                <div className="flex items-center gap-5">
+                    <div className="w-16 h-16 bg-slate-50 border border-slate-200 rounded-xl p-2 flex items-center justify-center overflow-hidden flex-shrink-0">
+                        {agencyData?.agence?.logo ? (
+                            <img src={getLogoUrl(agencyData.agence.logo)} alt="Logo" className="w-full h-full object-contain" />
+                        ) : (
+                            <div className="w-full h-full bg-slate-800 rounded-lg flex items-center justify-center">
+                                <span className="text-xl font-bold text-white">{(agencyData?.agence?.nom_agence || "A")[0]}</span>
+                            </div>
+                        )}
                     </div>
-                    <div className="flex justify-between items-center text-[10px] text-slate-400">
-                      <span className="font-medium">{exp.destinataire?.ville || exp.destinataire_ville || '—'}</span>
-                      <span className="font-bold uppercase">{formatDateDisplay(exp.created_at)}</span>
+                    <div>
+                        <h1 className="text-xl sm:text-2xl font-bold text-slate-900 leading-tight">
+                            Bonjour, {displayName}
+                        </h1>
+                        <p className="text-sm font-medium text-slate-500 mt-0.5">
+                            Gestionnaire - {agencyData?.agence?.nom_agence || "Agence Partenaire"}
+                        </p>
                     </div>
-                  </Link>
-                ))
-              ) : (
-                <div className="p-10 text-center">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Aucune donnée</p>
                 </div>
-              )}
+
+                <div className="flex items-center gap-3">
+                    <button 
+                        onClick={() => navigate('/create-expedition')}
+                        className="w-full sm:w-auto px-5 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition-colors shadow-sm flex items-center justify-center gap-2"
+                    >
+                        <PlusIcon className="w-4 h-4 stroke-[3]" />
+                        Créer une expédition
+                    </button>
+                </div>
             </div>
-          </div>
+
+            {/* --- 2. KPI CARDS (SAS B2B) --- */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                {[
+                    { label: "Commission Totale", value: `${new Intl.NumberFormat('fr-FR').format(stats.commissions)} CFA`, icon: <CurrencyDollarIcon />, sub: "Ce mois", status: "ok" },
+                    { label: "À Réceptionner", value: stats.toReceive, icon: <ArchiveBoxIcon />, sub: "En attente hub", status: stats.toReceive > 10 ? "urgent" : "attention" },
+                    { label: "À Remettre", value: stats.toDeliver, icon: <TruckIcon />, sub: "Prêt en agence", status: stats.toDeliver > 5 ? "attention" : "ok" },
+                    { label: "Volume Global", value: stats.count, icon: <CubeIcon />, sub: "Expéditions total", status: "ok" }
+                ].map((stat, i) => (
+                    <div key={i} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm transition-shadow hover:shadow-md">
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="p-2 bg-slate-50 text-slate-600 rounded-lg border border-slate-200">
+                                <div className="w-5 h-5">{stat.icon}</div>
+                            </div>
+                            <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                                stat.status === 'urgent' ? 'bg-red-50 text-red-600 border-red-100' :
+                                stat.status === 'attention' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                                'bg-emerald-50 text-emerald-600 border-emerald-100'
+                            }`}>
+                                {stat.sub}
+                            </span>
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{stat.label}</p>
+                            <h3 className="text-xl font-bold text-slate-900 tracking-tight">{stat.value}</h3>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* --- 3. ACTIONS PRIORITAIRES --- */}
+            <div className="space-y-4">
+                <h2 className="text-sm font-bold text-slate-900 uppercase tracking-widest px-1">Actions Prioritaires</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {[
+                        { title: "Colis à réceptionner", count: stats.toReceive, link: "/colis-a-receptionner", color: "amber", urgent: stats.toReceive > 10 },
+                        { title: "Colis à remettre", count: stats.toDeliver, link: "/retrait-colis", color: "emerald", urgent: stats.toDeliver > 5 },
+                        { title: "Paiements à récupérer", count: stats.pendingPayment, link: "/comptabilite", color: "red", urgent: stats.pendingPayment > 0 }
+                    ].map((action, i) => (
+                        <Link 
+                            key={i} 
+                            to={action.link}
+                            className="bg-white group p-5 rounded-2xl border border-slate-200 shadow-sm hover:border-indigo-200 hover:bg-slate-50 transition-all flex items-center justify-between"
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center bg-${action.color}-50 text-${action.color}-600 border border-${action.color}-100`}>
+                                    <span className="text-lg font-bold">{action.count}</span>
+                                </div>
+                                <span className="text-sm font-bold text-slate-700">{action.title}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                {action.urgent && (
+                                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                                )}
+                                <ArrowRightIcon className="w-4 h-4 text-slate-300 group-hover:text-indigo-600 transition-colors" />
+                            </div>
+                        </Link>
+                    ))}
+                </div>
+            </div>
+
+            {/* --- 4. FLUX DE TRAVAIL & ACTIVITÉS --- */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                {/* Left: Activities Table (ERP STYLE) */}
+                <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                    <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/10">
+                        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest">Dernières Activités</h3>
+                        <Link to="/expeditions" className="text-xs font-bold text-indigo-600">Voir tout</Link>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead className="bg-slate-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Réf / Date</th>
+                                    <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Trajet</th>
+                                    <th className="px-8 py-3 text-right text-[10px] font-bold text-slate-400 uppercase tracking-wider">Montant</th>
+                                    <th className="px-6 py-3 text-right text-[10px] font-bold text-slate-400 uppercase tracking-wider">Statut</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {expeditionsList.slice(0, 6).map((exp) => (
+                                    <tr 
+                                        key={exp.id} 
+                                        className="hover:bg-slate-50 transition-colors cursor-pointer group"
+                                        onClick={() => navigate(`/expeditions/${exp.id}`)}
+                                    >
+                                        <td className="px-6 py-4">
+                                            <div className="flex flex-col">
+                                                <span className="text-xs font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{exp.reference}</span>
+                                                <span className="text-[10px] font-medium text-slate-400">{new Date(exp.created_at).toLocaleDateString('fr-FR')}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-2 text-[10px] font-bold text-slate-600">
+                                                <span className="truncate max-w-[80px]">{exp.pays_depart}</span>
+                                                <ArrowRightIcon className="w-3 h-3 text-slate-300" />
+                                                <span className="text-slate-900 truncate max-w-[80px]">{exp.pays_destination}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <span className="text-xs font-bold text-slate-900 tabular-nums">{formatPriceDual(exp.montant_expedition)}</span>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase border shadow-sm ${
+                                                exp.statut_expedition === 'delivered' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
+                                                exp.statut_expedition === 'accepted' ? 'bg-sky-50 text-sky-700 border-sky-100' :
+                                                'bg-slate-50 text-slate-600 border-slate-200'
+                                            }`}>
+                                                {exp.statut_expedition?.replace(/_/g, ' ') || 'En cours'}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {/* Right: Analyse Section (DATA-DRIVEN) */}
+                <div className="space-y-6">
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col items-center">
+                        <div className="w-full flex items-center justify-between mb-8">
+                            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-widest">Efficacité</h3>
+                            <div className="text-[10px] font-bold text-slate-400">Mensuel</div>
+                        </div>
+                        
+                        <div className="relative w-40 h-40 flex items-center justify-center">
+                            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="42" fill="none" stroke="#f1f5f9" strokeWidth="10" />
+                                <circle
+                                    cx="50" cy="50" r="42" fill="none" stroke="#6366f1" strokeWidth="10" strokeDasharray="264"
+                                    strokeDashoffset={264 * (1 - (stats.count > 0 ? (stats.count - stats.toReceive - stats.toDeliver) / stats.count : 0.8))}
+                                    strokeLinecap="round"
+                                />
+                            </svg>
+                            <div className="absolute text-center">
+                                <span className="text-3xl font-bold text-slate-900 tracking-tighter">
+                                    {stats.count > 0 ? Math.round(((stats.count - stats.toReceive - stats.toDeliver) / stats.count) * 100) : '--'}%
+                                </span>
+                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Livrées</p>
+                            </div>
+                        </div>
+
+                        <div className="w-full mt-8 pt-6 border-t border-slate-100 grid grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase">Expéditions</p>
+                                <p className="text-lg font-bold text-slate-900 tracking-tight">{stats.count}</p>
+                            </div>
+                            <div className="space-y-1">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase">En cours</p>
+                                <p className="text-lg font-bold text-slate-900 tracking-tight">{stats.toReceive + stats.toDeliver}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-slate-900 rounded-2xl p-6 text-white overflow-hidden relative group">
+                        <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-white/5 rounded-full group-hover:scale-110 transition-transform"></div>
+                        <h4 className="text-sm font-bold mb-2">Conseil de gestion</h4>
+                        <p className="text-xs text-slate-400 leading-relaxed font-medium">
+                            La réception rapide des colis au hub réduit les délais de commission de 24h en moyenne.
+                        </p>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
     );
 };
 

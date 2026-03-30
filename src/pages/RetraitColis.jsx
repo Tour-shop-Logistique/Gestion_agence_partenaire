@@ -25,15 +25,45 @@ const RetraitColis = () => {
     const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
     const [otp, setOtp] = useState("");
     const [isPaid, setIsPaid] = useState(false);
+    const [paymentMethod, setPaymentMethod] = useState("cash");
+    const [paymentReference, setPaymentReference] = useState("");
 
     const hasPendingPayment = useMemo(() => {
-        return searchResults.some(item => selectedColis.includes(item.code_colis) && item.expedition?.statut_paiement === 'en_attente');
+        return searchResults.some(item => 
+            selectedColis.includes(item.code_colis) && 
+            (item.expedition?.statut_paiement_expedition === 'en_attente' || 
+             item.expedition?.statut_paiement_frais === 'en_attente')
+        );
+    }, [searchResults, selectedColis]);
+
+    const totalAmountToPay = useMemo(() => {
+        const uniqueExpeditions = new Map();
+        searchResults.forEach(item => {
+            if (selectedColis.includes(item.code_colis)) {
+                const exp = item.expedition;
+                if (!exp) return;
+
+                let due = 0;
+                if (exp.statut_paiement_expedition === 'en_attente') {
+                    due += parseFloat(exp.montant_expedition || 0);
+                }
+                if (exp.statut_paiement_frais === 'en_attente') {
+                    due += parseFloat(exp.frais_annexes || 0);
+                }
+
+                if (due > 0) {
+                    uniqueExpeditions.set(exp.id, due);
+                }
+            }
+        });
+        return Array.from(uniqueExpeditions.values()).reduce((sum, amount) => sum + amount, 0);
     }, [searchResults, selectedColis]);
 
     const {
         loadColis,
         initiateRecupColis,
         verifyRecupColis,
+        recordTransaction,
         loading,
         message,
         error,
@@ -76,6 +106,8 @@ const RetraitColis = () => {
         setLocalLoading(false);
         if (res?.meta?.requestStatus === 'fulfilled') {
             setIsPaid(false); // Reset for modal
+            setPaymentMethod("cash");
+            setPaymentReference("");
             setIsOtpModalOpen(true);
         }
     };
@@ -86,6 +118,51 @@ const RetraitColis = () => {
             return;
         }
         setLocalLoading(true);
+
+        // Si le paiement est à confirmer, on enregistre d'abord la transaction
+        if (isPaid && hasPendingPayment) {
+            const uniqueExpeditions = [];
+            const processedIds = new Set();
+            const amountsMap = new Map();
+
+            searchResults.forEach(item => {
+                if (selectedColis.includes(item.code_colis) && 
+                    !processedIds.has(item.expedition?.id)) {
+                    
+                    const exp = item.expedition;
+                    let due = 0;
+                    if (exp.statut_paiement_expedition === 'en_attente') due += parseFloat(exp.montant_expedition || 0);
+                    if (exp.statut_paiement_frais === 'en_attente') due += parseFloat(exp.frais_annexes || 0);
+
+                    if (due > 0) {
+                        uniqueExpeditions.push(exp);
+                        processedIds.add(exp.id);
+                        amountsMap.set(exp.id, due);
+                    }
+                }
+            });
+
+            for (const exp of uniqueExpeditions) {
+                // Determine transaction object based on what is unpaid
+                let payment_object = "montant_expedition";
+                if (exp.statut_paiement_expedition === 'en_attente' && exp.statut_paiement_frais === 'en_attente') {
+                    payment_object = "tout_compris"; // Total payment (credit case)
+                } else if (exp.statut_paiement_frais === 'en_attente') {
+                    payment_object = "frais_annexes";
+                }
+
+                await recordTransaction({
+                    expedition_id: exp.id,
+                    amount: amountsMap.get(exp.id),
+                    payment_method: paymentMethod,
+                    payment_object: payment_object,
+                    type: "encaissement",
+                    reference: paymentMethod === 'mobile_money' ? paymentReference : null,
+                    description: "Paiement total à la livraison finalisé"
+                });
+            }
+        }
+
         const res = await verifyRecupColis({ 
             codes: selectedColis, 
             otp,
@@ -224,8 +301,14 @@ const RetraitColis = () => {
                                         </div>
 
                                         <div className="sm:w-32 flex sm:justify-end items-center">
-                                            <span className={`text-[11px] font-bold ${item.expedition?.statut_paiement === 'paye' ? 'text-emerald-600' : 'text-red-600'}`}>
-                                                {item.expedition?.statut_paiement === 'paye' ? 'PAYÉ' : 'À PAYER'}
+                                            <span className={`text-[11px] font-bold ${
+                                                item.expedition?.statut_paiement_expedition === 'paye' && 
+                                                (parseFloat(item.expedition?.frais_annexes || 0) === 0 || item.expedition?.statut_paiement_frais === 'paye')
+                                                    ? 'text-emerald-600' : 'text-rose-600'
+                                            }`}>
+                                                {item.expedition?.statut_paiement_expedition === 'paye' && 
+                                                (parseFloat(item.expedition?.frais_annexes || 0) === 0 || item.expedition?.statut_paiement_frais === 'paye')
+                                                    ? 'OUVERT' : 'BLOCAGE'}
                                             </span>
                                         </div>
                                     </div>
@@ -272,7 +355,7 @@ const RetraitColis = () => {
                             </div>
 
                             {hasPendingPayment && (
-                                <div className="pt-4 border-t border-slate-100">
+                                <div className="pt-4 border-t border-slate-100 space-y-4">
                                     <label className="flex items-center gap-3 cursor-pointer group">
                                         <input 
                                             type="checkbox"
@@ -282,9 +365,48 @@ const RetraitColis = () => {
                                         />
                                         <div className="flex flex-col">
                                             <span className="text-xs font-bold text-slate-800">Confirmer le paiement reçu</span>
-                                            <span className="text-[10px] text-slate-500 font-medium">Le statut de l'expédition passera à "Payé"</span>
+                                            <span className="text-[10px] text-slate-500 font-medium tracking-tight">
+                                                Total à encaisser : <span className="text-emerald-600 font-bold">{new Intl.NumberFormat('fr-FR').format(totalAmountToPay)} CFA</span>
+                                            </span>
                                         </div>
                                     </label>
+
+                                    {isPaid && (
+                                        <div className="mt-2 p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-4">
+                                            <div className="space-y-3">
+                                                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Mode de paiement</label>
+                                                 <div className="grid grid-cols-2 gap-2">
+                                                     <button
+                                                        type="button"
+                                                        onClick={() => setPaymentMethod('cash')}
+                                                        className={`py-2 text-[10px] font-bold uppercase rounded border transition-all ${paymentMethod === 'cash' ? 'bg-slate-900 text-white border-slate-900 shadow-md shadow-slate-200' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'}`}
+                                                     >
+                                                         Cash / Espèces
+                                                     </button>
+                                                     <button
+                                                        type="button"
+                                                        onClick={() => setPaymentMethod('mobile_money')}
+                                                        className={`py-2 text-[10px] font-bold uppercase rounded border transition-all ${paymentMethod === 'mobile_money' ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-100' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'}`}
+                                                     >
+                                                         Mobile Money
+                                                     </button>
+                                                 </div>
+                                            </div>
+
+                                            {paymentMethod === 'mobile_money' && (
+                                                <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Référence Transaction</label>
+                                                    <input 
+                                                        type="text"
+                                                        value={paymentReference}
+                                                        onChange={(e) => setPaymentReference(e.target.value)}
+                                                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                                                        placeholder="Ex: OM-123456789"
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>

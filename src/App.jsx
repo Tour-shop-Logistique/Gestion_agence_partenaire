@@ -31,6 +31,7 @@ import Colis from "./pages/Colis";
 import ReceptionColis from "./pages/ReceptionColis";
 import ColisAReceptionner from "./pages/ColisAReceptionner";
 import RetraitColis from "./pages/RetraitColis";
+import Transactions from "./pages/Transactions";
 import ToastManager from "./components/ToastManager";
 import DashboardLayout from "./components/DashboardLayout";
 
@@ -148,6 +149,7 @@ function AppContent() {
           <Route path="/expeditions/:id" element={<ExpeditionDetails />} />
           <Route path="/create-expedition" element={<CreateExpedition />} />
           <Route path="/retrait-colis" element={<RetraitColis />} />
+          <Route path="/transactions" element={<Transactions />} />
         </Route>
         {/* Route par défaut */}
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useMemo } from "react";
+import { useNavigate, Link } from "react-router-dom";
 
 import { useExpedition } from "../hooks/useExpedition";
 import { useAgency } from "../hooks/useAgency";
-import { Link } from "react-router-dom";
 import PrintSuccessModal from "../components/Receipts/PrintSuccessModal";
 import ConfirmationModal from "../components/ConfirmationModal";
 import { getLogoUrl } from "../utils/apiConfig";
@@ -10,6 +10,7 @@ import { formatPriceDual } from "../utils/format";
 import { ArrowPathIcon, MagnifyingGlassIcon, CalendarIcon, FunnelIcon } from "@heroicons/react/24/outline";
 
 const Expeditions = () => {
+    const navigate = useNavigate();
     const { expeditions, meta, loadExpeditions, confirmReception, status, lastFilters } = useExpedition();
     const { agencyData, fetchAgencyData } = useAgency();
 
@@ -30,22 +31,30 @@ const Expeditions = () => {
     const [expeditionToConfirm, setExpeditionToConfirm] = useState(null);
     const [isConfirming, setIsConfirming] = useState(false);
 
-    const [dateDebut, setDateDebut] = useState(lastFilters?.date_debut || getFirstDayOfMonth());
-    const [dateFin, setDateFin] = useState(lastFilters?.date_fin || getTodayDate());
+    const [dateDebut, setDateDebut] = useState(() => {
+        const saved = sessionStorage.getItem('expeditions_date_debut');
+        return saved || lastFilters?.date_debut || getFirstDayOfMonth();
+    });
+    const [dateFin, setDateFin] = useState(() => {
+        const saved = sessionStorage.getItem('expeditions_date_fin');
+        return saved || lastFilters?.date_fin || getTodayDate();
+    });
     const [type, setType] = useState(""); // "" for all, "simple", "groupage"
     const [selectedExpedition, setSelectedExpedition] = useState(null);
     const [showPrintModal, setShowPrintModal] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
 
     useEffect(() => {
-        // Le hook useExpedition.loadExpeditions gère déjà l'optimisation en interne
-        // en comparant lastFilters avec les nouveaux paramètres.
+        if (dateDebut) sessionStorage.setItem('expeditions_date_debut', dateDebut);
+        if (dateFin) sessionStorage.setItem('expeditions_date_fin', dateFin);
+        
         loadExpeditions({
             page: currentPage,
             date_debut: dateDebut,
-            date_fin: dateFin
+            date_fin: dateFin,
+            type: type
         });
-    }, [currentPage, dateDebut, dateFin, loadExpeditions]);
+    }, [currentPage, dateDebut, dateFin, type, loadExpeditions]);
 
     useEffect(() => {
         fetchAgencyData();
@@ -169,19 +178,6 @@ const Expeditions = () => {
         }
     };
 
-    const getPaymentStatusStyle = (status) => {
-        switch (status) {
-            case 'paye':
-                return 'bg-emerald-50/60 text-emerald-700 border-emerald-100';
-            case 'en_attente':
-                return 'bg-orange-50/60 text-orange-700 border-orange-100';
-            case 'partiel':
-                return 'bg-blue-50/60 text-blue-700 border-blue-100';
-            default:
-                return 'bg-slate-50/60 text-slate-700 border-slate-100';
-        }
-    };
-
     const getAgencyCommission = (exp) => {
         if (!exp.commission_details) return 0;
         const c = exp.commission_details;
@@ -191,16 +187,11 @@ const Expeditions = () => {
                (c.retard?.agence || 0);
     };
 
-    // Filter expeditions based on search query and type (Client-side)
     const filteredExpeditions = useMemo(() => {
         let result = expeditions;
-
-        // Apply type filter
         if (type) {
             result = result.filter(exp => exp.type_expedition === type);
         }
-
-        // Apply search filter
         if (searchQuery) {
             const lowerQuery = searchQuery.toLowerCase();
             result = result.filter(exp =>
@@ -212,7 +203,6 @@ const Expeditions = () => {
                 exp.type_expedition?.toLowerCase().includes(lowerQuery)
             );
         }
-
         return result;
     }, [expeditions, searchQuery, type]);
 
@@ -229,6 +219,7 @@ const Expeditions = () => {
                             Gérez et suivez toutes vos expéditions en temps réel
                         </p>
                     </div>
+
                     <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
                         {/* Date Filters */}
                         <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -236,7 +227,7 @@ const Expeditions = () => {
                                 <span className="absolute -top-2 left-3 px-1 bg-white text-[10px] font-bold text-slate-400 uppercase tracking-wider z-10">Du</span>
                                 <input
                                     type="date"
-                                    className="block w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
+                                    className="block w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
                                     value={dateDebut}
                                     onChange={(e) => {
                                         setDateDebut(e.target.value);
@@ -248,7 +239,7 @@ const Expeditions = () => {
                                 <span className="absolute -top-2 left-3 px-1 bg-white text-[10px] font-bold text-slate-400 uppercase tracking-wider z-10">Au</span>
                                 <input
                                     type="date"
-                                    className="block w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
+                                    className="block w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
                                     value={dateFin}
                                     onChange={(e) => {
                                         setDateFin(e.target.value);
@@ -258,39 +249,14 @@ const Expeditions = () => {
                             </div>
                         </div>
 
-                        {/* Type Filter */}
-                        <div className="relative group w-full sm:w-40">
-                            <span className="absolute -top-2 left-3 px-1 bg-white text-[10px] font-bold text-slate-400 uppercase tracking-wider z-10">Type</span>
-                            <select
-                                className="block w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm appearance-none cursor-pointer"
-                                value={type}
-                                onChange={(e) => {
-                                    setType(e.target.value);
-                                    setCurrentPage(1);
-                                }}
-                            >
-                                <option value="">Tous les types</option>
-                                <option value="simple">Simple</option>
-                                <option value="groupage_dhd_aerien">Groupage DHD Aérien</option>
-                                <option value="groupage_dhd_maritine">Groupage DHD Maritime</option>
-                                <option value="groupage_afrique">Groupage Afrique</option>
-                                <option value="groupage_ca">Groupage CA</option>
-                            </select>
-                            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                                <svg className="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </div>
-                        </div>
-
                         {/* Search Bar */}
-                        <div className="relative group w-full sm:w-64 lg:w-80">
+                        <div className="relative group w-full sm:w-64 lg:w-96">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <MagnifyingGlassIcon className="h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                                <MagnifyingGlassIcon className="h-4 w-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
                             </div>
                             <input
                                 type="text"
-                                className="block w-full pl-10 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm group-hover:shadow-md"
+                                className="block w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm group-hover:shadow-md"
                                 placeholder="Rechercher (réf, nom, ville)..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -301,23 +267,53 @@ const Expeditions = () => {
                         <button
                             onClick={() => loadExpeditions({ page: currentPage, date_debut: dateDebut, date_fin: dateFin }, true)}
                             disabled={status === 'loading'}
-                            className="p-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm active:scale-95 disabled:opacity-50"
+                            className="p-2 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm active:scale-95 disabled:opacity-50"
                             title="Rafraîchir"
                         >
                             <ArrowPathIcon className={`w-5 h-5 ${status === 'loading' ? 'animate-spin' : ''}`} />
                         </button>
+                    </div>
+                </div>
 
-                        <div className="hidden sm:block group relative bg-gradient-to-br from-white to-slate-50/50 px-5 py-3 rounded-2xl border border-slate-200/60 shadow-sm hover:shadow-md transition-all duration-200">
-                            <div className="flex items-center gap-3">
-                                <span className="relative flex h-2.5 w-2.5">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-500"></span>
-                                </span>
-                                <div className="flex flex-col">
-                                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-[0.15em]">Total</span>
-                                    <span className="text-lg font-bold text-slate-900 tracking-tight leading-none">{meta?.total || 0}</span>
-                                </div>
+                {/* Sub-Header Toolbar with Type Filter */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/60 p-1 rounded-2xl border border-slate-200/50">
+                    <div className="flex items-center p-1 bg-slate-100/50 rounded-xl w-full sm:w-auto overflow-x-auto no-scrollbar">
+                        {[
+                            { id: '', label: 'Tout' },
+                            { id: 'simple', label: 'Simple' },
+                            { id: 'groupage_dhd_aerien', label: 'Aérien' },
+                            { id: 'groupage_afrique', label: 'Afrique' },
+                            { id: 'groupage_ca', label: 'CA' }
+                        ].map((btn) => (
+                            <button
+                                key={btn.id}
+                                onClick={() => {
+                                    setType(btn.id);
+                                    setCurrentPage(1);
+                                }}
+                                className={`whitespace-nowrap px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
+                                    type === btn.id
+                                        ? 'bg-white text-indigo-600 shadow-sm'
+                                        : 'text-slate-500 hover:text-slate-700'
+                                }`}
+                            >
+                                {btn.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="flex items-center gap-4 px-2">
+                        <div className="flex items-center gap-3">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Global</span>
+                            <span className="text-sm font-bold text-slate-900 tracking-tight leading-none">{meta?.total || 0}</span>
+                        </div>
+                        <div className="w-px h-4 bg-slate-200"></div>
+                        <div className="flex items-center gap-1.5 text-emerald-500">
+                             <div className="relative flex h-1.5 w-1.5">
+                                <span className={`${status === 'loading' ? 'animate-ping' : ''} absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75`}></span>
+                                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
                             </div>
+                            <span className="text-[10px] font-bold uppercase tracking-widest">{status === 'loading' ? 'Actualisation...' : 'À jour'}</span>
                         </div>
                     </div>
                 </div>
@@ -368,9 +364,16 @@ const Expeditions = () => {
                                                     <span className={`inline-flex items-center justify-center px-2 py-1 rounded-md text-[9px] font-bold uppercase tracking-wider border ${getStatusStyle(exp.statut_expedition)}`}>
                                                         {getStatusLabel(exp.statut_expedition)}
                                                     </span>
-                                                    <span className={`text-[9px] font-bold ${exp.statut_paiement === 'paye' ? 'text-emerald-600' : 'text-orange-500'}`}>
-                                                        {exp.statut_paiement === 'en_attente' ? 'En attente' : 'Payé'}
-                                                    </span>
+                                                    <div className="flex flex-col items-end">
+                                                        <span className={`text-[8px] font-black uppercase tracking-tighter ${exp.statut_paiement_expedition === 'paye' ? 'text-emerald-600' : 'text-orange-500'}`}>
+                                                            T: {exp.statut_paiement_expedition === 'paye' ? 'Payé' : 'En attente'}
+                                                        </span>
+                                                        {parseFloat(exp.frais_annexes || 0) > 0 && (
+                                                            <span className={`text-[8px] font-black uppercase tracking-tighter ${exp.statut_paiement_frais === 'paye' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                                F: {exp.statut_paiement_frais === 'paye' ? 'Payé' : 'Bloqué'}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
 
@@ -464,7 +467,7 @@ const Expeditions = () => {
                                     <th className="px-8 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em]">Trajet</th>
                                     <th className="px-8 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em]">Montant</th>
                                     <th className="px-8 py-5 text-[10px] font-bold text-indigo-500 uppercase tracking-[0.15em] bg-indigo-50/30">Ma Commission</th>
-                                    <th className="px-8 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em]">Statuts</th>
+                                    <th className="px-8 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em]">Statut</th>
                                     <th className="px-8 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em] text-right">Actions</th>
                                 </tr>
                             </thead>
@@ -507,6 +510,9 @@ const Expeditions = () => {
                                                 </div>
                                             </td>
                                             <td className="px-8 py-6">
+                                                <div className="h-9 bg-slate-100/60 rounded-xl w-24"></div>
+                                            </td>
+                                            <td className="px-8 py-6">
                                                 <div className="flex justify-end gap-2">
                                                     <div className="h-9 w-9 bg-slate-100/60 rounded-xl"></div>
                                                     <div className="h-9 w-9 bg-slate-100/60 rounded-xl"></div>
@@ -518,7 +524,8 @@ const Expeditions = () => {
                                     filteredExpeditions.map((exp) => (
                                         <tr
                                             key={exp.id}
-                                            className="group relative hover:bg-slate-50/40 transition-all duration-200 ease-out border-l-2 border-transparent hover:border-indigo-500"
+                                            className="group relative hover:bg-slate-50/40 transition-all duration-200 ease-out border-l-2 border-transparent hover:border-indigo-500 cursor-pointer"
+                                            onClick={() => navigate(`/expeditions/${exp.id}`)}
                                         >
                                             <td className="px-8 py-6">
                                                 <div className="flex flex-col gap-1.5">
@@ -585,18 +592,24 @@ const Expeditions = () => {
                                                 </div>
                                             </td>
                                             <td className="px-8 py-6">
-                                                <div className="flex  gap-2">
-                                                    <span className={`inline-flex items-center justify-center px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.1em] border ${getStatusStyle(exp.statut_expedition)}`}>
+                                                <div className="flex flex-col gap-1.5">
+                                                    <span className={`inline-flex items-center justify-center px-1.5 py-1 rounded text-[9px] font-black uppercase tracking-wider border ${getStatusStyle(exp.statut_expedition)}`}>
                                                         {getStatusLabel(exp.statut_expedition)}
                                                     </span>
-                                                    {/* <span className={`inline-flex items-center justify-center px-2.5 py-1 rounded-lg text-[9px] font-semibold uppercase tracking-wider border ${getPaymentStatusStyle(exp.statut_paiement)}`}>
-                                                        {exp.statut_paiement === 'en_attente' ? 'En attente' : exp.statut_paiement}
-                                                    </span> */}
+                                                    <div className="flex flex-col gap-1 pt-1 border-t border-slate-100/60">
+                                                        <span className={`text-[8px] font-bold uppercase tracking-tighter ${exp.statut_paiement_expedition === 'paye' ? 'text-emerald-600' : 'text-orange-500'}`}>
+                                                            T: {exp.statut_paiement_expedition === 'paye' ? 'Payé' : 'Attente'}
+                                                        </span>
+                                                        {parseFloat(exp.frais_annexes || 0) > 0 && (
+                                                            <span className={`text-[8px] font-bold uppercase tracking-tighter ${exp.statut_paiement_frais === 'paye' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                                H: {exp.statut_paiement_frais === 'paye' ? 'Payé' : 'Bloqué'}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </td>
                                             <td className="px-8 py-6 text-right">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    {/* Confirm Reception Action */}
+                                                <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                                                     {exp.statut_expedition === 'accepted' && (
                                                         <button
                                                             onClick={() => handleConfirmReception(exp)}
@@ -606,24 +619,9 @@ const Expeditions = () => {
                                                             <svg className="w-5 h-5 transition-transform duration-200 group-hover/btn:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                                             </svg>
-                                                            <div className="absolute inset-0 rounded-xl bg-indigo-500/0 group-hover/btn:bg-indigo-500/5 transition-colors duration-200"></div>
                                                         </button>
                                                     )}
 
-                                                    {/* View Details Button */}
-                                                    <Link
-                                                        to={`/expeditions/${exp.id}`}
-                                                        className="group/btn relative p-2.5 hover:bg-white rounded-xl transition-all duration-200 text-slate-400 hover:text-indigo-600 border border-transparent hover:border-slate-200 hover:shadow-lg hover:shadow-slate-200/50"
-                                                        title="Voir les détails"
-                                                    >
-                                                        <svg className="w-5 h-5 transition-transform duration-200 group-hover/btn:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                        </svg>
-                                                        <div className="absolute inset-0 rounded-xl bg-indigo-500/0 group-hover/btn:bg-indigo-500/5 transition-colors duration-200"></div>
-                                                    </Link>
-
-                                                    {/* Print Receipt Button */}
                                                     <button
                                                         onClick={() => handlePrintReceipt(exp)}
                                                         className="group/btn relative p-2.5 hover:bg-white rounded-xl transition-all duration-200 text-slate-400 hover:text-emerald-600 border border-transparent hover:border-slate-200 hover:shadow-lg hover:shadow-emerald-200/50"
@@ -632,16 +630,14 @@ const Expeditions = () => {
                                                         <svg className="w-5 h-5 transition-transform duration-200 group-hover/btn:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                                                         </svg>
-                                                        <div className="absolute inset-0 rounded-xl bg-emerald-500/0 group-hover/btn:bg-emerald-500/5 transition-colors duration-200"></div>
                                                     </button>
                                                 </div>
                                             </td>
                                         </tr>
                                     ))
                                 ) : (
-                                    // Premium Empty State
                                     <tr>
-                                        <td colSpan="6" className="px-8 py-24 text-center">
+                                        <td colSpan="7" className="px-8 py-24 text-center">
                                             <div className="flex flex-col items-center max-w-md mx-auto">
                                                 <div className="relative w-24 h-24 mb-6">
                                                     <div className="absolute inset-0 bg-gradient-to-br from-slate-100 to-slate-50 rounded-3xl rotate-6"></div>
@@ -652,9 +648,9 @@ const Expeditions = () => {
                                                         </svg>
                                                     </div>
                                                 </div>
-                                                <h3 className="text-xl font-bold text-slate-900 mb-2 tracking-tight">Désolé aucune donnée disponible</h3>
+                                                <h3 className="text-xl font-bold text-slate-900 mb-2 tracking-tight">Aucune expédition</h3>
                                                 <p className="text-sm font-medium text-slate-500 leading-relaxed">
-                                                    Aucune expédition ne correspond à vos critères de recherche pour le moment.
+                                                    Aucune donnée ne correspond à vos critères.
                                                 </p>
                                             </div>
                                         </td>

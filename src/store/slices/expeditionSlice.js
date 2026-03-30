@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { expeditionsApi } from "../../utils/api/expeditions";
+import { agenciesApi } from "../../utils/api/agencies";
 
 /**
  * Thunks asynchrones
@@ -254,6 +255,22 @@ export const verifyRecupColis = createAsyncThunk(
             return { codes, message: result.message };
         } catch (error) {
             return rejectWithValue(error.message || "Erreur lors de la validation");
+        }
+    }
+);
+
+// Enregistrer une transaction
+export const recordTransaction = createAsyncThunk(
+    "expedition/recordTransaction",
+    async (transactionData, { rejectWithValue }) => {
+        try {
+            const result = await agenciesApi.recordTransaction(transactionData);
+            if (!result.success) {
+                return rejectWithValue(result.message);
+            }
+            return result.data;
+        } catch (error) {
+            return rejectWithValue(error.message || "Erreur lors de l'enregistrement");
         }
     }
 );
@@ -614,6 +631,20 @@ const expeditionSlice = createSlice({
                 }
             })
             .addCase(verifyRecupColis.rejected, (state, action) => {
+                state.status = "failed";
+                state.error = action.payload;
+            })
+
+            // Record Transaction
+            .addCase(recordTransaction.pending, (state) => {
+                state.status = "loading";
+                state.error = null;
+            })
+            .addCase(recordTransaction.fulfilled, (state, action) => {
+                state.status = "succeeded";
+                state.message = action.payload.message || "Paiement enregistré avec succès";
+            })
+            .addCase(recordTransaction.rejected, (state, action) => {
                 state.status = "failed";
                 state.error = action.payload;
             });

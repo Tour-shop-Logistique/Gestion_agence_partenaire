@@ -16,7 +16,8 @@ import {
   TruckIcon,
   InboxArrowDownIcon,
   UserCircleIcon,
-  BanknotesIcon
+  BanknotesIcon,
+  ArrowsRightLeftIcon
 } from "@heroicons/react/24/outline";
 import { getLogoUrl } from "../utils/apiConfig";
 
@@ -66,6 +67,11 @@ const Sidebar = ({ onClose }) => {
       path: "/comptabilite",
       name: "Comptabilité",
       icon: BanknotesIcon,
+    },
+    {
+      path: "/transactions",
+      name: "Transactions",
+      icon: ArrowsRightLeftIcon,
     },
     {
       path: "/tarifs-simples",
@@ -125,6 +131,11 @@ const Sidebar = ({ onClose }) => {
       path: "/comptabilite",
       name: "Comptabilité",
       icon: BanknotesIcon,
+    },
+    {
+      path: "/transactions",
+      name: "Transactions",
+      icon: ArrowsRightLeftIcon,
     },
     {
       path: "/tarifs-simples",

@@ -30,10 +30,16 @@ const initialState = {
   data: [],
   summary: {
     count: 0,
-    total_backoffice: 0,
-    total_agence: 0,
-    total_livreur: 0,
-    total_client_due: 0
+    potential: {
+      total_backoffice: 0,
+      total_agence: 0,
+      total_livreur: 0,
+      total_client_due: 0
+    },
+    real: {
+      total_cash_received: 0,
+      count_transactions: 0
+    }
   },
   filters: {
     date_debut: "",

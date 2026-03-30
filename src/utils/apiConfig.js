@@ -35,6 +35,8 @@ export const API_ENDPOINTS = {
     DELETE_USER: "/agence/delete-user/:user",
     SHOW_USER: "/agence/show-user/:user",
     STATUS_USER: "/agence/status-user/:user",
+    RECORD_TRANSACTION: "/agence/record-transaction",
+    LIST_TRANSACTIONS: "/agence/list-transactions",
   },
 
   // Tarifs

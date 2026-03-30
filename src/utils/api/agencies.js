@@ -308,4 +308,62 @@ export const agenciesApi = {
       };
     }
   },
+
+  /**
+   * Enregistrer une transaction (paiement)
+   * @param {Object} transactionData - Données de la transaction
+   * @returns {Promise<Object>}
+   */
+  async recordTransaction(transactionData) {
+    console.log("Données de la transaction:", transactionData);
+    try {
+      const response = await apiService.post(
+        API_ENDPOINTS.AGENCIES.RECORD_TRANSACTION,
+        transactionData
+      );
+      console.log("Transaction enregistrée avec succès:", response);
+
+      return {
+        success: response.success !== false,
+        data: response.data || response,
+        message: response.message || "Transaction enregistrée avec succès",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error.message || "Erreur lors de l'enregistrement de la transaction",
+      };
+    }
+  },
+
+  /**
+   * Lister les transactions de l'agence
+   * @param {Object} params - Paramètres de filtrage (date_debut, date_fin)
+   * @returns {Promise<Object>}
+   */
+  async listTransactions(params = {}) {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params.date_debut) queryParams.append('date_debut', params.date_debut);
+      if (params.date_fin) queryParams.append('date_fin', params.date_fin);
+
+      const queryString = queryParams.toString();
+      const url = `${API_ENDPOINTS.AGENCIES.LIST_TRANSACTIONS}${queryString ? `?${queryString}` : ''}`;
+
+      const response = await apiService.get(url);
+
+      return {
+        success: response.success !== false,
+        data: response.data || [],
+        summary: response.summary || null,
+        message: response.message
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || "Erreur lors de la récupération des transactions",
+      };
+    }
+  },
 };
