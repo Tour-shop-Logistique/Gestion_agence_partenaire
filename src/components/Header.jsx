@@ -2,13 +2,17 @@ import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { selectCurrentUser, logout } from "../store/slices/authSlice";
 import { useAgency } from "../hooks/useAgency";
+import { useExpedition } from "../hooks/useExpedition";
 import { getLogoUrl } from "../utils/apiConfig";
 import { Bell, ChevronDown, Menu, Euro, RefreshCcw } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Header = ({ onToggleSidebar }) => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const currentUser = useSelector(selectCurrentUser);
   const { data: agencyData } = useAgency();
+  const { demandesMeta, loadDemandes } = useExpedition();
 
   const [showDropdown, setShowDropdown] = useState(false);
   const [agencyName, setAgencyName] = useState("Dashboard");
@@ -38,6 +42,20 @@ const Header = ({ onToggleSidebar }) => {
     }
   }, [agencyData]);
 
+  // Charger les demandes au montage pour avoir le compteur
+  useEffect(() => {
+    const fetchDemandes = async () => {
+      const result = await loadDemandes({ page: 1 });
+      console.log("Demandes loaded in Header:", result);
+    };
+    fetchDemandes();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    console.log("demandesMeta in Header:", demandesMeta);
+  }, [demandesMeta]);
+
   const handleLogout = () => dispatch(logout());
 
   const handleSaveRate = () => {
@@ -45,6 +63,8 @@ const Header = ({ onToggleSidebar }) => {
     setShowRateModal(false);
     window.location.reload(); // Recharger pour appliquer le nouveau taux partout
   };
+
+  const pendingDemandesCount = demandesMeta?.total || 0;
 
   const initials = (currentUser?.name || "")
     .split(" ")
@@ -113,9 +133,21 @@ const Header = ({ onToggleSidebar }) => {
           </button>
 
           {/* Notifications */}
-          <button className="relative p-2 rounded-xl hover:bg-slate-100 transition">
-            <Bell className="w-5 h-5 text-slate-600" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+          <button 
+            onClick={() => navigate('/demandes')}
+            className="relative p-2 rounded-xl hover:bg-slate-100 transition group"
+          >
+            <Bell className="w-5 h-5 text-slate-600 group-hover:text-indigo-600 transition-colors" />
+            {pendingDemandesCount > 0 && (
+              <>
+                <span className="absolute top-1 right-1 flex h-4 w-4">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 items-center justify-center">
+                    <span className="text-[9px] font-bold text-white">{pendingDemandesCount > 9 ? '9+' : pendingDemandesCount}</span>
+                  </span>
+                </span>
+              </>
+            )}
           </button>
 
           {/* USER */}

@@ -292,6 +292,7 @@ const expeditionSlice = createSlice({
             per_page: 20,
             total: 0
         },
+        colisStatus: "idle",
         currentExpedition: null,
         simulationResult: null,
         simulationStatus: "idle", // 'idle' | 'loading' | 'succeeded' | 'failed'

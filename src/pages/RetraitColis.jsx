@@ -22,6 +22,7 @@ const RetraitColis = () => {
     const [selectedColis, setSelectedColis] = useState([]);
     const [localLoading, setLocalLoading] = useState(false);
     const [searchResults, setSearchResults] = useState([]);
+    const [hasSearched, setHasSearched] = useState(false);
     const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
     const [otp, setOtp] = useState("");
     const [isPaid, setIsPaid] = useState(false);
@@ -87,6 +88,7 @@ const RetraitColis = () => {
         if (!searchQuery) return;
 
         setLocalLoading(true);
+        setHasSearched(true);
         const result = await loadColis({ 
             search: searchQuery, 
             is_collected: false 
@@ -316,6 +318,18 @@ const RetraitColis = () => {
                             })}
                         </div>
                     </div>
+                </div>
+            ) : hasSearched ? (
+                <div className="flex flex-col items-center justify-center py-20 bg-white border border-slate-200 rounded-lg">
+                    <div className="w-14 h-14 rounded-full bg-amber-50 flex items-center justify-center mb-4">
+                        <InformationCircleIcon className="w-7 h-7 text-amber-500" />
+                    </div>
+                    <p className="text-sm font-semibold text-slate-700 mb-1">
+                        Aucun colis trouvé
+                    </p>
+                    <p className="text-xs text-slate-500 text-center max-w-md">
+                        Ce contact n'a pas de colis en agence ou le numéro/code saisi est incorrect.
+                    </p>
                 </div>
             ) : (
                 <div className="flex flex-col items-center justify-center py-20 bg-white border border-slate-200 rounded-lg">

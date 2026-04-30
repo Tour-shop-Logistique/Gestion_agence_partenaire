@@ -34,7 +34,14 @@ const initialState = {
       total_backoffice: 0,
       total_agence: 0,
       total_livreur: 0,
-      total_client_due: 0
+      total_client_due: 0,
+      details_agence: {
+        marge_prestation: 0,
+        com_enlevement: 0,
+        com_emballage: 0,
+        com_livraison: 0,
+        com_retard: 0
+      }
     },
     real: {
       total_cash_received: 0,

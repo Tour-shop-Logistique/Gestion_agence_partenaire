@@ -17,12 +17,15 @@ import {
     UserGroupIcon,
     ArchiveBoxIcon,
     QrCodeIcon,
-    ArrowRightIcon
+    ArrowRightIcon,
+    BellAlertIcon,
+    XMarkIcon
 } from "@heroicons/react/24/outline";
 
 import { useAuth } from "../hooks/useAuth";
 import { useAgency } from "../hooks/useAgency";
 import { useExpedition } from "../hooks/useExpedition";
+import { useDashboard } from "../hooks/useDashboard";
 import { getLogoUrl } from "../utils/apiConfig";
 import { formatPriceDual } from "../utils/format";
 
@@ -30,7 +33,9 @@ const Dashboard = () => {
     const navigate = useNavigate();
     const { currentUser } = useAuth();
     const { data: agencyData, fetchAgencyData } = useAgency();
-    const { expeditions, meta, loadExpeditions, status: expeditionStatus } = useExpedition();
+    const { demandesMeta, loadDemandes } = useExpedition();
+    const { operational, financial, logistics, loading: dashboardLoading, fetchDashboard } = useDashboard();
+    const [showDemandesAlert, setShowDemandesAlert] = useState(true);
 
     // Helper helpers
     const getTodayDate = () => new Date().toISOString().split('T')[0];
@@ -50,47 +55,19 @@ const Dashboard = () => {
     });
 
     useEffect(() => {
-        loadExpeditions({
-            date_debut: dateDebut,
-            date_fin: dateFin,
-            per_page: 50 
-        });
         fetchAgencyData();
-    }, [loadExpeditions, fetchAgencyData, dateDebut, dateFin]);
-
-    const expeditionsList = useMemo(() => Array.isArray(expeditions) ? expeditions : [], [expeditions]);
-
-    // -- Advanced Stats Calculation --
-    const stats = useMemo(() => {
-        const totals = {
-            count: expeditionsList.length,
-            commissions: 0,
-            toReceive: 0, 
-            toDeliver: 0, 
-            pendingPayment: 0
-        };
-
-        expeditionsList.forEach(exp => {
-            if (exp.commission_details) {
-                const c = exp.commission_details;
-                totals.commissions += (c.enlevement?.agence || 0) + 
-                                     (c.livraison?.agence || 0) + 
-                                     (c.emballage?.agence || 0) + 
-                                     (c.retard?.agence || 0);
-            }
-            if (exp.statut_expedition === 'accepted') totals.toReceive++;
-            if (exp.statut_expedition === 'recu_agence_destination' || exp.statut_expedition === 'arrivee_expedition_succes') totals.toDeliver++;
-            if (exp.statut_paiement_expedition !== 'paye') totals.pendingPayment++;
-        });
-
-        return totals;
-    }, [expeditionsList]);
+        loadDemandes({ page: 1 });
+        fetchDashboard();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const displayName = currentUser?.name || 
                        [currentUser?.nom, currentUser?.prenoms].filter(Boolean).join(" ") || 
                        "Agent";
 
-    const isLoading = expeditionStatus === 'loading' && expeditionsList.length === 0;
+    const pendingDemandesCount = demandesMeta?.total || 0;
+
+    const isLoading = dashboardLoading;
 
     if (isLoading) {
         return (
@@ -107,6 +84,36 @@ const Dashboard = () => {
     return (
         <div className="max-w-[1600px] mx-auto space-y-6 pb-12 px-4 sm:px-6">
             
+            {/* Alerte Demandes en attente */}
+            {pendingDemandesCount > 0 && showDemandesAlert && (
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-2xl p-5 flex items-start gap-4 shadow-sm animate-in slide-in-from-top duration-500">
+                    <div className="flex-shrink-0 w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center">
+                        <BellAlertIcon className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <h3 className="text-sm font-bold text-amber-900 mb-1">
+                            {pendingDemandesCount} {pendingDemandesCount === 1 ? 'demande en attente' : 'demandes en attente'}
+                        </h3>
+                        <p className="text-xs text-amber-700 mb-3">
+                            Des clients ont soumis des demandes d'expédition qui nécessitent votre validation.
+                        </p>
+                        <button
+                            onClick={() => navigate('/demandes')}
+                            className="px-4 py-2 bg-amber-600 text-white text-xs font-bold rounded-lg hover:bg-amber-700 transition-colors flex items-center gap-2"
+                        >
+                            Voir les demandes
+                            <ArrowRightIcon className="w-3.5 h-3.5" />
+                        </button>
+                    </div>
+                    <button
+                        onClick={() => setShowDemandesAlert(false)}
+                        className="flex-shrink-0 p-1 text-amber-400 hover:text-amber-600 transition-colors"
+                    >
+                        <XMarkIcon className="w-5 h-5" />
+                    </button>
+                </div>
+            )}
+
             {/* --- 1. HERO SECTION (SOBRE) --- */}
             <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6 shadow-sm">
                 <div className="flex items-center gap-5">
@@ -131,6 +138,14 @@ const Dashboard = () => {
 
                 <div className="flex items-center gap-3">
                     <button 
+                        onClick={() => fetchDashboard(true)}
+                        disabled={dashboardLoading}
+                        className="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-600 hover:text-indigo-600 hover:border-indigo-200 transition-all disabled:opacity-50"
+                        title="Actualiser les données"
+                    >
+                        <ArrowPathIcon className={`w-5 h-5 ${dashboardLoading ? 'animate-spin' : ''}`} />
+                    </button>
+                    <button 
                         onClick={() => navigate('/create-expedition')}
                         className="w-full sm:w-auto px-5 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition-colors shadow-sm flex items-center justify-center gap-2"
                     >
@@ -143,10 +158,34 @@ const Dashboard = () => {
             {/* --- 2. KPI CARDS (SAS B2B) --- */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                 {[
-                    { label: "Commission Totale", value: `${new Intl.NumberFormat('fr-FR').format(stats.commissions)} CFA`, icon: <CurrencyDollarIcon />, sub: "Ce mois", status: "ok" },
-                    { label: "À Réceptionner", value: stats.toReceive, icon: <ArchiveBoxIcon />, sub: "En attente hub", status: stats.toReceive > 10 ? "urgent" : "attention" },
-                    { label: "À Remettre", value: stats.toDeliver, icon: <TruckIcon />, sub: "Prêt en agence", status: stats.toDeliver > 5 ? "attention" : "ok" },
-                    { label: "Volume Global", value: stats.count, icon: <CubeIcon />, sub: "Expéditions total", status: "ok" }
+                    { 
+                        label: "Commission Totale", 
+                        value: `${new Intl.NumberFormat('fr-FR').format(financial.commissions_mois || 0)} CFA`, 
+                        icon: <CurrencyDollarIcon />, 
+                        sub: "Ce mois", 
+                        status: "ok" 
+                    },
+                    { 
+                        label: "À Réceptionner", 
+                        value: operational.colis_attente_reception_depart || 0, 
+                        icon: <ArchiveBoxIcon />, 
+                        sub: "En attente hub", 
+                        status: (operational.colis_attente_reception_depart || 0) > 10 ? "urgent" : "attention" 
+                    },
+                    { 
+                        label: "À Remettre", 
+                        value: operational.colis_attente_retrait_livraison || 0, 
+                        icon: <TruckIcon />, 
+                        sub: "Prêt en agence", 
+                        status: (operational.colis_attente_retrait_livraison || 0) > 5 ? "attention" : "ok" 
+                    },
+                    { 
+                        label: "Créées Aujourd'hui", 
+                        value: operational.expeditions_creees_aujourdhui || 0, 
+                        icon: <CubeIcon />, 
+                        sub: "Nouvelles expéditions", 
+                        status: "ok" 
+                    }
                 ].map((stat, i) => (
                     <div key={i} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm transition-shadow hover:shadow-md">
                         <div className="flex justify-between items-start mb-4">
@@ -174,9 +213,27 @@ const Dashboard = () => {
                 <h2 className="text-sm font-bold text-slate-900 uppercase tracking-widest px-1">Actions Prioritaires</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {[
-                        { title: "Colis à réceptionner", count: stats.toReceive, link: "/colis-a-receptionner", color: "amber", urgent: stats.toReceive > 10 },
-                        { title: "Colis à remettre", count: stats.toDeliver, link: "/retrait-colis", color: "emerald", urgent: stats.toDeliver > 5 },
-                        { title: "Paiements à récupérer", count: stats.pendingPayment, link: "/comptabilite", color: "red", urgent: stats.pendingPayment > 0 }
+                        { 
+                            title: "Colis à réceptionner", 
+                            count: operational.colis_attente_reception_depart || 0, 
+                            link: "/colis-a-receptionner", 
+                            color: "amber", 
+                            urgent: (operational.colis_attente_reception_depart || 0) > 10 
+                        },
+                        { 
+                            title: "Colis à remettre", 
+                            count: operational.colis_attente_retrait_livraison || 0, 
+                            link: "/retrait-colis", 
+                            color: "emerald", 
+                            urgent: (operational.colis_attente_retrait_livraison || 0) > 5 
+                        },
+                        { 
+                            title: "Demandes en attente", 
+                            count: operational.expeditions_attente_acceptation || 0, 
+                            link: "/demandes", 
+                            color: "indigo", 
+                            urgent: (operational.expeditions_attente_acceptation || 0) > 0 
+                        }
                     ].map((action, i) => (
                         <Link 
                             key={i} 
@@ -200,109 +257,72 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            {/* --- 4. FLUX DE TRAVAIL & ACTIVITÉS --- */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                {/* Left: Activities Table (ERP STYLE) */}
-                <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-                    <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/10">
-                        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest">Dernières Activités</h3>
-                        <Link to="/expeditions" className="text-xs font-bold text-indigo-600">Voir tout</Link>
+            {/* --- 4. INDICATEURS FINANCIERS --- */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Chiffre d'affaires</h3>
+                        <CurrencyDollarIcon className="w-5 h-5 text-emerald-500" />
                     </div>
+                    <p className="text-2xl font-bold text-slate-900 mb-1">
+                        {new Intl.NumberFormat('fr-FR').format(financial.chiffre_affaires_mois || 0)} CFA
+                    </p>
+                    <p className="text-xs text-slate-400 font-medium">Ce mois</p>
+                </div>
 
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead className="bg-slate-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Réf / Date</th>
-                                    <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Trajet</th>
-                                    <th className="px-8 py-3 text-right text-[10px] font-bold text-slate-400 uppercase tracking-wider">Montant</th>
-                                    <th className="px-6 py-3 text-right text-[10px] font-bold text-slate-400 uppercase tracking-wider">Statut</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {expeditionsList.slice(0, 6).map((exp) => (
-                                    <tr 
-                                        key={exp.id} 
-                                        className="hover:bg-slate-50 transition-colors cursor-pointer group"
-                                        onClick={() => navigate(`/expeditions/${exp.id}`)}
-                                    >
-                                        <td className="px-6 py-4">
-                                            <div className="flex flex-col">
-                                                <span className="text-xs font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">{exp.reference}</span>
-                                                <span className="text-[10px] font-medium text-slate-400">{new Date(exp.created_at).toLocaleDateString('fr-FR')}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-2 text-[10px] font-bold text-slate-600">
-                                                <span className="truncate max-w-[80px]">{exp.pays_depart}</span>
-                                                <ArrowRightIcon className="w-3 h-3 text-slate-300" />
-                                                <span className="text-slate-900 truncate max-w-[80px]">{exp.pays_destination}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <span className="text-xs font-bold text-slate-900 tabular-nums">{formatPriceDual(exp.montant_expedition)}</span>
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase border shadow-sm ${
-                                                exp.statut_expedition === 'delivered' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
-                                                exp.statut_expedition === 'accepted' ? 'bg-sky-50 text-sky-700 border-sky-100' :
-                                                'bg-slate-50 text-slate-600 border-slate-200'
-                                            }`}>
-                                                {exp.statut_expedition?.replace(/_/g, ' ') || 'En cours'}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">Paiements</h3>
+                        <CheckCircleIcon className="w-5 h-5 text-indigo-500" />
+                    </div>
+                    <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                            <span className="text-xs text-slate-500 font-semibold">Payé</span>
+                            <span className="text-sm font-bold text-emerald-600">
+                                {new Intl.NumberFormat('fr-FR').format(financial.statut_paiements?.paye || 0)} CFA
+                            </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <span className="text-xs text-slate-500 font-semibold">Impayé</span>
+                            <span className="text-sm font-bold text-red-600">
+                                {new Intl.NumberFormat('fr-FR').format(financial.statut_paiements?.impaye || 0)} CFA
+                            </span>
+                        </div>
                     </div>
                 </div>
 
-                {/* Right: Analyse Section (DATA-DRIVEN) */}
-                <div className="space-y-6">
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col items-center">
-                        <div className="w-full flex items-center justify-between mb-8">
-                            <h3 className="text-xs font-bold text-slate-900 uppercase tracking-widest">Efficacité</h3>
-                            <div className="text-[10px] font-bold text-slate-400">Mensuel</div>
-                        </div>
-                        
-                        <div className="relative w-40 h-40 flex items-center justify-center">
-                            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                                <circle cx="50" cy="50" r="42" fill="none" stroke="#f1f5f9" strokeWidth="10" />
-                                <circle
-                                    cx="50" cy="50" r="42" fill="none" stroke="#6366f1" strokeWidth="10" strokeDasharray="264"
-                                    strokeDashoffset={264 * (1 - (stats.count > 0 ? (stats.count - stats.toReceive - stats.toDeliver) / stats.count : 0.8))}
-                                    strokeLinecap="round"
-                                />
-                            </svg>
-                            <div className="absolute text-center">
-                                <span className="text-3xl font-bold text-slate-900 tracking-tighter">
-                                    {stats.count > 0 ? Math.round(((stats.count - stats.toReceive - stats.toDeliver) / stats.count) * 100) : '--'}%
-                                </span>
-                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Livrées</p>
-                            </div>
-                        </div>
-
-                        <div className="w-full mt-8 pt-6 border-t border-slate-100 grid grid-cols-2 gap-4">
-                            <div className="space-y-1">
-                                <p className="text-[10px] font-bold text-slate-400 uppercase">Expéditions</p>
-                                <p className="text-lg font-bold text-slate-900 tracking-tight">{stats.count}</p>
-                            </div>
-                            <div className="space-y-1">
-                                <p className="text-[10px] font-bold text-slate-400 uppercase">En cours</p>
-                                <p className="text-lg font-bold text-slate-900 tracking-tight">{stats.toReceive + stats.toDeliver}</p>
-                            </div>
-                        </div>
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">À recouvrer</h3>
+                        <ClockIcon className="w-5 h-5 text-amber-500" />
                     </div>
+                    <p className="text-2xl font-bold text-slate-900 mb-1">
+                        {new Intl.NumberFormat('fr-FR').format(financial.encours_a_recouvrer || 0)} CFA
+                    </p>
+                    <p className="text-xs text-slate-400 font-medium">En cours</p>
+                </div>
+            </div>
 
-                    <div className="bg-slate-900 rounded-2xl p-6 text-white overflow-hidden relative group">
-                        <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-white/5 rounded-full group-hover:scale-110 transition-transform"></div>
-                        <h4 className="text-sm font-bold mb-2">Conseil de gestion</h4>
-                        <p className="text-xs text-slate-400 leading-relaxed font-medium">
-                            La réception rapide des colis au hub réduit les délais de commission de 24h en moyenne.
-                        </p>
-                    </div>
+            {/* --- 5. STATISTIQUES OPÉRATIONNELLES --- */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest mb-6">Suivi Opérationnel</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    {[
+                        { label: "Reçus aujourd'hui", value: operational.colis_recus_aujourdhui || 0, icon: <CheckCircleIcon className="w-5 h-5" />, color: "emerald" },
+                        { label: "En transit", value: operational.colis_en_transit_vers_agence || 0, icon: <TruckIcon className="w-5 h-5" />, color: "blue" },
+                        { label: "Vers entrepôt", value: operational.colis_attente_expedition_entrepot || 0, icon: <ArchiveBoxIcon className="w-5 h-5" />, color: "amber" },
+                        { label: "Créées aujourd'hui", value: operational.expeditions_creees_aujourdhui || 0, icon: <CubeIcon className="w-5 h-5" />, color: "indigo" }
+                    ].map((item, i) => (
+                        <div key={i} className="flex items-start gap-3">
+                            <div className={`p-2 rounded-lg bg-${item.color}-50 text-${item.color}-600`}>
+                                {item.icon}
+                            </div>
+                            <div>
+                                <p className="text-2xl font-bold text-slate-900">{item.value}</p>
+                                <p className="text-xs text-slate-500 font-medium">{item.label}</p>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </div>
         </div>

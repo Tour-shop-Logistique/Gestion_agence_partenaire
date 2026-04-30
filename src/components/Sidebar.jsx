@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { selectCurrentUser, selectIsAdmin } from "../store/slices/authSlice";
 import { useAgency } from "../hooks/useAgency";
+import { useExpedition } from "../hooks/useExpedition";
 import {
   ChartBarIcon,
   ClipboardDocumentListIcon,
@@ -27,10 +28,23 @@ const Sidebar = ({ onClose }) => {
   const isAdmin = useSelector(selectIsAdmin);
   const location = useLocation();
   const { data: agencyData } = useAgency();
+  const { demandesMeta } = useExpedition();
+  
+  // Sélecteur direct depuis Redux pour debug
+  const demandesMetaDirect = useSelector(state => state.expedition?.demandesMeta);
 
   const isActive = (path) => {
     return location.pathname === path;
   };
+
+  const pendingDemandesCount = demandesMeta?.total || 0;
+
+  // Debug log
+  React.useEffect(() => {
+    console.log("demandesMeta from hook:", demandesMeta);
+    console.log("demandesMeta direct from Redux:", demandesMetaDirect);
+    console.log("pendingDemandesCount:", pendingDemandesCount);
+  }, [demandesMeta, demandesMetaDirect, pendingDemandesCount]);
 
   const adminMenuItems = [
     {
@@ -197,19 +211,25 @@ const Sidebar = ({ onClose }) => {
         </div>
         {menuItems.map((item) => {
           const Active = isActive(item.path);
+          const showBadge = item.path === "/demandes" && pendingDemandesCount > 0;
           return (
             <Link
               key={item.path}
               to={item.path}
               onClick={onClose}
-              className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all group ${Active
+              className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all group relative ${Active
                 ? "bg-slate-900 text-white shadow-md shadow-slate-200"
                 : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                 }`}
             >
               <item.icon className={`w-5 h-5 mr-3 shrink-0 ${Active ? "text-white" : "text-slate-400 group-hover:text-slate-600"}`} />
               <span className="flex-1">{item.name}</span>
-              {Active && <ChevronRightIcon className="w-3.5 h-3.5 text-slate-400" />}
+              {showBadge && (
+                <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full">
+                  {pendingDemandesCount > 99 ? '99+' : pendingDemandesCount}
+                </span>
+              )}
+              {Active && !showBadge && <ChevronRightIcon className="w-3.5 h-3.5 text-slate-400" />}
             </Link>
           );
         })}

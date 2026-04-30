@@ -1,26 +1,12 @@
 import React from 'react';
 
-const NotificationBadge = ({ count, size = 'default' }) => {
+const NotificationBadge = ({ count, className = '' }) => {
   if (!count || count === 0) return null;
 
-  const sizeClasses = {
-    small: 'w-4 h-4 text-xs',
-    default: 'w-5 h-5 text-xs',
-    large: 'w-6 h-6 text-sm'
-  };
-
   return (
-    <div
-      className={`
-        ${sizeClasses[size]}
-        bg-red-500 text-white rounded-full flex items-center justify-center
-        font-semibold animate-pulse
-        absolute -top-1 -right-1
-        min-w-[1rem] min-h-[1rem]
-      `}
-    >
+    <span className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[9px] font-bold rounded-full ${className}`}>
       {count > 99 ? '99+' : count}
-    </div>
+    </span>
   );
 };
 

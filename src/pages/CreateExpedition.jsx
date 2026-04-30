@@ -297,20 +297,45 @@ const CreateExpedition = () => {
         console.log("creation Payload (Clean):", payload);
         const result = await createExpedition(payload);
 
-        // Retrieve ID from result data and trigger transaction if not credit
-        if (result?.payload?.success && !formData.is_paiement_credit) {
-            // result.payload.data usually contains the created expedition
-            const expData = result.payload.data;
-            const amount = parseFloat(simulationTarif?.montant_expedition || simulationResult?.total_price || simulationResult?.amount || 0) + totalEmballage;
+        console.log("Result from createExpedition:", result);
+
+        // Vérifier si la création a réussi et enregistrer la transaction si ce n'est pas un crédit
+        if (result?.payload && !formData.is_paiement_credit) {
+            // result.payload contient directement les données de l'expédition créée
+            const expeditionData = result.payload;
             
-            await recordTransaction({
-                expedition_id: expData.id,
-                amount: amount,
-                payment_method: paymentMethod,
-                payment_object: "montant_expedition",
-                type: "encaissement",
-                reference: paymentMethod === 'mobile_money' ? paymentReference : null
+            // Calculer le montant total à encaisser
+            const montantExpedition = parseFloat(simulationTarif?.montant_expedition || simulationResult?.total_price || simulationResult?.amount || 0);
+            const montantTotal = montantExpedition + totalEmballage;
+            
+            console.log("Enregistrement transaction:", {
+                expedition_id: expeditionData.id,
+                amount: montantTotal,
+                payment_method: paymentMethod
             });
+
+            // Enregistrer la transaction
+            try {
+                const transactionData = {
+                    expedition_id: expeditionData.id,
+                    amount: montantTotal,
+                    payment_method: paymentMethod,
+                    payment_object: "montant_expedition",
+                    type: "encaissement",
+                    description: `Paiement expédition ${expeditionData.reference || ''}`,
+                };
+
+                // Ajouter la référence uniquement si c'est mobile money
+                if (paymentMethod === 'mobile_money' && paymentReference) {
+                    transactionData.reference = paymentReference;
+                }
+
+                await recordTransaction(transactionData);
+                console.log("Transaction enregistrée avec succès");
+            } catch (error) {
+                console.error("Erreur lors de l'enregistrement de la transaction:", error);
+                toast.error("Expédition créée mais erreur lors de l'enregistrement du paiement");
+            }
         }
     };
 
@@ -325,23 +350,24 @@ const CreateExpedition = () => {
 
     return (
         <>
-            <div className="min-h-screen bg-slate-50/50">
+            <div className="min-h-screen bg-slate-100">
                 <div className="max-w-7xl mx-auto px-4 py-8">
-                    {/* Header Moderne */}
-                    <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-6">
+                    {/* Header */}
+                    <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
                         <div>
-                            <h1 className="text-2xl font-bold text-slate-900 tracking-tight mb-1">Nouvelle expédition</h1>
-                            <p className="text-xs text-slate-500 font-medium">Enregistrement et tarification des envois clients</p>
+                            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Nouvelle expédition</h1>
+                            <p className="text-xs text-slate-500 mt-0.5">Enregistrement et tarification des envois clients</p>
                         </div>
-                        <div className="flex items-center bg-white p-1 rounded-lg border border-slate-300 shadow-sm">
-                            <div className={`px-6 py-2 rounded-md text-xs font-bold transition-all ${step === 1 ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-400'}`}>
-                                1. Configuration & Colis
+                        {/* Step indicator */}
+                        <div className="flex items-center gap-0 bg-white border border-slate-200 rounded-xl p-1 shadow-sm self-start md:self-auto">
+                            <div className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${step === 1 ? 'bg-slate-800 text-white' : 'text-slate-400'}`}>
+                                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border ${step === 1 ? 'border-white/30 bg-white/10' : 'border-slate-300 text-slate-400'}`}>1</span>
+                                Config & Colis
                             </div>
-                            <div className="w-8 flex items-center justify-center">
-                                <svg className="w-4 h-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                            </div>
-                            <div className={`px-6 py-2 rounded-md text-xs font-bold transition-all ${step === 2 ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-400'}`}>
-                                2. Finalisation
+                            <svg className="w-4 h-4 text-slate-300 mx-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                            <div className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${step === 2 ? 'bg-slate-800 text-white' : 'text-slate-400'}`}>
+                                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border ${step === 2 ? 'border-white/30 bg-white/10' : 'border-slate-300 text-slate-400'}`}>2</span>
+                                Contacts & Finalisation
                             </div>
                         </div>
                     </div>
@@ -352,25 +378,25 @@ const CreateExpedition = () => {
                             {step === 1 ? (
                                 <>
                                     {/* SECTION 1: CONFIGURATION */}
-                                    <section className="bg-white rounded-lg border border-slate-300 shadow-sm overflow-hidden">
-                                        <div className="px-8 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-                                            <div>
-                                                <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Paramètres du service</h2>
-                                                <p className="text-[10px] text-slate-400 font-medium">Type d'envoi et destination du transport</p>
+                                    <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                                        <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
+                                            <div className="w-7 h-7 rounded-lg bg-slate-800 flex items-center justify-center flex-shrink-0">
+                                                <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                                             </div>
-                                            <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
-                                                <svg className="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                            <div>
+                                                <h2 className="text-sm font-bold text-slate-800">Paramètres du service</h2>
+                                                <p className="text-xs text-slate-400">Type d'envoi et destination</p>
                                             </div>
                                         </div>
-                                        <div className="p-6 space-y-6">
+                                        <div className="p-6 space-y-5">
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 {/* Nature de l'expédition */}
-                                                <div className="space-y-2">
-                                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Nature de l'expédition</label>
+                                                <div className="space-y-1.5">
+                                                    <label className="block text-xs font-semibold text-slate-600">Type d'expédition</label>
                                                     <select
                                                         value={formData.type_expedition}
                                                         onChange={(e) => setFormData(prev => ({ ...prev, type_expedition: e.target.value }))}
-                                                        className="w-full border-slate-300 rounded-lg text-sm font-bold focus:ring-slate-500 bg-white py-2.5 shadow-sm h-11"
+                                                        className="w-full border-slate-300 rounded-lg text-sm font-semibold focus:ring-slate-500 bg-white h-10"
                                                     >
                                                         {['SIMPLE', 'GROUPAGE_DHD_AERIEN', 'GROUPAGE_DHD_MARITIME', 'GROUPAGE_AFRIQUE', 'GROUPAGE_CA'].map(t => (
                                                             <option key={t} value={t}>
@@ -381,14 +407,14 @@ const CreateExpedition = () => {
                                                 </div>
 
                                                 {/* Sélection du Trajet (Route) basé sur les tarifs agence */}
-                                                <div className="space-y-2">
-                                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                                                        Trajets disponibles
+                                                <div className="space-y-1.5">
+                                                    <label className="block text-xs font-semibold text-slate-600">
+                                                        Trajet disponible
                                                     </label>
                                                     <select
                                                         onChange={handleRouteSelect}
                                                         disabled={formData.type_expedition === 'GROUPAGE_CA' || formData.type_expedition === 'SIMPLE'}
-                                                        className={`w-full border-slate-300 rounded-lg text-sm font-bold focus:ring-slate-500 py-2.5 shadow-sm h-11 ${formData.type_expedition === 'GROUPAGE_CA' || formData.type_expedition === 'SIMPLE' ? 'bg-slate-100 text-slate-400' : 'bg-white'}`}
+                                                        className={`w-full border-slate-300 rounded-lg text-sm font-semibold focus:ring-slate-500 h-10 ${formData.type_expedition === 'GROUPAGE_CA' || formData.type_expedition === 'SIMPLE' ? 'bg-slate-100 text-slate-400' : 'bg-white'}`}
                                                     >
                                                         <option value="">Sélectionner un trajet</option>
                                                         {availableRoutes.map(r => (
@@ -412,213 +438,204 @@ const CreateExpedition = () => {
                                                 </p>
                                             )} */}
 
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div className="space-y-1">
-                                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">Pays de Destination</label>
+                                            {/* Destination + Départ dans un bloc groupé */}
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                                                <div className="space-y-1.5">
+                                                    <label className="block text-xs font-semibold text-slate-500">Pays destination</label>
                                                     <input
                                                         type="text"
                                                         name="pays_destination"
                                                         value={formData.pays_destination}
                                                         onChange={handleInputChange}
-                                                        placeholder={formData.type_expedition === 'GROUPAGE_CA' || formData.type_expedition === 'SIMPLE' ? "Ex: France, Canada..." : "Sélectionner un trajet ci-dessus"}
+                                                        placeholder={formData.type_expedition === 'GROUPAGE_CA' || formData.type_expedition === 'SIMPLE' ? "Ex: France..." : "Via trajet"}
                                                         disabled={formData.type_expedition !== 'GROUPAGE_CA' && formData.type_expedition !== 'SIMPLE'}
-                                                        className={`w-full border-slate-300 rounded-md text-sm font-bold h-10 focus:ring-slate-500 ${formData.type_expedition !== 'GROUPAGE_CA' && formData.type_expedition !== 'SIMPLE' ? 'bg-slate-100 text-slate-500' : 'bg-white'}`}
+                                                        className={`w-full border-slate-300 rounded-md text-sm font-semibold h-9 focus:ring-slate-500 ${formData.type_expedition !== 'GROUPAGE_CA' && formData.type_expedition !== 'SIMPLE' ? 'bg-white/60 text-slate-400' : 'bg-white'}`}
                                                     />
                                                 </div>
-                                                <div className="space-y-1">
-                                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">Ville de Destination</label>
+                                                <div className="space-y-1.5">
+                                                    <label className="block text-xs font-semibold text-slate-500">Ville destination</label>
                                                     <input
                                                         type="text"
                                                         name="destinataire_ville"
                                                         value={formData.destinataire_ville}
                                                         onChange={handleInputChange}
-                                                        placeholder="Ex: Paris, Lyon..."
+                                                        placeholder="Ex: Paris..."
                                                         disabled={formData.type_expedition !== 'GROUPAGE_CA' && formData.type_expedition !== 'GROUPAGE_AFRIQUE' && formData.type_expedition !== 'SIMPLE'}
-                                                        className={`w-full border-slate-300 rounded-md text-sm font-bold h-10 focus:ring-slate-500 ${formData.type_expedition !== 'GROUPAGE_CA' && formData.type_expedition !== 'GROUPAGE_AFRIQUE' && formData.type_expedition !== 'SIMPLE' ? 'bg-slate-100 text-slate-500' : 'bg-white'}`}
+                                                        className={`w-full border-slate-300 rounded-md text-sm font-semibold h-9 focus:ring-slate-500 ${formData.type_expedition !== 'GROUPAGE_CA' && formData.type_expedition !== 'GROUPAGE_AFRIQUE' && formData.type_expedition !== 'SIMPLE' ? 'bg-white/60 text-slate-400' : 'bg-white'}`}
                                                     />
                                                 </div>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-slate-200">
-                                                <div className="space-y-1">
-                                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">Pays de Départ</label>
-                                                    <input type="text" value={formData.pays_depart} disabled className="w-full bg-slate-100 border-slate-300 rounded-md text-sm font-bold h-10 text-slate-500" />
+                                                <div className="space-y-1.5">
+                                                    <label className="block text-xs font-semibold text-slate-500">Pays départ</label>
+                                                    <input type="text" value={formData.pays_depart} disabled className="w-full bg-white/60 border-slate-300 rounded-md text-sm font-semibold h-9 text-slate-400" />
                                                 </div>
-                                                <div className="space-y-1">
-                                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">Ville de Départ</label>
+                                                <div className="space-y-1.5">
+                                                    <label className="block text-xs font-semibold text-slate-500">Ville départ</label>
                                                     <input
                                                         type="text"
                                                         name="expediteur_ville"
                                                         value={formData.expediteur_ville}
                                                         onChange={handleInputChange}
                                                         disabled={formData.type_expedition !== 'GROUPAGE_CA' && formData.type_expedition !== 'SIMPLE'}
-                                                        className={`w-full border-slate-300 rounded-md text-sm font-bold h-10 focus:ring-slate-500 ${formData.type_expedition !== 'GROUPAGE_CA' && formData.type_expedition !== 'SIMPLE' ? 'bg-slate-100 text-slate-500' : 'bg-white'}`}
+                                                        className={`w-full border-slate-300 rounded-md text-sm font-semibold h-9 focus:ring-slate-500 ${formData.type_expedition !== 'GROUPAGE_CA' && formData.type_expedition !== 'SIMPLE' ? 'bg-white/60 text-slate-400' : 'bg-white'}`}
                                                     />
                                                 </div>
                                             </div>
 
-                                            <div className="flex flex-wrap gap-6 pt-4 border-t border-slate-200">
-                                                <label className="flex items-center gap-2 cursor-pointer group">
-                                                    <div className="relative flex items-center">
-                                                        <input type="checkbox" name="is_livraison_domicile" checked={formData.is_livraison_domicile} onChange={handleInputChange} className="w-4 h-4 rounded border-slate-400 text-slate-800 focus:ring-slate-500/20 cursor-pointer" />
-                                                    </div>
-                                                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tight group-hover:text-slate-800 transition-colors">Livraison à domicile</span>
+                                            {/* Options */}
+                                            <div className="flex flex-wrap gap-3">
+                                                <label className="flex items-center gap-2.5 cursor-pointer group px-4 py-2.5 rounded-lg border border-slate-200 bg-white hover:border-slate-300 transition-colors">
+                                                    <input type="checkbox" name="is_livraison_domicile" checked={formData.is_livraison_domicile} onChange={handleInputChange} className="w-4 h-4 rounded border-slate-400 text-slate-800 focus:ring-slate-500/20 cursor-pointer" />
+                                                    <span className="text-xs font-semibold text-slate-600 group-hover:text-slate-800 transition-colors">Livraison à domicile</span>
                                                 </label>
-                                                <label className="flex items-center gap-2 cursor-pointer group">
-                                                    <div className="relative flex items-center">
-                                                        <input type="checkbox" name="is_paiement_credit" checked={formData.is_paiement_credit} onChange={handleInputChange} className="w-4 h-4 rounded border-slate-400 text-slate-800 focus:ring-slate-500/20 cursor-pointer" />
-                                                    </div>
-                                                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tight group-hover:text-slate-800 transition-colors">Paiement à crédit</span>
+                                                <label className="flex items-center gap-2.5 cursor-pointer group px-4 py-2.5 rounded-lg border border-slate-200 bg-white hover:border-slate-300 transition-colors">
+                                                    <input type="checkbox" name="is_paiement_credit" checked={formData.is_paiement_credit} onChange={handleInputChange} className="w-4 h-4 rounded border-slate-400 text-slate-800 focus:ring-slate-500/20 cursor-pointer" />
+                                                    <span className="text-xs font-semibold text-slate-600 group-hover:text-slate-800 transition-colors">Paiement à crédit</span>
                                                 </label>
                                             </div>
-
-
                                         </div>
                                     </section>
 
                                     {/* SECTION 2: COLIS */}
-                                    <section className="space-y-4">
-                                        <div className="flex items-center justify-between px-2">
-                                            <div>
-                                                <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Inventaire des colis</h2>
-                                                <p className="text-[10px] text-slate-400 font-medium">{formData.colis.length} colis enregistré(s)</p>
+                                    <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                                        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-7 h-7 rounded-lg bg-slate-800 flex items-center justify-center flex-shrink-0">
+                                                    <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                                                </div>
+                                                <div>
+                                                    <h2 className="text-sm font-bold text-slate-800">Inventaire des colis</h2>
+                                                    <p className="text-xs text-slate-400">{formData.colis.length} colis enregistré(s) — poids total : {totalWeight} kg</p>
+                                                </div>
                                             </div>
                                             <button
                                                 onClick={addColis}
-                                                className="px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-[10px] font-bold text-slate-700 shadow-sm hover:shadow hover:border-slate-400 transition-all flex items-center gap-2"
+                                                className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 text-white rounded-lg text-xs font-semibold hover:bg-slate-900 transition-colors"
                                             >
                                                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                                                Ajouter un colis
+                                                Ajouter
                                             </button>
                                         </div>
 
-                                        <div className="space-y-3">
+                                        <div className="divide-y divide-slate-100">
                                             {formData.colis.map((c, index) => (
-                                                <div key={index} className="group bg-white rounded-lg border border-slate-300 shadow-sm hover:border-slate-400 transition-all p-4 relative overflow-hidden">
-                                                    {/* Badge Numéro */}
-                                                    <div className="absolute top-0 left-0 w-1 h-full bg-slate-800 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-
-                                                    <div className="flex flex-col md:flex-row gap-6">
-                                                        {/* ID & Désignation */}
-                                                        <div className="flex-none flex items-start gap-4">
-                                                            <span className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-xs font-bold text-slate-400 border border-slate-200">
+                                                <div key={index} className="p-5">
+                                                    {/* En-tête du colis */}
+                                                    <div className="flex items-center justify-between mb-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="w-6 h-6 rounded-md bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600 border border-slate-200">
                                                                 {index + 1}
                                                             </span>
+                                                            <span className="text-xs font-semibold text-slate-500">Colis {index + 1}</span>
                                                         </div>
-
-                                                        <div className="flex-1 space-y-3">
-                                                            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                                                                <div className={formData.type_expedition.includes('DHD') ? "md:col-span-2" : "md:col-span-3"}>
-                                                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Désignation</label>
-                                                                    <input
-                                                                        type="text"
-                                                                        value={c.designation}
-                                                                        onChange={(e) => handleColisChange(index, 'designation', e.target.value)}
-                                                                        placeholder="Ex: Effets personnels..."
-                                                                        className="w-full border-slate-300 rounded-md text-sm font-bold h-9 focus:ring-slate-500"
-                                                                    />
-                                                                </div>
-
-                                                                {formData.type_expedition.includes('DHD') && (
-                                                                    <div>
-                                                                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Catégorie</label>
-                                                                        <select
-                                                                            value={c.category_id}
-                                                                            onChange={(e) => handleColisChange(index, 'category_id', e.target.value)}
-                                                                            className="w-full border-slate-300 rounded-md text-sm font-bold h-9 focus:ring-slate-500 bg-white"
-                                                                        >
-                                                                            <option value="">-- Choisir --</option>
-                                                                            {Array.isArray(categories) && categories.map(cat => (
-                                                                                <option key={cat.id} value={cat.id}>{cat.nom}</option>
-                                                                            ))}
-                                                                        </select>
-                                                                    </div>
-                                                                )}
-
-                                                                <div>
-                                                                    <label className="block text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-1">Poids (kg)</label>
-                                                                    <input
-                                                                        type="number"
-                                                                        value={c.poids}
-                                                                        onChange={(e) => handleColisChange(index, 'poids', e.target.value)}
-                                                                        className="w-full border-slate-300 rounded-md text-sm font-bold text-slate-800 bg-slate-50 h-9 focus:ring-slate-500"
-                                                                    />
-                                                                </div>
-                                                            </div>
-
-                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                <div className="space-y-2">
-                                                                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">Articles détaillés</label>
-
-                                                                    <div className="flex flex-col gap-2">
-                                                                        <select
-                                                                            onChange={(e) => {
-                                                                                if (e.target.value) {
-                                                                                    handleAddArticle(index, e.target.value);
-                                                                                    e.target.value = "";
-                                                                                }
-                                                                            }}
-                                                                            className="w-full border-slate-300 rounded-md text-xs font-bold h-9 focus:ring-slate-500 bg-white"
-                                                                        >
-                                                                            <option value="">+ Ajouter un article</option>
-                                                                            {Array.isArray(products) && products.map(p => (
-                                                                                <option key={p.id} value={p.designation}>{p.designation}</option>
-                                                                            ))}
-                                                                        </select>
-
-                                                                        <div className="flex flex-wrap gap-1.5 min-h-[36px] p-2 bg-slate-50 rounded-md border border-slate-200">
-                                                                            {(c.articles || []).length > 0 ? (
-                                                                                c.articles.map((art, artIdx) => (
-                                                                                    <span key={artIdx} className="inline-flex items-center gap-1.5 px-2 py-1 bg-slate-100 text-slate-700 text-[10px] font-bold rounded border border-slate-300 group/tag">
-                                                                                        {art}
-                                                                                        <button
-                                                                                            onClick={() => handleRemoveArticle(index, artIdx)}
-                                                                                            className="text-slate-400 hover:text-red-500 transition-colors"
-                                                                                        >
-                                                                                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                                                                                        </button>
-                                                                                    </span>
-                                                                                ))
-                                                                            ) : (
-                                                                                <span className="text-[10px] text-slate-400 font-medium italic py-1">Aucun article</span>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="grid grid-cols-4 gap-2">
-                                                                    <div className="col-span-3 grid grid-cols-3 gap-1.5">
-                                                                        <div className="space-y-1">
-                                                                            <label className="block text-[9px] font-bold text-slate-500 uppercase text-center">L</label>
-                                                                            <input type="number" placeholder="cm" value={c.longueur} onChange={(e) => handleColisChange(index, 'longueur', e.target.value)} className="w-full border-slate-300 rounded-md text-[10px] p-2 bg-slate-50 text-center" />
-                                                                        </div>
-                                                                        <div className="space-y-1">
-                                                                            <label className="block text-[9px] font-bold text-slate-500 uppercase text-center">l</label>
-                                                                            <input type="number" placeholder="cm" value={c.largeur} onChange={(e) => handleColisChange(index, 'largeur', e.target.value)} className="w-full border-slate-300 rounded-md text-[10px] p-2 bg-slate-50 text-center" />
-                                                                        </div>
-                                                                        <div className="space-y-1">
-                                                                            <label className="block text-[9px] font-bold text-slate-500 uppercase text-center">H</label>
-                                                                            <input type="number" placeholder="cm" value={c.hauteur} onChange={(e) => handleColisChange(index, 'hauteur', e.target.value)} className="w-full border-slate-300 rounded-md text-[10px] p-2 bg-slate-50 text-center" />
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="space-y-1">
-                                                                        <label className="block text-[9px] font-bold text-slate-500 uppercase text-center">Emb.</label>
-                                                                        <input type="number" value={c.prix_emballage} onChange={(e) => handleColisChange(index, 'prix_emballage', e.target.value)} className="w-full border-slate-300 rounded-md text-[10px] p-2 bg-slate-50 text-center font-bold text-slate-700" />
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-
                                                         {formData.colis.length > 1 && (
-                                                            <div className="flex items-start">
-                                                                <button
-                                                                    onClick={() => removeColis(index)}
-                                                                    className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                                                                    title="Supprimer ce colis"
+                                                            <button
+                                                                onClick={() => removeColis(index)}
+                                                                className="flex items-center gap-1 px-2 py-1 text-xs text-red-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all"
+                                                                title="Supprimer ce colis"
+                                                            >
+                                                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v2m3 4s" /></svg>
+                                                                Supprimer
+                                                            </button>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Ligne 1: Désignation + Catégorie + Poids */}
+                                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+                                                        <div className={formData.type_expedition.includes('DHD') ? "md:col-span-2" : "md:col-span-3"}>
+                                                            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Désignation</label>
+                                                            <input
+                                                                type="text"
+                                                                value={c.designation}
+                                                                onChange={(e) => handleColisChange(index, 'designation', e.target.value)}
+                                                                placeholder="Ex: Effets personnels, Électronique..."
+                                                                className="w-full border-slate-300 rounded-md text-sm font-semibold h-9 focus:ring-slate-500"
+                                                            />
+                                                        </div>
+
+                                                        {formData.type_expedition.includes('DHD') && (
+                                                            <div>
+                                                                <label className="block text-xs font-semibold text-slate-500 mb-1.5">Catégorie</label>
+                                                                <select
+                                                                    value={c.category_id}
+                                                                    onChange={(e) => handleColisChange(index, 'category_id', e.target.value)}
+                                                                    className="w-full border-slate-300 rounded-md text-sm font-semibold h-9 focus:ring-slate-500 bg-white"
                                                                 >
-                                                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v2m3 4s" /></svg>
-                                                                </button>
+                                                                    <option value="">-- Choisir --</option>
+                                                                    {Array.isArray(categories) && categories.map(cat => (
+                                                                        <option key={cat.id} value={cat.id}>{cat.nom}</option>
+                                                                    ))}
+                                                                </select>
                                                             </div>
                                                         )}
+
+                                                        <div>
+                                                            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Poids (kg)</label>
+                                                            <input
+                                                                type="number"
+                                                                value={c.poids}
+                                                                onChange={(e) => handleColisChange(index, 'poids', e.target.value)}
+                                                                className="w-full border-slate-300 rounded-md text-sm font-semibold bg-slate-50 h-9 focus:ring-slate-500"
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Ligne 2: Articles + Dimensions */}
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        {/* Articles */}
+                                                        <div>
+                                                            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Articles contenus</label>
+                                                            <select
+                                                                onChange={(e) => {
+                                                                    if (e.target.value) {
+                                                                        handleAddArticle(index, e.target.value);
+                                                                        e.target.value = "";
+                                                                    }
+                                                                }}
+                                                                className="w-full border-slate-300 rounded-md text-xs font-semibold h-9 focus:ring-slate-500 bg-white mb-2"
+                                                            >
+                                                                <option value="">+ Ajouter un article</option>
+                                                                {Array.isArray(products) && products.map(p => (
+                                                                    <option key={p.id} value={p.designation}>{p.designation}</option>
+                                                                ))}
+                                                            </select>
+                                                            <div className="flex flex-wrap gap-1.5 min-h-[34px] p-2 bg-slate-50 rounded-md border border-slate-200">
+                                                                {(c.articles || []).length > 0 ? (
+                                                                    c.articles.map((art, artIdx) => (
+                                                                        <span key={artIdx} className="inline-flex items-center gap-1 px-2 py-0.5 bg-white text-slate-700 text-xs font-semibold rounded border border-slate-300">
+                                                                            {art}
+                                                                            <button onClick={() => handleRemoveArticle(index, artIdx)} className="text-slate-400 hover:text-red-500 transition-colors ml-0.5">
+                                                                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                                                            </button>
+                                                                        </span>
+                                                                    ))
+                                                                ) : (
+                                                                    <span className="text-xs text-slate-400 italic py-0.5">Aucun article ajouté</span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Dimensions + Emballage */}
+                                                        <div>
+                                                            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Dimensions & Emballage</label>
+                                                            <div className="grid grid-cols-4 gap-2">
+                                                                <div>
+                                                                    <label className="block text-[10px] font-semibold text-slate-400 text-center mb-1">Long. cm</label>
+                                                                    <input type="number" placeholder="0" value={c.longueur} onChange={(e) => handleColisChange(index, 'longueur', e.target.value)} className="w-full border-slate-300 rounded-md text-xs p-2 bg-slate-50 text-center h-9" />
+                                                                </div>
+                                                                <div>
+                                                                    <label className="block text-[10px] font-semibold text-slate-400 text-center mb-1">Larg. cm</label>
+                                                                    <input type="number" placeholder="0" value={c.largeur} onChange={(e) => handleColisChange(index, 'largeur', e.target.value)} className="w-full border-slate-300 rounded-md text-xs p-2 bg-slate-50 text-center h-9" />
+                                                                </div>
+                                                                <div>
+                                                                    <label className="block text-[10px] font-semibold text-slate-400 text-center mb-1">Haut. cm</label>
+                                                                    <input type="number" placeholder="0" value={c.hauteur} onChange={(e) => handleColisChange(index, 'hauteur', e.target.value)} className="w-full border-slate-300 rounded-md text-xs p-2 bg-slate-50 text-center h-9" />
+                                                                </div>
+                                                                <div>
+                                                                    <label className="block text-[10px] font-semibold text-slate-400 text-center mb-1">Emb. CFA</label>
+                                                                    <input type="number" value={c.prix_emballage} onChange={(e) => handleColisChange(index, 'prix_emballage', e.target.value)} className="w-full border-slate-300 rounded-md text-xs p-2 bg-slate-50 text-center font-semibold text-slate-700 h-9" />
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             ))}
@@ -626,79 +643,85 @@ const CreateExpedition = () => {
                                     </section>
 
                                     {/* Bouton de simulation déplacé ici */}
-                                    <div className="flex justify-end pt-4 border-t border-slate-200">
+                                    <div className="flex justify-end pt-2">
                                         <button
                                             onClick={handleSimulate}
                                             disabled={simulating}
-                                            className="px-6 py-2.5 bg-slate-800 text-white rounded-lg font-bold uppercase tracking-widest text-[10px] hover:bg-slate-900 transition-all shadow-md flex items-center justify-center gap-3 disabled:opacity-50"
+                                            className="px-6 py-2.5 bg-slate-800 text-white rounded-lg font-semibold text-sm hover:bg-slate-900 transition-all shadow-sm flex items-center justify-center gap-2.5 disabled:opacity-50"
                                         >
                                             {simulating ? (
-                                                <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                                             ) : (
-                                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                                             )}
-                                            {simulating ? 'Calcul...' : 'Calculer Tarif'}
+                                            {simulating ? 'Calcul en cours...' : 'Calculer le tarif'}
                                         </button>
                                     </div>
                                 </>
                             ) : (
-                                <section className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fadeIn">
+                                <section className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fadeIn">
                                     {/* EXPEDITEUR */}
-                                    <div className="bg-white rounded-lg border border-slate-300 shadow-sm overflow-hidden flex flex-col">
-                                        <div className="px-8 py-5 bg-slate-50 border-b border-slate-200">
-                                            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-widest flex items-center gap-2">
-                                                <span className="w-2 h-2 rounded-full bg-slate-800"></span>
-                                                Expéditeur
-                                            </h2>
+                                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                                        <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
+                                            <div className="w-7 h-7 rounded-lg bg-slate-800 flex items-center justify-center flex-shrink-0">
+                                                <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                                            </div>
+                                            <div>
+                                                <h2 className="text-sm font-bold text-slate-800">Expéditeur</h2>
+                                                <p className="text-xs text-slate-400">Informations de l'envoyeur</p>
+                                            </div>
                                         </div>
-                                        <div className="p-8 space-y-6 flex-1 text-[11px] font-bold text-slate-500 uppercase tracking-widest ">
-                                            <div className="space-y-2">
-                                                <label>Nom Complet *</label>
-                                                <input type="text" name="expediteur_nom_prenom" value={formData.expediteur_nom_prenom} onChange={handleInputChange} className="w-full border-slate-300 rounded-md text-sm font-bold h-11 focus:ring-slate-800" />
+                                        <div className="p-6 space-y-4 flex-1">
+                                            <div className="space-y-1.5">
+                                                <label className="block text-xs font-semibold text-slate-500">Nom complet *</label>
+                                                <input type="text" name="expediteur_nom_prenom" value={formData.expediteur_nom_prenom} onChange={handleInputChange} className="w-full border-slate-300 rounded-md text-sm font-semibold h-10 focus:ring-slate-800" />
                                             </div>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <label>Téléphone *</label>
-                                                    <input type="tel" name="expediteur_telephone" value={formData.expediteur_telephone} onChange={handleInputChange} className="w-full border-slate-300 rounded-md text-sm font-bold h-11 focus:ring-slate-800" />
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                <div className="space-y-1.5">
+                                                    <label className="block text-xs font-semibold text-slate-500">Téléphone *</label>
+                                                    <input type="tel" name="expediteur_telephone" value={formData.expediteur_telephone} onChange={handleInputChange} className="w-full border-slate-300 rounded-md text-sm font-semibold h-10 focus:ring-slate-800" />
                                                 </div>
-                                                <div className="space-y-2">
-                                                    <label>Email</label>
-                                                    <input type="email" name="expediteur_email" value={formData.expediteur_email} onChange={handleInputChange} className="w-full border-slate-300 rounded-md text-sm font-bold h-11 focus:ring-slate-800" />
+                                                <div className="space-y-1.5">
+                                                    <label className="block text-xs font-semibold text-slate-500">Email</label>
+                                                    <input type="email" name="expediteur_email" value={formData.expediteur_email} onChange={handleInputChange} className="w-full border-slate-300 rounded-md text-sm font-semibold h-10 focus:ring-slate-800" />
                                                 </div>
                                             </div>
-                                            <div className="space-y-2">
-                                                <label>Adresse physique</label>
-                                                <input type="text" name="expediteur_adresse" value={formData.expediteur_adresse} onChange={handleInputChange} className="w-full border-slate-300 rounded-md text-sm font-bold h-11 focus:ring-slate-800" />
+                                            <div className="space-y-1.5">
+                                                <label className="block text-xs font-semibold text-slate-500">Adresse physique</label>
+                                                <input type="text" name="expediteur_adresse" value={formData.expediteur_adresse} onChange={handleInputChange} className="w-full border-slate-300 rounded-md text-sm font-semibold h-10 focus:ring-slate-800" />
                                             </div>
                                         </div>
                                     </div>
 
                                     {/* DESTINATAIRE */}
-                                    <div className="bg-white rounded-lg border border-slate-300 shadow-sm overflow-hidden flex flex-col">
-                                        <div className="px-8 py-5 bg-slate-50 border-b border-slate-200">
-                                            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-widest flex items-center gap-2">
-                                                <span className="w-2 h-2 rounded-full bg-slate-800"></span>
-                                                Destinataire
-                                            </h2>
+                                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                                        <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
+                                            <div className="w-7 h-7 rounded-lg bg-slate-600 flex items-center justify-center flex-shrink-0">
+                                                <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                            </div>
+                                            <div>
+                                                <h2 className="text-sm font-bold text-slate-800">Destinataire</h2>
+                                                <p className="text-xs text-slate-400">Informations du receveur</p>
+                                            </div>
                                         </div>
-                                        <div className="p-8 space-y-6 flex-1 text-[11px] font-bold text-slate-500 uppercase tracking-widest">
-                                            <div className="space-y-2">
-                                                <label>Nom du destinataire *</label>
-                                                <input type="text" name="destinataire_nom_prenom" value={formData.destinataire_nom_prenom} onChange={handleInputChange} className="w-full border-slate-300 rounded-md text-sm font-bold h-11 focus:ring-slate-800" />
+                                        <div className="p-6 space-y-4 flex-1">
+                                            <div className="space-y-1.5">
+                                                <label className="block text-xs font-semibold text-slate-500">Nom complet *</label>
+                                                <input type="text" name="destinataire_nom_prenom" value={formData.destinataire_nom_prenom} onChange={handleInputChange} className="w-full border-slate-300 rounded-md text-sm font-semibold h-10 focus:ring-slate-800" />
                                             </div>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <label>Téléphone *</label>
-                                                    <input type="tel" name="destinataire_telephone" value={formData.destinataire_telephone} onChange={handleInputChange} className="w-full border-slate-300 rounded-md text-sm font-bold h-11 focus:ring-slate-800" />
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                <div className="space-y-1.5">
+                                                    <label className="block text-xs font-semibold text-slate-500">Téléphone *</label>
+                                                    <input type="tel" name="destinataire_telephone" value={formData.destinataire_telephone} onChange={handleInputChange} className="w-full border-slate-300 rounded-md text-sm font-semibold h-10 focus:ring-slate-800" />
                                                 </div>
-                                                <div className="space-y-2">
-                                                    <label>Email</label>
-                                                    <input type="email" name="destinataire_email" value={formData.destinataire_email} onChange={handleInputChange} className="w-full border-slate-300 rounded-md text-sm font-bold h-11 focus:ring-slate-800" />
+                                                <div className="space-y-1.5">
+                                                    <label className="block text-xs font-semibold text-slate-500">Email</label>
+                                                    <input type="email" name="destinataire_email" value={formData.destinataire_email} onChange={handleInputChange} className="w-full border-slate-300 rounded-md text-sm font-semibold h-10 focus:ring-slate-800" />
                                                 </div>
                                             </div>
-                                            <div className="space-y-2">
-                                                <label>Adresse complète de livraison</label>
-                                                <textarea name="destinataire_adresse" value={formData.destinataire_adresse} onChange={handleInputChange} className="w-full border-slate-300 rounded-md text-sm font-bold p-4 h-24 focus:ring-slate-800" placeholder="Rue, Quartier, Repères..." />
+                                            <div className="space-y-1.5">
+                                                <label className="block text-xs font-semibold text-slate-500">Adresse complète de livraison</label>
+                                                <textarea name="destinataire_adresse" value={formData.destinataire_adresse} onChange={handleInputChange} className="w-full border-slate-300 rounded-md text-sm font-semibold p-3 h-24 focus:ring-slate-800" placeholder="Rue, Quartier, Repères..." />
                                             </div>
                                         </div>
                                     </div>
@@ -710,85 +733,55 @@ const CreateExpedition = () => {
                         {simulationResult && step === 1 && (
                             <div className="space-y-6">
                                 <div className="sticky top-24">
-                                    <div className="bg-white rounded-lg border border-slate-300 shadow-md overflow-hidden flex flex-col h-fit">
-                                        <div className="p-8 border-b border-slate-200 bg-slate-50">
-                                            <div className="flex items-center justify-between mb-4">
-                                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Récapitulatif</h3>
-                                                <div className="w-8 h-8 rounded bg-slate-200 flex items-center justify-center">
-                                                    <svg className="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
-                                                </div>
-                                            </div>
-
-                                            <div className="space-y-3">
-                                                <div className="flex justify-between text-[11px] font-bold">
-                                                    <span className="text-slate-400 uppercase tracking-widest leading-relaxed">Service</span>
-                                                    <span className="text-slate-700">{formData.type_expedition.replace('GROUPAGE_', '').replace('_', ' ')}</span>
-                                                </div>
-                                                <div className="flex justify-between text-[11px] font-bold">
-                                                    <span className="text-slate-400 uppercase tracking-widest leading-relaxed">Destination</span>
-                                                    <span className="text-slate-700 break-words text-right max-w-[150px]">{formData.destinataire_ville || "-"}, {formData.pays_destination || "-"}</span>
-                                                </div>
-                                                <div className="flex justify-between text-[11px] font-bold">
-                                                    <span className="text-slate-400 uppercase tracking-widest leading-relaxed">Volume</span>
-                                                    <span className="text-slate-700">{formData.colis.length} Colis • {totalWeight} KG</span>
-                                                </div>
-                                            </div>
+                                    <div className="bg-white rounded-xl border border-slate-200 shadow-md overflow-hidden">
+                                        <div className="px-6 py-4 border-b border-slate-100">
+                                            <h3 className="text-sm font-bold text-slate-800">Récapitulatif tarif</h3>
+                                            <p className="text-xs text-slate-400 mt-0.5">{formData.colis.length} colis · {totalWeight} kg · {formData.destinataire_ville || "—"}</p>
                                         </div>
 
-                                        <div className="p-8 space-y-6">
-                                            <div className="space-y-6">
-                                                <div className="bg-slate-800 rounded-lg p-6 text-white shadow-inner relative overflow-hidden">
-                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 relative z-10">Total à Payer</p>
-                                                    <div className="flex items-baseline gap-2 relative z-10">
-                                                        <span className="text-3xl font-mono font-bold tracking-tighter">
-                                                            {(parseFloat(simulationTarif?.montant_expedition || simulationResult.total_price || simulationResult.amount || 0) + totalEmballage).toLocaleString()}
-                                                        </span>
-                                                        <span className="text-xs font-sans text-slate-400 font-bold">CFA</span>
-                                                    </div>
-                                                </div>
-
-                                                {/* Breakdown si disponible */}
-                                                {simulationTarif && (
-                                                    <div className="space-y-2 px-1">
-                                                        <div className="flex justify-between text-[10px] font-bold">
-                                                            <span className="text-slate-400 uppercase tracking-widest">Base Transport</span>
-                                                            <span className="text-slate-600">{(parseFloat(simulationTarif.montant_base || 0)).toLocaleString()} CFA</span>
-                                                        </div>
-                                                        <div className="flex justify-between text-[10px] font-bold">
-                                                            <span className="text-slate-400 uppercase tracking-widest">Frais de Service</span>
-                                                            <span className="text-slate-600">{(parseFloat(simulationTarif.montant_prestation || 0)).toLocaleString()} CFA</span>
-                                                        </div>
-                                                        <div className="flex justify-between text-[10px] font-bold">
-                                                            <span className="text-slate-400 uppercase tracking-widest">Frais Emballage</span>
-                                                            <span className="text-slate-600">{(totalEmballage).toLocaleString()} CFA</span>
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                <div className="space-y-3">
-                                                    <button
-                                                        onClick={() => setStep(2)}
-                                                        className="w-full py-4 bg-slate-800 hover:bg-slate-900 text-white rounded-lg font-bold uppercase tracking-widest text-[11px] shadow-sm transition-all transform active:scale-95"
-                                                    >
-                                                        Continuer vers finalisation
-                                                    </button>
-
-                                                    <button
-                                                        onClick={() => { cleanSimulation(); }}
-                                                        className="w-full py-3 text-slate-400 text-[10px] font-bold uppercase hover:text-slate-600 transition-colors tracking-widest flex items-center justify-center gap-2"
-                                                    >
-                                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                                                        Masquer le tarif
-                                                    </button>
+                                        <div className="p-6 space-y-5">
+                                            <div className="bg-slate-800 rounded-lg p-5 text-white">
+                                                <p className="text-xs text-slate-400 mb-1">Total à payer</p>
+                                                <div className="flex items-baseline gap-2">
+                                                    <span className="text-3xl font-mono font-bold tracking-tight">
+                                                        {(parseFloat(simulationTarif?.montant_expedition || simulationResult.total_price || simulationResult.amount || 0) + totalEmballage).toLocaleString()}
+                                                    </span>
+                                                    <span className="text-sm text-slate-400 font-semibold">CFA</span>
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        <div className="p-6 bg-slate-50 border-t border-slate-200 flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-600">
-                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                                            {simulationTarif && (
+                                                <div className="space-y-2.5 text-xs">
+                                                    <div className="flex justify-between">
+                                                        <span className="text-slate-500">Base transport</span>
+                                                        <span className="font-semibold text-slate-700">{(parseFloat(simulationTarif.montant_base || 0)).toLocaleString()} CFA</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-slate-500">Frais de service</span>
+                                                        <span className="font-semibold text-slate-700">{(parseFloat(simulationTarif.montant_prestation || 0)).toLocaleString()} CFA</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-slate-500">Emballage</span>
+                                                        <span className="font-semibold text-slate-700">{totalEmballage.toLocaleString()} CFA</span>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            <div className="space-y-2 pt-1">
+                                                <button
+                                                    onClick={() => setStep(2)}
+                                                    className="w-full py-3 bg-slate-800 hover:bg-slate-900 text-white rounded-lg font-semibold text-sm shadow-sm transition-all active:scale-95"
+                                                >
+                                                    Continuer vers finalisation
+                                                </button>
+                                                <button
+                                                    onClick={() => { cleanSimulation(); }}
+                                                    className="w-full py-2 text-slate-400 text-xs font-semibold hover:text-slate-600 transition-colors flex items-center justify-center gap-1.5"
+                                                >
+                                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                                    Masquer le tarif
+                                                </button>
                                             </div>
-                                            <p className="text-[10px] text-slate-500 font-medium">Vos données sont sécurisées et conformes aux protocoles de transport.</p>
                                         </div>
                                     </div>
                                 </div>
@@ -799,47 +792,43 @@ const CreateExpedition = () => {
                         {step === 2 && (
                             <div className="space-y-6">
                                 <div className="sticky top-24">
-                                    <div className="bg-white rounded-lg border border-slate-300 shadow-md overflow-hidden flex flex-col h-fit">
-                                        <div className="p-8 border-b border-slate-200 bg-slate-50">
-                                            <div className="flex items-center justify-between mb-4">
-                                                <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Récapitulatif Final</h3>
-                                                <div className="w-8 h-8 rounded bg-slate-200 flex items-center justify-center">
-                                                    <svg className="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
-                                                </div>
-                                            </div>
+                                    <div className="bg-white rounded-xl border border-slate-200 shadow-md overflow-hidden">
+                                        <div className="px-6 py-4 border-b border-slate-100">
+                                            <h3 className="text-sm font-bold text-slate-800">Récapitulatif final</h3>
+                                            <p className="text-xs text-slate-400 mt-0.5">{formData.type_expedition.replace('GROUPAGE_', '').replace('_', ' ')} · {formData.destinataire_ville || "—"}</p>
+                                        </div>
 
-                                            <div className="bg-slate-800 rounded-lg p-6 text-white shadow-inner mb-6">
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Montant à régler</p>
+                                        <div className="p-6 space-y-5">
+                                            <div className="bg-slate-800 rounded-lg p-5 text-white">
+                                                <p className="text-xs text-slate-400 mb-1">Montant à régler</p>
                                                 <div className="flex items-baseline gap-2">
                                                     <span className="text-2xl font-mono font-bold">
                                                         {(parseFloat(simulationTarif?.montant_expedition || simulationResult?.total_price || simulationResult?.amount || 0) + totalEmballage).toLocaleString()}
                                                     </span>
-                                                    <span className="text-[10px] font-sans text-slate-400 font-bold">CFA</span>
+                                                    <span className="text-sm text-slate-400 font-semibold">CFA</span>
                                                 </div>
                                             </div>
 
-                                            {!formData.is_paiement_credit && (
-                                                <div className="mb-6 space-y-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
-                                                    <div className="space-y-2">
-                                                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Mode de règlement immédiat</label>
-                                                        <div className="grid grid-cols-2 gap-2">
-                                                            {['cash', 'mobile_money'].map(m => (
-                                                                <button
-                                                                    key={m}
-                                                                    type="button"
-                                                                    onClick={() => setPaymentMethod(m)}
-                                                                    className={`py-2 text-[10px] font-bold uppercase rounded border transition-all ${paymentMethod === m ? 'bg-slate-800 text-white border-slate-800 shadow-md' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}
-                                                                >
-                                                                    {m === 'cash' ? 'Espèces' : 'Mobile Money'}
-                                                                </button>
-                                                            ))}
-                                                        </div>
+                                            {!formData.is_paiement_credit ? (
+                                                <div className="space-y-3 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                                                    <label className="block text-xs font-semibold text-slate-600">Mode de règlement</label>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        {['cash', 'mobile_money'].map(m => (
+                                                            <button
+                                                                key={m}
+                                                                type="button"
+                                                                onClick={() => setPaymentMethod(m)}
+                                                                className={`py-2 text-xs font-semibold rounded-lg border transition-all ${paymentMethod === m ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}
+                                                            >
+                                                                {m === 'cash' ? 'Espèces' : 'Mobile Money'}
+                                                            </button>
+                                                        ))}
                                                     </div>
 
                                                     {paymentMethod === 'mobile_money' && (
-                                                        <div className="space-y-2 animate-in fade-in duration-200">
-                                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Référence Transaction</label>
-                                                            <input 
+                                                        <div className="space-y-1.5">
+                                                            <label className="block text-xs font-semibold text-slate-500">Référence transaction</label>
+                                                            <input
                                                                 type="text"
                                                                 value={paymentReference}
                                                                 onChange={(e) => setPaymentReference(e.target.value)}
@@ -849,22 +838,36 @@ const CreateExpedition = () => {
                                                         </div>
                                                     )}
                                                 </div>
+                                            ) : (
+                                                <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+                                                    <div className="flex items-start gap-2">
+                                                        <svg className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
+                                                        <div>
+                                                            <p className="text-xs font-semibold text-amber-800">Paiement à crédit</p>
+                                                            <p className="text-xs text-amber-600 mt-0.5">Aucune transaction ne sera enregistrée. Le paiement sera effectué ultérieurement.</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             )}
 
-                                            <button
-                                                onClick={handleSubmit}
-                                                disabled={status === 'loading'}
-                                                className="w-full py-4 bg-slate-800 hover:bg-slate-900 text-white rounded-lg font-bold uppercase tracking-widest text-[11px] shadow-sm transition-all transform active:scale-95 disabled:opacity-50 mb-3"
-                                            >
-                                                {status === 'loading' ? 'Traitement...' : 'Confirmer et expédier'}
-                                            </button>
-
-                                            <button
-                                                onClick={() => setStep(1)}
-                                                className="w-full py-3 text-slate-400 text-[10px] font-bold uppercase hover:text-slate-600 transition-colors tracking-widest flex items-center justify-center gap-2"
-                                            >
-                                                Précédent
-                                            </button>
+                                            <div className="space-y-2">
+                                                <button
+                                                    onClick={handleSubmit}
+                                                    disabled={status === 'loading'}
+                                                    className="w-full py-3 bg-slate-800 hover:bg-slate-900 text-white rounded-lg font-semibold text-sm shadow-sm transition-all active:scale-95 disabled:opacity-50"
+                                                >
+                                                    {status === 'loading' ? 'Traitement...' : 'Confirmer et expédier'}
+                                                </button>
+                                                <button
+                                                    onClick={() => setStep(1)}
+                                                    className="w-full py-2 text-slate-400 text-xs font-semibold hover:text-slate-600 transition-colors flex items-center justify-center gap-1.5"
+                                                >
+                                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                                                    Retour
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

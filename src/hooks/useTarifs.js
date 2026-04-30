@@ -54,7 +54,7 @@ export const useTarifs = () => {
       console.error('Erreur lors de la récupération des tarifs:', error);
       return { success: false, error };
     }
-  }, [dispatch, tarifs, flatTarifs]);
+  }, [dispatch]);
 
 
   const fetchAgencyTarifsData = useCallback(async (forceRefresh = false) => {
@@ -65,7 +65,7 @@ export const useTarifs = () => {
       console.error("Erreur lors de la récupération des tarifs de l'agence:", error);
       return { success: false, error };
     }
-  }, [dispatch, existingTarifs, flatExistingTarifs]);
+  }, [dispatch]);
 
 
   // === TARIFS GROUPAGE ===
@@ -76,7 +76,7 @@ export const useTarifs = () => {
       console.error("Erreur lors du chargement des tarifs groupage:", error);
       return { success: false, error };
     }
-  }, [dispatch, groupageTarifs]);
+  }, [dispatch]);
 
   const fetchAgencyTarifsGroupage = useCallback(async (forceRefresh = false) => {
     try {
@@ -85,7 +85,7 @@ export const useTarifs = () => {
       console.error("Erreur lors du chargement des tarifs groupage agence:", error);
       return { success: false, error };
     }
-  }, [dispatch, existingGroupageTarifs]);
+  }, [dispatch]);
   const saveGroupageTarifData = useCallback(async (payload) => {
     try {
       return await dispatch(createTarifGroupage(payload)).unwrap();

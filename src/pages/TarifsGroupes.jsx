@@ -11,7 +11,8 @@ const TarifsGroupes = () => {
 
     useEffect(() => {
         fetchTarifGroupageAgence();
-    }, [fetchTarifGroupageAgence]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     return (
         <div className="space-y-8 animate-in fade-in duration-700">

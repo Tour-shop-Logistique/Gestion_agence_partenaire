@@ -154,9 +154,37 @@ const Comptabilite = () => {
       "Livraison": item.frais_livraison_domicile || 0,
       "Emballage": item.frais_emballage || 0,
       "Annexes/Assurance": item.frais_annexes || 0,
+      "Com. Enlèvement Agence": item.commission_details?.enlevement?.agence || 0,
+      "Com. Emballage Agence": item.commission_details?.emballage?.agence || 0,
+      "Com. Livraison Agence": item.commission_details?.livraison?.agence || 0,
+      "Com. Retard Agence": item.commission_details?.retard?.agence || 0,
       "Statut Paiement": getStatusLabel(item.statut_paiement),
       "Date": formatDate(item.created_at, true)
     }));
+
+    // Add summary row with details_agence
+    const summaryRow = {
+      "Référence": "TOTAL PÉRIODE",
+      "Expéditeur": "",
+      "Destinataire": "",
+      "Montant Total (CFA)": summary.potential?.total_client_due || 0,
+      "Commission Agence": summary.potential?.total_agence || 0,
+      "Part Backoffice / HUB": summary.potential?.total_backoffice || 0,
+      "Part Livreur": summary.potential?.total_livreur || 0,
+      "Frais Base": "",
+      "Enlèvement": "",
+      "Livraison": "",
+      "Emballage": "",
+      "Annexes/Assurance": "",
+      "Com. Enlèvement Agence": summary.potential?.details_agence?.com_enlevement || 0,
+      "Com. Emballage Agence": summary.potential?.details_agence?.com_emballage || 0,
+      "Com. Livraison Agence": summary.potential?.details_agence?.com_livraison || 0,
+      "Com. Retard Agence": summary.potential?.details_agence?.com_retard || 0,
+      "Statut Paiement": "",
+      "Date": ""
+    };
+
+    dataToExport.push(summaryRow);
 
     // Create Worksheet
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
@@ -257,7 +285,6 @@ const Comptabilite = () => {
     doc.text(issueDate, pageWidth - 15, 34, { align: 'right' });
 
     // -- Summary Cards Section --
-    // -- Summary Cards Section --
     const cardY = 55;
     const cardMargin = 4;
     const totalCardWidth = pageWidth - 30; // 180mm
@@ -299,6 +326,41 @@ const Comptabilite = () => {
       doc.text(card.sub, x + 6 + metrics.w + 2, cardY + 20);
     });
 
+    // -- Détail Commissions Agence Section --
+    if (summary.potential?.details_agence) {
+      const detailY = 90;
+      doc.setFillColor(239, 246, 255); // blue-50
+      doc.setDrawColor(191, 219, 254); // blue-200
+      doc.roundedRect(15, detailY, pageWidth - 30, 18, 2, 2, 'FD');
+      
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(30, 64, 175); // blue-800
+      doc.text("DÉTAIL COMMISSIONS AGENCE", 20, detailY + 6);
+      
+      const detailItems = [
+        { label: "Marge Prestation", value: summary.potential.details_agence.marge_prestation },
+        { label: "Com. Enlèvement", value: summary.potential.details_agence.com_enlevement },
+        { label: "Com. Emballage", value: summary.potential.details_agence.com_emballage },
+        { label: "Com. Livraison", value: summary.potential.details_agence.com_livraison },
+        { label: "Com. Retard", value: summary.potential.details_agence.com_retard }
+      ];
+      
+      const itemWidth = (pageWidth - 40) / 5;
+      detailItems.forEach((item, i) => {
+        const x = 20 + i * itemWidth;
+        doc.setFontSize(6.5);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 116, 139);
+        doc.text(item.label, x, detailY + 11);
+        
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(37, 99, 235); // blue-600
+        doc.text(formatCurrencyForPDF(item.value) + " CFA", x, detailY + 16);
+      });
+    }
+
     // -- Table Section --
     const tableData = filteredData.map(item => [
       { content: item.reference + "\n" + (item.expediteur?.nom_prenom || "---"), styles: { fontStyle: 'normal' } },
@@ -311,7 +373,7 @@ const Comptabilite = () => {
     ]);
 
     autoTable(doc, {
-      startY: 95,
+      startY: summary.potential?.details_agence ? 115 : 95,
       head: [['Expédition', 'Date / Agence', 'À Percevoir', 'Part Backoffice', 'Part Agence', 'Part Livreurs', 'État Règlements']],
       body: tableData,
       theme: 'grid',
@@ -472,6 +534,37 @@ const Comptabilite = () => {
         ))}
       </div>
 
+      {/* Détail des Commissions Agence */}
+      {summary.potential?.details_agence && (
+        <div className="bg-gradient-to-br from-blue-50 to-slate-50 border border-blue-100 rounded-lg p-5 shadow-sm">
+          <div className="flex items-center gap-2 mb-4">
+            <ReceiptPercentIcon className="w-5 h-5 text-blue-600" />
+            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-tight">Détail des Commissions Agence</h2>
+            <span className="ml-auto text-xs text-slate-500 font-medium">Période sélectionnée</span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {[
+              { label: "Marge Prestation", value: summary.potential.details_agence.marge_prestation, icon: ShoppingBagIcon },
+              { label: "Commission Enlèvement", value: summary.potential.details_agence.com_enlevement, icon: TruckIcon },
+              { label: "Commission Emballage", value: summary.potential.details_agence.com_emballage, icon: InboxIcon },
+              { label: "Commission Livraison", value: summary.potential.details_agence.com_livraison, icon: MapPinIcon },
+              { label: "Commission Retard", value: summary.potential.details_agence.com_retard, icon: InformationCircleIcon }
+            ].map((item, idx) => (
+              <div key={idx} className="bg-white rounded-md p-3 border border-slate-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <item.icon className="w-3.5 h-3.5 text-blue-500" />
+                  <p className="text-[10px] font-semibold text-slate-500 uppercase">{item.label}</p>
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-lg font-bold text-blue-600 tabular-nums">{formatCurrency(item.value)}</span>
+                  <span className="text-[9px] font-semibold text-slate-400">CFA</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Combined Table Area */}
       <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
         
@@ -541,10 +634,10 @@ const Comptabilite = () => {
                       {formatCurrency(item.accounting_details?.total_client_due)}
                     </td>
                     <td className="px-5 py-3.5 text-right font-bold text-blue-600 tabular-nums text-sm">
-                      {formatCurrency(item.accounting_details?.agence)}
+                      {formatCurrency((parseFloat(item.accounting_details?.agence_depart || 0) + parseFloat(item.accounting_details?.agence_arrivee || 0)))}
                     </td>
                     <td className="px-5 py-3.5 text-right font-medium text-slate-500 tabular-nums text-sm">
-                      {formatCurrency(item.accounting_details?.backoffice)}
+                      {formatCurrency((parseFloat(item.accounting_details?.backoffice_depart || 0) + parseFloat(item.accounting_details?.backoffice_arrivee || 0)))}
                     </td>
                     <td className="px-5 py-3.5 text-center">
                       <span className={`px-2 py-0.5 rounded border text-[10px] font-bold uppercase ${getStatusStyle(item.statut_paiement)}`}>
@@ -590,7 +683,7 @@ const Comptabilite = () => {
               
               <div className="flex justify-between items-end border-b border-slate-100 pb-5">
                 <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Total Encaissé</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Total Client</p>
                   <p className="text-2xl font-black text-slate-900 tracking-tight">
                     {formatCurrency(selectedExpedition.accounting_details?.total_client_due)} <span className="text-xs text-slate-400">CFA</span>
                   </p>
@@ -600,46 +693,113 @@ const Comptabilite = () => {
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-8">
-                <div className="space-y-3">
-                  <h4 className="text-[10px] font-bold text-slate-900 uppercase flex items-center gap-1.5 opacity-50">
-                    <ReceiptPercentIcon className="w-3 h-3" /> Distribution
-                  </h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-xs font-bold text-blue-600">
-                      <span>Ma Part</span>
-                      <span className="tabular-nums">{formatCurrency(selectedExpedition.accounting_details?.agence)}</span>
+              {/* Répartition Détaillée des Gains */}
+              <div className="space-y-4">
+                <h4 className="text-[11px] font-bold text-slate-900 uppercase flex items-center gap-1.5 opacity-50">
+                  <ReceiptPercentIcon className="w-3.5 h-3.5" /> Répartition Détaillée des Gains
+                </h4>
+
+                {/* Agence de Départ */}
+                {parseFloat(selectedExpedition.accounting_details?.agence_depart || 0) > 0 && (
+                  <div className="bg-blue-50/50 rounded-lg p-3 border border-blue-100">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-[10px] font-bold text-blue-900 uppercase">Agence de Départ (Tour Shop)</p>
+                      <p className="text-sm font-black text-blue-600 tabular-nums">{formatCurrency(selectedExpedition.accounting_details?.agence_depart)}</p>
                     </div>
-                    <div className="flex justify-between text-xs font-medium text-slate-600">
-                      <span>HUB / Syst.</span>
-                      <span className="tabular-nums">{formatCurrency(selectedExpedition.accounting_details?.backoffice)}</span>
+                    <div className="space-y-1.5 pl-3 border-l-2 border-blue-200">
+                      {selectedExpedition.commission_details?.enlevement && parseFloat(selectedExpedition.commission_details.enlevement.agence || 0) > 0 && (
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-600">Frais d'Enlèvement (Part)</span>
+                          <span className="text-slate-800 font-semibold tabular-nums">{formatCurrency(selectedExpedition.commission_details.enlevement.agence)} CFA</span>
+                        </div>
+                      )}
+                      {selectedExpedition.commission_details?.emballage && parseFloat(selectedExpedition.commission_details.emballage.agence || 0) > 0 && (
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-600">Frais d'Emballage (Part)</span>
+                          <span className="text-slate-800 font-semibold tabular-nums">{formatCurrency(selectedExpedition.commission_details.emballage.agence)} CFA</span>
+                        </div>
+                      )}
+                      {parseFloat(selectedExpedition.montant_prestation || 0) > 0 && (
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-600">Montant Expédition (Com.)</span>
+                          <span className="text-slate-800 font-semibold tabular-nums">{formatCurrency(selectedExpedition.montant_prestation)} CFA</span>
+                        </div>
+                      )}
                     </div>
-                    <div className="flex justify-between text-xs font-medium text-slate-600">
-                      <span>Transport</span>
-                      <span className="tabular-nums">{formatCurrency(selectedExpedition.accounting_details?.livreur)}</span>
+                  </div>
+                )}
+
+                {/* Agence d'Arrivée */}
+                {parseFloat(selectedExpedition.accounting_details?.agence_arrivee || 0) > 0 && (
+                  <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-[10px] font-bold text-slate-700 uppercase">Agence d'Arrivée</p>
+                      <p className="text-sm font-black text-slate-700 tabular-nums">{formatCurrency(selectedExpedition.accounting_details?.agence_arrivee)}</p>
                     </div>
+                    <div className="space-y-1.5 pl-3 border-l-2 border-slate-300">
+                      {selectedExpedition.commission_details?.livraison && parseFloat(selectedExpedition.commission_details.livraison.agence || 0) > 0 && (
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-600">Frais de Livraison (Part)</span>
+                          <span className="text-slate-800 font-semibold tabular-nums">{formatCurrency(selectedExpedition.commission_details.livraison.agence)} CFA</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Backoffice (Central) */}
+                <div className="bg-slate-800 rounded-lg p-3 border border-slate-700">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[10px] font-bold text-slate-300 uppercase">Backoffice (Central)</p>
+                    <p className="text-sm font-black text-white tabular-nums">
+                      {formatCurrency((parseFloat(selectedExpedition.accounting_details?.backoffice_depart || 0) + parseFloat(selectedExpedition.accounting_details?.backoffice_arrivee || 0)))}
+                    </p>
+                  </div>
+                  <div className="space-y-1.5 pl-3 border-l-2 border-slate-600">
+                    {parseFloat(selectedExpedition.montant_base || 0) > 0 && (
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-400">Montant Expédition (Base)</span>
+                        <span className="text-slate-200 font-semibold tabular-nums">{formatCurrency(selectedExpedition.montant_base)} CFA</span>
+                      </div>
+                    )}
+                    {selectedExpedition.commission_details?.emballage && parseFloat(selectedExpedition.commission_details.emballage.backoffice || 0) > 0 && (
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-400">Frais d'Emballage (Part)</span>
+                        <span className="text-slate-200 font-semibold tabular-nums">{formatCurrency(selectedExpedition.commission_details.emballage.backoffice)} CFA</span>
+                      </div>
+                    )}
+                    {parseFloat(selectedExpedition.frais_annexes || 0) > 0 && (
+                      <div className="flex justify-between text-xs">
+                        <span className="text-slate-400">Frais Annexes</span>
+                        <span className="text-slate-200 font-semibold tabular-nums">{formatCurrency(selectedExpedition.frais_annexes)} CFA</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  <h4 className="text-[10px] font-bold text-slate-900 uppercase flex items-center gap-1.5 opacity-50">
-                    <InformationCircleIcon className="w-3 h-3" /> Composition
-                  </h4>
-                  <div className="space-y-2">
-                    {[
-                      { label: "Base", val: selectedExpedition.montant_base },
-                      { label: "Enlèvemt.", val: selectedExpedition.frais_enlevement_domicile },
-                      { label: "Livraison", val: selectedExpedition.frais_livraison_domicile },
-                      { label: "Emball.", val: selectedExpedition.frais_emballage },
-                      { label: "Autres", val: selectedExpedition.frais_annexes }
-                    ].filter(f => parseFloat(f.val || 0) > 0).map((f, i) => (
-                      <div key={i} className="flex justify-between text-xs">
-                        <span className="text-slate-500">{f.label}</span>
-                        <span className="text-slate-700 font-medium tabular-nums">{formatCurrency(f.val)}</span>
+                {/* Livreurs */}
+                {(parseFloat(selectedExpedition.accounting_details?.livreur_depart || 0) > 0 || parseFloat(selectedExpedition.accounting_details?.livreur_arrivee || 0) > 0) && (
+                  <div className="grid grid-cols-2 gap-3">
+                    {parseFloat(selectedExpedition.accounting_details?.livreur_depart || 0) > 0 && (
+                      <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                        <p className="text-[9px] font-bold text-slate-500 uppercase mb-1">Livreur Départ</p>
+                        <p className="text-sm font-black text-slate-700 tabular-nums">{formatCurrency(selectedExpedition.accounting_details?.livreur_depart)}</p>
+                        {selectedExpedition.commission_details?.enlevement && parseFloat(selectedExpedition.commission_details.enlevement.livreur || 0) > 0 && (
+                          <p className="text-[10px] text-slate-500 mt-1">Enlèvement</p>
+                        )}
                       </div>
-                    ))}
+                    )}
+                    {parseFloat(selectedExpedition.accounting_details?.livreur_arrivee || 0) > 0 && (
+                      <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                        <p className="text-[9px] font-bold text-slate-500 uppercase mb-1">Livreur Arrivée</p>
+                        <p className="text-sm font-black text-slate-700 tabular-nums">{formatCurrency(selectedExpedition.accounting_details?.livreur_arrivee)}</p>
+                        {selectedExpedition.commission_details?.livraison && parseFloat(selectedExpedition.commission_details.livraison.livreur || 0) > 0 && (
+                          <p className="text-[10px] text-slate-500 mt-1">Livraison</p>
+                        )}
+                      </div>
+                    )}
                   </div>
-                </div>
+                )}
               </div>
 
               <div className="pt-4 border-t border-slate-50 flex flex-col gap-2">
