@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 import { useExpedition } from "../hooks/useExpedition";
 import { useAgency } from "../hooks/useAgency";
@@ -7,7 +9,7 @@ import PrintSuccessModal from "../components/Receipts/PrintSuccessModal";
 import ConfirmationModal from "../components/ConfirmationModal";
 import { getLogoUrl } from "../utils/apiConfig";
 import { formatPriceDual } from "../utils/format";
-import { ArrowPathIcon, MagnifyingGlassIcon, CalendarIcon, FunnelIcon } from "@heroicons/react/24/outline";
+import { ArrowPathIcon, MagnifyingGlassIcon, CalendarIcon, FunnelIcon, DocumentArrowDownIcon } from "@heroicons/react/24/outline";
 
 const Expeditions = () => {
     const navigate = useNavigate();
@@ -187,6 +189,185 @@ const Expeditions = () => {
                (c.retard?.agence || 0);
     };
 
+    const formatCurrencyForPDF = (amount) => {
+        const formatted = new Intl.NumberFormat('fr-FR').format(amount || 0);
+        return formatted.replace(/\s/g, ' ');
+    };
+
+    const getBase64ImageFromURL = (url) => {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.setAttribute("crossOrigin", "anonymous");
+            img.onload = () => {
+                const canvas = document.createElement("canvas");
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(img, 0, 0);
+                const dataURL = canvas.toDataURL("image/png");
+                resolve(dataURL);
+            };
+            img.onerror = (error) => reject(error);
+            img.src = url;
+        });
+    };
+
+    const handleExportPDF = async () => {
+        if (!filteredExpeditions || filteredExpeditions.length === 0) return;
+
+        const doc = new jsPDF({
+            orientation: 'l',
+            unit: 'mm',
+            format: 'a4'
+        });
+
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+
+        // Header Dark Background
+        doc.setFillColor(15, 23, 42);
+        doc.rect(0, 0, pageWidth, 45, 'F');
+
+        // Logo
+        let logoBase64 = null;
+        if (agencyData?.logo) {
+            try {
+                logoBase64 = await getBase64ImageFromURL(agencyData.logo);
+            } catch (e) {
+                console.error("Error loading logo for PDF", e);
+            }
+        }
+
+        if (logoBase64) {
+            doc.addImage(logoBase64, 'PNG', 15, 10, 20, 20);
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(24);
+            doc.setFont('helvetica', 'bold');
+            doc.text("RAPPORT EXPEDITIONS", 40, 22);
+            
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'normal');
+            doc.text(agencyData?.nom?.toUpperCase() || "TOUR SHOP", 40, 32);
+        } else {
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(24);
+            doc.setFont('helvetica', 'bold');
+            doc.text("RAPPORT EXPEDITIONS", 15, 22);
+            
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'normal');
+            doc.text(agencyData?.nom?.toUpperCase() || "TOUR SHOP", 15, 32);
+        }
+
+        // Right Header Info
+        doc.setFontSize(9);
+        doc.setTextColor(200, 200, 200);
+        const dateText = `PERIODE : DU ${formatDate(dateDebut).split(' ')[0]} AU ${formatDate(dateFin).split(' ')[0]}`;
+        const countryText = `PAYS : ${agencyData?.pays || "FRANCE"}`;
+        const issueDate = `EDITE LE : ${formatDate(new Date()).split(' ')[0]}`;
+        
+        doc.text(dateText, pageWidth - 15, 18, { align: 'right' });
+        doc.text(countryText, pageWidth - 15, 26, { align: 'right' });
+        doc.text(issueDate, pageWidth - 15, 34, { align: 'right' });
+
+        // Summary Cards
+        const cardY = 55;
+        const cardMargin = 4;
+        const totalCardWidth = pageWidth - 30;
+        const cardWidth = (totalCardWidth - (2 * cardMargin)) / 3;
+        const cardHeight = 28;
+
+        const totalCommission = filteredExpeditions.reduce((sum, exp) => sum + getAgencyCommission(exp), 0);
+        const totalMontant = filteredExpeditions.reduce((sum, exp) => sum + parseFloat(exp.montant_expedition || 0), 0);
+
+        const cards = [
+            { label: "TOTAL EXPEDITIONS", value: `${filteredExpeditions.length}`, sub: "EXP.", color: [248, 250, 252], borderColor: [226, 232, 240] },
+            { label: "MONTANT TOTAL", value: formatCurrencyForPDF(totalMontant), sub: "CFA", color: [30, 41, 59], textColor: [255, 255, 255], borderColor: [15, 23, 42] },
+            { label: "COMMISSION AGENCE", value: formatCurrencyForPDF(totalCommission), sub: "CFA", color: [239, 246, 255], borderColor: [191, 219, 254], textColor: [30, 64, 175] }
+        ];
+
+        cards.forEach((card, i) => {
+            const x = 15 + i * (cardWidth + cardMargin);
+            
+            doc.setFillColor(...card.color);
+            doc.setDrawColor(...(card.borderColor || [226, 232, 240]));
+            doc.roundedRect(x, cardY, cardWidth, cardHeight, 2, 2, 'FD');
+            
+            doc.setFontSize(7.5);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(card.textColor ? card.textColor[0] : 100, card.textColor ? card.textColor[1] : 116, card.textColor ? card.textColor[2] : 139);
+            doc.text(card.label, x + 6, cardY + 9);
+            
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(card.textColor ? card.textColor[0] : 30, card.textColor ? card.textColor[1] : 41, card.textColor ? card.textColor[2] : 59);
+            const valText = card.value;
+            const metrics = doc.getTextDimensions(valText);
+            doc.text(valText, x + 6, cardY + 20);
+            
+            doc.setFontSize(7);
+            doc.setFont('helvetica', 'normal');
+            doc.text(card.sub, x + 6 + metrics.w + 2, cardY + 20);
+        });
+
+        // Table Data
+        const tableData = filteredExpeditions.map(exp => [
+            exp.reference,
+            getTypeLabel(exp.type_expedition),
+            exp.pays_depart + " → " + exp.pays_destination,
+            exp.expediteur?.nom_prenom || "---",
+            exp.destinataire?.nom_prenom || "---",
+            formatCurrencyForPDF(exp.montant_expedition),
+            formatCurrencyForPDF(getAgencyCommission(exp)),
+            getStatusLabel(exp.statut_expedition)
+        ]);
+
+        autoTable(doc, {
+            startY: 90,
+            head: [['Référence', 'Type', 'Trajet', 'Expéditeur', 'Destinataire', 'Montant', 'Com. Agence', 'Statut']],
+            body: tableData,
+            theme: 'grid',
+            styles: {
+                fontSize: 7,
+                cellPadding: 2.5,
+                overflow: 'linebreak',
+                halign: 'left',
+                valign: 'middle',
+                lineColor: [226, 232, 240],
+                lineWidth: 0.1
+            },
+            headStyles: {
+                fillColor: [15, 23, 42],
+                textColor: [255, 255, 255],
+                fontSize: 7,
+                fontStyle: 'bold',
+                halign: 'center',
+                valign: 'middle'
+            },
+            columnStyles: {
+                0: { cellWidth: 32, halign: 'left', fontStyle: 'bold' },
+                1: { cellWidth: 20, halign: 'center', fontSize: 6.5 },
+                2: { cellWidth: 40, halign: 'left' },
+                3: { cellWidth: 30, halign: 'left' },
+                4: { cellWidth: 30, halign: 'left' },
+                5: { cellWidth: 22, halign: 'right', fontStyle: 'bold' },
+                6: { cellWidth: 22, halign: 'right', fontStyle: 'bold', textColor: [37, 99, 235] },
+                7: { cellWidth: 28, halign: 'center', fontSize: 6, textColor: [100, 116, 139] }
+            },
+            alternateRowStyles: {
+                fillColor: [252, 254, 255]
+            },
+            margin: { left: 15, right: 15, bottom: 20 },
+            didDrawPage: (data) => {
+                doc.setFontSize(8);
+                doc.setTextColor(150);
+                doc.text(`Page ${data.pageNumber}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+            }
+        });
+
+        doc.save(`Rapport_Expeditions_${dateDebut}_au_${dateFin}.pdf`);
+    };
+
     const filteredExpeditions = useMemo(() => {
         let result = expeditions;
         if (type) {
@@ -271,6 +452,17 @@ const Expeditions = () => {
                             title="Rafraîchir"
                         >
                             <ArrowPathIcon className={`w-5 h-5 ${status === 'loading' ? 'animate-spin' : ''}`} />
+                        </button>
+
+                        {/* Export PDF Button */}
+                        <button
+                            onClick={handleExportPDF}
+                            disabled={!filteredExpeditions || filteredExpeditions.length === 0}
+                            className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Exporter en PDF"
+                        >
+                            <DocumentArrowDownIcon className="w-5 h-5" />
+                            <span className="text-sm font-bold hidden sm:inline">PDF</span>
                         </button>
                     </div>
                 </div>

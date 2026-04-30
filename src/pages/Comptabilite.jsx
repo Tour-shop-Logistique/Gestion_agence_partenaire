@@ -362,15 +362,21 @@ const Comptabilite = () => {
     }
 
     // -- Table Section --
-    const tableData = filteredData.map(item => [
-      { content: item.reference + "\n" + (item.expediteur?.nom_prenom || "---"), styles: { fontStyle: 'normal' } },
-      formatDate(item.created_at) + "\n" + (agencyData?.nom || "---"),
-      { content: formatCurrencyForPDF(item.accounting_details?.total_client_due), styles: { halign: 'right', fontStyle: 'bold' } },
-      { content: formatCurrencyForPDF(item.accounting_details?.backoffice), styles: { halign: 'right', fontStyle: 'bold' } },
-      { content: formatCurrencyForPDF(item.accounting_details?.agence), styles: { halign: 'right', fontStyle: 'bold', textColor: [37, 99, 235] } },
-      { content: formatCurrencyForPDF(item.accounting_details?.livreur), styles: { halign: 'right' } },
-      `Exp: ${item.statut_paiement === 'paye' ? 'REGLE' : 'NON REGLE'}\nFrais: ${item.statut_paiement === 'paye' ? 'REGLE' : 'NON REGLE'}`
-    ]);
+    const tableData = filteredData.map(item => {
+      const agenceTotal = (parseFloat(item.accounting_details?.agence_depart || 0) + parseFloat(item.accounting_details?.agence_arrivee || 0));
+      const backofficeTotal = (parseFloat(item.accounting_details?.backoffice_depart || 0) + parseFloat(item.accounting_details?.backoffice_arrivee || 0));
+      const livreurTotal = (parseFloat(item.accounting_details?.livreur_depart || 0) + parseFloat(item.accounting_details?.livreur_arrivee || 0));
+      
+      return [
+        item.reference + "\n" + (item.expediteur?.nom_prenom || "---"),
+        formatDate(item.created_at) + "\n" + (agencyData?.nom || "---"),
+        formatCurrencyForPDF(item.accounting_details?.total_client_due),
+        formatCurrencyForPDF(backofficeTotal),
+        formatCurrencyForPDF(agenceTotal),
+        formatCurrencyForPDF(livreurTotal),
+        `Exp: ${item.statut_paiement === 'paye' ? 'REGLE' : 'NON REGLE'}\nFrais: ${item.statut_paiement === 'paye' ? 'REGLE' : 'NON REGLE'}`
+      ];
+    });
 
     autoTable(doc, {
       startY: summary.potential?.details_agence ? 115 : 95,
@@ -379,7 +385,7 @@ const Comptabilite = () => {
       theme: 'grid',
       styles: {
         fontSize: 8,
-        cellPadding: 4,
+        cellPadding: 3,
         overflow: 'linebreak',
         halign: 'left',
         valign: 'middle',
@@ -391,16 +397,17 @@ const Comptabilite = () => {
         textColor: [255, 255, 255],
         fontSize: 8,
         fontStyle: 'bold',
-        halign: 'center'
+        halign: 'center',
+        valign: 'middle'
       },
       columnStyles: {
-        0: { cellWidth: 38 }, // Expédition
-        1: { cellWidth: 26 }, // Date / Agence
-        2: { cellWidth: 24, halign: 'right' }, // À Percevoir
-        3: { cellWidth: 24, halign: 'right' }, // Part Backoffice
-        4: { cellWidth: 24, halign: 'right' }, // Part Agence
-        5: { cellWidth: 20, halign: 'right' }, // Part Livreurs
-        6: { cellWidth: 24, fontSize: 6.5, textColor: [100, 116, 139] } // État
+        0: { cellWidth: 40, halign: 'left', valign: 'middle' }, // Expédition
+        1: { cellWidth: 28, halign: 'left', valign: 'middle' }, // Date / Agence
+        2: { cellWidth: 26, halign: 'right', valign: 'middle', fontStyle: 'bold' }, // À Percevoir
+        3: { cellWidth: 26, halign: 'right', valign: 'middle', fontStyle: 'bold' }, // Part Backoffice
+        4: { cellWidth: 26, halign: 'right', valign: 'middle', fontStyle: 'bold', textColor: [37, 99, 235] }, // Part Agence
+        5: { cellWidth: 22, halign: 'right', valign: 'middle' }, // Part Livreurs
+        6: { cellWidth: 22, halign: 'center', valign: 'middle', fontSize: 6.5, textColor: [100, 116, 139] } // État
       },
       alternateRowStyles: {
         fillColor: [252, 254, 255]
@@ -693,20 +700,31 @@ const Comptabilite = () => {
                 </span>
               </div>
 
-              {/* Répartition Détaillée des Gains */}
+              {/* Répartition Détaillée des Gains de l'Agence */}
               <div className="space-y-4">
-                <h4 className="text-[11px] font-bold text-slate-900 uppercase flex items-center gap-1.5 opacity-50">
-                  <ReceiptPercentIcon className="w-3.5 h-3.5" /> Répartition Détaillée des Gains
-                </h4>
+                <div className="flex items-center justify-between">
+                  <h4 className="text-[11px] font-bold text-slate-900 uppercase flex items-center gap-1.5 opacity-50">
+                    <ReceiptPercentIcon className="w-3.5 h-3.5" /> Répartition Détaillée des Gains
+                  </h4>
+                  <p className="text-xs font-bold text-blue-600">
+                    Total Agence: {formatCurrency((parseFloat(selectedExpedition.accounting_details?.agence_depart || 0) + parseFloat(selectedExpedition.accounting_details?.agence_arrivee || 0)))} CFA
+                  </p>
+                </div>
 
-                {/* Agence de Départ */}
+                {/* Agence de Départ (Tour Shop) */}
                 {parseFloat(selectedExpedition.accounting_details?.agence_depart || 0) > 0 && (
-                  <div className="bg-blue-50/50 rounded-lg p-3 border border-blue-100">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-[10px] font-bold text-blue-900 uppercase">Agence de Départ (Tour Shop)</p>
-                      <p className="text-sm font-black text-blue-600 tabular-nums">{formatCurrency(selectedExpedition.accounting_details?.agence_depart)}</p>
+                  <div className="bg-blue-50/50 rounded-lg p-4 border border-blue-100">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-[11px] font-bold text-blue-900 uppercase">Agence de Départ (Tour Shop)</p>
+                      <p className="text-lg font-black text-blue-600 tabular-nums">{formatCurrency(selectedExpedition.accounting_details?.agence_depart)} CFA</p>
                     </div>
-                    <div className="space-y-1.5 pl-3 border-l-2 border-blue-200">
+                    <div className="space-y-2 pl-3 border-l-2 border-blue-200">
+                      {parseFloat(selectedExpedition.montant_prestation || 0) > 0 && (
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-600">Montant Expédition (Com.)</span>
+                          <span className="text-slate-800 font-semibold tabular-nums">{formatCurrency(selectedExpedition.montant_prestation)} CFA</span>
+                        </div>
+                      )}
                       {selectedExpedition.commission_details?.enlevement && parseFloat(selectedExpedition.commission_details.enlevement.agence || 0) > 0 && (
                         <div className="flex justify-between text-xs">
                           <span className="text-slate-600">Frais d'Enlèvement (Part)</span>
@@ -719,24 +737,18 @@ const Comptabilite = () => {
                           <span className="text-slate-800 font-semibold tabular-nums">{formatCurrency(selectedExpedition.commission_details.emballage.agence)} CFA</span>
                         </div>
                       )}
-                      {parseFloat(selectedExpedition.montant_prestation || 0) > 0 && (
-                        <div className="flex justify-between text-xs">
-                          <span className="text-slate-600">Montant Expédition (Com.)</span>
-                          <span className="text-slate-800 font-semibold tabular-nums">{formatCurrency(selectedExpedition.montant_prestation)} CFA</span>
-                        </div>
-                      )}
                     </div>
                   </div>
                 )}
 
                 {/* Agence d'Arrivée */}
                 {parseFloat(selectedExpedition.accounting_details?.agence_arrivee || 0) > 0 && (
-                  <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-[10px] font-bold text-slate-700 uppercase">Agence d'Arrivée</p>
-                      <p className="text-sm font-black text-slate-700 tabular-nums">{formatCurrency(selectedExpedition.accounting_details?.agence_arrivee)}</p>
+                  <div className="bg-blue-50/50 rounded-lg p-4 border border-blue-100">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-[11px] font-bold text-blue-900 uppercase">Agence d'Arrivée</p>
+                      <p className="text-lg font-black text-blue-600 tabular-nums">{formatCurrency(selectedExpedition.accounting_details?.agence_arrivee)} CFA</p>
                     </div>
-                    <div className="space-y-1.5 pl-3 border-l-2 border-slate-300">
+                    <div className="space-y-2 pl-3 border-l-2 border-blue-200">
                       {selectedExpedition.commission_details?.livraison && parseFloat(selectedExpedition.commission_details.livraison.agence || 0) > 0 && (
                         <div className="flex justify-between text-xs">
                           <span className="text-slate-600">Frais de Livraison (Part)</span>
@@ -747,59 +759,26 @@ const Comptabilite = () => {
                   </div>
                 )}
 
-                {/* Backoffice (Central) */}
-                <div className="bg-slate-800 rounded-lg p-3 border border-slate-700">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-[10px] font-bold text-slate-300 uppercase">Backoffice (Central)</p>
-                    <p className="text-sm font-black text-white tabular-nums">
-                      {formatCurrency((parseFloat(selectedExpedition.accounting_details?.backoffice_depart || 0) + parseFloat(selectedExpedition.accounting_details?.backoffice_arrivee || 0)))}
-                    </p>
-                  </div>
-                  <div className="space-y-1.5 pl-3 border-l-2 border-slate-600">
-                    {parseFloat(selectedExpedition.montant_base || 0) > 0 && (
-                      <div className="flex justify-between text-xs">
-                        <span className="text-slate-400">Montant Expédition (Base)</span>
-                        <span className="text-slate-200 font-semibold tabular-nums">{formatCurrency(selectedExpedition.montant_base)} CFA</span>
-                      </div>
-                    )}
-                    {selectedExpedition.commission_details?.emballage && parseFloat(selectedExpedition.commission_details.emballage.backoffice || 0) > 0 && (
-                      <div className="flex justify-between text-xs">
-                        <span className="text-slate-400">Frais d'Emballage (Part)</span>
-                        <span className="text-slate-200 font-semibold tabular-nums">{formatCurrency(selectedExpedition.commission_details.emballage.backoffice)} CFA</span>
-                      </div>
-                    )}
-                    {parseFloat(selectedExpedition.frais_annexes || 0) > 0 && (
-                      <div className="flex justify-between text-xs">
-                        <span className="text-slate-400">Frais Annexes</span>
-                        <span className="text-slate-200 font-semibold tabular-nums">{formatCurrency(selectedExpedition.frais_annexes)} CFA</span>
+                {/* Récapitulatif des autres acteurs (info seulement) */}
+                <div className="pt-3 border-t border-slate-100">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase mb-3">Autres Acteurs (Info)</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                      <p className="text-[9px] font-bold text-slate-500 uppercase mb-1">Backoffice</p>
+                      <p className="text-sm font-bold text-slate-700 tabular-nums">
+                        {formatCurrency((parseFloat(selectedExpedition.accounting_details?.backoffice_depart || 0) + parseFloat(selectedExpedition.accounting_details?.backoffice_arrivee || 0)))} CFA
+                      </p>
+                    </div>
+                    {(parseFloat(selectedExpedition.accounting_details?.livreur_depart || 0) > 0 || parseFloat(selectedExpedition.accounting_details?.livreur_arrivee || 0) > 0) && (
+                      <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                        <p className="text-[9px] font-bold text-slate-500 uppercase mb-1">Livreurs</p>
+                        <p className="text-sm font-bold text-slate-700 tabular-nums">
+                          {formatCurrency((parseFloat(selectedExpedition.accounting_details?.livreur_depart || 0) + parseFloat(selectedExpedition.accounting_details?.livreur_arrivee || 0)))} CFA
+                        </p>
                       </div>
                     )}
                   </div>
                 </div>
-
-                {/* Livreurs */}
-                {(parseFloat(selectedExpedition.accounting_details?.livreur_depart || 0) > 0 || parseFloat(selectedExpedition.accounting_details?.livreur_arrivee || 0) > 0) && (
-                  <div className="grid grid-cols-2 gap-3">
-                    {parseFloat(selectedExpedition.accounting_details?.livreur_depart || 0) > 0 && (
-                      <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-                        <p className="text-[9px] font-bold text-slate-500 uppercase mb-1">Livreur Départ</p>
-                        <p className="text-sm font-black text-slate-700 tabular-nums">{formatCurrency(selectedExpedition.accounting_details?.livreur_depart)}</p>
-                        {selectedExpedition.commission_details?.enlevement && parseFloat(selectedExpedition.commission_details.enlevement.livreur || 0) > 0 && (
-                          <p className="text-[10px] text-slate-500 mt-1">Enlèvement</p>
-                        )}
-                      </div>
-                    )}
-                    {parseFloat(selectedExpedition.accounting_details?.livreur_arrivee || 0) > 0 && (
-                      <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-                        <p className="text-[9px] font-bold text-slate-500 uppercase mb-1">Livreur Arrivée</p>
-                        <p className="text-sm font-black text-slate-700 tabular-nums">{formatCurrency(selectedExpedition.accounting_details?.livreur_arrivee)}</p>
-                        {selectedExpedition.commission_details?.livraison && parseFloat(selectedExpedition.commission_details.livraison.livreur || 0) > 0 && (
-                          <p className="text-[10px] text-slate-500 mt-1">Livraison</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
 
               <div className="pt-4 border-t border-slate-50 flex flex-col gap-2">
