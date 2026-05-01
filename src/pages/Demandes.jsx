@@ -30,11 +30,13 @@ const Demandes = () => {
 
     useEffect(() => {
         loadDemandes({ page: currentPage });
-    }, [currentPage, loadDemandes]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentPage]);
 
     useEffect(() => {
         fetchAgencyData();
-    }, [fetchAgencyData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     useEffect(() => {
         if (message) {
@@ -125,6 +127,11 @@ const Demandes = () => {
         }
     };
 
+    const handleRefresh = async () => {
+        await loadDemandes({ page: currentPage }, true);
+        
+    };
+
     return (
         <div className="space-y-8 max-w-[1600px] mx-auto pb-10">
             {/* Premium Header Section */}
@@ -140,12 +147,18 @@ const Demandes = () => {
 
                 <div className="flex items-center gap-3">
                     <button
-                        onClick={() => loadDemandes({ page: currentPage }, true)}
+                        onClick={handleRefresh}
                         disabled={status === 'loading'}
-                        className="p-3 bg-white border border-slate-200 rounded-2xl text-slate-600 hover:text-indigo-600 hover:border-indigo-100 hover:shadow-md transition-all active:scale-95 disabled:opacity-50"
+                        className="relative p-3 bg-white border border-slate-200 rounded-2xl text-slate-600 hover:text-indigo-600 hover:border-indigo-100 hover:shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed group"
                         title="Rafraîchir la liste"
                     >
-                        <RefreshCw className={`w-5 h-5 ${status === 'loading' ? 'animate-spin' : ''}`} />
+                        <RefreshCw className={`w-5 h-5 transition-transform ${status === 'loading' ? 'animate-spin text-indigo-600' : 'group-hover:rotate-180 duration-500'}`} />
+                        {status === 'loading' && (
+                            <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
+                            </span>
+                        )}
                     </button>
                     <div className="group relative bg-gradient-to-br from-white to-slate-50/50 px-5 py-3 rounded-2xl border border-slate-200/60 shadow-sm transition-all duration-200">
                         <div className="flex items-center gap-3">
@@ -166,6 +179,22 @@ const Demandes = () => {
             {/* Main Content Card */}
             <div className="relative bg-gradient-to-br from-white via-white to-slate-50/30 rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-200/60 overflow-hidden backdrop-blur-sm">
                 <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/[0.02] via-transparent to-purple-500/[0.02] pointer-events-none"></div>
+
+                {/* Loading Overlay */}
+                {status === 'loading' && demandes.length > 0 && (
+                    <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-20 flex items-center justify-center">
+                        <div className="flex flex-col items-center gap-3">
+                            <div className="relative">
+                                <div className="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
+                                <div className="absolute inset-0 w-12 h-12 border-4 border-transparent border-r-indigo-400 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1s' }}></div>
+                            </div>
+                            <div className="text-center">
+                                <p className="text-sm font-bold text-slate-900">Actualisation en cours...</p>
+                                <p className="text-xs text-slate-500 mt-1">Récupération des dernières demandes</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 <div className="relative overflow-x-auto">
                     {/* Mobile view: Cards */}

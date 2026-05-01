@@ -6,14 +6,13 @@ import autoTable from 'jspdf-autotable';
 import { useExpedition } from "../hooks/useExpedition";
 import { useAgency } from "../hooks/useAgency";
 import PrintSuccessModal from "../components/Receipts/PrintSuccessModal";
-import ConfirmationModal from "../components/ConfirmationModal";
 import { getLogoUrl } from "../utils/apiConfig";
 import { formatPriceDual } from "../utils/format";
-import { ArrowPathIcon, MagnifyingGlassIcon, CalendarIcon, FunnelIcon, DocumentArrowDownIcon } from "@heroicons/react/24/outline";
+import { ArrowPathIcon, MagnifyingGlassIcon, DocumentArrowDownIcon } from "@heroicons/react/24/outline";
 
 const Expeditions = () => {
     const navigate = useNavigate();
-    const { expeditions, meta, loadExpeditions, confirmReception, status, lastFilters } = useExpedition();
+    const { expeditions, meta, loadExpeditions, status, lastFilters } = useExpedition();
     const { agencyData, fetchAgencyData } = useAgency();
 
     // Helper to get today's date in YYYY-MM-DD
@@ -29,9 +28,6 @@ const Expeditions = () => {
     };
 
     const [currentPage, setCurrentPage] = useState(lastFilters?.page || 1);
-    const [isConfirmReceptionModalOpen, setIsConfirmReceptionModalOpen] = useState(false);
-    const [expeditionToConfirm, setExpeditionToConfirm] = useState(null);
-    const [isConfirming, setIsConfirming] = useState(false);
 
     const [dateDebut, setDateDebut] = useState(() => {
         const saved = sessionStorage.getItem('expeditions_date_debut');
@@ -73,23 +69,34 @@ const Expeditions = () => {
         setShowPrintModal(true);
     };
 
-    const handleConfirmReception = (expedition) => {
-        setExpeditionToConfirm(expedition);
-        setIsConfirmReceptionModalOpen(true);
-    };
-
-    const processConfirmReception = async () => {
-        if (!expeditionToConfirm) return;
-        setIsConfirming(true);
-        await confirmReception(expeditionToConfirm.id);
-        await loadExpeditions({
-            page: currentPage,
-            date_debut: dateDebut,
-            date_fin: dateFin
-        }, true);
-        setIsConfirming(false);
-        setIsConfirmReceptionModalOpen(false);
-        setExpeditionToConfirm(null);
+    const getStatusBorderColor = (status) => {
+        switch (status) {
+            case 'en_attente':
+                return 'border-l-amber-400 hover:bg-amber-50/30';
+            case 'accepted':
+                return 'border-l-emerald-400 hover:bg-emerald-50/30';
+            case 'refused':
+                return 'border-l-red-400 hover:bg-red-50/30';
+            case 'en_cours_enlevement':
+            case 'en_cours_depot':
+                return 'border-l-sky-400 hover:bg-sky-50/30';
+            case 'recu_agence_depart':
+                return 'border-l-blue-500 hover:bg-blue-50/30';
+            case 'en_transit_entrepot':
+                return 'border-l-indigo-400 hover:bg-indigo-50/30';
+            case 'depart_expedition_succes':
+                return 'border-l-indigo-500 hover:bg-indigo-50/30';
+            case 'arrivee_expedition_succes':
+            case 'recu_agence_destination':
+                return 'border-l-purple-500 hover:bg-purple-50/30';
+            case 'en_cours_livraison':
+                return 'border-l-pink-500 hover:bg-pink-50/30';
+            case 'termined':
+            case 'delivered':
+                return 'border-l-emerald-600 hover:bg-emerald-50/30';
+            default:
+                return 'border-l-slate-300 hover:bg-slate-50/30';
+        }
     };
 
     const formatDate = (dateString) => {
@@ -471,27 +478,60 @@ const Expeditions = () => {
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/60 p-1 rounded-2xl border border-slate-200/50">
                     <div className="flex items-center p-1 bg-slate-100/50 rounded-xl w-full sm:w-auto overflow-x-auto no-scrollbar">
                         {[
-                            { id: '', label: 'Tout' },
-                            { id: 'simple', label: 'Simple' },
-                            { id: 'groupage_dhd_aerien', label: 'Aérien' },
-                            { id: 'groupage_afrique', label: 'Afrique' },
-                            { id: 'groupage_ca', label: 'CA' }
-                        ].map((btn) => (
-                            <button
-                                key={btn.id}
-                                onClick={() => {
-                                    setType(btn.id);
-                                    setCurrentPage(1);
-                                }}
-                                className={`whitespace-nowrap px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
-                                    type === btn.id
-                                        ? 'bg-white text-indigo-600 shadow-sm'
-                                        : 'text-slate-500 hover:text-slate-700'
-                                }`}
-                            >
-                                {btn.label}
-                            </button>
-                        ))}
+                            { id: '', label: 'Tout', icon: '📦', color: 'indigo' },
+                            { id: 'simple', label: 'Simple', icon: '📮', color: 'blue' },
+                            { id: 'groupage_dhd_aerien', label: 'Aérien', icon: '✈️', color: 'sky' },
+                            { id: 'groupage_dhd_maritine', label: 'Maritime', icon: '🚢', color: 'cyan' },
+                            { id: 'groupage_afrique', label: 'Afrique', icon: '🌍', color: 'orange' },
+                            { id: 'groupage_ca', label: 'CA', icon: '📋', color: 'purple' }
+                        ].map((btn) => {
+                            const isActive = type === btn.id;
+                            const colorClasses = {
+                                indigo: {
+                                    active: 'bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-lg shadow-indigo-200',
+                                    inactive: 'text-slate-500 hover:text-indigo-600 hover:bg-indigo-50'
+                                },
+                                blue: {
+                                    active: 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-200',
+                                    inactive: 'text-slate-500 hover:text-blue-600 hover:bg-blue-50'
+                                },
+                                sky: {
+                                    active: 'bg-gradient-to-br from-sky-500 to-sky-600 text-white shadow-lg shadow-sky-200',
+                                    inactive: 'text-slate-500 hover:text-sky-600 hover:bg-sky-50'
+                                },
+                                cyan: {
+                                    active: 'bg-gradient-to-br from-cyan-500 to-cyan-600 text-white shadow-lg shadow-cyan-200',
+                                    inactive: 'text-slate-500 hover:text-cyan-600 hover:bg-cyan-50'
+                                },
+                                orange: {
+                                    active: 'bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-200',
+                                    inactive: 'text-slate-500 hover:text-orange-600 hover:bg-orange-50'
+                                },
+                                purple: {
+                                    active: 'bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-lg shadow-purple-200',
+                                    inactive: 'text-slate-500 hover:text-purple-600 hover:bg-purple-50'
+                                }
+                            };
+                            
+                            return (
+                                <button
+                                    key={btn.id}
+                                    onClick={() => {
+                                        setType(btn.id);
+                                        setCurrentPage(1);
+                                    }}
+                                    className={`whitespace-nowrap px-3.5 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all flex items-center gap-1.5 ${
+                                        isActive
+                                            ? colorClasses[btn.color].active
+                                            : colorClasses[btn.color].inactive
+                                    }`}
+                                    title={btn.id === 'groupage_dhd_aerien' ? 'DHD Aérien' : btn.id === 'groupage_dhd_maritine' ? 'DHD Maritime' : btn.label}
+                                >
+                                    <span className={`text-sm ${isActive ? 'scale-110' : ''} transition-transform`}>{btn.icon}</span>
+                                    {btn.label}
+                                </button>
+                            );
+                        })}
                     </div>
 
                     <div className="flex items-center gap-4 px-2">
@@ -537,7 +577,7 @@ const Expeditions = () => {
                                 ))
                             ) : filteredExpeditions.length > 0 ? (
                                 filteredExpeditions.map((exp) => (
-                                    <div key={exp.id} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 relative overflow-hidden group">
+                                    <div key={exp.id} className={`bg-white rounded-2xl p-5 shadow-sm border border-slate-100 relative overflow-hidden group border-l-4 ${getStatusBorderColor(exp.statut_expedition)}`}>
                                         <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-slate-50 to-indigo-50/50 rounded-bl-full -mr-4 -mt-4 opacity-50"></div>
 
                                         <div className="relative z-10 space-y-4">
@@ -611,17 +651,6 @@ const Expeditions = () => {
                                                 </div>
 
                                                 <div className="flex gap-1.5 ml-auto">
-                                                    {exp.statut_expedition === 'accepted' && (
-                                                        <button
-                                                            onClick={() => handleConfirmReception(exp)}
-                                                            className="p-2 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100 shadow-sm transition-transform active:scale-90"
-                                                            title="Confirmer Réception"
-                                                        >
-                                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                                            </svg>
-                                                        </button>
-                                                    )}
                                                     <button
                                                         onClick={() => handlePrintReceipt(exp)}
                                                         className="p-2 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-sm transition-transform active:scale-90"
@@ -654,13 +683,13 @@ const Expeditions = () => {
                             {/* Sticky Premium Header */}
                             <thead className="sticky top-0 z-10">
                                 <tr className="bg-slate-50/90 backdrop-blur-md border-b border-slate-200/60">
-                                    <th className="px-8 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em]">Référence</th>
-                                    <th className="px-8 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em]">Expéditeur / Destinataire</th>
-                                    <th className="px-8 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em]">Trajet</th>
-                                    <th className="px-8 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em]">Montant</th>
-                                    <th className="px-8 py-5 text-[10px] font-bold text-indigo-500 uppercase tracking-[0.15em] bg-indigo-50/30">Ma Commission</th>
-                                    <th className="px-8 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em]">Statut</th>
-                                    <th className="px-8 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em] text-right">Actions</th>
+                                    <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wide w-[12%]">Référence</th>
+                                    <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wide w-[18%]">Expéditeur / Destinataire</th>
+                                    <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wide w-[10%]">Trajet</th>
+                                    <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wide w-[14%]">Montant</th>
+                                    <th className="px-6 py-5 text-xs font-bold text-indigo-600 uppercase tracking-wide bg-indigo-50/30 w-[13%]">Commission</th>
+                                    <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wide w-[18%]">Statut</th>
+                                    <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wide text-right w-[15%]">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100/60">
@@ -716,104 +745,92 @@ const Expeditions = () => {
                                     filteredExpeditions.map((exp) => (
                                         <tr
                                             key={exp.id}
-                                            className="group relative hover:bg-slate-50/40 transition-all duration-200 ease-out border-l-2 border-transparent hover:border-indigo-500 cursor-pointer"
+                                            className={`group relative hover:bg-slate-50/40 transition-all duration-200 ease-out border-l-4 ${getStatusBorderColor(exp.statut_expedition)} cursor-pointer`}
                                             onClick={() => navigate(`/expeditions/${exp.id}`)}
                                         >
-                                            <td className="px-8 py-6">
+                                            <td className="px-6 py-7">
                                                 <div className="flex flex-col gap-1.5">
-                                                    <span className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors duration-200 tracking-tight">
+                                                    <span className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors duration-200 leading-tight">
                                                         {exp.reference}
                                                     </span>
-                                                    <span className="text-[11px] font-medium text-slate-400 tracking-wide">
+                                                    <span className="text-xs font-medium text-slate-400 leading-tight">
                                                         {formatDate(exp.created_at)}
                                                     </span>
                                                 </div>
                                             </td>
-                                            <td className="px-8 py-6">
-                                                <div className="flex flex-col gap-2.5">
+                                            <td className="px-6 py-7">
+                                                <div className="flex flex-col gap-3">
                                                     <div className="flex items-center gap-2.5">
-                                                        <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100/50 border border-blue-200/40 flex items-center justify-center">
-                                                            <span className="text-[10px] font-bold text-blue-600">E</span>
+                                                        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100/50 border border-blue-200/40 flex items-center justify-center flex-shrink-0">
+                                                            <span className="text-xs font-bold text-blue-600">E</span>
                                                         </div>
-                                                        <span className="text-xs font-semibold text-slate-700 tracking-tight">{exp.expediteur?.nom_prenom}</span>
+                                                        <span className="text-sm font-semibold text-slate-700 leading-tight">{exp.expediteur?.nom_prenom}</span>
                                                     </div>
                                                     <div className="flex items-center gap-2.5">
-                                                        <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-purple-50 to-purple-100/50 border border-purple-200/40 flex items-center justify-center">
-                                                            <span className="text-[10px] font-bold text-purple-600">D</span>
+                                                        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-50 to-purple-100/50 border border-purple-200/40 flex items-center justify-center flex-shrink-0">
+                                                            <span className="text-xs font-bold text-purple-600">D</span>
                                                         </div>
-                                                        <span className="text-xs font-semibold text-slate-700 tracking-tight">{exp.destinataire?.nom_prenom}</span>
+                                                        <span className="text-sm font-semibold text-slate-700 leading-tight">{exp.destinataire?.nom_prenom}</span>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-8 py-6">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="flex flex-col items-center gap-1">
-                                                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-2 py-0.5 bg-slate-100/60 rounded-md">
+                                            <td className="px-6 py-7">
+                                                <div className="flex items-center justify-center">
+                                                    <div className="flex flex-col items-center gap-1.5">
+                                                        <span className="text-xs font-bold text-slate-600 uppercase tracking-wide px-2.5 py-1 bg-slate-100/60 rounded-md whitespace-nowrap">
                                                             {exp.pays_depart}
                                                         </span>
                                                         <svg className="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                                                         </svg>
-                                                        <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider px-2 py-0.5 bg-indigo-50/60 rounded-md border border-indigo-100">
+                                                        <span className="text-xs font-bold text-indigo-600 uppercase tracking-wide px-2.5 py-1 bg-indigo-50/60 rounded-md border border-indigo-100 whitespace-nowrap">
                                                             {exp.pays_destination}
                                                         </span>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-8 py-6">
-                                                <div className="flex flex-col gap-1">
-                                                    <span className="text-sm font-bold text-slate-900 tracking-tight tabular-nums">
+                                            <td className="px-6 py-7">
+                                                <div className="flex flex-col gap-2">
+                                                    <span className="text-base font-bold text-slate-900 tabular-nums leading-tight">
                                                         {formatPriceDual(exp.montant_expedition)}
                                                     </span>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.1em]">
+                                                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                                                        <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">
                                                             {exp.colis?.length || 0} Colis
                                                         </span>
-                                                        <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase border shadow-sm ${getTypeStyle(exp.type_expedition)}`}>
+                                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border shadow-sm whitespace-nowrap ${getTypeStyle(exp.type_expedition)}`}>
                                                             {getTypeLabel(exp.type_expedition)}
                                                         </span>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-8 py-6 bg-indigo-50/10">
-                                                <div className="flex flex-col">
-                                                    <span className="text-sm font-black text-indigo-600 tracking-tight tabular-nums">
-                                                        {new Intl.NumberFormat('fr-FR').format(getAgencyCommission(exp))} <span className="text-[10px] font-bold uppercase">CFA</span>
+                                            <td className="px-6 py-7 bg-indigo-50/10">
+                                                <div className="flex flex-col gap-1.5">
+                                                    <span className="text-base font-black text-indigo-600 tabular-nums leading-tight whitespace-nowrap">
+                                                        {new Intl.NumberFormat('fr-FR').format(getAgencyCommission(exp))} <span className="text-xs font-bold">CFA</span>
                                                     </span>
-                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Votre gain agence</span>
+                                                    <span className="text-[10px] font-bold text-slate-400 uppercase whitespace-nowrap">Votre gain</span>
                                                 </div>
                                             </td>
-                                            <td className="px-8 py-6">
-                                                <div className="flex flex-col gap-1.5">
-                                                    <span className={`inline-flex items-center justify-center px-1.5 py-1 rounded text-[9px] font-black uppercase tracking-wider border ${getStatusStyle(exp.statut_expedition)}`}>
+                                            <td className="px-6 py-7">
+                                                <div className="flex flex-col gap-2.5">
+                                                    <span className={`inline-flex items-center justify-center px-2.5 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wide border whitespace-nowrap ${getStatusStyle(exp.statut_expedition)}`}>
                                                         {getStatusLabel(exp.statut_expedition)}
                                                     </span>
-                                                    <div className="flex flex-col gap-1 pt-1 border-t border-slate-100/60">
-                                                        <span className={`text-[8px] font-bold uppercase tracking-tighter ${exp.statut_paiement_expedition === 'paye' ? 'text-emerald-600' : 'text-orange-500'}`}>
+                                                    <div className="flex flex-col gap-1.5 pt-1.5 border-t border-slate-100/60">
+                                                        <span className={`text-[10px] font-bold uppercase whitespace-nowrap ${exp.statut_paiement_expedition === 'paye' ? 'text-emerald-600' : 'text-orange-500'}`}>
                                                             T: {exp.statut_paiement_expedition === 'paye' ? 'Payé' : 'Attente'}
                                                         </span>
                                                         {parseFloat(exp.frais_annexes || 0) > 0 && (
-                                                            <span className={`text-[8px] font-bold uppercase tracking-tighter ${exp.statut_paiement_frais === 'paye' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                            <span className={`text-[10px] font-bold uppercase whitespace-nowrap ${exp.statut_paiement_frais === 'paye' ? 'text-emerald-600' : 'text-rose-600'}`}>
                                                                 H: {exp.statut_paiement_frais === 'paye' ? 'Payé' : 'Bloqué'}
                                                             </span>
                                                         )}
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-8 py-6 text-right">
+                                            <td className="px-6 py-7 text-right">
                                                 <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                                                    {exp.statut_expedition === 'accepted' && (
-                                                        <button
-                                                            onClick={() => handleConfirmReception(exp)}
-                                                            className="group/btn relative p-2.5 hover:bg-white rounded-xl transition-all duration-200 text-slate-400 hover:text-indigo-600 border border-transparent hover:border-slate-200 hover:shadow-lg hover:shadow-indigo-200/50"
-                                                            title="Confirmer la réception en agence"
-                                                        >
-                                                            <svg className="w-5 h-5 transition-transform duration-200 group-hover/btn:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                                            </svg>
-                                                        </button>
-                                                    )}
-
                                                     <button
                                                         onClick={() => handlePrintReceipt(exp)}
                                                         className="group/btn relative p-2.5 hover:bg-white rounded-xl transition-all duration-200 text-slate-400 hover:text-emerald-600 border border-transparent hover:border-slate-200 hover:shadow-lg hover:shadow-emerald-200/50"
@@ -918,20 +935,6 @@ const Expeditions = () => {
                     }}
                 />
             )}
-
-            <ConfirmationModal
-                isOpen={isConfirmReceptionModalOpen}
-                onClose={() => {
-                    setIsConfirmReceptionModalOpen(false);
-                    setExpeditionToConfirm(null);
-                }}
-                onConfirm={processConfirmReception}
-                title="Confirmer la réception"
-                message={`Confirmez-vous avoir reçu les colis pour l'expédition ${expeditionToConfirm?.reference} à votre agence ?`}
-                confirmText="Confirmer la réception"
-                type="info"
-                isLoading={isConfirming}
-            />
         </>
     );
 };

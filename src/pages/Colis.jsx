@@ -68,6 +68,7 @@ const Colis = () => {
                 ...item,
                 expedition: exp,
                 expedition_id: exp.id,
+                expedition_status: exp.statut_expedition,
                 is_received: item.is_received_by_agence_depart === true || item.is_received_by_agence_destination === true || item.is_received_by_agence === true,
                 is_sent: item.is_expedie_vers_entrepot === true
             }))
@@ -77,8 +78,10 @@ const Colis = () => {
     // Filtrer les colis selon l'onglet actif
     const tabColis = useMemo(() => {
         if (activeTab === 'agence') {
-            return allColis.filter(c => !c.is_received);
+            // Onglet "En agence" : uniquement les colis NON reçus ET avec statut expédition "accepted"
+            return allColis.filter(c => !c.is_received && c.expedition_status === 'accepted');
         } else {
+            // Onglet "Envoi pour expédition" : uniquement les colis déjà reçus
             return allColis.filter(c => c.is_received);
         }
     }, [allColis, activeTab]);
@@ -165,7 +168,7 @@ const Colis = () => {
                     </div>
                     <p className="text-xs sm:text-sm font-medium text-slate-500 tracking-wide ml-10 sm:ml-12">
                         {activeTab === 'agence'
-                            ? "Confirmez la réception des colis arrivant à l'agence"
+                            ? "Confirmez la réception des colis des expéditions acceptées arrivant à l'agence"
                             : "Préparez et initiez l'envoi des colis vers l'entrepôt"}
                     </p>
                 </div>
@@ -203,6 +206,24 @@ const Colis = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Info Banner pour l'onglet "En agence"
+            {activeTab === 'agence' && (
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
+                    <div className="p-1 bg-blue-100 rounded-lg shrink-0">
+                        <IdentificationIcon className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                        <p className="text-sm font-semibold text-blue-900 mb-1">
+                            Colis des expéditions acceptées uniquement
+                        </p>
+                        <p className="text-xs text-blue-700">
+                            Seuls les colis des expéditions avec le statut "Acceptée" sont affichés ici. 
+                            Les expéditions en attente ou refusées ne peuvent pas être réceptionnées.
+                        </p>
+                    </div>
+                </div>
+            )} */}
 
             {/* Data Section */}
             <div className="relative">

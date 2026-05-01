@@ -97,6 +97,7 @@ export const fetchColis = createAsyncThunk(
 export const fetchDemandesClients = createAsyncThunk(
     "expedition/fetchDemandes",
     async (params = { page: 1 }, { rejectWithValue }) => {
+        console.log(result)
         try {
             const result = await expeditionsApi.listDemandes(params);
             if (!result.success) {
@@ -106,6 +107,7 @@ export const fetchDemandesClients = createAsyncThunk(
                 data: result.data,
                 meta: result.meta
             };
+            
         } catch (error) {
             return rejectWithValue(error.message || "Erreur lors du chargement des demandes");
         }

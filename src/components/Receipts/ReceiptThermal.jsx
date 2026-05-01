@@ -10,9 +10,13 @@ const ReceiptThermal = React.forwardRef(({ expedition, colis, agency }, ref) => 
             {/* Header with Agency Info */}
             <div className="text-center border-b-2 border-black pb-2 mb-2 flex flex-col items-center">
                 <img src={CompanyLogo} alt="Logo" className="h-8 mb-1 object-contain brightness-0" />
-                <h1 className="font-bold text-base leading-tight uppercase">{agency?.nom_agence || agency?.name || 'AGENCE'}</h1>
+                <h1 className="font-bold text-base leading-tight uppercase">
+                    {agency?.nom_agence || agency?.name || agency?.nom || 'AGENCE'}
+                </h1>
                 {agency?.adresse && <p className="text-[9px] break-words">{agency.adresse}</p>}
-                <p className="text-[9px] font-bold">{agency?.telephone || agency?.telephone_agence || ''}</p>
+                <p className="text-[9px] font-bold">
+                    {agency?.telephone || agency?.telephone_agence || agency?.phone || agency?.agence?.telephone || 'Non renseigné'}
+                </p>
                 {agency?.email && <p className="text-[8px]">{agency.email}</p>}
             </div>
 
