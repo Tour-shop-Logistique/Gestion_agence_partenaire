@@ -125,7 +125,7 @@ const Header = ({ onToggleSidebar }) => {
             </div>
             <div className="hidden md:flex flex-col items-start leading-tight pr-1">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Taux de conversion</span>
-              <span className="text-xs font-black text-slate-900">1€ = {exchangeRate} CFA</span>
+              <span className="text-xs font-bold text-slate-900">1€ = {exchangeRate} CFA</span>
             </div>
             <div className="md:hidden flex flex-col items-start leading-tight">
               <span className="text-[10px] font-bold text-indigo-600">1€ = {exchangeRate}</span>
@@ -239,12 +239,12 @@ const Header = ({ onToggleSidebar }) => {
                 <RefreshCcw className="w-6 h-6 text-white" />
               </div>
 
-              <h3 className="text-xl font-black text-slate-900 mb-1">Configuration</h3>
+              <h3 className="text-xl font-bold text-slate-900 mb-1">Configuration</h3>
               <p className="text-sm text-slate-500 mb-8 font-medium">Définissez le taux de conversion Euro vers CFA pour les simulations.</p>
 
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">
+                  <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide ml-1">
                     Valeur pour 1 Euro
                   </label>
                   <div className="relative group">
@@ -253,11 +253,11 @@ const Header = ({ onToggleSidebar }) => {
                       step="0.001"
                       value={exchangeRate}
                       onChange={(e) => setExchangeRate(e.target.value)}
-                      className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-lg font-black text-slate-900 focus:bg-white focus:border-indigo-500 outline-none transition-all duration-300 pr-16"
+                      className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-lg font-bold text-slate-900 focus:bg-white focus:border-indigo-500 outline-none transition-all duration-300 pr-16"
                       placeholder="655.957"
                     />
                     <div className="absolute right-4 top-1/2 -translate-y-1/2 px-2 py-1 bg-indigo-100 rounded-lg">
-                      <span className="text-[10px] font-black text-indigo-700">CFA</span>
+                      <span className="text-[10px] font-bold text-indigo-700">CFA</span>
                     </div>
                   </div>
                   <p className="text-[10px] text-slate-400 italic ml-1">* Le taux par défaut est 655.957 CFA</p>
@@ -266,13 +266,13 @@ const Header = ({ onToggleSidebar }) => {
                 <div className="flex gap-3 pt-4">
                   <button
                     onClick={() => setShowRateModal(false)}
-                    className="flex-1 py-4 px-6 rounded-2xl text-xs font-black text-slate-500 hover:bg-slate-50 transition-all active:scale-95 border border-slate-100"
+                    className="flex-1 py-4 px-6 rounded-2xl text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all active:scale-95 border border-slate-100"
                   >
                     Fermer
                   </button>
                   <button
                     onClick={handleSaveRate}
-                    className="flex-[1.5] py-4 px-6 rounded-2xl text-xs font-black bg-indigo-600 text-white shadow-xl shadow-indigo-100 hover:bg-slate-900 hover:shadow-indigo-200 hover:-translate-y-0.5 active:scale-95 transition-all duration-300"
+                    className="flex-[1.5] py-4 px-6 rounded-2xl text-xs font-bold bg-indigo-600 text-white shadow-xl shadow-indigo-100 hover:bg-slate-900 hover:shadow-indigo-200 hover:-translate-y-0.5 active:scale-95 transition-all duration-300"
                   >
                     Enregistrer
                   </button>

@@ -34,9 +34,17 @@ const Dashboard = () => {
     const [showDemandesAlert, setShowDemandesAlert] = useState(true);
 
     useEffect(() => {
-        fetchAgencyData();
+        // Charger les données seulement si elles ne sont pas déjà en cache
+        // Le hook useDashboard gère automatiquement le cache (30 secondes)
+        fetchDashboard(); // Ne recharge que si nécessaire (cache de 30s)
+        
+        // Toujours charger les demandes pour le Dashboard (pas de condition)
         loadDemandes({ page: 1 });
-        fetchDashboard();
+        
+        // Charger les données de l'agence seulement si pas déjà chargées
+        if (!agencyData) {
+            fetchAgencyData();
+        }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 

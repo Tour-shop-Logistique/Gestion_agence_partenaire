@@ -167,7 +167,7 @@ const Demandes = () => {
                                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
                             </span>
                             <div className="flex flex-col">
-                                <span className="text-xs font-semibold text-slate-400 uppercase tracking-[0.15em]">En attente</span>
+                                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">En attente</span>
                                 <span className="text-lg font-bold text-slate-900 tracking-tight leading-none">{demandesMeta?.total || 0}</span>
                             </div>
                         </div>
@@ -220,7 +220,7 @@ const Demandes = () => {
                                                 <p className="text-[10px] text-slate-400 font-medium">{formatDate(demande.created_at)}</p>
                                             </div>
                                         </div>
-                                        <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase border shrink-0 ${getTypeStyle(demande.type_expedition)}`}>
+                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border shrink-0 ${getTypeStyle(demande.type_expedition)}`}>
                                             {getTypeLabel(demande.type_expedition)}
                                         </span>
                                     </div>
@@ -234,14 +234,14 @@ const Demandes = () => {
 
                                     <div className="grid grid-cols-2 gap-4 pt-2">
                                         <div className="flex flex-col gap-0.5">
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Contenu</span>
+                                            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Contenu</span>
                                             <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
                                                 <Package className="w-3.5 h-3.5 text-slate-400" />
                                                 {demande.colis?.length || 0} Colis
                                             </div>
                                         </div>
                                         <div className="flex flex-col gap-0.5 items-end">
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Valeur</span>
+                                            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Valeur</span>
                                             <span className="text-sm font-bold text-slate-900 tabular-nums">
                                                 {formatPriceDual(demande.montant_expedition)}
                                             </span>
@@ -277,11 +277,11 @@ const Demandes = () => {
                     <table className="hidden lg:table w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-slate-50/90 backdrop-blur-md border-b border-slate-200/60">
-                                <th className="px-8 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em]">Client / Date</th>
-                                <th className="px-8 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em]">Type & Trajet</th>
-                                <th className="px-8 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em]">Détails Colis</th>
-                                <th className="px-8 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em]">Montant Estimé</th>
-                                <th className="px-8 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em] text-right">Actions</th>
+                                <th className="px-8 py-5 text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Client / Date</th>
+                                <th className="px-8 py-5 text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Type & Trajet</th>
+                                <th className="px-8 py-5 text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Détails Colis</th>
+                                <th className="px-8 py-5 text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Montant Estimé</th>
+                                <th className="px-8 py-5 text-[10px] font-semibold text-slate-500 uppercase tracking-wide text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100/60">
@@ -316,7 +316,7 @@ const Demandes = () => {
                                         </td>
                                         <td className="px-8 py-6">
                                             <div className="flex flex-col gap-2">
-                                                <span className={`inline-flex self-start px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider border shadow-sm ${getTypeStyle(demande.type_expedition)}`}>
+                                                <span className={`inline-flex self-start px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border shadow-sm ${getTypeStyle(demande.type_expedition)}`}>
                                                     {getTypeLabel(demande.type_expedition)}
                                                 </span>
                                                 <div className="flex items-center gap-2 text-xs font-bold text-slate-600">
@@ -400,21 +400,21 @@ const Demandes = () => {
                 {/* Pagination */}
                 {demandesMeta && demandesMeta.last_page > 1 && (
                     <div className="px-6 sm:px-8 py-6 bg-slate-50/50 backdrop-blur-sm border-t border-slate-200/60 flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
                             Page <span className="text-indigo-600 font-bold">{demandesMeta.current_page}</span> sur <span className="text-slate-900 font-bold">{demandesMeta.last_page}</span>
                         </span>
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={() => handlePageChange(demandesMeta.current_page - 1)}
                                 disabled={demandesMeta.current_page === 1}
-                                className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-slate-600 disabled:text-slate-300 hover:bg-white rounded-xl transition-all"
+                                className="px-4 py-2 text-xs font-bold uppercase tracking-wide text-slate-600 disabled:text-slate-300 hover:bg-white rounded-xl transition-all"
                             >
                                 Précédent
                             </button>
                             <button
                                 onClick={() => handlePageChange(demandesMeta.current_page + 1)}
                                 disabled={demandesMeta.current_page === demandesMeta.last_page}
-                                className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-slate-600 disabled:text-slate-300 hover:bg-white rounded-xl transition-all"
+                                className="px-4 py-2 text-xs font-bold uppercase tracking-wide text-slate-600 disabled:text-slate-300 hover:bg-white rounded-xl transition-all"
                             >
                                 Suivant
                             </button>

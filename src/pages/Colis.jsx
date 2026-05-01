@@ -176,13 +176,13 @@ const Colis = () => {
                 <div className="flex flex-col sm:flex-row items-center bg-slate-100/50 p-1 rounded-2xl border border-slate-200/60 self-start lg:self-center">
                     <button
                         onClick={() => { setActiveTab('agence'); setSelectedCodes([]); }}
-                        className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'agence' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        className={`px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-wide transition-all ${activeTab === 'agence' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                     >
                         En agence
                     </button>
                     <button
                         onClick={() => { setActiveTab('entrepot'); setSelectedCodes([]); }}
-                        className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'entrepot' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        className={`px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-wide transition-all ${activeTab === 'entrepot' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                     >
                         Envoi pour expedition
                     </button>
@@ -241,12 +241,12 @@ const Colis = () => {
                                             onChange={toggleSelectAll}
                                         />
                                     </th>
-                                    <th className="px-6 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Colis Info</th>
-                                    <th className="px-6 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Catégorie & Détails</th>
-                                    <th className="px-6 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Expédition</th>
-                                    <th className="px-6 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center">Dimensions & Poids</th>
-                                    <th className="px-6 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Montant Total</th>
-                                    <th className="px-6 py-5 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Détails</th>
+                                    <th className="px-6 py-5 text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Colis Info</th>
+                                    <th className="px-6 py-5 text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Catégorie & Détails</th>
+                                    <th className="px-6 py-5 text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Expédition</th>
+                                    <th className="px-6 py-5 text-[10px] font-semibold text-slate-500 uppercase tracking-wide text-center">Dimensions & Poids</th>
+                                    <th className="px-6 py-5 text-[10px] font-semibold text-slate-500 uppercase tracking-wide text-right">Montant Total</th>
+                                    <th className="px-6 py-5 text-[10px] font-semibold text-slate-500 uppercase tracking-wide text-right">Détails</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -329,7 +329,7 @@ const Colis = () => {
                                             <td className="px-6 py-6 text-right">
                                                 <Link
                                                     to={`/expeditions/${item.expedition_id}`}
-                                                    className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg shadow-slate-200"
+                                                    className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-slate-900 text-white text-[10px] font-bold uppercase tracking-wide hover:bg-slate-800 transition-all shadow-lg shadow-slate-200"
                                                 >
                                                     Détails
                                                 </Link>
@@ -349,7 +349,7 @@ const Colis = () => {
                     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-2xl animate-in slide-in-from-bottom-8 duration-300">
                         <div className="bg-slate-900 text-white rounded-2xl px-6 py-4 shadow-2xl shadow-indigo-500/20 border border-slate-800 flex items-center justify-between gap-4">
                             <div className="flex items-center gap-4">
-                                <div className="bg-indigo-600 px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest">
+                                <div className="bg-indigo-600 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">
                                     {selectedCodes.length} sélectionnés
                                 </div>
                                 <button
@@ -362,7 +362,7 @@ const Colis = () => {
                             <button
                                 onClick={handleBulkAction}
                                 disabled={processing}
-                                className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-indigo-600/20 flex items-center gap-2 group"
+                                className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 rounded-xl text-xs font-bold uppercase tracking-wide transition-all shadow-lg shadow-indigo-600/20 flex items-center gap-2 group"
                             >
                                 {processing ? (
                                     <ArrowPathIcon className="w-4 h-4 animate-spin" />
@@ -464,7 +464,7 @@ const Colis = () => {
                                                         )}
                                                         <Link
                                                             to={`/expeditions/${item.expedition_id}`}
-                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-slate-200"
+                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 text-white text-[10px] font-bold uppercase tracking-wide shadow-lg shadow-slate-200"
                                                         >
                                                             Détails
                                                         </Link>
@@ -487,7 +487,7 @@ const Colis = () => {
                 {meta && meta.last_page > 1 && (
                     <div className="mt-6 sm:mt-8 px-4 sm:px-8 py-5 sm:py-6 bg-white rounded-2xl sm:rounded-3xl border border-slate-200/60 shadow-lg shadow-slate-200/40 flex flex-col items-center gap-4">
                         <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Page</span>
+                            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Page</span>
                             <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-900 text-xs font-bold">{meta.current_page} / {meta.last_page}</span>
                         </div>
 

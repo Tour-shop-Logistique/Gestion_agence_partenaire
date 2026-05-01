@@ -148,7 +148,7 @@ const TarifGroupageComponent = () => {
         {kpis.map((kpi, i) => (
           <div key={i} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
             <div>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">{kpi.label}</p>
+              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-1">{kpi.label}</p>
               <p className="text-2xl font-bold text-slate-900">{kpi.value}</p>
             </div>
             <div className={`p-3 rounded-lg bg-slate-50 ${kpi.color}`}>
@@ -220,9 +220,9 @@ const TarifGroupageComponent = () => {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-slate-950 border-b border-slate-800">
-                      <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Type</th>
-                      <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Catégorie / Pays</th>
-                      <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Modes configurés</th>
+                      <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Type</th>
+                      <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Catégorie / Pays</th>
+                      <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide text-right">Modes configurés</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -282,7 +282,7 @@ const TarifGroupageComponent = () => {
                   <div key={group.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                     <div className="flex items-start justify-between">
                       <div>
-                        <span className={`inline-flex px-2 py-0.5 mb-2 rounded text-[8px] font-bold uppercase tracking-widest border ${group.type_expedition?.includes('dhd') ? 'bg-indigo-50 text-indigo-700 border-indigo-100' :
+                        <span className={`inline-flex px-2 py-0.5 mb-2 rounded text-[10px] font-bold uppercase tracking-wide border ${group.type_expedition?.includes('dhd') ? 'bg-indigo-50 text-indigo-700 border-indigo-100' :
                           group.type_expedition?.includes('afrique') ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
                             'bg-slate-100 text-slate-700 border-slate-200'
                           }`}>
@@ -342,9 +342,9 @@ const TarifGroupageComponent = () => {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200">
-                    <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Type d'expédition</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Détails modèle</th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Modes disponibles</th>
+                    <th className="px-6 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Type d'expédition</th>
+                    <th className="px-6 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Détails modèle</th>
+                    <th className="px-6 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide text-right">Modes disponibles</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -364,7 +364,7 @@ const TarifGroupageComponent = () => {
                           {group.modes.map((mode) => (
                             <div key={mode.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200 group/base">
                               <div className="flex flex-col">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{mode.mode}</span>
+                                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-1">{mode.mode}</span>
                                 <div className="flex items-center gap-1.5">
                                   <span className="text-sm font-bold text-slate-900">{mode.montant_base?.toLocaleString()}</span>
                                   <span className="text-[10px] font-medium text-slate-400 uppercase">FCFA</span>
@@ -392,7 +392,7 @@ const TarifGroupageComponent = () => {
                 <div key={group.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                   <div className="flex items-start justify-between">
                     <div>
-                      <span className="inline-flex px-2 py-0.5 mb-2 rounded text-[8px] font-bold text-slate-500 bg-slate-100 uppercase tracking-widest border border-slate-200">
+                      <span className="inline-flex px-2 py-0.5 mb-2 rounded text-[10px] font-bold text-slate-500 bg-slate-100 uppercase tracking-wide border border-slate-200">
                         {group.type_expedition?.replace('groupage_', '').toUpperCase() || 'MOCKED'}
                       </span>
                       <h4 className="text-sm font-bold text-slate-900">{group.categoryName}</h4>
@@ -448,7 +448,7 @@ const EmptyState = ({ onAction }) => (
     <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mb-4 border border-slate-100">
       <ArchiveBoxIcon className="w-8 h-8 text-slate-300" />
     </div>
-    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest mb-2">Aucun tarif personnalisé</h3>
+    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-2">Aucun tarif personnalisé</h3>
     <p className="text-xs font-medium text-slate-500 mb-8 max-w-xs mx-auto leading-relaxed">
       Vous n'avez pas encore configuré de marges pour les expéditions en groupage.
       Utilisez les modèles de base pour commencer.

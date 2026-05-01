@@ -366,7 +366,7 @@ const AgencyProfile = () => {
                 {isEditing && (
                   <button
                     type="button" onClick={getCurrentLocation}
-                    className="text-[10px] font-bold uppercase tracking-widest text-indigo-600 hover:text-indigo-700 underline underline-offset-4"
+                    className="text-[10px] font-semibold uppercase tracking-wide text-indigo-600 hover:text-indigo-700 underline underline-offset-4"
                   >
                     Auto-Détecter
                   </button>

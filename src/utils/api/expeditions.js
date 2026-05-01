@@ -162,8 +162,9 @@ export const expeditionsApi = {
             // L'URL LIST_DEMANDES contient déjà les filtres is_demande_client=true&status=en_attente
             const url = `${API_ENDPOINTS.EXPEDITIONS.LIST_DEMANDES}${queryString ? `&${queryString}` : ''}`;
 
+            console.log("🔍 Appel API Demandes - URL:", url);
             const response = await apiService.get(url);
-            // console.log("response Liste Demandes Clients", response);
+            console.log("✅ Réponse API Demandes:", response);
 
             return {
                 success: response.success !== false,
@@ -172,6 +173,7 @@ export const expeditionsApi = {
                 message: response.message
             };
         } catch (error) {
+            console.error("❌ Erreur API Demandes:", error);
             return {
                 success: false,
                 message: error.message || "Erreur lors de la récupération des demandes",

@@ -152,7 +152,7 @@ const AddAgencyTarifModal = ({ show, onClose, editingTarif, selectedBaseRate }) 
                 {editingTarif?.delete ? <TrashIcon className="w-6 h-6" /> : <InformationCircleIcon className="w-6 h-6" />}
               </div>
               <div>
-                <h3 className="text-base font-black text-slate-900 leading-tight">
+                <h3 className="text-base font-bold text-slate-900 leading-tight">
                   {editingTarif ? (editingTarif.delete ? "Suppression du tarif" : "Modification du tarif") : "Ajout tarif agence"}
                 </h3>
                 <p className="text-xs font-medium text-slate-500">
@@ -174,7 +174,7 @@ const AddAgencyTarifModal = ({ show, onClose, editingTarif, selectedBaseRate }) 
 
             {!editingTarif && !selectedBaseRate && (
               <div>
-                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Modèle d'expédition</label>
+                <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-2">Modèle d'expédition</label>
                 <select
                   className="w-full px-4 py-2 text-sm font-bold bg-white border border-slate-200 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
                   value={selectedTarifId}
@@ -197,35 +197,35 @@ const AddAgencyTarifModal = ({ show, onClose, editingTarif, selectedBaseRate }) 
                     <div>
                       <div className="flex items-center space-x-2 text-indigo-600 mb-1">
                         <MapPinIcon className="w-3 h-3" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">{tarifData.pays}</span>
+                        <span className="text-[10px] font-semibold uppercase tracking-wide">{tarifData.pays}</span>
                       </div>
-                      <h4 className="text-sm font-black text-slate-900">{tarifData.categoryName}</h4>
+                      <h4 className="text-sm font-bold text-slate-900">{tarifData.categoryName}</h4>
                       <p className="text-[10px] font-bold text-slate-500 uppercase">{tarifData.mode} {tarifData.ligne ? `(${tarifData.ligne})` : ''}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-[10px] font-black text-slate-400 uppercase">Base Modèle</p>
-                      <p className="text-sm font-black text-slate-900">{tarifData.montant_base?.toLocaleString()} <span className="text-[10px] text-slate-400">FCFA</span></p>
+                      <p className="text-[10px] font-semibold text-slate-400 uppercase">Base Modèle</p>
+                      <p className="text-sm font-bold text-slate-900">{tarifData.montant_base?.toLocaleString()} <span className="text-[10px] text-slate-400">FCFA</span></p>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-6 pt-4 border-t border-slate-200">
                     <div>
-                      <label className="block text-[10px] font-black text-slate-500 uppercase mb-2">Prestation (%)</label>
+                      <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-2">Prestation (%)</label>
                       <div className="flex items-center">
                         <input
                           type="number"
-                          className="w-full px-3 py-2 text-sm font-black text-indigo-600 border border-slate-200 rounded-lg focus:border-indigo-500 outline-none"
+                          className="w-full px-3 py-2 text-sm font-bold text-indigo-600 border border-slate-200 rounded-lg focus:border-indigo-500 outline-none"
                           value={tarifData.pourcentage_prestation}
                           onChange={(e) => handlePercentageChange(e.target.value)}
                         />
-                        <span className="ml-2 font-black text-slate-400">%</span>
+                        <span className="ml-2 font-bold text-slate-400">%</span>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-[10px] font-black text-slate-500 uppercase mb-1">Tarif Final Agence</p>
+                      <p className="text-[10px] font-semibold text-slate-500 uppercase mb-1">Tarif Final Agence</p>
                       <div className="flex items-baseline justify-end space-x-1">
-                        <span className="text-2xl font-black text-slate-900">{tarifData.montant_expedition?.toLocaleString()}</span>
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">FCFA</span>
+                        <span className="text-2xl font-bold text-slate-900">{tarifData.montant_expedition?.toLocaleString()}</span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">FCFA</span>
                       </div>
                     </div>
                   </div>
@@ -235,7 +235,7 @@ const AddAgencyTarifModal = ({ show, onClose, editingTarif, selectedBaseRate }) 
 
             {editingTarif?.delete && (
               <p className="text-sm font-medium text-slate-600 bg-slate-50 p-4 rounded-lg border border-slate-200">
-                L'indice et la zone <span className="font-black text-slate-900">{editingTarif.mode}</span> seront retirés de votre catalogue de prix. Cette action est irréversible.
+                L'indice et la zone <span className="font-bold text-slate-900">{editingTarif.mode}</span> seront retirés de votre catalogue de prix. Cette action est irréversible.
               </p>
             )}
           </div>
@@ -247,7 +247,7 @@ const AddAgencyTarifModal = ({ show, onClose, editingTarif, selectedBaseRate }) 
             <button
               onClick={handleSave}
               disabled={isSaving || (!tarifData && !editingTarif?.delete)}
-              className={`inline-flex items-center px-6 py-2 rounded-lg text-sm font-black text-white shadow-sm transition-all active:scale-95 ${editingTarif?.delete ? 'bg-rose-600 hover:bg-rose-700' : 'bg-slate-950 hover:bg-slate-800'
+              className={`inline-flex items-center px-6 py-2 rounded-lg text-sm font-bold text-white shadow-sm transition-all active:scale-95 ${editingTarif?.delete ? 'bg-rose-600 hover:bg-rose-700' : 'bg-slate-950 hover:bg-slate-800'
                 } disabled:bg-slate-300 disabled:cursor-not-allowed`}
             >
               {isSaving ? (

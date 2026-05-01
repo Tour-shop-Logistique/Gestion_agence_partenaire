@@ -145,7 +145,7 @@ const CreateExpedition = () => {
                 e.preventDefault();
                 if (step === 1 && !simulating) {
                     handleSimulate();
-                    toast.info('Raccourci: Ctrl+S pour simuler');
+                    // toast.info('Raccourci: Ctrl+S pour simuler');
                 }
             }
             // Ctrl + Enter pour valider (étape 2)
@@ -153,7 +153,7 @@ const CreateExpedition = () => {
                 e.preventDefault();
                 if (step === 2 && status !== 'loading') {
                     handleSubmit();
-                    toast.info('Raccourci: Ctrl+Enter pour valider');
+                    // toast.info('Raccourci: Ctrl+Enter pour valider');
                 }
             }
             // Ctrl + → pour passer à l'étape suivante
@@ -161,7 +161,7 @@ const CreateExpedition = () => {
                 e.preventDefault();
                 if (step === 1 && simulationResult) {
                     setStep(2);
-                    toast.info('Raccourci: Ctrl+→ pour étape suivante');
+                    // toast.info('Raccourci: Ctrl+→ pour étape suivante');
                 }
             }
             // Ctrl + ← pour revenir à l'étape précédente
@@ -169,7 +169,7 @@ const CreateExpedition = () => {
                 e.preventDefault();
                 if (step === 2) {
                     setStep(1);
-                    toast.info('Raccourci: Ctrl+← pour étape précédente');
+                    // toast.info('Raccourci: Ctrl+← pour étape précédente');
                 }
             }
         };
@@ -426,9 +426,6 @@ const CreateExpedition = () => {
                             <h1 className="text-xl font-bold text-slate-900 tracking-tight">Nouvelle expédition</h1>
                             <p className="text-xs text-slate-500 mt-0.5">
                                 Enregistrement et tarification des envois clients
-                                <span className="ml-3 text-indigo-600 font-semibold">
-                                    💡 Raccourcis: Ctrl+S (simuler) • Ctrl+Enter (valider) • Ctrl+← → (navigation)
-                                </span>
                             </p>
                         </div>
                         {/* Step indicator */}

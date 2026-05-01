@@ -65,15 +65,15 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
                     </div>
                     <div className="text-right flex flex-col items-end">
                         <div className="bg-slate-900 text-white px-4 py-2 mb-2 inline-block rounded-tl-xl rounded-br-xl shadow-md">
-                            <h2 className="text-lg font-black uppercase tracking-widest">FACTURE</h2>
+                            <h2 className="text-lg font-bold uppercase tracking-wide">FACTURE</h2>
                         </div>
-                        <p className="text-sm font-bold uppercase tracking-widest">N° {invoiceNumber}</p>
+                        <p className="text-sm font-bold uppercase tracking-wide">N° {invoiceNumber}</p>
                         <p className="text-xs font-bold text-slate-500 mt-1">Éditée le {format(date, 'dd MMMM yyyy à HH:mm', { locale: fr })}</p>
-                        {expedition.reference && <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">Réf: {expedition.reference}</p>}
+                        {expedition.reference && <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wide">Réf: {expedition.reference}</p>}
 
                         {/* Payment Status Stamp */}
                         <div className={`mt-3 px-3 py-1 border-2 inline-block transform -rotate-6 ${isPaid ? 'border-emerald-600 text-emerald-600' : 'border-rose-600 text-rose-600'}`}>
-                            <span className="text-base font-black uppercase tracking-widest leading-none">
+                            <span className="text-base font-bold uppercase tracking-wide leading-none">
                                 {isPaid ? 'PAYÉ' : 'EN ATTENTE'}
                             </span>
                         </div>
@@ -85,9 +85,9 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
                     <div className="p-4 bg-slate-50/80 border border-slate-200 rounded-2xl shadow-sm">
                         <div className="flex items-center mb-3 border-b border-slate-200 pb-2">
                             <div className="w-2 h-4 bg-indigo-600 mr-2 rounded-sm"></div>
-                            <h3 className="text-[11px] font-black text-slate-600 uppercase tracking-[0.2em]">EXPÉDITEUR / FACTURÉ À</h3>
+                            <h3 className="text-[11px] font-bold text-slate-600 uppercase tracking-wide">EXPÉDITEUR / FACTURÉ À</h3>
                         </div>
-                        <p className="text-sm font-black uppercase tracking-tight text-slate-800">{expedition.expediteur?.nom_prenom || expedition.expediteur_nom_prenom}</p>
+                        <p className="text-sm font-bold uppercase tracking-tight text-slate-800">{expedition.expediteur?.nom_prenom || expedition.expediteur_nom_prenom}</p>
                         <p className="text-xs font-bold text-slate-600 mt-1">{expedition.expediteur?.telephone || expedition.expediteur_telephone}</p>
                         <p className="text-xs font-medium text-slate-500 mt-2">{expedition.expediteur?.adresse || expedition.expediteur_adresse}</p>
                         <p className="text-xs font-bold text-slate-500 mt-1 uppercase tracking-wider">{expedition.expediteur?.ville || expedition.expediteur_ville}, {expedition.expediteur?.pays || expedition.expediteur_pays || expedition.pays_depart}</p>
@@ -95,9 +95,9 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
                     <div className="p-4 bg-slate-50/80 border border-slate-200 rounded-2xl shadow-sm">
                         <div className="flex items-center mb-3 border-b border-slate-200 pb-2">
                             <div className="w-2 h-4 bg-blue-600 mr-2 rounded-sm"></div>
-                            <h3 className="text-[11px] font-black text-slate-600 uppercase tracking-[0.2em]">DESTINATAIRE LIEE</h3>
+                            <h3 className="text-[11px] font-bold text-slate-600 uppercase tracking-wide">DESTINATAIRE LIEE</h3>
                         </div>
-                        <p className="text-sm font-black uppercase tracking-tight text-slate-800">{expedition.destinataire?.nom_prenom || expedition.destinataire_nom_prenom}</p>
+                        <p className="text-sm font-bold uppercase tracking-tight text-slate-800">{expedition.destinataire?.nom_prenom || expedition.destinataire_nom_prenom}</p>
                         <p className="text-xs font-bold text-slate-600 mt-1">{expedition.destinataire?.telephone || expedition.destinataire_telephone}</p>
                         <p className="text-xs font-medium text-slate-500 mt-2">{expedition.destinataire?.adresse || expedition.destinataire_adresse}</p>
                         <p className="text-xs font-bold text-slate-500 mt-1 uppercase tracking-wider">{expedition.destinataire?.ville || expedition.destinataire_ville}, {expedition.destinataire?.pays || expedition.destinataire_pays || expedition.pays_destination}</p>
@@ -106,14 +106,14 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
 
                 {/* Shipment Details Table (Modernized) */}
                 <div className="mb-6">
-                    <h3 className="text-xs font-black text-slate-900 uppercase tracking-[0.2em] mb-3 flex items-center gap-3">
+                    <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wide mb-3 flex items-center gap-3">
                         DÉTAILS DES PRESTATIONS
                         <div className="flex-1 h-[2px] bg-slate-100"></div>
                     </h3>
                     <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
                         <table className="w-full text-left border-collapse">
                             <thead>
-                                <tr className="bg-slate-100/80 text-slate-600 text-[10px] font-black uppercase tracking-widest border-b border-slate-200">
+                                <tr className="bg-slate-100/80 text-slate-600 text-[10px] font-semibold uppercase tracking-wide border-b border-slate-200">
                                     <th className="px-4 py-2.5">Désignation</th>
                                     <th className="px-4 py-2.5 text-center">Qté</th>
                                     <th className="px-4 py-2.5 text-center">Poids (kg)</th>
@@ -126,7 +126,7 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
                                     <tr key={i} className={`border-b border-slate-100 ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
                                         <td className="px-4 py-2.5">
                                             <p className="text-slate-900 uppercase tracking-tight">{c.designation || 'Colis'}</p>
-                                            {c.category?.nom && <p className="text-[9px] text-indigo-600 uppercase tracking-widest mt-0.5">{c.category.nom}</p>}
+                                            {c.category?.nom && <p className="text-[9px] text-indigo-600 uppercase tracking-wide mt-0.5">{c.category.nom}</p>}
                                             {c.articles?.length > 0 && (
                                                 <p className="text-[10px] text-slate-400 font-medium italic mt-0.5 line-clamp-1">({c.articles.join(', ')})</p>
                                             )}
@@ -155,14 +155,14 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
                         <div className="relative z-10 space-y-2.5">
                             {/* Montant d'expédition */}
                             <div className="flex justify-between items-center text-xs font-bold text-slate-600">
-                                <span className="uppercase tracking-widest">Montant d'expédition</span>
+                                <span className="uppercase tracking-wide">Montant d'expédition</span>
                                 <span className="font-mono">{montantExpedition.toLocaleString()} CFA</span>
                             </div>
 
                             {/* Frais annexes */}
                             {fraisAnnexes > 0 && (
                                 <div className="flex justify-between items-center text-xs font-bold text-slate-600">
-                                    <span className="uppercase tracking-widest">Frais annexes</span>
+                                    <span className="uppercase tracking-wide">Frais annexes</span>
                                     <span className="font-mono">{fraisAnnexes.toLocaleString()} CFA</span>
                                 </div>
                             )}
@@ -170,7 +170,7 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
                             {/* Frais d'emballage */}
                             {fraisEmballage > 0 && (
                                 <div className="flex justify-between items-center text-xs font-bold text-slate-600">
-                                    <span className="uppercase tracking-widest">Frais d'emballage</span>
+                                    <span className="uppercase tracking-wide">Frais d'emballage</span>
                                     <span className="font-mono">{fraisEmballage.toLocaleString()} CFA</span>
                                 </div>
                             )}
@@ -178,7 +178,7 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
                             {/* Frais enlèvement domicile */}
                             {fraisEnlevement > 0 && (
                                 <div className="flex justify-between items-center text-xs font-bold text-slate-600">
-                                    <span className="uppercase tracking-widest">Frais enlèvement domicile</span>
+                                    <span className="uppercase tracking-wide">Frais enlèvement domicile</span>
                                     <span className="font-mono">{fraisEnlevement.toLocaleString()} CFA</span>
                                 </div>
                             )}
@@ -186,7 +186,7 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
                             {/* Frais livraison domicile */}
                             {fraisLivraison > 0 && (
                                 <div className="flex justify-between items-center text-xs font-bold text-slate-600">
-                                    <span className="uppercase tracking-widest">Frais livraison domicile</span>
+                                    <span className="uppercase tracking-wide">Frais livraison domicile</span>
                                     <span className="font-mono">{fraisLivraison.toLocaleString()} CFA</span>
                                 </div>
                             )}
@@ -194,7 +194,7 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
                             {/* Frais retard retrait */}
                             {fraisRetard > 0 && (
                                 <div className="flex justify-between items-center text-xs font-bold text-slate-600">
-                                    <span className="uppercase tracking-widest">Frais retard retrait</span>
+                                    <span className="uppercase tracking-wide">Frais retard retrait</span>
                                     <span className="font-mono">{fraisRetard.toLocaleString()} CFA</span>
                                 </div>
                             )}
@@ -202,13 +202,13 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
                             <div className="h-px bg-slate-200 my-3"></div>
 
                             <div className="flex justify-between items-end">
-                                <span className="text-sm font-black uppercase tracking-[0.2em] text-slate-900">Total Net À Payer</span>
+                                <span className="text-sm font-bold uppercase tracking-wide text-slate-900">Total Net À Payer</span>
                                 <div className="text-right">
-                                    <span className="text-xl font-black font-mono text-indigo-700 leading-none block">
+                                    <span className="text-xl font-bold font-mono text-indigo-700 leading-none block">
                                         {totalAPayer.toLocaleString()} CFA
                                     </span>
                                     {isPaid && expedition.mode_paiement && (
-                                        <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1 block mt-1">
+                                        <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wide mb-1 block mt-1">
                                             Réglé par {expedition.mode_paiement}
                                         </span>
                                     )}
@@ -220,7 +220,7 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
 
                 {/* Footer Info */}
                 <div className="mt-6 pt-4 border-t-2 border-slate-900 break-inside-avoid">
-                    <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Conditions Générales</h4>
+                    <h4 className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide mb-1">Conditions Générales</h4>
                     <p className="text-[8px] text-slate-400 leading-relaxed font-medium">
                         Les marchandises sont transportées aux risques et périls de l'expéditeur sauf déclaration de valeur. Toute réclamation doit être faite à la réception du colis. Les délais de livraison sont donnés à titre indicatif et ne constituent pas un engagement ferme. En cas de perte ou d'avarie, notre responsabilité est strictement limitée à la valeur déclarée ou au barème en vigueur. La signature du bordereau de remise vaut acceptation pleine et entière de nos conditions générales de transport.
                     </p>

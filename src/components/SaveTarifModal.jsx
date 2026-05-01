@@ -118,7 +118,7 @@ const SaveTarifModal = ({
                 <TicketIcon className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-base font-black text-slate-900 leading-tight">Initialisation de nouveau tarif</h3>
+                <h3 className="text-base font-bold text-slate-900 leading-tight">Initialisation de nouveau tarif</h3>
                 <p className="text-xs font-medium text-slate-500">Sélectionnez un modèle de base pour commencer</p>
               </div>
             </div>
@@ -129,7 +129,7 @@ const SaveTarifModal = ({
 
           <div className="px-6 py-6 space-y-6">
             <div className="max-w-md">
-              <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Choisir l'Indice Modèle</label>
+              <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-2">Choisir l'Indice Modèle</label>
               <select
                 value={localSelectedIndex || ''}
                 onChange={handleIndexChange}
@@ -147,13 +147,13 @@ const SaveTarifModal = ({
               <div className="space-y-3">
                 <div className="flex items-center space-x-2 text-indigo-600">
                   <MapIcon className="w-4 h-4" />
-                  <span className="text-[10px] font-black uppercase tracking-widest">Aperçu et Ajustement des Zones</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wide">Aperçu et Ajustement des Zones</span>
                 </div>
 
                 <div className="overflow-hidden border border-slate-200 rounded-lg shadow-sm">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                      <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-semibold text-slate-500 uppercase tracking-wide">
                         <th className="px-6 py-3">Zone</th>
                         <th className="px-6 py-3">Base</th>
                         <th className="px-6 py-3">% Prest.</th>
@@ -163,7 +163,7 @@ const SaveTarifModal = ({
                     <tbody className="divide-y divide-slate-100">
                       {editedZones.map((zone) => (
                         <tr key={zone.zone_destination_id} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="px-6 py-3 text-sm font-black text-slate-900 leading-none">
+                          <td className="px-6 py-3 text-sm font-bold text-slate-900 leading-none">
                             Z{zone.zone_destination_id.replace(/z/i, "")}
                           </td>
                           <td className="px-6 py-3 text-xs font-medium text-slate-500">
@@ -178,7 +178,7 @@ const SaveTarifModal = ({
                               disabled={isSavingLocal}
                             />
                           </td>
-                          <td className="px-6 py-3 text-sm font-black text-indigo-600 text-right">
+                          <td className="px-6 py-3 text-sm font-bold text-indigo-600 text-right">
                             {formatPrice(zone.montant_expedition, "XOF")}
                           </td>
                         </tr>
@@ -203,7 +203,7 @@ const SaveTarifModal = ({
               type="button"
               onClick={handleSaveChanges}
               disabled={isSavingLocal || editedZones.length === 0 || !localSelectedIndex}
-              className={`inline-flex items-center px-6 py-2 rounded-lg text-sm font-black text-white shadow-sm transition-all ${!isSavingLocal && editedZones.length > 0 && localSelectedIndex
+              className={`inline-flex items-center px-6 py-2 rounded-lg text-sm font-bold text-white shadow-sm transition-all ${!isSavingLocal && editedZones.length > 0 && localSelectedIndex
                   ? "bg-slate-950 hover:bg-slate-800"
                   : "bg-slate-300 cursor-not-allowed"
                 }`}

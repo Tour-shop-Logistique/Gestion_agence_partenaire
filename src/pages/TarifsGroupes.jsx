@@ -38,7 +38,7 @@ const TarifsGroupes = () => {
 
                 <div className="flex items-center space-x-3 text-slate-400 bg-white border border-slate-200 px-4 py-2 rounded-xl">
                     <AdjustmentsHorizontalIcon className="w-4 h-4" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest italic">
+                    <span className="text-[10px] font-semibold uppercase tracking-wide italic">
                         Configuration par Modes
                     </span>
                 </div>

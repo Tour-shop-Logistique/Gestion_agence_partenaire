@@ -57,19 +57,19 @@ const TarifConfigModal = ({
             {loading ? (
               <div className="flex flex-col items-center justify-center p-12 space-y-3">
                 <ArrowPathIcon className="w-8 h-8 text-indigo-600 animate-spin" />
-                <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Chargement des données...</p>
+                <p className="text-sm font-semibold text-slate-500 uppercase tracking-wide">Chargement des données...</p>
               </div>
             ) : (
               <div className="overflow-hidden border border-slate-200 rounded-lg shadow-sm">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200">
-                      <th className="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Zone</th>
-                      <th className="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Base</th>
-                      <th className="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">% Prestation</th>
-                      <th className="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Marge</th>
-                      <th className="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Total</th>
-                      <th className="px-6 py-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Action</th>
+                      <th className="px-6 py-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Zone</th>
+                      <th className="px-6 py-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Base</th>
+                      <th className="px-6 py-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wide">% Prestation</th>
+                      <th className="px-6 py-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Marge</th>
+                      <th className="px-6 py-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Total</th>
+                      <th className="px-6 py-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wide text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">

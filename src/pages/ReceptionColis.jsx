@@ -164,8 +164,8 @@ const ReceptionColis = () => {
                     { label: "Total à traiter", count: statsTotal, color: "bg-slate-50 text-slate-700 border-slate-100" }
                 ].map((stat, idx) => (
                     <div key={idx} className={`p-4 rounded-2xl border ${stat.color} flex items-center justify-between`}>
-                        <span className="text-sm font-bold uppercase tracking-wider">{stat.label}</span>
-                        <span className="text-2xl font-black">{stat.count}</span>
+                        <span className="text-sm font-bold uppercase tracking-wide">{stat.label}</span>
+                        <span className="text-2xl font-bold">{stat.count}</span>
                     </div>
                 ))}
             </div>
@@ -232,7 +232,7 @@ const ReceptionColis = () => {
                                     <div className="flex justify-between items-start">
                                         <div className="space-y-1 pl-8">
                                             <div className="flex items-center gap-2">
-                                                <span className="text-xs font-black text-indigo-600 tracking-wider uppercase">#{item.code_colis}</span>
+                                                <span className="text-xs font-bold text-indigo-600 tracking-normal uppercase">#{item.code_colis}</span>
                                                 {isReceived && (
                                                     <span className="flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded-full border border-green-200">
                                                         <CheckCircleIcon className="w-3 h-3" />
@@ -243,7 +243,7 @@ const ReceptionColis = () => {
                                             <p className="text-lg font-bold text-slate-900 capitalize">{item.designation || 'Colis'}</p>
                                         </div>
                                         <div className="text-right">
-                                            <span className="inline-block px-3 py-1 bg-slate-900 text-white text-[10px] font-bold rounded-lg uppercase tracking-widest">
+                                            <span className="inline-block px-3 py-1 bg-slate-900 text-white text-[10px] font-bold rounded-lg uppercase tracking-wide">
                                                 {item.poids || 0} KG
                                             </span>
                                             <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase">Exp: {item.expedition?.reference || '-'}</p>
@@ -352,7 +352,7 @@ const ReceptionColis = () => {
                         Une fois qu'un colis arrive physiquement, vous pouvez valider sa réception. Le statut du colis
                         sera alors mis à jour sur tout le réseau.
                     </p>
-                    <button className="flex items-center gap-2 text-xs font-black uppercase tracking-widest bg-white text-indigo-900 px-6 py-3 rounded-xl hover:bg-indigo-50 transition-colors">
+                    <button className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide bg-white text-indigo-900 px-6 py-3 rounded-xl hover:bg-indigo-50 transition-colors">
                         Consulter le guide
                     </button>
                 </div>

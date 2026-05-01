@@ -75,7 +75,7 @@ const PrintSuccessModal = ({ expedition, agency, onClose }) => {
                             <CheckCircleIcon className="w-7 h-7 text-emerald-600" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-black text-slate-900 tracking-tight">
+                            <h2 className="text-xl font-bold text-slate-900 tracking-tight">
                                 Expédition créée
                             </h2>
                             <p className="text-xs font-medium text-slate-500">

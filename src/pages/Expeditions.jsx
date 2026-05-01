@@ -536,7 +536,7 @@ const Expeditions = () => {
 
                     <div className="flex items-center gap-4 px-2">
                         <div className="flex items-center gap-3">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Global</span>
+                            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide leading-none">Global</span>
                             <span className="text-sm font-bold text-slate-900 tracking-tight leading-none">{meta?.total || 0}</span>
                         </div>
                         <div className="w-px h-4 bg-slate-200"></div>
@@ -545,7 +545,7 @@ const Expeditions = () => {
                                 <span className={`${status === 'loading' ? 'animate-ping' : ''} absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75`}></span>
                                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
                             </div>
-                            <span className="text-[10px] font-bold uppercase tracking-widest">{status === 'loading' ? 'Actualisation...' : 'À jour'}</span>
+                            <span className="text-[10px] font-semibold uppercase tracking-wide">{status === 'loading' ? 'Actualisation...' : 'À jour'}</span>
                         </div>
                     </div>
                 </div>
@@ -586,7 +586,7 @@ const Expeditions = () => {
                                                 <div className="flex flex-col">
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-sm font-bold text-slate-900 tracking-tight">{exp.reference}</span>
-                                                        <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter border shadow-sm ${getTypeStyle(exp.type_expedition)}`}>
+                                                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-tight border shadow-sm ${getTypeStyle(exp.type_expedition)}`}>
                                                             {getTypeLabel(exp.type_expedition)}
                                                         </span>
                                                     </div>
@@ -597,11 +597,11 @@ const Expeditions = () => {
                                                         {getStatusLabel(exp.statut_expedition)}
                                                     </span>
                                                     <div className="flex flex-col items-end">
-                                                        <span className={`text-[8px] font-black uppercase tracking-tighter ${exp.statut_paiement_expedition === 'paye' ? 'text-emerald-600' : 'text-orange-500'}`}>
+                                                        <span className={`text-[10px] font-bold uppercase tracking-tight ${exp.statut_paiement_expedition === 'paye' ? 'text-emerald-600' : 'text-orange-500'}`}>
                                                             T: {exp.statut_paiement_expedition === 'paye' ? 'Payé' : 'En attente'}
                                                         </span>
                                                         {parseFloat(exp.frais_annexes || 0) > 0 && (
-                                                            <span className={`text-[8px] font-black uppercase tracking-tighter ${exp.statut_paiement_frais === 'paye' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                            <span className={`text-[10px] font-bold uppercase tracking-tight ${exp.statut_paiement_frais === 'paye' ? 'text-emerald-600' : 'text-rose-600'}`}>
                                                                 F: {exp.statut_paiement_frais === 'paye' ? 'Payé' : 'Bloqué'}
                                                             </span>
                                                         )}
@@ -625,11 +625,11 @@ const Expeditions = () => {
                                             {/* Acteurs */}
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div className="space-y-1">
-                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Expéditeur</span>
+                                                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Expéditeur</span>
                                                     <p className="text-xs font-bold text-slate-700 truncate">{exp.expediteur?.nom_prenom}</p>
                                                 </div>
                                                 <div className="space-y-1 text-right">
-                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Destinataire</span>
+                                                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Destinataire</span>
                                                     <p className="text-xs font-bold text-slate-700 truncate">{exp.destinataire?.nom_prenom}</p>
                                                 </div>
                                             </div>
@@ -637,15 +637,15 @@ const Expeditions = () => {
                                             {/* Footer Card */}
                                             <div className="pt-3 border-t border-slate-100 flex flex-wrap items-end justify-between gap-3">
                                                 <div className="flex flex-col">
-                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-tight">Total</span>
+                                                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide leading-tight">Total</span>
                                                     <span className="text-sm font-bold text-slate-900 tracking-tight tabular-nums">
                                                         {formatPriceDual(exp.montant_expedition)}
                                                     </span>
                                                 </div>
                                                 
                                                 <div className="flex flex-col items-center px-3 py-1 bg-indigo-50 border border-indigo-100 rounded-lg">
-                                                    <span className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest leading-tight">Ma Com.</span>
-                                                    <span className="text-xs font-black text-indigo-600 tracking-tight">
+                                                    <span className="text-[10px] font-semibold text-indigo-400 uppercase tracking-wide leading-tight">Ma Com.</span>
+                                                    <span className="text-xs font-bold text-indigo-600 tracking-tight">
                                                         {new Intl.NumberFormat('fr-FR').format(getAgencyCommission(exp))} <span className="text-[8px]">CFA</span>
                                                     </span>
                                                 </div>
@@ -806,7 +806,7 @@ const Expeditions = () => {
                                             </td>
                                             <td className="px-6 py-7 bg-indigo-50/10">
                                                 <div className="flex flex-col gap-1.5">
-                                                    <span className="text-base font-black text-indigo-600 tabular-nums leading-tight whitespace-nowrap">
+                                                    <span className="text-base font-bold text-indigo-600 tabular-nums leading-tight whitespace-nowrap">
                                                         {new Intl.NumberFormat('fr-FR').format(getAgencyCommission(exp))} <span className="text-xs font-bold">CFA</span>
                                                     </span>
                                                     <span className="text-[10px] font-bold text-slate-400 uppercase whitespace-nowrap">Votre gain</span>

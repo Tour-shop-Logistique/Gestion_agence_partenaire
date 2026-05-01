@@ -63,7 +63,7 @@ const ReceiptThermal = React.forwardRef(({ expedition, colis, agency }, ref) => 
             {/* QR Code Section */}
             <div className="flex flex-col items-center justify-center py-2 border-t-2 border-black">
                 <QRCodeSVG value={String(expedition.id || '0000')} size={110} level="H" />
-                <p className="text-[9px] font-bold mt-2 tracking-widest uppercase">SCAN TO TRACK</p>
+                <p className="text-[9px] font-bold mt-2 tracking-wide uppercase">SCAN TO TRACK</p>
                 <p className="text-sm font-bold mt-1">#{expedition.id}</p>
                 <p className="text-[8px] mt-1 italic">Tous Shop Logistics</p>
             </div>

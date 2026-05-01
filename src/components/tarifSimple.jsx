@@ -312,25 +312,25 @@ const TarifSimpleComponent = () => {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50/50 border-b border-slate-200">
-                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-r border-slate-100/50">
+                    <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-r border-slate-100/50">
                       Indice
                     </th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-r border-slate-100/50">
+                    <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-r border-slate-100/50">
                       Destination
                     </th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-r border-slate-100/50">
+                    <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-r border-slate-100/50">
                       Montant de Base
                     </th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-r border-slate-100/50">
+                    <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-r border-slate-100/50">
                       Frais Prestation
                     </th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-indigo-600 uppercase tracking-widest border-r border-slate-200 bg-indigo-50/30">
+                    <th className="px-6 py-4 text-[10px] font-semibold text-indigo-600 uppercase tracking-wide border-r border-slate-200 bg-indigo-50/30">
                       Total Expédition
                     </th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-r border-slate-100/50 text-center">
+                    <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-r border-slate-100/50 text-center">
                       Statut
                     </th>
-                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">
+                    <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide text-right">
                       Actions
                     </th>
                   </tr>
@@ -421,7 +421,7 @@ const TarifSimpleComponent = () => {
                       </div>
                       <div>
                         <div className="flex items-center gap-2 mb-0.5">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Indice</span>
+                          <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide leading-none">Indice</span>
                           <StatusToggle
                             active={tarif.actif}
                             onClick={() => activeTab === "agency" && handleStatus(tarif)}
@@ -464,7 +464,7 @@ const TarifSimpleComponent = () => {
                       <p className="text-xs font-bold text-indigo-700">+{tarif.pourcentage_prestation}%</p>
                     </div>
                     <div className="col-span-2 p-3 bg-indigo-600 rounded-xl flex items-center justify-between shadow-sm">
-                      <p className="text-[10px] font-bold text-indigo-100 uppercase tracking-widest">Total Expédition</p>
+                      <p className="text-[10px] font-semibold text-indigo-100 uppercase tracking-wide">Total Expédition</p>
                       <p className="text-base font-bold text-white">{formatPrice(tarif.montant_expedition, "XOF")}</p>
                     </div>
                   </div>

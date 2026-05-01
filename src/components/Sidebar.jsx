@@ -207,7 +207,7 @@ const Sidebar = ({ onClose }) => {
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
         <div className="px-3 mb-2">
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Navigation</p>
+          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Navigation</p>
         </div>
         {menuItems.map((item) => {
           const Active = isActive(item.path);

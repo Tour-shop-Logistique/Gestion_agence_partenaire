@@ -691,11 +691,11 @@ const Comptabilite = () => {
               <div className="flex justify-between items-end border-b border-slate-100 pb-5">
                 <div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Total Client</p>
-                  <p className="text-2xl font-black text-slate-900 tracking-tight">
+                  <p className="text-2xl font-bold text-slate-900 tracking-tight">
                     {formatCurrency(selectedExpedition.accounting_details?.total_client_due)} <span className="text-xs text-slate-400">CFA</span>
                   </p>
                 </div>
-                <span className={`px-2.5 py-1 rounded text-[10px] font-black uppercase border ${getStatusStyle(selectedExpedition.statut_paiement)}`}>
+                <span className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase border ${getStatusStyle(selectedExpedition.statut_paiement)}`}>
                   {getStatusLabel(selectedExpedition.statut_paiement)}
                 </span>
               </div>
@@ -716,7 +716,7 @@ const Comptabilite = () => {
                   <div className="bg-blue-50/50 rounded-lg p-4 border border-blue-100">
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-[11px] font-bold text-blue-900 uppercase">Agence de Départ (Tour Shop)</p>
-                      <p className="text-lg font-black text-blue-600 tabular-nums">{formatCurrency(selectedExpedition.accounting_details?.agence_depart)} CFA</p>
+                      <p className="text-lg font-bold text-blue-600 tabular-nums">{formatCurrency(selectedExpedition.accounting_details?.agence_depart)} CFA</p>
                     </div>
                     <div className="space-y-2 pl-3 border-l-2 border-blue-200">
                       {parseFloat(selectedExpedition.montant_prestation || 0) > 0 && (
@@ -746,7 +746,7 @@ const Comptabilite = () => {
                   <div className="bg-blue-50/50 rounded-lg p-4 border border-blue-100">
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-[11px] font-bold text-blue-900 uppercase">Agence d'Arrivée</p>
-                      <p className="text-lg font-black text-blue-600 tabular-nums">{formatCurrency(selectedExpedition.accounting_details?.agence_arrivee)} CFA</p>
+                      <p className="text-lg font-bold text-blue-600 tabular-nums">{formatCurrency(selectedExpedition.accounting_details?.agence_arrivee)} CFA</p>
                     </div>
                     <div className="space-y-2 pl-3 border-l-2 border-blue-200">
                       {selectedExpedition.commission_details?.livraison && parseFloat(selectedExpedition.commission_details.livraison.agence || 0) > 0 && (
