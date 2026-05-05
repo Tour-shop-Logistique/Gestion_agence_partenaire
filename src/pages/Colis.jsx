@@ -2,14 +2,17 @@ import React, { useEffect, useState, useMemo } from "react";
 import { useExpedition } from "../hooks/useExpedition";
 import { Link } from "react-router-dom";
 import { formatPriceDual } from "../utils/format";
+import { toast } from "../utils/toast";
 import {
     CubeIcon,
     ArrowPathIcon,
     MagnifyingGlassIcon,
     IdentificationIcon,
     ChevronLeftIcon,
-    ChevronRightIcon
+    ChevronRightIcon,
+    QrCodeIcon
 } from "@heroicons/react/24/outline";
+import QRScanner from "../components/QRScanner";
 
 const Colis = () => {
     const {
@@ -21,6 +24,7 @@ const Colis = () => {
     const [selectedCodes, setSelectedCodes] = useState([]);
     const [processing, setProcessing] = useState(false);
     const [activeTab, setActiveTab] = useState('agence'); // 'agence' or 'entrepot'
+    const [scannerOpen, setScannerOpen] = useState(false);
 
     // Helper to get today's date in YYYY-MM-DD
     const getTodayDate = () => {
@@ -63,26 +67,66 @@ const Colis = () => {
     // Transformer les expéditions en liste de colis
     const allColis = useMemo(() => {
         if (!expeditions) return [];
-        return expeditions.flatMap(exp =>
+        const colis = expeditions.flatMap(exp =>
             (exp.colis || []).map(item => ({
                 ...item,
                 expedition: exp,
                 expedition_id: exp.id,
                 expedition_status: exp.statut_expedition,
-                is_received: item.is_received_by_agence_depart === true || item.is_received_by_agence_destination === true || item.is_received_by_agence === true,
+                // Déterminer l'état de réception basé sur le statut de l'expédition
+                is_received_depart: item.is_received_by_agence_depart === true || exp.statut_expedition === 'recu_agence_depart',
+                is_received_destination: item.is_received_by_agence_destination === true,
+                is_received: item.is_received_by_agence_depart === true || item.is_received_by_agence_destination === true || item.is_received_by_agence === true || exp.statut_expedition === 'recu_agence_depart',
                 is_sent: item.is_expedie_vers_entrepot === true
             }))
         );
+        
+        // 🔍 DEBUG: Afficher les colis pour comprendre leur structure
+        console.log("📦 Tous les colis:", colis);
+        console.log("📊 Statistiques colis:", {
+            total: colis.length,
+            reçus_depart: colis.filter(c => c.is_received_depart).length,
+            reçus_destination: colis.filter(c => c.is_received_destination).length,
+            expédiés_entrepot: colis.filter(c => c.is_sent).length,
+            prêts_envoi: colis.filter(c => c.is_received_depart && !c.is_sent).length,
+            avec_statut_recu_agence_depart: colis.filter(c => c.expedition_status === 'recu_agence_depart').length
+        });
+        
+        return colis;
     }, [expeditions]);
 
     // Filtrer les colis selon l'onglet actif
     const tabColis = useMemo(() => {
         if (activeTab === 'agence') {
-            // Onglet "En agence" : uniquement les colis NON reçus ET avec statut expédition "accepted"
-            return allColis.filter(c => !c.is_received && c.expedition_status === 'accepted');
+            // Onglet "En agence" : Colis des expéditions ACCEPTÉES qui ne sont PAS encore reçus
+            // Statut expédition = 'accepted' ET is_received = false
+            const filtered = allColis.filter(c => 
+                c.expedition_status === 'accepted' && !c.is_received
+            );
+            console.log("🏢 Onglet 'En agence' - Expéditions acceptées à réceptionner:", {
+                total: filtered.length,
+                expeditions: [...new Set(filtered.map(c => c.expedition?.reference))]
+            });
+            return filtered;
         } else {
-            // Onglet "Envoi pour expédition" : uniquement les colis déjà reçus
-            return allColis.filter(c => c.is_received);
+            // Onglet "Envoi pour expédition" : Colis avec statut expédition "recu_agence_depart"
+            // qui ne sont PAS encore expédiés vers l'entrepôt
+            // On se base principalement sur le statut de l'expédition
+            const filtered = allColis.filter(c => 
+                c.expedition_status === 'recu_agence_depart' && !c.is_sent
+            );
+            console.log("🚚 Onglet 'Envoi pour expédition' - Colis reçus à envoyer:", {
+                total: filtered.length,
+                expeditions: [...new Set(filtered.map(c => c.expedition?.reference))],
+                details: filtered.map(c => ({
+                    code: c.code_colis,
+                    expedition: c.expedition?.reference,
+                    status: c.expedition_status,
+                    is_received_depart: c.is_received_depart,
+                    is_sent: c.is_sent
+                }))
+            });
+            return filtered;
         }
     }, [allColis, activeTab]);
 
@@ -146,84 +190,169 @@ const Colis = () => {
         setProcessing(false);
     };
 
+    const handleQRScan = (scannedData) => {
+        // Chercher le colis dans la liste filtrée
+        let foundColis = filteredColis.find(c => c.code_colis === scannedData);
+        
+        // Si pas trouvé, chercher par code_colis partiel
+        if (!foundColis) {
+            foundColis = filteredColis.find(c => scannedData.includes(c.code_colis));
+        }
+        
+        // Si pas trouvé, chercher par ID d'expédition
+        if (!foundColis) {
+            foundColis = filteredColis.find(c => 
+                c.expedition_id === parseInt(scannedData) || 
+                c.expedition?.id === parseInt(scannedData)
+            );
+        }
+        
+        // Vérifier si le colis peut être sélectionné
+        const isProcessed = activeTab === 'agence' ? foundColis?.is_received : foundColis?.is_sent;
+        
+        if (foundColis && !isProcessed) {
+            // Sélectionner le colis trouvé
+            if (!selectedCodes.includes(foundColis.code_colis)) {
+                setSelectedCodes(prev => [...prev, foundColis.code_colis]);
+            }
+            
+            // Afficher un message de succès
+            toast.success(`Colis ${foundColis.code_colis} sélectionné !`);
+            
+            // Scroll vers le colis dans la liste
+            setTimeout(() => {
+                const element = document.getElementById(`colis-${foundColis.code_colis}`);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 100);
+        } else if (foundColis && isProcessed) {
+            const action = activeTab === 'agence' ? 'réceptionné' : 'expédié';
+            toast.info(`Le colis ${foundColis.code_colis} a déjà été ${action}.`);
+        } else {
+            toast.error(`Aucun colis trouvé avec le code scanné : ${scannedData}`);
+        }
+    };
+
     return (
         <div className="space-y-4 sm:space-y-8 max-w-[1600px] mx-auto px-1 sm:px-0">
-            {/* Premium Header Section */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-6">
-                <div className="space-y-1 sm:space-y-2">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-indigo-600 rounded-lg shrink-0">
-                            <CubeIcon className="w-5 h-5 sm:w-6 h-6 text-white" />
-                        </div>
-                        <div className="flex flex-col">
-                            <h1 className="text-2xl sm:text-4xl font-bold text-slate-900 tracking-tight leading-none">
-                                Gestion des Colis
-                            </h1>
-                            {selectedCodes.length > 0 && (
-                                <span className="text-indigo-600 font-bold text-xs mt-1 animate-pulse">
-                                    {selectedCodes.length} colis sélectionné(s)
-                                </span>
-                            )}
-                        </div>
-                    </div>
-                    <p className="text-xs sm:text-sm font-medium text-slate-500 tracking-wide ml-10 sm:ml-12">
+            {/* Header Section */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-semibold text-gray-900">
+                        Gestion des Colis
+                    </h1>
+                    <p className="mt-1 text-sm text-gray-500">
                         {activeTab === 'agence'
-                            ? "Confirmez la réception des colis des expéditions acceptées arrivant à l'agence"
-                            : "Préparez et initiez l'envoi des colis vers l'entrepôt"}
+                            ? "Réceptionnez les colis des expéditions acceptées arrivant à votre agence"
+                            : "Envoyez les colis reçus (statut: reçu agence départ) vers l'entrepôt pour expédition"}
                     </p>
+                    {selectedCodes.length > 0 && (
+                        <span className="inline-block mt-2 text-indigo-600 font-medium text-sm">
+                            {selectedCodes.length} colis sélectionné(s)
+                        </span>
+                    )}
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-center bg-slate-100/50 p-1 rounded-2xl border border-slate-200/60 self-start lg:self-center">
+                <div className="flex flex-col sm:flex-row items-center bg-gray-100 p-1 rounded-lg border border-gray-200 self-start lg:self-center">
                     <button
                         onClick={() => { setActiveTab('agence'); setSelectedCodes([]); }}
-                        className={`px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-wide transition-all ${activeTab === 'agence' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'agence' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
                     >
                         En agence
                     </button>
                     <button
                         onClick={() => { setActiveTab('entrepot'); setSelectedCodes([]); }}
-                        className={`px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-wide transition-all ${activeTab === 'entrepot' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'entrepot' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
                     >
                         Envoi pour expedition
                     </button>
                 </div>
 
-                <div className="flex flex-col gap-3 w-full lg:w-auto">
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                        {/* Search Bar */}
-                        <div className="relative group w-full sm:w-64 lg:w-80">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <MagnifyingGlassIcon className="h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-                            </div>
-                            <input
-                                type="text"
-                                className="block w-full pl-10 pr-3 py-2 sm:py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm group-hover:shadow-md"
-                                placeholder="Rechercher..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
+                <div className="flex items-center gap-3">
+                    {/* Search Bar */}
+                    <div className="relative group w-64">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
                         </div>
+                        <input
+                            type="text"
+                            className="block w-full pl-10 pr-3 py-2 bg-white border border-gray-300 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                            placeholder="Rechercher..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
                     </div>
+                    
+                    {/* Scanner Button */}
+                    <button
+                        onClick={() => setScannerOpen(true)}
+                        className="inline-flex items-center justify-center px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-all gap-2"
+                    >
+                        <QrCodeIcon className="w-5 h-5" />
+                        <span className="hidden sm:inline">Scanner</span>
+                    </button>
                 </div>
             </div>
 
-            {/* Info Banner pour l'onglet "En agence"
-            {activeTab === 'agence' && (
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
-                    <div className="p-1 bg-blue-100 rounded-lg shrink-0">
-                        <IdentificationIcon className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div className="flex-1">
-                        <p className="text-sm font-semibold text-blue-900 mb-1">
-                            Colis des expéditions acceptées uniquement
-                        </p>
-                        <p className="text-xs text-blue-700">
-                            Seuls les colis des expéditions avec le statut "Acceptée" sont affichés ici. 
-                            Les expéditions en attente ou refusées ne peuvent pas être réceptionnées.
-                        </p>
-                    </div>
+            {/* QR Scanner Modal */}
+            <QRScanner 
+                isOpen={scannerOpen}
+                onClose={() => setScannerOpen(false)}
+                onScan={handleQRScan}
+            />
+
+            {/* Info Banner pour clarifier les statuts
+            <div className={`rounded-xl p-4 flex items-start gap-3 border ${
+                activeTab === 'agence' 
+                    ? 'bg-blue-50 border-blue-200' 
+                    : 'bg-purple-50 border-purple-200'
+            }`}>
+                <div className={`p-1 rounded-lg shrink-0 ${
+                    activeTab === 'agence' 
+                        ? 'bg-blue-100' 
+                        : 'bg-purple-100'
+                }`}>
+                    <IdentificationIcon className={`w-5 h-5 ${
+                        activeTab === 'agence' 
+                            ? 'text-blue-600' 
+                            : 'text-purple-600'
+                    }`} />
                 </div>
-            )} */}
+                <div className="flex-1">
+                    {activeTab === 'agence' ? (
+                        <>
+                            <div className="flex items-center justify-between mb-1">
+                                <p className="text-sm font-semibold text-blue-900">
+                                    📦 Expéditions acceptées à réceptionner
+                                </p>
+                                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded-full">
+                                    {tabColis.length} colis
+                                </span>
+                            </div>
+                            <p className="text-xs text-blue-700">
+                                Affiche uniquement les colis des expéditions avec le <strong>statut "Acceptée"</strong> qui 
+                                n'ont pas encore été réceptionnés à votre agence. Sélectionnez les colis reçus pour confirmer leur réception.
+                            </p>
+                        </>
+                    ) : (
+                        <>
+                            <div className="flex items-center justify-between mb-1">
+                                <p className="text-sm font-semibold text-purple-900">
+                                    🚚 Colis reçus prêts pour l'expédition
+                                </p>
+                                <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-bold rounded-full">
+                                    {tabColis.length} colis
+                                </span>
+                            </div>
+                            <p className="text-xs text-purple-700">
+                                Affiche les colis avec le <strong>statut "Reçu agence départ"</strong> qui sont prêts à être 
+                                envoyés vers l'entrepôt. Sélectionnez les colis à expédier pour initier leur envoi.
+                            </p>
+                        </>
+                    )}
+                </div>
+            </div> */}
 
             {/* Data Section */}
             <div className="relative">
@@ -262,6 +391,7 @@ const Colis = () => {
                                     filteredColis.map((item) => (
                                         <tr
                                             key={item.id}
+                                            id={`colis-${item.code_colis}`}
                                             className={`hover:bg-slate-50/30 transition-colors group ${selectedCodes.includes(item.code_colis) ? 'bg-indigo-50/30' : ''}`}
                                             onClick={() => toggleSelect(item.code_colis)}
                                         >
@@ -394,6 +524,7 @@ const Colis = () => {
                                 return (
                                     <div
                                         key={item.id}
+                                        id={`colis-${item.code_colis}`}
                                         className={`bg-white rounded-2xl border transition-all active:scale-[0.98] overflow-hidden ${selectedCodes.includes(item.code_colis) ? 'border-indigo-500 ring-4 ring-indigo-500/10 shadow-lg shadow-indigo-500/10' : 'border-slate-200/60 shadow-sm'}`}
                                         onClick={() => !isProcessed && toggleSelect(item.code_colis)}
                                     >

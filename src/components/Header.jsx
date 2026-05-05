@@ -102,10 +102,10 @@ const Header = ({ onToggleSidebar }) => {
             )}
 
             <div className="leading-tight">
-              <h1 className="text-lg font-bold text-slate-900 truncate">
+              <h1 className="text-h4 font-display text-slate-900 truncate">
                 {agencyName}
               </h1>
-              <p className="text-xs text-slate-400 hidden sm:block">
+              <p className="text-caption text-slate-400 hidden sm:block">
                 Gestion d'agence
               </p>
             </div>
@@ -124,11 +124,11 @@ const Header = ({ onToggleSidebar }) => {
               <Euro className="w-4 h-4" />
             </div>
             <div className="hidden md:flex flex-col items-start leading-tight pr-1">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Taux de conversion</span>
-              <span className="text-xs font-bold text-slate-900">1€ = {exchangeRate} CFA</span>
+              <span className="text-badge-sm font-semibold text-slate-400 uppercase tracking-wider">Taux de conversion</span>
+              <span className="text-label-sm font-semibold text-slate-900">1€ = {exchangeRate} CFA</span>
             </div>
             <div className="md:hidden flex flex-col items-start leading-tight">
-              <span className="text-[10px] font-bold text-indigo-600">1€ = {exchangeRate}</span>
+              <span className="text-badge-sm font-semibold text-indigo-600">1€ = {exchangeRate}</span>
             </div>
           </button>
 
@@ -140,10 +140,10 @@ const Header = ({ onToggleSidebar }) => {
             <Bell className="w-5 h-5 text-slate-600 group-hover:text-indigo-600 transition-colors" />
             {pendingDemandesCount > 0 && (
               <>
-                <span className="absolute top-1 right-1 flex h-4 w-4">
+                  <span className="absolute top-1 right-1 flex h-4 w-4">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 items-center justify-center">
-                    <span className="text-[9px] font-bold text-white">{pendingDemandesCount > 9 ? '9+' : pendingDemandesCount}</span>
+                    <span className="text-badge-sm font-semibold text-white">{pendingDemandesCount > 9 ? '9+' : pendingDemandesCount}</span>
                   </span>
                 </span>
               </>
@@ -163,10 +163,10 @@ const Header = ({ onToggleSidebar }) => {
 
               {/* Infos */}
               <div className="hidden md:block text-left">
-                <p className="text-sm font-semibold text-slate-900">
+                <p className="text-label font-semibold text-slate-900">
                   {currentUser?.name}
                 </p>
-                <p className="text-xs text-slate-500">
+                <p className="text-caption text-slate-500">
                   {currentUser?.role === "admin"
                     ? "Administrateur"
                     : "Agent"}
@@ -183,16 +183,16 @@ const Header = ({ onToggleSidebar }) => {
 
                 {/* User card */}
                 <div className="p-3 rounded-xl bg-slate-50 mb-2">
-                  <p className="font-semibold text-slate-900">
+                  <p className="text-label font-semibold text-slate-900">
                     {currentUser?.name}
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-caption text-slate-500">
                     {currentUser?.email}
                   </p>
                 </div>
 
                 {/* Actions */}
-                <button className="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 text-sm flex items-center gap-2">
+                <button className="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 text-label flex items-center gap-2">
                   <span className="w-7 h-7 flex items-center justify-center bg-slate-100 rounded-lg">👤</span>
                   Mon profil
                 </button>
@@ -202,7 +202,7 @@ const Header = ({ onToggleSidebar }) => {
                     setShowRateModal(true);
                     setShowDropdown(false);
                   }}
-                  className="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 text-sm flex items-center gap-2"
+                  className="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 text-label flex items-center gap-2"
                 >
                   <span className="w-7 h-7 flex items-center justify-center bg-slate-100 rounded-lg">⚙️</span>
                   Taux de conversion EUR
@@ -212,7 +212,7 @@ const Header = ({ onToggleSidebar }) => {
 
                 <button
                   onClick={handleLogout}
-                  className="w-full text-left px-3 py-2 rounded-xl hover:bg-red-50 text-red-600 text-sm font-medium"
+                  className="w-full text-left px-3 py-2 rounded-xl hover:bg-red-50 text-red-600 text-label font-medium"
                 >
                   🚪 Se déconnecter
                 </button>
@@ -239,12 +239,12 @@ const Header = ({ onToggleSidebar }) => {
                 <RefreshCcw className="w-6 h-6 text-white" />
               </div>
 
-              <h3 className="text-xl font-bold text-slate-900 mb-1">Configuration</h3>
-              <p className="text-sm text-slate-500 mb-8 font-medium">Définissez le taux de conversion Euro vers CFA pour les simulations.</p>
+              <h3 className="text-h3 font-display text-slate-900 mb-1">Configuration</h3>
+              <p className="text-body-sm text-slate-500 mb-8 font-medium">Définissez le taux de conversion Euro vers CFA pour les simulations.</p>
 
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide ml-1">
+                  <label className="text-badge-sm font-semibold text-slate-400 uppercase tracking-wide ml-1">
                     Valeur pour 1 Euro
                   </label>
                   <div className="relative group">
@@ -253,26 +253,26 @@ const Header = ({ onToggleSidebar }) => {
                       step="0.001"
                       value={exchangeRate}
                       onChange={(e) => setExchangeRate(e.target.value)}
-                      className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-lg font-bold text-slate-900 focus:bg-white focus:border-indigo-500 outline-none transition-all duration-300 pr-16"
+                      className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-body-lg font-semibold text-slate-900 focus:bg-white focus:border-indigo-500 outline-none transition-all duration-300 pr-16"
                       placeholder="655.957"
                     />
                     <div className="absolute right-4 top-1/2 -translate-y-1/2 px-2 py-1 bg-indigo-100 rounded-lg">
-                      <span className="text-[10px] font-bold text-indigo-700">CFA</span>
+                      <span className="text-badge-sm font-semibold text-indigo-700">CFA</span>
                     </div>
                   </div>
-                  <p className="text-[10px] text-slate-400 italic ml-1">* Le taux par défaut est 655.957 CFA</p>
+                  <p className="text-caption text-slate-400 italic ml-1">* Le taux par défaut est 655.957 CFA</p>
                 </div>
 
                 <div className="flex gap-3 pt-4">
                   <button
                     onClick={() => setShowRateModal(false)}
-                    className="flex-1 py-4 px-6 rounded-2xl text-xs font-bold text-slate-500 hover:bg-slate-50 transition-all active:scale-95 border border-slate-100"
+                    className="flex-1 py-4 px-6 rounded-2xl text-label-sm font-semibold text-slate-500 hover:bg-slate-50 transition-all active:scale-95 border border-slate-100"
                   >
                     Fermer
                   </button>
                   <button
                     onClick={handleSaveRate}
-                    className="flex-[1.5] py-4 px-6 rounded-2xl text-xs font-bold bg-indigo-600 text-white shadow-xl shadow-indigo-100 hover:bg-slate-900 hover:shadow-indigo-200 hover:-translate-y-0.5 active:scale-95 transition-all duration-300"
+                    className="flex-[1.5] py-4 px-6 rounded-2xl text-label-sm font-semibold bg-indigo-600 text-white shadow-xl shadow-indigo-100 hover:bg-slate-900 hover:shadow-indigo-200 hover:-translate-y-0.5 active:scale-95 transition-all duration-300"
                   >
                     Enregistrer
                   </button>

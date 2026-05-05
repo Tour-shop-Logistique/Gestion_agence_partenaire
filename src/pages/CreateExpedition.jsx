@@ -5,6 +5,7 @@ import { useExpedition } from "../hooks/useExpedition";
 import { useTarifs } from "../hooks/useTarifs";
 import { useAgency } from "../hooks/useAgency";
 import PrintSuccessModal from "../components/Receipts/PrintSuccessModal";
+import SearchableDropdown from "../components/common/SearchableDropdown";
 import { getLogoUrl } from "../utils/apiConfig";
 import { toast } from "../utils/toast";
 
@@ -111,13 +112,14 @@ const CreateExpedition = () => {
         cleanSimulation();
     }, [formData.type_expedition]);
 
-    // Effet pour la navigation retardée améliorée
+    // Effet pour afficher les messages de succès (sans réinitialiser le status)
+    // Le status sera réinitialisé par le modal lors de sa fermeture
     useEffect(() => {
-        if (message) {
+        if (message && status !== 'succeeded') {
             toast.success(message);
             resetStatus();
         }
-    }, [message, resetStatus]);
+    }, [message, status, resetStatus]);
 
     useEffect(() => {
         if (productError) {
@@ -408,7 +410,7 @@ const CreateExpedition = () => {
             return 'border-slate-200 bg-slate-50';
         }
         if (isRequired && !value) {
-            return 'border-2 border-amber-400 bg-amber-50/30 focus:border-amber-500 focus:ring-amber-500/20';
+            return 'border-2 border-grey-700 bg-grey-80/30 focus:border-grey-500 focus:ring-grey-500/20';
         }
         if (value) {
             return 'border-2 border-emerald-400 bg-emerald-50/30 focus:border-emerald-500 focus:ring-emerald-500/20';
@@ -520,11 +522,9 @@ const CreateExpedition = () => {
                                                         value={formData.pays_destination}
                                                         onChange={handleInputChange}
                                                         placeholder={formData.type_expedition === 'GROUPAGE_CA' || formData.type_expedition === 'SIMPLE' ? "Ex: France..." : "Via trajet"}
-                                                        disabled={formData.type_expedition !== 'GROUPAGE_CA' && formData.type_expedition !== 'SIMPLE'}
-                                                        className={`w-full rounded-md text-sm font-semibold h-9 ${getInputBorderClass(
+                                                        className={`w-full rounded-md text-sm font-semibold h-9 px-3 ${getInputBorderClass(
                                                             formData.pays_destination, 
-                                                            formData.type_expedition === 'GROUPAGE_CA' || formData.type_expedition === 'SIMPLE',
-                                                            formData.type_expedition !== 'GROUPAGE_CA' && formData.type_expedition !== 'SIMPLE'
+                                                            formData.type_expedition === 'GROUPAGE_CA' || formData.type_expedition === 'SIMPLE'
                                                         )}`}
                                                     />
                                                 </div>
@@ -538,17 +538,22 @@ const CreateExpedition = () => {
                                                         value={formData.destinataire_ville}
                                                         onChange={handleInputChange}
                                                         placeholder="Ex: Paris..."
-                                                        disabled={formData.type_expedition !== 'GROUPAGE_CA' && formData.type_expedition !== 'GROUPAGE_AFRIQUE' && formData.type_expedition !== 'SIMPLE'}
-                                                        className={`w-full rounded-md text-sm font-semibold h-9 ${getInputBorderClass(
+                                                        className={`w-full rounded-md text-sm font-semibold h-9 px-3 ${getInputBorderClass(
                                                             formData.destinataire_ville,
-                                                            true,
-                                                            formData.type_expedition !== 'GROUPAGE_CA' && formData.type_expedition !== 'GROUPAGE_AFRIQUE' && formData.type_expedition !== 'SIMPLE'
+                                                            true
                                                         )}`}
                                                     />
                                                 </div>
                                                 <div className="space-y-1.5">
                                                     <label className="block text-xs font-semibold text-slate-500">Pays départ</label>
-                                                    <input type="text" value={formData.pays_depart} disabled className="w-full bg-slate-50 border-2 border-slate-200 rounded-md text-sm font-semibold h-9 text-slate-400" />
+                                                    <input 
+                                                        type="text" 
+                                                        name="pays_depart"
+                                                        value={formData.pays_depart} 
+                                                        onChange={handleInputChange}
+                                                        placeholder="Ex: Côte d'Ivoire..."
+                                                        className={`w-full rounded-md text-sm font-semibold h-9 px-3 ${getInputBorderClass(formData.pays_depart, false)}`}
+                                                    />
                                                 </div>
                                                 <div className="space-y-1.5">
                                                     <label className="block text-xs font-semibold text-slate-500">
@@ -559,11 +564,9 @@ const CreateExpedition = () => {
                                                         name="expediteur_ville"
                                                         value={formData.expediteur_ville}
                                                         onChange={handleInputChange}
-                                                        disabled={formData.type_expedition !== 'GROUPAGE_CA' && formData.type_expedition !== 'SIMPLE'}
-                                                        className={`w-full rounded-md text-sm font-semibold h-9 ${getInputBorderClass(
+                                                        className={`w-full rounded-md text-sm font-semibold h-9 px-3 ${getInputBorderClass(
                                                             formData.expediteur_ville,
-                                                            formData.type_expedition === 'GROUPAGE_CA' || formData.type_expedition === 'SIMPLE',
-                                                            formData.type_expedition !== 'GROUPAGE_CA' && formData.type_expedition !== 'SIMPLE'
+                                                            formData.type_expedition === 'GROUPAGE_CA' || formData.type_expedition === 'SIMPLE'
                                                         )}`}
                                                     />
                                                 </div>
@@ -703,23 +706,24 @@ const CreateExpedition = () => {
                                                                 value={c.designation}
                                                                 onChange={(e) => handleColisChange(index, 'designation', e.target.value)}
                                                                 placeholder="Ex: Effets personnels, Électronique..."
-                                                                className={`w-full rounded-md text-sm font-semibold h-9 ${getInputBorderClass(c.designation, true)}`}
+                                                                className={`w-full rounded-md text-sm font-semibold h-9 px-3 ${getInputBorderClass(c.designation, true)}`}
                                                             />
                                                         </div>
 
                                                         {formData.type_expedition.includes('DHD') && (
                                                             <div>
                                                                 <label className="block text-xs font-semibold text-slate-500 mb-1.5">Catégorie</label>
-                                                                <select
-                                                                    value={c.category_id}
-                                                                    onChange={(e) => handleColisChange(index, 'category_id', e.target.value)}
-                                                                    className="w-full border-2 border-slate-300 rounded-md text-sm font-semibold h-9 focus:border-indigo-500 focus:ring-indigo-500/20 bg-white"
-                                                                >
-                                                                    <option value="">-- Choisir --</option>
-                                                                    {Array.isArray(categories) && categories.map(cat => (
-                                                                        <option key={cat.id} value={cat.id}>{cat.nom}</option>
-                                                                    ))}
-                                                                </select>
+                                                                <SearchableDropdown
+                                                                    options={Array.isArray(categories) ? categories.map(cat => ({
+                                                                        id: String(cat.id),
+                                                                        label: cat.nom
+                                                                    })) : []}
+                                                                    onSelect={(option) => handleColisChange(index, 'category_id', option.id)}
+                                                                    placeholder={c.category_id 
+                                                                        ? categories.find(cat => String(cat.id) === String(c.category_id))?.nom || "-- Choisir --"
+                                                                        : "-- Choisir --"
+                                                                    }
+                                                                />
                                                             </div>
                                                         )}
 
@@ -732,7 +736,7 @@ const CreateExpedition = () => {
                                                                 value={c.poids}
                                                                 onChange={(e) => handleColisChange(index, 'poids', e.target.value)}
                                                                 placeholder="0"
-                                                                className={`w-full rounded-md text-sm font-semibold h-9 ${getInputBorderClass(c.poids, true)}`}
+                                                                className={`w-full rounded-md text-sm font-semibold h-9 px-3 ${getInputBorderClass(c.poids, true)}`}
                                                             />
                                                         </div>
                                                     </div>
@@ -742,20 +746,15 @@ const CreateExpedition = () => {
                                                         {/* Articles */}
                                                         <div>
                                                             <label className="block text-xs font-semibold text-slate-500 mb-1.5">Articles contenus</label>
-                                                            <select
-                                                                onChange={(e) => {
-                                                                    if (e.target.value) {
-                                                                        handleAddArticle(index, e.target.value);
-                                                                        e.target.value = "";
-                                                                    }
-                                                                }}
-                                                                className="w-full border-slate-300 rounded-md text-xs font-semibold h-9 focus:ring-slate-500 bg-white mb-2"
-                                                            >
-                                                                <option value="">+ Ajouter un article</option>
-                                                                {Array.isArray(products) && products.map(p => (
-                                                                    <option key={p.id} value={p.designation}>{p.designation}</option>
-                                                                ))}
-                                                            </select>
+                                                            <SearchableDropdown
+                                                                options={Array.isArray(products) ? products.map(p => ({
+                                                                    id: p.id,
+                                                                    label: p.designation
+                                                                })) : []}
+                                                                onSelect={(option) => handleAddArticle(index, option.label)}
+                                                                placeholder="+ Ajouter un article"
+                                                                className="mb-2"
+                                                            />
                                                             <div className="flex flex-wrap gap-1.5 min-h-[34px] p-2 bg-slate-50 rounded-md border border-slate-200">
                                                                 {(c.articles || []).length > 0 ? (
                                                                     c.articles.map((art, artIdx) => (
@@ -778,19 +777,19 @@ const CreateExpedition = () => {
                                                             <div className="grid grid-cols-4 gap-2">
                                                                 <div>
                                                                     <label className="block text-xs font-semibold text-slate-400 text-center mb-1">Long. cm</label>
-                                                                    <input type="number" placeholder="0" value={c.longueur} onChange={(e) => handleColisChange(index, 'longueur', e.target.value)} className="w-full border-slate-300 rounded-md text-xs p-2 bg-slate-50 text-center h-9" />
+                                                                    <input type="number" placeholder="0" value={c.longueur} onChange={(e) => handleColisChange(index, 'longueur', e.target.value)} className="w-full border-2 border-slate-300 rounded-md text-xs p-2 bg-white text-center h-9 px-3 focus:border-slate-500 focus:ring-2 focus:ring-slate-500/20" />
                                                                 </div>
                                                                 <div>
                                                                     <label className="block text-xs font-semibold text-slate-400 text-center mb-1">Larg. cm</label>
-                                                                    <input type="number" placeholder="0" value={c.largeur} onChange={(e) => handleColisChange(index, 'largeur', e.target.value)} className="w-full border-slate-300 rounded-md text-xs p-2 bg-slate-50 text-center h-9" />
+                                                                    <input type="number" placeholder="0" value={c.largeur} onChange={(e) => handleColisChange(index, 'largeur', e.target.value)} className="w-full border-2 border-slate-300 rounded-md text-xs p-2 bg-white text-center h-9 px-3 focus:border-slate-500 focus:ring-2 focus:ring-slate-500/20" />
                                                                 </div>
                                                                 <div>
                                                                     <label className="block text-xs font-semibold text-slate-400 text-center mb-1">Haut. cm</label>
-                                                                    <input type="number" placeholder="0" value={c.hauteur} onChange={(e) => handleColisChange(index, 'hauteur', e.target.value)} className="w-full border-slate-300 rounded-md text-xs p-2 bg-slate-50 text-center h-9" />
+                                                                    <input type="number" placeholder="0" value={c.hauteur} onChange={(e) => handleColisChange(index, 'hauteur', e.target.value)} className="w-full border-2 border-slate-300 rounded-md text-xs p-2 bg-white text-center h-9 px-3 focus:border-slate-500 focus:ring-2 focus:ring-slate-500/20" />
                                                                 </div>
                                                                 <div>
                                                                     <label className="block text-xs font-semibold text-slate-400 text-center mb-1">Emb. CFA</label>
-                                                                    <input type="number" value={c.prix_emballage} onChange={(e) => handleColisChange(index, 'prix_emballage', e.target.value)} className="w-full border-slate-300 rounded-md text-xs p-2 bg-slate-50 text-center font-semibold text-slate-700 h-9" />
+                                                                    <input type="number" value={c.prix_emballage} onChange={(e) => handleColisChange(index, 'prix_emballage', e.target.value)} className="w-full border-2 border-slate-300 rounded-md text-xs p-2 bg-white text-center font-semibold text-slate-700 h-9 px-3 focus:border-slate-500 focus:ring-2 focus:ring-slate-500/20" />
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -839,7 +838,7 @@ const CreateExpedition = () => {
                                                     onChange={handleInputChange} 
                                                     placeholder="Ex: Jean Dupont"
                                                     autoFocus={step === 2}
-                                                    className={`w-full rounded-md text-sm font-semibold h-10 ${getInputBorderClass(formData.expediteur_nom_prenom, true)}`}
+                                                    className={`w-full rounded-md text-sm font-semibold h-10 px-3 ${getInputBorderClass(formData.expediteur_nom_prenom, true)}`}
                                                 />
                                             </div>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -851,7 +850,7 @@ const CreateExpedition = () => {
                                                         value={formData.expediteur_telephone} 
                                                         onChange={handleInputChange} 
                                                         placeholder="Ex: 0779061621"
-                                                        className={`w-full rounded-md text-sm font-semibold h-10 ${getInputBorderClass(formData.expediteur_telephone, true)}`}
+                                                        className={`w-full rounded-md text-sm font-semibold h-10 px-3 ${getInputBorderClass(formData.expediteur_telephone, true)}`}
                                                     />
                                                 </div>
                                                 <div className="space-y-1.5">
@@ -862,7 +861,7 @@ const CreateExpedition = () => {
                                                         value={formData.expediteur_email} 
                                                         onChange={handleInputChange} 
                                                         placeholder="Ex: jean@email.com"
-                                                        className={`w-full rounded-md text-sm font-semibold h-10 ${getInputBorderClass(formData.expediteur_email, false)}`}
+                                                        className={`w-full rounded-md text-sm font-semibold h-10 px-3 ${getInputBorderClass(formData.expediteur_email, false)}`}
                                                     />
                                                 </div>
                                             </div>
@@ -874,7 +873,7 @@ const CreateExpedition = () => {
                                                     value={formData.expediteur_adresse} 
                                                     onChange={handleInputChange} 
                                                     placeholder="Ex: Cocody, Angré 7ème tranche"
-                                                    className={`w-full rounded-md text-sm font-semibold h-10 ${getInputBorderClass(formData.expediteur_adresse, false)}`}
+                                                    className={`w-full rounded-md text-sm font-semibold h-10 px-3 ${getInputBorderClass(formData.expediteur_adresse, false)}`}
                                                 />
                                             </div>
                                         </div>
@@ -900,7 +899,7 @@ const CreateExpedition = () => {
                                                     value={formData.destinataire_nom_prenom} 
                                                     onChange={handleInputChange} 
                                                     placeholder="Ex: Marie Kouassi"
-                                                    className={`w-full rounded-md text-sm font-semibold h-10 ${getInputBorderClass(formData.destinataire_nom_prenom, true)}`}
+                                                    className={`w-full rounded-md text-sm font-semibold h-10 px-3 ${getInputBorderClass(formData.destinataire_nom_prenom, true)}`}
                                                 />
                                             </div>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -912,7 +911,7 @@ const CreateExpedition = () => {
                                                         value={formData.destinataire_telephone} 
                                                         onChange={handleInputChange} 
                                                         placeholder="Ex: +33612345678"
-                                                        className={`w-full rounded-md text-sm font-semibold h-10 ${getInputBorderClass(formData.destinataire_telephone, true)}`}
+                                                        className={`w-full rounded-md text-sm font-semibold h-10 px-3 ${getInputBorderClass(formData.destinataire_telephone, true)}`}
                                                     />
                                                 </div>
                                                 <div className="space-y-1.5">
@@ -923,7 +922,7 @@ const CreateExpedition = () => {
                                                         value={formData.destinataire_email} 
                                                         onChange={handleInputChange} 
                                                         placeholder="Ex: marie@email.com"
-                                                        className={`w-full rounded-md text-sm font-semibold h-10 ${getInputBorderClass(formData.destinataire_email, false)}`}
+                                                        className={`w-full rounded-md text-sm font-semibold h-10 px-3 ${getInputBorderClass(formData.destinataire_email, false)}`}
                                                     />
                                                 </div>
                                             </div>
@@ -1172,7 +1171,8 @@ const CreateExpedition = () => {
                     onClose={() => {
                         resetStatus();
                         cleanSimulation();
-                        navigate("/dashboard");
+                        // Recharger silencieusement le dashboard si on y retourne
+                        navigate("/dashboard", { state: { silentRefresh: true } });
                     }}
                 />
             )}

@@ -3,55 +3,27 @@ import { useParams, useNavigate } from 'react-router-dom';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { useExpedition } from '../hooks/useExpedition';
 import { toast } from '../utils/toast';
+import { ArrowLeft, Copy } from 'lucide-react';
+import { Button } from "../components/ui";
 import {
-    ArrowLeft,
-    CheckCircle2,
-    Clock,
-    AlertCircle,
-    Copy,
-    Truck,
-    Hash,
-    Calendar,
-    MapPin,
-    Package,
-    Phone,
-    User,
-    Mail,
-    CreditCard
-} from 'lucide-react';
-import { 
-    Button, 
-    Badge, 
-    Card, 
-    CardHeader, 
-    CardSection,
-    PageHeader 
-} from "../components/ui";
+    OperationalSummary,
+    ActionBar,
+    KPICards,
+    LogisticsFlow,
+    ParcelTable,
+    ContactCard,
+    FinanceCard
+} from '../components/expedition';
 
-// --- Sub-Components (Sober & Professional) ---
-
-const StatusBadge = ({ status }) => {
-    const config = {
-        en_attente: { variant: 'warning', label: 'En attente' },
-        accepted: { variant: 'success', label: 'Acceptée' },
-        refused: { variant: 'danger', label: 'Refusée' },
-        en_cours_enlevement: { variant: 'info', label: 'En enlèvement' },
-        en_cours_depot: { variant: 'info', label: 'Dépôt en cours' },
-        recu_agence_depart: { variant: 'info', label: 'Reçu Agence Départ' },
-        en_transit_entrepot: { variant: 'info', label: 'Transit Entrepôt' },
-        depart_expedition_succes: { variant: 'primary', label: 'En Transit (International)' },
-        arrivee_expedition_succes: { variant: 'primary', label: 'Arrivée Destination' },
-        recu_agence_destination: { variant: 'primary', label: 'Reçu Agence Dest.' },
-        en_cours_livraison: { variant: 'info', label: 'En cours de livraison' },
-        termined: { variant: 'success', label: 'Terminée' },
-        delivered: { variant: 'success', label: 'Terminée' }
-    };
-
-    const current = config[status] || { variant: 'default', label: status?.replace(/_/g, ' ') };
-
-    return <Badge variant={current.variant}>{current.label}</Badge>;
-};
-
+/**
+ * 🚀 PAGE DÉTAIL EXPÉDITION - VERSION REFACTORISÉE
+ * 
+ * Objectifs :
+ * - Ultra lisible (< 3 secondes)
+ * - Orientée ACTION
+ * - Structurée par logique métier
+ * - Design moderne SaaS
+ */
 const ExpeditionDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -64,9 +36,11 @@ const ExpeditionDetails = () => {
         status,
         message,
         error,
-        resetStatus
+        resetStatus,
+        recordTransaction
     } = useExpedition();
 
+    // États des modales
     const [isRefuseModalOpen, setIsRefuseModalOpen] = React.useState(false);
     const [isAcceptModalOpen, setIsAcceptModalOpen] = React.useState(false);
     const [isConfirmReceptionModalOpen, setIsConfirmReceptionModalOpen] = React.useState(false);
@@ -77,14 +51,14 @@ const ExpeditionDetails = () => {
     const [isProcessing, setIsProcessing] = React.useState(false);
     const [motifRefus, setMotifRefus] = React.useState("");
 
-    const { recordTransaction } = useExpedition();
-
+    // Chargement des données
     useEffect(() => {
         if (id) {
             getExpeditionDetails(id);
         }
     }, [id, getExpeditionDetails]);
 
+    // Gestion des transactions
     const handleRecordTransaction = (type) => {
         setTransactionType(type);
         setPaymentReference("");
@@ -119,6 +93,7 @@ const ExpeditionDetails = () => {
         }
     };
 
+    // Gestion des messages
     useEffect(() => {
         if (message) {
             toast.success(message);
@@ -133,15 +108,7 @@ const ExpeditionDetails = () => {
         }
     }, [error, resetStatus]);
 
-    if (status === 'loading' || !expedition) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-[400px]">
-                <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                <p className="mt-4 text-sm text-slate-500">Chargement des données...</p>
-            </div>
-        );
-    }
-
+    // Formatage
     const formatDate = (dateString) => {
         if (!dateString) return "N/A";
         return new Date(dateString).toLocaleDateString('fr-FR', {
@@ -161,411 +128,210 @@ const ExpeditionDetails = () => {
         return `${cfa} (${eur})`;
     };
 
-    // Data Normalization
-    const expediteur = expedition.expediteur || {
-        nom_prenom: expedition.expediteur_nom_prenom,
-        telephone: expedition.expediteur_telephone,
-        email: expedition.expediteur_email,
-        adresse: expedition.expediteur_adresse,
-        ville: expedition.expediteur_ville
+    // Normalisation des données
+    const expediteur = expedition?.expediteur || {
+        nom_prenom: expedition?.expediteur_nom_prenom,
+        telephone: expedition?.expediteur_telephone,
+        email: expedition?.expediteur_email,
+        adresse: expedition?.expediteur_adresse,
+        ville: expedition?.expediteur_ville
     };
 
-    const destinataire = expedition.destinataire || {
-        nom_prenom: expedition.destinataire_nom_prenom,
-        telephone: expedition.destinataire_telephone,
-        email: expedition.destinataire_email,
-        adresse: expedition.destinataire_adresse,
-        ville: expedition.destinataire_ville
+    const destinataire = expedition?.destinataire || {
+        nom_prenom: expedition?.destinataire_nom_prenom,
+        telephone: expedition?.destinataire_telephone,
+        email: expedition?.destinataire_email,
+        adresse: expedition?.destinataire_adresse,
+        ville: expedition?.destinataire_ville
     };
+
+    // Loading state
+    if (status === 'loading' || !expedition) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[400px]">
+                <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                <p className="mt-4 text-sm font-medium text-slate-500">Chargement des données...</p>
+            </div>
+        );
+    }
 
     return (
-        <div className="max-w-[1600px] mx-auto px-6 py-6 space-y-6">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+            <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-6 space-y-6">
 
-            {/* --- HEADER --- */}
-            <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-                <div className="px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            icon={ArrowLeft}
-                            onClick={() => navigate(-1)}
-                        />
-                        <div className="min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                                <span className="text-xs font-semibold text-indigo-600">Dossier Expédition</span>
-                                <span className="text-slate-300">•</span>
-                                <span className="text-xs text-slate-500">{expedition.type_expedition?.replace(/_/g, ' ')}</span>
-                            </div>
-                            <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                                {expedition.reference}
-                                <button className="text-slate-400 hover:text-slate-600 transition-colors">
-                                    <Copy className="w-4 h-4" />
-                                </button>
-                            </h1>
-                        </div>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-4">
-                        {expedition.statut_expedition === 'en_attente' && (
-                            <div className="flex items-center gap-2">
-                                <Button
-                                    variant="danger"
-                                    size="sm"
-                                    onClick={() => setIsRefuseModalOpen(true)}
-                                >
-                                    Refuser
-                                </Button>
-                                <Button
-                                    variant="indigo"
-                                    size="sm"
-                                    onClick={() => setIsAcceptModalOpen(true)}
-                                >
-                                    Accepter
-                                </Button>
-                            </div>
-                        )}
-                        {expedition.statut_expedition === 'accepted' && (
+                {/* 🎯 HEADER COMPACT */}
+                <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                    <div className="px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
                             <Button
-                                variant="indigo"
+                                variant="ghost"
                                 size="sm"
-                                onClick={() => setIsConfirmReceptionModalOpen(true)}
-                            >
-                                Confirmer Réception
-                            </Button>
-                        )}
-                        <div>
-                            <p className="text-xs text-slate-500 mb-1">Créé le</p>
-                            <p className="text-sm font-semibold text-slate-700">{formatDate(expedition.created_at)}</p>
-                        </div>
-                        <div className="hidden sm:block h-8 w-px bg-slate-200"></div>
-                        <div>
-                            <p className="text-xs text-slate-500 mb-1">Statut</p>
-                            <StatusBadge status={expedition.statut_expedition} />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-slate-100 bg-slate-50">
-                    <div className="px-6 py-3">
-                        <p className="text-xs text-slate-500 mb-1">Trajet</p>
-                        <p className="text-sm font-semibold text-slate-900">
-                            {expedition.pays_depart} → {expedition.pays_destination}
-                        </p>
-                    </div>
-                    <div className="px-6 py-3">
-                        <p className="text-xs text-slate-500 mb-1">Poids Total</p>
-                        <p className="text-sm font-semibold text-slate-900">{expedition.colis?.reduce((sum, c) => sum + parseFloat(c.poids || 0), 0)} KG</p>
-                    </div>
-                    <div className="px-6 py-3">
-                        <p className="text-xs text-slate-500 mb-1">Nombre Colis</p>
-                        <p className="text-sm font-semibold text-slate-900">{expedition.colis?.length || 0} Unités</p>
-                    </div>
-                    <div className="px-6 py-3">
-                        <p className="text-xs text-slate-500 mb-1">Total Net</p>
-                        <p className="text-sm font-semibold text-indigo-600">{formatCurrency(expedition.montant_expedition)}</p>
-                    </div>
-                </div>
-
-                {/* --- WORKFLOW BLOCKAGE ALERT --- */}
-                {parseFloat(expedition.frais_annexes || 0) > 0 && expedition.statut_paiement_frais === 'en_attente' && (
-                    <div className="bg-amber-50 border-t border-amber-200 px-6 py-3 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <AlertCircle className="w-5 h-5 text-amber-600" />
-                            <div className="text-sm font-semibold text-amber-900">
-                                Expédition bloquée au HUB : Frais annexes impayés ({formatCurrency(expedition.frais_annexes)})
+                                icon={ArrowLeft}
+                                onClick={() => navigate(-1)}
+                                className="hover:bg-slate-100"
+                            />
+                            <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-xs font-bold text-indigo-600 uppercase tracking-wide">
+                                        Dossier Expédition
+                                    </span>
+                                    <span className="text-slate-300">•</span>
+                                    <span className="text-xs text-slate-500">
+                                        {expedition.type_expedition?.replace(/_/g, ' ')}
+                                    </span>
+                                </div>
+                                <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                                    {expedition.reference}
+                                    <button 
+                                        className="text-slate-400 hover:text-indigo-600 transition-colors"
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(expedition.reference);
+                                            toast.success('Référence copiée');
+                                        }}
+                                    >
+                                        <Copy className="w-5 h-5" />
+                                    </button>
+                                </h1>
                             </div>
                         </div>
-                        <Badge variant="warning">Blocage Sécurisé</Badge>
-                    </div>
-                )}
-            </div>
-
-            <div className="grid grid-cols-12 gap-6">
-
-                {/* --- MAIN COLUMN (8/12) --- */}
-                <div className="col-span-12 lg:col-span-8 space-y-6">
-
-                    {/* 1. TIMELINE PROFESSIONNELLE */}
-                    <div className="bg-white border border-slate-200 rounded-xl lg:rounded-none overflow-hidden sm:overflow-visible">
-                        <div className="px-4 sm:px-6 py-3 border-b border-slate-100 flex items-center justify-between">
-                            <h2 className="text-xs font-bold text-slate-800 uppercase">Suivi d'exécution</h2>
-                            <span className="text-xs font-bold text-slate-400 uppercase">Temps réel</span>
+                        <div className="text-sm text-slate-500">
+                            Créé le {formatDate(expedition.created_at)}
                         </div>
-                        <div className="p-6 sm:p-8">
-                            <div className="space-y-0 relative">
-                                <div className="absolute left-[7px] top-1 bottom-1 w-px bg-slate-200"></div>
+                    </div>
+                </div>
 
-                                {(() => {
-                                    const s = expedition.statut_expedition;
-                                    const steps = [
-                                        { label: 'Enregistrement dossier', date: expedition.created_at, done: true },
-                                        { label: 'Traitement Agence Départ', date: null, done: !['en_attente', 'refused'].includes(s) },
-                                        { label: 'Contrôle & HUB (Backoffice)', date: null, done: s === 'depart_expedition_succes' || ['arrivee_expedition_succes', 'recu_agence_destination', 'en_cours_livraison', 'termined'].includes(s), blocked: parseFloat(expedition.frais_annexes || 0) > 0 && expedition.statut_paiement_frais === 'en_attente' },
-                                        { label: 'Arrivée Agence Destination', date: null, done: ['arrivee_expedition_succes', 'recu_agence_destination', 'en_cours_livraison', 'termined'].includes(s) },
-                                        { label: 'Livraison Finale', date: null, done: ['termined', 'delivered'].includes(s) }
-                                    ];
+                {/* 🔥 RÉSUMÉ OPÉRATIONNEL */}
+                <OperationalSummary 
+                    expedition={expedition} 
+                    formatCurrency={formatCurrency}
+                />
 
-                                    return steps.map((step, i) => (
-                                        <div key={i} className="flex gap-6 pb-8 last:pb-0 relative">
-                                            <div className={`w-3.5 h-3.5 rounded-full border-2 z-10 bg-white ${step.blocked ? 'border-amber-500 bg-amber-500 animate-pulse' : (step.done ? 'border-indigo-600' : 'border-slate-200')}`}>
-                                                {step.done && !step.blocked && <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full m-auto mt-[1px]"></div>}
-                                            </div>
-                                            <div className="flex-1 -mt-1">
-                                                <div className="flex items-center gap-2">
-                                                    <p className={`text-xs font-bold uppercase tracking-tight ${step.blocked ? 'text-amber-600' : (step.done ? 'text-slate-900' : 'text-slate-400')}`}>{step.label}</p>
-                                                    {step.blocked && <span className="px-1.5 py-0.5 rounded bg-amber-100 text-xs font-semibold text-amber-700 uppercase leading-none">Action Requise</span>}
-                                                </div>
-                                                {step.date && <p className="text-xs text-slate-500 font-medium mt-0.5">{formatDate(step.date)}</p>}
-                                            </div>
+                {/* ⚡ ACTIONS RAPIDES */}
+                <ActionBar
+                    expedition={expedition}
+                    onAccept={() => setIsAcceptModalOpen(true)}
+                    onRefuse={() => setIsRefuseModalOpen(true)}
+                    onConfirmReception={() => setIsConfirmReceptionModalOpen(true)}
+                    onRecordTransaction={handleRecordTransaction}
+                />
+
+                {/* 📊 CARTES KPI */}
+                <KPICards 
+                    expedition={expedition} 
+                    formatCurrency={formatCurrency}
+                />
+
+                {/* LAYOUT PRINCIPAL */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+                    {/* COLONNE PRINCIPALE (8/12) */}
+                    <div className="lg:col-span-8 space-y-6">
+                        
+                        {/* 🔄 FLUX LOGISTIQUE */}
+                        <LogisticsFlow 
+                            expedition={expedition}
+                            formatDate={formatDate}
+                        />
+
+                        {/* 📦 TABLE DES COLIS */}
+                        <ParcelTable 
+                            colis={expedition.colis || []}
+                            formatCurrency={formatCurrency}
+                        />
+
+                    </div>
+
+                    {/* COLONNE LATÉRALE (4/12) */}
+                    <div className="lg:col-span-4 space-y-6">
+
+                        {/* 👤 CONTACTS */}
+                        <div className="space-y-4">
+                            <ContactCard 
+                                type="shipper"
+                                contact={expediteur}
+                                country={expedition.pays_depart}
+                            />
+                            <ContactCard 
+                                type="receiver"
+                                contact={destinataire}
+                                country={expedition.pays_destination}
+                            />
+                        </div>
+
+                        {/* 💰 FINANCE */}
+                        <FinanceCard
+                            expedition={expedition}
+                            formatCurrency={formatCurrency}
+                            onRecordTransaction={handleRecordTransaction}
+                        />
+
+                        {/* 💼 COMMISSIONS AGENCE (si disponible) */}
+                        {expedition.commission_details && Object.keys(expedition.commission_details).length > 0 && (
+                            <div className="bg-slate-900 border-2 border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+                                <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+                                    <h2 className="text-sm font-bold text-indigo-400 uppercase tracking-wide">
+                                        Ma Commission
+                                    </h2>
+                                    <span className="px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-bold uppercase rounded-lg">
+                                        Vue Interne
+                                    </span>
+                                </div>
+                                <div className="p-6 space-y-4">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="p-4 bg-white/5 rounded-xl border border-white/10">
+                                            <p className="text-xs font-bold text-slate-400 uppercase mb-2">Enlèvement</p>
+                                            <p className="text-lg font-bold text-white">
+                                                {new Intl.NumberFormat('fr-FR').format(expedition.commission_details.enlevement?.agence || 0)}
+                                                <span className="text-xs text-indigo-400 ml-1">CFA</span>
+                                            </p>
                                         </div>
-                                    ));
-                                })()}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* 2. TABLE DATA PRO (COLIS) */}
-                    <div className="bg-white border border-slate-200 rounded-xl lg:rounded-none overflow-hidden">
-                        <div className="px-4 sm:px-6 py-3 border-b border-slate-100 bg-slate-50/50">
-                            <h2 className="text-xs font-bold text-slate-800 uppercase">Inventaire Détaillé</h2>
-                        </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse min-w-[600px] sm:min-w-0">
-                                <thead>
-                                    <tr className="border-b border-slate-100 bg-slate-50/30">
-                                        <th className="px-6 py-3 text-xs font-bold text-slate-400 uppercase">Code Colis</th>
-                                        <th className="px-6 py-3 text-xs font-bold text-slate-400 uppercase">Désignation</th>
-                                        <th className="px-6 py-3 text-xs font-bold text-slate-400 uppercase text-right">Poids</th>
-                                        <th className="px-6 py-3 text-xs font-bold text-slate-400 uppercase text-right">Valeur</th>
-                                        <th className="px-6 py-3 text-xs font-bold text-slate-400 uppercase text-right">Frais</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-50">
-                                    {(expedition.colis || []).map((parcel, idx) => (
-                                        <tr key={parcel.id} className="hover:bg-slate-50/50 transition-colors">
-                                            <td className="px-4 sm:px-6 py-4 text-sm font-mono font-semibold text-slate-600">
-                                                {parcel.code_colis || `COL-${idx + 1}`}
-                                            </td>
-                                            <td className="px-4 sm:px-6 py-4">
-                                                <p className="text-xs font-bold text-slate-900 leading-none">{parcel.designation}</p>
-                                                <p className="text-xs text-slate-400 font-medium mt-1 uppercase tracking-tight truncate max-w-[150px] sm:max-w-[200px]">
-                                                    {Array.isArray(parcel.articles) ? parcel.articles.join(', ') : parcel.articles}
-                                                </p>
-                                            </td>
-                                            <td className="px-4 sm:px-6 py-4 text-xs font-bold text-slate-700 text-right whitespace-nowrap">
-                                                {parcel.poids} KG
-                                            </td>
-                                            <td className="px-4 sm:px-6 py-4 text-xs font-bold text-slate-700 text-right uppercase">
-                                                {parcel.category?.nom || '-'}
-                                            </td>
-                                            <td className="px-4 sm:px-6 py-4 text-xs font-bold text-slate-900 text-right whitespace-nowrap">
-                                                {formatCurrency(parcel.montant_colis_total)}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                        {(!expedition.colis || expedition.colis.length === 0) && (
-                            <div className="px-6 py-8 text-center text-xs font-medium text-slate-400 border-t border-slate-50">
-                                Aucun colis enregistré dans ce dossier.
-                            </div>
-                        )}
-                    </div>
-
-                </div>
-
-                {/* --- SIDE COLUMN (4/12) --- */}
-                <div className="col-span-12 lg:col-span-4 space-y-6">
-
-                    {/* 1. FICHE CONTACT CRM */}
-                    <div className="bg-white border border-slate-200 rounded-xl lg:rounded-none overflow-hidden sm:overflow-visible">
-                        <div className="px-4 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-                            <h2 className="text-xs font-bold text-slate-800 uppercase">Informations Contacts</h2>
-                        </div>
-
-                        <div className="divide-y divide-slate-100">
-                            <div className="p-4 sm:p-6">
-                                <div className="flex items-center gap-2 mb-4">
-                                    <div className="w-1.5 h-3 bg-indigo-600 rounded-full"></div>
-                                    <h3 className="text-xs font-bold text-slate-900 uppercase">Expéditeur</h3>
-                                </div>
-                                <div className="space-y-3">
-                                    <div className="flex justify-between items-start">
-                                        <span className="text-xs font-bold text-slate-400 uppercase">Nom</span>
-                                        <span className="text-xs font-bold text-slate-900 text-right">{expediteur.nom_prenom || 'N/A'}</span>
+                                        <div className="p-4 bg-white/5 rounded-xl border border-white/10">
+                                            <p className="text-xs font-bold text-slate-400 uppercase mb-2">Livraison</p>
+                                            <p className="text-lg font-bold text-white">
+                                                {new Intl.NumberFormat('fr-FR').format(expedition.commission_details.livraison?.agence || 0)}
+                                                <span className="text-xs text-indigo-400 ml-1">CFA</span>
+                                            </p>
+                                        </div>
+                                        <div className="p-4 bg-white/5 rounded-xl border border-white/10">
+                                            <p className="text-xs font-bold text-slate-400 uppercase mb-2">Emballage</p>
+                                            <p className="text-lg font-bold text-white">
+                                                {new Intl.NumberFormat('fr-FR').format(expedition.commission_details.emballage?.agence || 0)}
+                                                <span className="text-xs text-indigo-400 ml-1">CFA</span>
+                                            </p>
+                                        </div>
+                                        <div className="p-4 bg-white/5 rounded-xl border border-white/10">
+                                            <p className="text-xs font-bold text-slate-400 uppercase mb-2">Retards</p>
+                                            <p className="text-lg font-bold text-white">
+                                                {new Intl.NumberFormat('fr-FR').format(expedition.commission_details.retard?.agence || 0)}
+                                                <span className="text-xs text-indigo-400 ml-1">CFA</span>
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div className="flex justify-between items-start">
-                                        <span className="text-xs font-bold text-slate-400 uppercase">Contact</span>
-                                        <span className="text-xs font-bold text-slate-900 text-right">{expediteur.telephone || '-'}</span>
-                                    </div>
-                                    <div className="flex justify-between items-start">
-                                        <span className="text-xs font-bold text-slate-400 uppercase">Localisation</span>
-                                        <span className="text-xs font-bold text-slate-900 text-right">{expediteur.ville || 'Abidjan'}</span>
-                                    </div>
-                                </div>
-                            </div>
 
-                            <div className="p-4 sm:p-6">
-                                <div className="flex items-center gap-2 mb-4">
-                                    <div className="w-1.5 h-3 bg-blue-600 rounded-full"></div>
-                                    <h3 className="text-xs font-bold text-slate-900 uppercase">Destinataire</h3>
-                                </div>
-                                <div className="space-y-3">
-                                    <div className="flex justify-between items-start">
-                                        <span className="text-xs font-bold text-slate-400 uppercase">Nom</span>
-                                        <span className="text-xs font-bold text-slate-900 text-right">{destinataire.nom_prenom || 'N/A'}</span>
-                                    </div>
-                                    <div className="flex justify-between items-start">
-                                        <span className="text-xs font-bold text-slate-400 uppercase">Contact</span>
-                                        <span className="text-xs font-bold text-slate-900 text-right">{destinataire.telephone || '-'}</span>
-                                    </div>
-                                    <div className="flex justify-between items-start">
-                                        <span className="text-xs font-bold text-slate-400 uppercase">Destination</span>
-                                        <span className="text-xs font-bold text-slate-900 text-right">{destinataire.ville || expedition.pays_destination}</span>
-                                    </div>
-                                    <div className="pt-2">
-                                        <p className="text-xs font-bold text-slate-400 uppercase mb-1">Adresse complète</p>
-                                        <p className="text-xs font-medium text-slate-600 bg-slate-50 p-2 rounded border border-slate-100">
-                                            {destinataire.adresse || 'Sans adresse physique renseignée'}
+                                    <div className="h-px bg-white/10"></div>
+
+                                    <div className="text-right">
+                                        <p className="text-xs font-bold text-indigo-400 uppercase mb-2">Total Commission</p>
+                                        <p className="text-3xl font-bold text-white">
+                                            {new Intl.NumberFormat('fr-FR').format(
+                                                (expedition.commission_details.enlevement?.agence || 0) +
+                                                (expedition.commission_details.livraison?.agence || 0) +
+                                                (expedition.commission_details.emballage?.agence || 0) +
+                                                (expedition.commission_details.retard?.agence || 0)
+                                            )}
+                                            <span className="text-sm text-indigo-400 ml-2">CFA</span>
                                         </p>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        )}
+
                     </div>
-
-                    {/* 2. FINANCE: STYLE FACTURATION */}
-                    <div className="bg-white border border-slate-200 shadow-sm rounded-xl lg:rounded-none overflow-hidden sm:overflow-visible text-right">
-                         <div className="px-4 sm:px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                             <h2 className="text-xs font-bold text-slate-800 uppercase">Résumé Financier</h2>
-                             {expedition.is_paiement_credit && (
-                                 <span className="px-2 py-0.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold uppercase rounded">Paiement Crédit</span>
-                             )}
-                         </div>
-                         <div className="p-4 sm:p-6 space-y-4">
-                             <div className="space-y-2 text-sm font-medium">
-                                 <div className="flex justify-between text-slate-500">
-                                     <span>Frais de transport principal</span>
-                                     <span className="font-bold">{formatCurrency(expedition.montant_expedition)}</span>
-                                 </div>
-                                 {parseFloat(expedition.frais_annexes || 0) > 0 && (
-                                     <div className="flex justify-between text-rose-500 font-bold">
-                                         <span>Frais annexes (Backoffice)</span>
-                                         <span>+{formatCurrency(expedition.frais_annexes)}</span>
-                                     </div>
-                                 )}
-                             </div>
-
-                             <div className="h-px bg-slate-100"></div>
-
-                             <div className="flex flex-col items-end pt-2">
-                                 <span className="text-xs font-bold text-slate-400 uppercase mb-1">Total à encaisser</span>
-                                 <div className="flex flex-col items-end gap-0.5">
-                                     <div className="flex items-baseline gap-1 text-slate-900">
-                                         <span className="text-2xl font-semibold tracking-tight">
-                                            {new Intl.NumberFormat('fr-FR').format(
-                                                parseFloat(expedition.montant_expedition || 0) + parseFloat(expedition.frais_annexes || 0)
-                                            )}
-                                         </span>
-                                         <span className="text-xs font-bold uppercase">CFA</span>
-                                     </div>
-                                 </div>
-                             </div>
-
-                             <div className="space-y-3 pt-4">
-                                 {/* Statut Paiement Expédition */}
-                                 <div className="flex flex-col gap-1.5 text-left">
-                                     <span className="text-xs font-bold text-slate-400 uppercase px-1">Paiement Expédition</span>
-                                     <div className={`flex items-center justify-between px-3 py-2 border rounded-xl ${expedition.statut_paiement_expedition === 'paye' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-amber-50 border-amber-100 text-amber-700'}`}>
-                                         <span className="text-xs font-semibold uppercase">
-                                             {expedition.statut_paiement_expedition === 'paye' ? 'Effectué' : 'En attente'}
-                                         </span>
-                                         {expedition.statut_paiement_expedition !== 'paye' && !expedition.is_paiement_credit && (
-                                              <button 
-                                                onClick={() => handleRecordTransaction('montant_expedition')}
-                                                className="px-2 py-0.5 bg-amber-600 text-white text-xs font-semibold uppercase rounded shadow-sm hover:bg-amber-700"
-                                              > Régler </button>
-                                         )}
-                                     </div>
-                                 </div>
-
-                                 {/* Statut Paiement Frais Annexes */}
-                                 {parseFloat(expedition.frais_annexes || 0) > 0 && (
-                                    <div className="flex flex-col gap-1.5 text-left">
-                                        <span className="text-xs font-bold text-slate-400 uppercase px-1">Frais Annexes / Douane</span>
-                                        <div className={`flex items-center justify-between px-3 py-2 border rounded-xl ${expedition.statut_paiement_frais === 'paye' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-amber-50 border-amber-100 text-amber-700'}`}>
-                                            <span className="text-xs font-semibold uppercase">
-                                                {expedition.statut_paiement_frais === 'paye' ? 'Réglé' : 'En attente'}
-                                            </span>
-                                            {expedition.statut_paiement_frais !== 'paye' && (
-                                                 <button 
-                                                    onClick={() => handleRecordTransaction('frais_annexes')}
-                                                    className="px-2 py-0.5 bg-indigo-600 text-white text-xs font-semibold uppercase rounded shadow-sm hover:bg-indigo-700"
-                                                 > Régler </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                 )}
-                             </div>
-                         </div>
-                         <div className="px-6 py-3 bg-slate-50/50 border-t border-slate-100 text-center">
-                             <p className="text-xs font-bold text-slate-400 uppercase">Document Certifié par Tous Shop</p>
-                         </div>
-                    </div>
-                    
-                    {/* 3. COMMISSIONS AGENCE (Internal) */}
-                    {expedition.commission_details && Object.keys(expedition.commission_details).length > 0 && (
-                         <div className="bg-slate-900 border border-slate-800 shadow-xl rounded-xl lg:rounded-none overflow-hidden sm:overflow-visible transition-all hover:shadow-indigo-500/10">
-                             <div className="px-4 sm:px-6 py-4 border-b border-slate-800 flex items-center justify-between">
-                                 <h2 className="text-xs font-semibold text-indigo-400 uppercase">Ma Commission Agence</h2>
-                                 <div className="px-2 py-0.5 bg-indigo-500/10 rounded border border-indigo-500/20">
-                                    <span className="text-xs font-bold text-indigo-400 uppercase tracking-tighter">Vue Interne</span>
-                                 </div>
-                             </div>
-                             <div className="p-4 sm:p-6 space-y-4">
-                                 <div className="grid grid-cols-2 gap-4">
-                                     <div className="p-3 bg-white/5 rounded-xl border border-white/5">
-                                         <p className="text-xs font-bold text-slate-400 uppercase mb-1">Enlèvement</p>
-                                         <p className="text-xs font-bold text-white">{new Intl.NumberFormat('fr-FR').format(expedition.commission_details.enlevement?.agence || 0)} <span className="text-xs">CFA</span></p>
-                                     </div>
-                                     <div className="p-3 bg-white/5 rounded-xl border border-white/5">
-                                         <p className="text-xs font-bold text-slate-400 uppercase mb-1">Livraison</p>
-                                         <p className="text-xs font-bold text-white">{new Intl.NumberFormat('fr-FR').format(expedition.commission_details.livraison?.agence || 0)} <span className="text-xs">CFA</span></p>
-                                     </div>
-                                     <div className="p-3 bg-white/5 rounded-xl border border-white/5">
-                                         <p className="text-xs font-bold text-slate-400 uppercase mb-1">Emballage</p>
-                                         <p className="text-xs font-bold text-white">{new Intl.NumberFormat('fr-FR').format(expedition.commission_details.emballage?.agence || 0)} <span className="text-xs">CFA</span></p>
-                                     </div>
-                                     <div className="p-3 bg-white/5 rounded-xl border border-white/5">
-                                         <p className="text-xs font-bold text-slate-400 uppercase mb-1">Autres (Retards)</p>
-                                         <p className="text-xs font-bold text-white">{new Intl.NumberFormat('fr-FR').format(expedition.commission_details.retard?.agence || 0)} <span className="text-xs">CFA</span></p>
-                                     </div>
-                                 </div>
-
-                                 <div className="h-px bg-white/5"></div>
-
-                                 <div className="flex flex-col items-end pt-2">
-                                     <span className="text-xs font-bold text-indigo-400 uppercase mb-1">Total Commission Agence</span>
-                                     <div className="flex items-baseline gap-1 text-white">
-                                         <span className="text-2xl font-semibold tracking-tight">
-                                             {new Intl.NumberFormat('fr-FR').format(
-                                                 (expedition.commission_details.enlevement?.agence || 0) +
-                                                 (expedition.commission_details.livraison?.agence || 0) +
-                                                 (expedition.commission_details.emballage?.agence || 0) +
-                                                 (expedition.commission_details.retard?.agence || 0)
-                                             )}
-                                         </span>
-                                         <span className="text-xs font-bold uppercase text-indigo-400">CFA</span>
-                                     </div>
-                                     <p className="text-xs text-slate-500 font-medium italic mt-1">Calculé sur la base de la grille tarifaire agence</p>
-                                 </div>
-                             </div>
-                         </div>
-                    )}
                 </div>
+
             </div>
 
+            {/* MODALES */}
             <ConfirmationModal
                 isOpen={isRefuseModalOpen}
                 onClose={() => {
@@ -633,98 +399,85 @@ const ExpeditionDetails = () => {
                 isLoading={isProcessing}
             />
 
-<ConfirmationModal
-    isOpen={isTransactionModalOpen}
-    onClose={() => setIsTransactionModalOpen(false)}
-    onConfirm={confirmTransaction}
-    title="Enregistrer un encaissement"
-    message={`Confirmez-vous l'encaissement de ${formatCurrency(
-        transactionType === 'frais_annexes'
-            ? expedition.frais_annexes
-            : expedition.montant_expedition
-    )} au titre de : ${
-        transactionType === 'frais_annexes'
-            ? 'Frais annexes / HUB'
-            : 'Frais de transport'
-    } ?`}
-    confirmText="Confirmer"
-    type="success"
-    isLoading={isProcessing}
->
-    <div className="space-y-5">
-
-        {/* Montant */}
-        <div className="border border-slate-200 rounded-lg px-4 py-3 bg-white">
-            <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-500 font-medium">
-                    Montant
-                </span>
-                <span className="text-base font-semibold text-slate-900">
-                    {formatCurrency(
-                        transactionType === 'frais_annexes'
-                            ? expedition.frais_annexes
-                            : expedition.montant_expedition
-                    )}
-                </span>
-            </div>
-        </div>
-
-        {/* Type */}
-        <div className="flex items-center justify-between text-xs text-slate-500">
-            <span>Type</span>
-            <span className="font-medium text-slate-700">
-                {transactionType === 'frais_annexes'
-                    ? 'Frais annexes / HUB'
-                    : 'Frais de transport'}
-            </span>
-        </div>
-
-        {/* Méthode paiement */}
-        <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-600">
-                Méthode de paiement
-            </label>
-
-            <select
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-                className="w-full px-3 py-2.5 border border-slate-300 rounded-md text-sm bg-white
-                focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition"
+            <ConfirmationModal
+                isOpen={isTransactionModalOpen}
+                onClose={() => setIsTransactionModalOpen(false)}
+                onConfirm={confirmTransaction}
+                title="Enregistrer un encaissement"
+                message={`Confirmez-vous l'encaissement de ${formatCurrency(
+                    transactionType === 'frais_annexes'
+                        ? expedition.frais_annexes
+                        : expedition.montant_expedition
+                )} au titre de : ${
+                    transactionType === 'frais_annexes'
+                        ? 'Frais annexes / HUB'
+                        : 'Frais de transport'
+                } ?`}
+                confirmText="Confirmer"
+                type="success"
+                isLoading={isProcessing}
             >
-                <option value="cash">Espèces</option>
-                <option value="mobile_money">Mobile Money</option>
-            </select>
-        </div>
+                <div className="space-y-5">
+                    <div className="border border-slate-200 rounded-lg px-4 py-3 bg-white">
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs text-slate-500 font-medium">Montant</span>
+                            <span className="text-base font-semibold text-slate-900">
+                                {formatCurrency(
+                                    transactionType === 'frais_annexes'
+                                        ? expedition.frais_annexes
+                                        : expedition.montant_expedition
+                                )}
+                            </span>
+                        </div>
+                    </div>
 
-        {/* Référence */}
-        {paymentMethod === 'mobile_money' && (
-            <div className="space-y-1.5">
-                <label className="text-xs font-medium text-slate-600">
-                    Référence transaction
-                </label>
+                    <div className="flex items-center justify-between text-xs text-slate-500">
+                        <span>Type</span>
+                        <span className="font-medium text-slate-700">
+                            {transactionType === 'frais_annexes'
+                                ? 'Frais annexes / HUB'
+                                : 'Frais de transport'}
+                        </span>
+                    </div>
 
-                <input
-                    type="text"
-                    value={paymentReference}
-                    onChange={(e) => setPaymentReference(e.target.value)}
-                    placeholder="Ex: OM-123456789"
-                    className="w-full px-3 py-2.5 border border-slate-300 rounded-md text-sm font-mono
-                    focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition"
-                />
-            </div>
-        )}
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-medium text-slate-600">
+                            Méthode de paiement
+                        </label>
+                        <select
+                            value={paymentMethod}
+                            onChange={(e) => setPaymentMethod(e.target.value)}
+                            className="w-full px-3 py-2.5 border border-slate-300 rounded-md text-sm bg-white
+                            focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition"
+                        >
+                            <option value="cash">Espèces</option>
+                            <option value="mobile_money">Mobile Money</option>
+                        </select>
+                    </div>
 
-        {/* Note */}
-        <div className="text-sm text-slate-500 border-t pt-3">
-            Vérifiez que le paiement a bien été reçu avant validation.
-        </div>
+                    {paymentMethod === 'mobile_money' && (
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-medium text-slate-600">
+                                Référence transaction
+                            </label>
+                            <input
+                                type="text"
+                                value={paymentReference}
+                                onChange={(e) => setPaymentReference(e.target.value)}
+                                placeholder="Ex: OM-123456789"
+                                className="w-full px-3 py-2.5 border border-slate-300 rounded-md text-sm font-mono
+                                focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition"
+                            />
+                        </div>
+                    )}
 
-    </div>
-</ConfirmationModal>
-
+                    <div className="text-sm text-slate-500 border-t pt-3">
+                        Vérifiez que le paiement a bien été reçu avant validation.
+                    </div>
+                </div>
+            </ConfirmationModal>
         </div>
     );
 };
 
 export default ExpeditionDetails;
-

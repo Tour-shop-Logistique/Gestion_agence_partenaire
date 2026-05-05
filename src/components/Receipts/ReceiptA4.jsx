@@ -38,13 +38,8 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
 
     return (
         <div ref={ref} className="p-10 bg-white text-slate-900 font-sans relative overflow-hidden" style={{ width: '210mm', minHeight: '297mm' }}>
-            {/* Watermark */}
-            <div className="absolute inset-0 flex items-center justify-center opacity-[0.08] pointer-events-none z-0">
-                <img src={logoSrc} alt="" className="w-2/3 object-contain grayscale" />
-            </div>
-
-            {/* Content Container (z-10 for overlapping watermark) */}
-            <div className="relative z-10 h-full flex flex-col">
+            {/* Content Container */}
+            <div className="relative h-full flex flex-col">
                 {/* Header */}
                 <div className="flex justify-between items-start border-b-2 border-slate-900 pb-4 mb-6">
                     <div>

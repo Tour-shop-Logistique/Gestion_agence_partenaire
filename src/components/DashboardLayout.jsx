@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
@@ -28,7 +28,7 @@ const DashboardLayout = () => {
       <aside
         className={`fixed inset-y-0 left-0 z-40 w-72 transform bg-white border-r border-gray-200 transition-transform duration-300 ease-in-out shadow-xl lg:hidden
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
-        aria-hidden={!sidebarOpen}
+        inert={!sidebarOpen ? true : undefined}
       >
         <div className="h-full overflow-hidden">
           <Sidebar onClose={() => setSidebarOpen(false)} />

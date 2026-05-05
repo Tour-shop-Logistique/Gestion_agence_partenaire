@@ -6,30 +6,36 @@ const Card = ({
   subtitle,
   className = '',
   headerActions,
+  footer,
   ...props 
 }) => {
   return (
-    <div className={`bg-white rounded-lg shadow-md overflow-hidden ${className}`} {...props}>
-      {(title || headerActions) && (
-        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-          <div>
-            {title && (
-              <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-            )}
-            {subtitle && (
-              <p className="text-sm text-gray-600 mt-1">{subtitle}</p>
+    <div className={`card ${className}`} {...props}>
+      {(title || subtitle || headerActions) && (
+        <div className="card-header">
+          <div className="flex justify-between items-start">
+            <div>
+              {title && <h3 className="card-title">{title}</h3>}
+              {subtitle && <p className="card-subtitle">{subtitle}</p>}
+            </div>
+            {headerActions && (
+              <div className="flex gap-2">
+                {headerActions}
+              </div>
             )}
           </div>
-          {headerActions && (
-            <div className="flex space-x-2">
-              {headerActions}
-            </div>
-          )}
         </div>
       )}
-      <div className="p-6">
+      
+      <div className="card-body">
         {children}
       </div>
+      
+      {footer && (
+        <div className="card-footer">
+          {footer}
+        </div>
+      )}
     </div>
   );
 };

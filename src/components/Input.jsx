@@ -6,7 +6,8 @@ const Input = ({
   placeholder, 
   value, 
   onChange, 
-  error, 
+  error,
+  hint,
   required = false,
   className = '',
   ...props 
@@ -14,7 +15,7 @@ const Input = ({
   return (
     <div className={`mb-4 ${className}`}>
       {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="input-label">
           {label}
           {required && <span className="text-red-500 ml-1">*</span>}
         </label>
@@ -24,13 +25,14 @@ const Input = ({
         placeholder={placeholder}
         value={value}
         onChange={onChange}
-        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
-          error ? 'border-red-500' : 'border-gray-300'
-        }`}
+        className={`input-field ${error ? 'border-red-500 focus:ring-red-500' : ''}`}
         {...props}
       />
       {error && (
-        <p className="mt-1 text-sm text-red-600">{error}</p>
+        <p className="input-error">{error}</p>
+      )}
+      {hint && !error && (
+        <p className="input-hint">{hint}</p>
       )}
     </div>
   );

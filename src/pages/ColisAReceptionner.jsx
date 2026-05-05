@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useExpedition } from "../hooks/useExpedition";
 import { Link } from "react-router-dom";
-import { formatPriceDual } from "../utils/format";
+import { toast } from "../utils/toast";
 import {
     InboxArrowDownIcon,
     ArrowPathIcon,
@@ -10,8 +10,11 @@ import {
     CheckCircleIcon,
     ChevronLeftIcon,
     ChevronRightIcon,
-    InformationCircleIcon
+    InformationCircleIcon,
+    MapPinIcon,
+    CheckIcon
 } from "@heroicons/react/24/outline";
+import QRScanner from "../components/QRScanner";
 import { 
     Button, 
     Input, 
@@ -43,6 +46,7 @@ const ColisAReceptionner = () => {
     const [selectedCodes, setSelectedCodes] = useState([]);
     const [processing, setProcessing] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
+    const [scannerOpen, setScannerOpen] = useState(false);
 
     const fetchReceptionData = (force = false) => {
         loadReception({
@@ -115,16 +119,27 @@ const ColisAReceptionner = () => {
         return Object.values(groups);
     }, [reception]);
 
-    // Filtrer les colis basés sur la recherche
+    // Filtrer et trier les colis - Non réceptionnés en premier
     const filteredColis = useMemo(() => {
-        if (!searchQuery) return flatColis;
-        const lowQuery = searchQuery.toLowerCase();
-        return flatColis.filter(item =>
-            item.code_colis?.toLowerCase().includes(lowQuery) ||
-            item.designation?.toLowerCase().includes(lowQuery) ||
-            item.expedition?.reference?.toLowerCase().includes(lowQuery) ||
-            item.expedition?.pays_depart?.toLowerCase().includes(lowQuery)
-        );
+        let filtered = flatColis;
+        
+        // Appliquer le filtre de recherche
+        if (searchQuery) {
+            const lowQuery = searchQuery.toLowerCase();
+            filtered = flatColis.filter(item =>
+                item.code_colis?.toLowerCase().includes(lowQuery) ||
+                item.designation?.toLowerCase().includes(lowQuery) ||
+                item.expedition?.reference?.toLowerCase().includes(lowQuery) ||
+                item.expedition?.pays_depart?.toLowerCase().includes(lowQuery)
+            );
+        }
+        
+        // Trier : colis non réceptionnés en premier
+        return filtered.sort((a, b) => {
+            const aReceived = a.is_received ? 1 : 0;
+            const bReceived = b.is_received ? 1 : 0;
+            return aReceived - bReceived;
+        });
     }, [flatColis, searchQuery]);
 
     const handlePageChange = (page) => {
@@ -168,93 +183,178 @@ const ColisAReceptionner = () => {
         setProcessing(false);
     };
 
-    return (
-        <div className="max-w-[1600px] mx-auto px-6 py-6 space-y-6">
-            {/* Header Section */}
-            <PageHeader
-                title="Colis à réceptionner"
-                subtitle="Expéditions en transit entrant dans votre pays"
-                icon={InboxArrowDownIcon}
-                actions={
-                    <div className="flex items-center gap-3">
-                        <Button
-                            variant="secondary"
-                            icon={ArrowPathIcon}
-                            onClick={() => fetchReceptionData(true)}
-                            disabled={loading}
-                        >
-                            Actualiser
-                        </Button>
-                        <Button
-                            variant="primary"
-                            icon={QrCodeIcon}
-                        >
-                            Scan QR Code
-                        </Button>
-                    </div>
+    const handleQRScan = (scannedData) => {
+        // Le QR code peut contenir soit le code_colis directement, soit l'ID de l'expédition
+        // On va chercher dans la liste des colis
+        
+        // Chercher par code_colis exact
+        let foundColis = filteredColis.find(c => c.code_colis === scannedData);
+        
+        // Si pas trouvé, chercher par code_colis partiel (au cas où le QR contient plus d'infos)
+        if (!foundColis) {
+            foundColis = filteredColis.find(c => scannedData.includes(c.code_colis));
+        }
+        
+        // Si pas trouvé, chercher par ID d'expédition
+        if (!foundColis) {
+            foundColis = filteredColis.find(c => 
+                c.expedition_id === parseInt(scannedData) || 
+                c.expedition?.id === parseInt(scannedData)
+            );
+        }
+        
+        if (foundColis && !foundColis.is_received) {
+            // Sélectionner le colis trouvé
+            if (!selectedCodes.includes(foundColis.code_colis)) {
+                setSelectedCodes(prev => [...prev, foundColis.code_colis]);
+            }
+            
+            // Afficher un message de succès
+            toast.success(`Colis ${foundColis.code_colis} sélectionné !`);
+            
+            // Scroll vers le colis dans la liste
+            setTimeout(() => {
+                const element = document.getElementById(`colis-${foundColis.code_colis}`);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
+            }, 100);
+        } else if (foundColis && foundColis.is_received) {
+            toast.info(`Le colis ${foundColis.code_colis} a déjà été réceptionné.`);
+        } else {
+            toast.error(`Aucun colis trouvé avec le code scanné : ${scannedData}`);
+        }
+    };
+
+    return (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+            {/* Header Section - Design SaaS Minimaliste */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-semibold text-gray-900">
+                        Colis à réceptionner
+                    </h1>
+                    <p className="mt-1 text-sm text-gray-500">
+                        Gérez les colis en transit vers votre agence
+                    </p>
+                </div>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => fetchReceptionData(true)}
+                        disabled={loading}
+                        className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
+                    >
+                        <ArrowPathIcon className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                        Actualiser
+                    </button>
+                    <button 
+                        onClick={() => setScannerOpen(true)}
+                        className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                    >
+                        <QrCodeIcon className="w-4 h-4 mr-2" />
+                        Scanner
+                    </button>
+                </div>
+            </div>
+
+            {/* QR Scanner Modal */}
+            <QRScanner 
+                isOpen={scannerOpen}
+                onClose={() => setScannerOpen(false)}
+                onScan={handleQRScan}
             />
 
-            {/* Search Bar */}
-            <Input
-                type="text"
-                placeholder="Rechercher un colis à réceptionner..."
-                icon={MagnifyingGlassIcon}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-            />
+            {/* Search Bar - Design SaaS Minimaliste */}
+            <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                    type="text"
+                    className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow"
+                    placeholder="Rechercher par code, désignation, référence..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+            </div>
 
-            {/* Selection Bar */}
+            {/* Selection Bar - Design SaaS Minimaliste */}
             {selectedCodes.length > 0 && (
-                <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center justify-between px-4 py-3 bg-indigo-50 border border-indigo-200 rounded-lg">
                     <div className="flex items-center gap-3">
-                        <Badge variant="info">
-                            {selectedCodes.length} sélectionné(s)
-                        </Badge>
+                        <span className="text-sm font-medium text-gray-700">
+                            {selectedCodes.length} sélectionné{selectedCodes.length > 1 ? 's' : ''}
+                        </span>
                     </div>
-                    <div className="flex items-center gap-3 w-full sm:w-auto">
-                        <Button
-                            variant="indigo"
-                            icon={processing ? ArrowPathIcon : CheckCircleIcon}
+                    <div className="flex items-center gap-2">
+                        <button
                             onClick={handleReceiveSelected}
                             disabled={processing}
-                            className="flex-1 sm:flex-none"
+                            className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
                         >
-                            Réceptionner la sélection
-                        </Button>
-                        <Button
-                            variant="secondary"
+                            {processing ? (
+                                <>
+                                    <ArrowPathIcon className="w-4 h-4 mr-2 animate-spin" />
+                                    Traitement...
+                                </>
+                            ) : (
+                                <>
+                                    <CheckCircleIcon className="w-4 h-4 mr-2" />
+                                    Réceptionner
+                                </>
+                            )}
+                        </button>
+                        <button
                             onClick={() => setSelectedCodes([])}
-                            className="flex-1 sm:flex-none"
+                            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
                         >
                             Annuler
-                        </Button>
+                        </button>
                     </div>
                 </div>
             )}
 
-            {/* Table Section */}
-            <Table>
-                <TableHeader>
-                    <tr>
-                        <TableHeaderCell className="w-10">
-                            <input
-                                type="checkbox"
-                                className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                                checked={selectableColis.length > 0 && selectedCodes.length === selectableColis.length}
-                                onChange={toggleSelectAll}
-                            />
-                        </TableHeaderCell>
-                        <TableHeaderCell>Colis / Désignation</TableHeaderCell>
-                        <TableHeaderCell>Provenance</TableHeaderCell>
-                        <TableHeaderCell>Destination</TableHeaderCell>
-                        <TableHeaderCell>Poids</TableHeaderCell>
-                        <TableHeaderCell align="right">Action</TableHeaderCell>
-                    </tr>
-                </TableHeader>
-                <TableBody>
-                    {loading && (reception || []).length === 0 ? (
-                        <TableLoading rows={5} cols={6} />
+            {/* Table Section - Design SaaS Minimaliste */}
+            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                            <tr>
+                                <th scope="col" className="w-12 px-4 py-3">
+                                    <input
+                                        type="checkbox"
+                                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                        checked={selectableColis.length > 0 && selectedCodes.length === selectableColis.length}
+                                        onChange={toggleSelectAll}
+                                    />
+                                </th>
+                                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Colis
+                                </th>
+                                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Provenance
+                                </th>
+                                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Destination
+                                </th>
+                                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Poids
+                                </th>
+                                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Statut
+                                </th>
+                                <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">{loading && (reception || []).length === 0 ? (
+                        <tr>
+                            <td colSpan="7" className="px-4 py-12 text-center">
+                                <ArrowPathIcon className="mx-auto h-8 w-8 text-gray-400 animate-spin" />
+                                <p className="mt-2 text-sm text-gray-500">Chargement...</p>
+                            </td>
+                        </tr>
                     ) : filteredColis.length > 0 ? (
                         groupedExpeditions.map((exp) => {
                             const expColis = (exp.colis || []).map(c => ({
@@ -266,145 +366,176 @@ const ColisAReceptionner = () => {
                                 const lowQuery = searchQuery.toLowerCase();
                                 return c.code_colis?.toLowerCase().includes(lowQuery) ||
                                     c.designation?.toLowerCase().includes(lowQuery);
+                            }).sort((a, b) => {
+                                // Trier : non réceptionnés en premier
+                                const aReceived = a.is_received ? 1 : 0;
+                                const bReceived = b.is_received ? 1 : 0;
+                                return aReceived - bReceived;
                             });
 
                             if (expColis.length === 0) return null;
 
                             return (
                                 <React.Fragment key={exp.id}>
-                                    {/* Expedition Header Row */}
-                                    <tr className="bg-slate-50">
-                                        <td className="px-6 py-3"></td>
-                                        <td colSpan="4" className="px-6 py-3">
-                                            <div className="flex items-center gap-3">
-                                                <div className="px-3 py-1 bg-white border border-slate-200 rounded-lg shadow-sm flex items-center gap-2">
-                                                    <InformationCircleIcon className="w-4 h-4 text-slate-400" />
-                                                    <span className="text-xs font-semibold text-slate-700">{exp.reference}</span>
-                                                </div>
-                                                <span className="text-xs text-slate-500">
-                                                    {exp.pays_depart} → {exp.pays_destination}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-3 text-right">
-                                            <div className="flex items-center justify-end gap-3 text-xs">
-                                                <span className="text-slate-500">Total:</span>
-                                                <span className="font-semibold text-indigo-600">{formatPriceDual(exp.montant_total)}</span>
-                                                <Badge variant={exp.statut_paiement === 'paye' ? 'success' : 'warning'}>
-                                                    {exp.statut_paiement === 'paye' ? 'Payé' : 'Impayé'}
-                                                </Badge>
-                                                <span className="text-slate-400">{exp.colis?.length} colis</span>
+                                    {/* Expedition Header Row - Minimaliste */}
+                                    <tr className="bg-gray-50">
+                                        <td className="px-4 py-2"></td>
+                                        <td colSpan="6" className="px-4 py-2">
+                                            <div className="flex items-center gap-3 text-xs">
+                                                <span className="font-medium text-gray-900">{exp.reference}</span>
+                                                <span className="text-gray-500">•</span>
+                                                <span className="text-gray-600">{exp.pays_depart} → {exp.pays_destination}</span>
+                                                <span className="text-gray-500">•</span>
+                                                <span className="text-gray-500">{exp.colis?.length} colis</span>
                                             </div>
                                         </td>
                                     </tr>
                                     {expColis.map((item) => (
-                                        <TableRow
+                                        <tr
                                             key={item.id}
+                                            id={`colis-${item.code_colis}`}
                                             onClick={() => !item.is_received && toggleSelect(item.code_colis)}
-                                            className={`${item.is_received ? 'bg-emerald-50/30' : selectedCodes.includes(item.code_colis) ? 'bg-indigo-50/30' : ''}`}
+                                            className={`${
+                                                item.is_received 
+                                                    ? 'bg-gray-50' 
+                                                    : selectedCodes.includes(item.code_colis) 
+                                                        ? 'bg-indigo-50' 
+                                                        : 'hover:bg-gray-50'
+                                            } cursor-pointer transition-colors`}
                                         >
-                                            <TableCell onClick={(e) => e.stopPropagation()}>
+                                            <td className="px-4 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                                                 {!item.is_received ? (
                                                     <input
                                                         type="checkbox"
-                                                        className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                                                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                                         checked={selectedCodes.includes(item.code_colis)}
                                                         onChange={() => toggleSelect(item.code_colis)}
                                                     />
                                                 ) : (
-                                                    <CheckCircleIcon className="w-5 h-5 text-emerald-500" />
+                                                    <CheckCircleIcon className="h-5 w-5 text-green-500" />
                                                 )}
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center shrink-0">
-                                                        <InboxArrowDownIcon className="w-5 h-5 text-slate-400" />
+                                            </td>
+                                            <td className="px-4 py-4">
+                                                <div className="flex items-center">
+                                                    <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-gray-100 rounded-lg">
+                                                        <InboxArrowDownIcon className="h-5 w-5 text-gray-500" />
                                                     </div>
-                                                    <div className="space-y-1">
-                                                        <p className="text-sm font-semibold text-slate-900">{item.code_colis}</p>
-                                                        <p className="text-xs text-slate-500">{item.designation || 'Désignation non spécifiée'}</p>
+                                                    <div className="ml-3">
+                                                        <div className="text-sm font-medium text-gray-900">
+                                                            {item.code_colis}
+                                                        </div>
+                                                        <div className="text-sm text-gray-500">
+                                                            {item.designation || 'Sans désignation'}
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center gap-2">
-                                                    <InboxArrowDownIcon className="w-4 h-4 text-slate-400 rotate-180" />
-                                                    <span className="text-sm text-slate-700">{exp.pays_depart}</span>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center gap-2">
-                                                    <InboxArrowDownIcon className="w-4 h-4 text-indigo-600" />
-                                                    <span className="text-sm text-slate-700">{exp.pays_destination}</span>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <span className="text-sm font-semibold text-slate-900">{parseFloat(item.poids).toFixed(2)} kg</span>
-                                            </TableCell>
-                                            <TableCell align="right">
+                                            </td>
+                                            <td className="px-4 py-4 whitespace-nowrap">
+                                                <div className="text-sm text-gray-900">{exp.pays_depart}</div>
+                                            </td>
+                                            <td className="px-4 py-4 whitespace-nowrap">
+                                                <div className="text-sm text-gray-900">{exp.pays_destination}</div>
+                                            </td>
+                                            <td className="px-4 py-4 whitespace-nowrap">
+                                                <div className="text-sm text-gray-900">{parseFloat(item.poids).toFixed(2)} kg</div>
+                                            </td>
+                                            <td className="px-4 py-4 whitespace-nowrap">
+                                                {item.is_received ? (
+                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-green-100 text-green-800">
+                                                        Reçu
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-yellow-100 text-yellow-800">
+                                                        En attente
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                 <div className="flex items-center justify-end gap-2">
                                                     <Link to={`/expeditions/${exp.id}`}>
-                                                        <Button variant="ghost" size="sm">
+                                                        <button className="text-gray-600 hover:text-gray-900 transition-colors">
                                                             Détails
-                                                        </Button>
+                                                        </button>
                                                     </Link>
-                                                    {!item.is_received ? (
-                                                        <Button
-                                                            variant="primary"
-                                                            size="sm"
-                                                            icon={InboxArrowDownIcon}
+                                                    {!item.is_received && (
+                                                        <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 handleReceiveSingle(item.code_colis);
                                                             }}
                                                             disabled={processing}
+                                                            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
                                                         >
                                                             Réceptionner
-                                                        </Button>
-                                                    ) : (
-                                                        <Badge variant="success" className="flex items-center gap-1">
-                                                            <CheckCircleIcon className="w-3.5 h-3.5" />
-                                                            Reçu
-                                                        </Badge>
+                                                        </button>
                                                     )}
                                                 </div>
-                                            </TableCell>
-                                        </TableRow>
+                                            </td>
+                                        </tr>
                                     ))}
                                 </React.Fragment>
                             );
                         })
                     ) : (
-                        <TableEmpty 
-                            message="Aucun colis à réceptionner"
-                            description="Les colis en attente de réception à destination apparaîtront ici."
-                            icon={InboxArrowDownIcon}
-                        />
+                        <tr>
+                            <td colSpan="7" className="px-4 py-12 text-center">
+                                <InboxArrowDownIcon className="mx-auto h-12 w-12 text-gray-400" />
+                                <h3 className="mt-2 text-sm font-medium text-gray-900">Aucun colis</h3>
+                                <p className="mt-1 text-sm text-gray-500">
+                                    Les colis en attente de réception apparaîtront ici.
+                                </p>
+                            </td>
+                        </tr>
                     )}
-                </TableBody>
-            </Table>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
-            {/* Pagination */}
+            {/* Pagination - Design SaaS Minimaliste */}
             {receptionMeta && receptionMeta.last_page > 1 && (
-                <div className="flex items-center justify-between px-6 py-4 bg-white border border-slate-200 rounded-xl">
-                    <p className="text-sm text-slate-500">
-                        Page <span className="font-semibold text-slate-900">{receptionMeta.current_page}</span> sur <span className="font-semibold text-slate-900">{receptionMeta.last_page}</span>
-                    </p>
-                    <div className="flex items-center gap-2">
-                        <Button
-                            variant="secondary"
-                            size="sm"
-                            icon={ChevronLeftIcon}
+                <div className="flex items-center justify-between px-4 py-3 bg-white border border-gray-200 rounded-lg">
+                    <div className="flex-1 flex justify-between sm:hidden">
+                        <button
                             onClick={() => handlePageChange(currentPage - 1)}
                             disabled={currentPage === 1}
-                        />
-                        <Button
-                            variant="primary"
-                            size="sm"
-                            icon={ChevronRightIcon}
+                            className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Précédent
+                        </button>
+                        <button
                             onClick={() => handlePageChange(currentPage + 1)}
                             disabled={currentPage === receptionMeta.last_page}
-                        />
+                            className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Suivant
+                        </button>
+                    </div>
+                    <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                        <div>
+                            <p className="text-sm text-gray-700">
+                                Page <span className="font-medium">{receptionMeta.current_page}</span> sur{' '}
+                                <span className="font-medium">{receptionMeta.last_page}</span>
+                            </p>
+                        </div>
+                        <div>
+                            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                <button
+                                    onClick={() => handlePageChange(currentPage - 1)}
+                                    disabled={currentPage === 1}
+                                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <ChevronLeftIcon className="h-5 w-5" />
+                                </button>
+                                <button
+                                    onClick={() => handlePageChange(currentPage + 1)}
+                                    disabled={currentPage === receptionMeta.last_page}
+                                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <ChevronRightIcon className="h-5 w-5" />
+                                </button>
+                            </nav>
+                        </div>
                     </div>
                 </div>
             )}

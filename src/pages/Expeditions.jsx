@@ -9,6 +9,10 @@ import PrintSuccessModal from "../components/Receipts/PrintSuccessModal";
 import { getLogoUrl } from "../utils/apiConfig";
 import { formatPriceDual } from "../utils/format";
 import { ArrowPathIcon, MagnifyingGlassIcon, DocumentArrowDownIcon } from "@heroicons/react/24/outline";
+import {
+    StatusFilter,
+    SortableHeader
+} from '../components/expeditions';
 
 const Expeditions = () => {
     const navigate = useNavigate();
@@ -41,6 +45,10 @@ const Expeditions = () => {
     const [selectedExpedition, setSelectedExpedition] = useState(null);
     const [showPrintModal, setShowPrintModal] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
+    
+    // Nouveaux états pour filtrage avancé et tri
+    const [selectedStatuses, setSelectedStatuses] = useState([]);
+    const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
     useEffect(() => {
         if (dateDebut) sessionStorage.setItem('expeditions_date_debut', dateDebut);
@@ -67,6 +75,20 @@ const Expeditions = () => {
     const handlePrintReceipt = (expedition) => {
         setSelectedExpedition(expedition);
         setShowPrintModal(true);
+    };
+
+    const handleSort = (key, direction) => {
+        setSortConfig({ key, direction });
+    };
+
+    const resetAllFilters = () => {
+        setSelectedStatuses([]);
+        setSearchQuery('');
+        setType('');
+        setDateDebut(getFirstDayOfMonth());
+        setDateFin(getTodayDate());
+        setSortConfig({ key: null, direction: 'asc' });
+        setCurrentPage(1);
     };
 
     const getStatusBorderColor = (status) => {
@@ -377,11 +399,20 @@ const Expeditions = () => {
 
     const filteredExpeditions = useMemo(() => {
         let result = expeditions;
+        
+        // 1. Filtre par type
         if (type) {
             result = result.filter(exp => exp.type_expedition === type);
         }
+        
+        // 2. Filtre par statut (NOUVEAU)
+        if (selectedStatuses.length > 0) {
+            result = result.filter(exp => selectedStatuses.includes(exp.statut_expedition));
+        }
+        
+        // 3. Filtre par recherche (amélioré)
         if (searchQuery) {
-            const lowerQuery = searchQuery.toLowerCase();
+            const lowerQuery = searchQuery.toLowerCase().trim();
             result = result.filter(exp =>
                 exp.reference?.toLowerCase().includes(lowerQuery) ||
                 exp.expediteur?.nom_prenom?.toLowerCase().includes(lowerQuery) ||
@@ -391,31 +422,68 @@ const Expeditions = () => {
                 exp.type_expedition?.toLowerCase().includes(lowerQuery)
             );
         }
+        
+        // 4. Tri (NOUVEAU)
+        if (sortConfig.key) {
+            result = [...result].sort((a, b) => {
+                let aValue, bValue;
+
+                switch (sortConfig.key) {
+                    case 'montant':
+                        aValue = parseFloat(a.montant_expedition || 0);
+                        bValue = parseFloat(b.montant_expedition || 0);
+                        break;
+                    case 'date':
+                        aValue = new Date(a.created_at);
+                        bValue = new Date(b.created_at);
+                        break;
+                    case 'reference':
+                        aValue = a.reference || '';
+                        bValue = b.reference || '';
+                        break;
+                    case 'statut':
+                        aValue = a.statut_expedition || '';
+                        bValue = b.statut_expedition || '';
+                        break;
+                    case 'commission':
+                        aValue = getAgencyCommission(a);
+                        bValue = getAgencyCommission(b);
+                        break;
+                    default:
+                        return 0;
+                }
+
+                if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+                if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+        
         return result;
-    }, [expeditions, searchQuery, type]);
+    }, [expeditions, type, selectedStatuses, searchQuery, sortConfig]);
 
     return (
         <>
-            <div className="space-y-8 max-w-[1600px] mx-auto">
-                {/* Premium Header Section */}
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                    <div className="space-y-2">
-                        <h1 className="text-4xl font-bold text-slate-900 tracking-tight leading-none">
+            <div className="space-y-6 max-w-[1600px] mx-auto">
+                {/* Header Section */}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-semibold text-gray-900">
                             Expéditions
                         </h1>
-                        <p className="text-sm font-medium text-slate-500 tracking-wide">
+                        <p className="mt-1 text-sm text-gray-500">
                             Gérez et suivez toutes vos expéditions en temps réel
                         </p>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
+                    <div className="flex items-center gap-3">
                         {/* Date Filters */}
-                        <div className="flex items-center gap-2 w-full sm:w-auto">
-                            <div className="relative group flex-1 sm:w-40">
-                                <span className="absolute -top-2 left-3 px-1 bg-white text-[10px] font-bold text-slate-400 uppercase tracking-wider z-10">Du</span>
+                        <div className="flex items-center gap-2">
+                            <div className="relative">
+                                <span className="absolute -top-2 left-3 px-1 bg-white text-xs font-medium text-gray-500 z-10">Du</span>
                                 <input
                                     type="date"
-                                    className="block w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
+                                    className="block w-40 px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                                     value={dateDebut}
                                     onChange={(e) => {
                                         setDateDebut(e.target.value);
@@ -423,11 +491,11 @@ const Expeditions = () => {
                                     }}
                                 />
                             </div>
-                            <div className="relative group flex-1 sm:w-40">
-                                <span className="absolute -top-2 left-3 px-1 bg-white text-[10px] font-bold text-slate-400 uppercase tracking-wider z-10">Au</span>
+                            <div className="relative">
+                                <span className="absolute -top-2 left-3 px-1 bg-white text-xs font-medium text-gray-500 z-10">Au</span>
                                 <input
                                     type="date"
-                                    className="block w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm"
+                                    className="block w-40 px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                                     value={dateFin}
                                     onChange={(e) => {
                                         setDateFin(e.target.value);
@@ -438,13 +506,13 @@ const Expeditions = () => {
                         </div>
 
                         {/* Search Bar */}
-                        <div className="relative group w-full sm:w-64 lg:w-96">
+                        <div className="relative group w-64">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <MagnifyingGlassIcon className="h-4 w-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                                <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
                             </div>
                             <input
                                 type="text"
-                                className="block w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm group-hover:shadow-md"
+                                className="block w-full pl-10 pr-3 py-2 bg-white border border-gray-300 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                                 placeholder="Rechercher (réf, nom, ville)..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -455,7 +523,7 @@ const Expeditions = () => {
                         <button
                             onClick={() => loadExpeditions({ page: currentPage, date_debut: dateDebut, date_fin: dateFin }, true)}
                             disabled={status === 'loading'}
-                            className="p-2 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm active:scale-95 disabled:opacity-50"
+                            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
                             title="Rafraîchir"
                         >
                             <ArrowPathIcon className={`w-5 h-5 ${status === 'loading' ? 'animate-spin' : ''}`} />
@@ -476,15 +544,17 @@ const Expeditions = () => {
 
                 {/* Sub-Header Toolbar with Type Filter */}
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/60 p-1 rounded-2xl border border-slate-200/50">
-                    <div className="flex items-center p-1 bg-slate-100/50 rounded-xl w-full sm:w-auto overflow-x-auto no-scrollbar">
-                        {[
-                            { id: '', label: 'Tout', icon: '📦', color: 'indigo' },
-                            { id: 'simple', label: 'Simple', icon: '📮', color: 'blue' },
-                            { id: 'groupage_dhd_aerien', label: 'Aérien', icon: '✈️', color: 'sky' },
-                            { id: 'groupage_dhd_maritine', label: 'Maritime', icon: '🚢', color: 'cyan' },
-                            { id: 'groupage_afrique', label: 'Afrique', icon: '🌍', color: 'orange' },
-                            { id: 'groupage_ca', label: 'CA', icon: '📋', color: 'purple' }
-                        ].map((btn) => {
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                        {/* Filtres par type */}
+                        <div className="flex items-center p-1 bg-slate-100/50 rounded-xl overflow-x-auto no-scrollbar">
+                            {[
+                                { id: '', label: 'Tout', icon: '📦', color: 'indigo' },
+                                { id: 'simple', label: 'Simple', icon: '📮', color: 'blue' },
+                                { id: 'groupage_dhd_aerien', label: 'Aérien', icon: '✈️', color: 'sky' },
+                                { id: 'groupage_dhd_maritine', label: 'Maritime', icon: '🚢', color: 'cyan' },
+                                { id: 'groupage_afrique', label: 'Afrique', icon: '🌍', color: 'orange' },
+                                { id: 'groupage_ca', label: 'CA', icon: '📋', color: 'purple' }
+                            ].map((btn) => {
                             const isActive = type === btn.id;
                             const colorClasses = {
                                 indigo: {
@@ -496,7 +566,7 @@ const Expeditions = () => {
                                     inactive: 'text-slate-500 hover:text-blue-600 hover:bg-blue-50'
                                 },
                                 sky: {
-                                    active: 'bg-gradient-to-br from-sky-500 to-sky-600 text-white shadow-lg shadow-sky-200',
+                                    active: 'bg-gradient-to-br from-sky-500 to-sky-600 text-white shadow-lg shadow-lg shadow-sky-200',
                                     inactive: 'text-slate-500 hover:text-sky-600 hover:bg-sky-50'
                                 },
                                 cyan: {
@@ -532,12 +602,20 @@ const Expeditions = () => {
                                 </button>
                             );
                         })}
+                        </div>
+
+                        {/* Filtre par statut */}
+                        <StatusFilter
+                            selectedStatuses={selectedStatuses}
+                            onStatusChange={setSelectedStatuses}
+                            expeditions={expeditions}
+                        />
                     </div>
 
                     <div className="flex items-center gap-4 px-2">
                         <div className="flex items-center gap-3">
                             <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide leading-none">Global</span>
-                            <span className="text-sm font-bold text-slate-900 tracking-tight leading-none">{meta?.total || 0}</span>
+                            <span className="text-sm font-bold text-slate-900 tracking-tight leading-none">{filteredExpeditions?.length || 0}</span>
                         </div>
                         <div className="w-px h-4 bg-slate-200"></div>
                         <div className="flex items-center gap-1.5 text-emerald-500">
@@ -683,13 +761,48 @@ const Expeditions = () => {
                             {/* Sticky Premium Header */}
                             <thead className="sticky top-0 z-10">
                                 <tr className="bg-slate-50/90 backdrop-blur-md border-b border-slate-200/60">
-                                    <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wide w-[12%]">Référence</th>
-                                    <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wide w-[18%]">Expéditeur / Destinataire</th>
-                                    <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wide w-[10%]">Trajet</th>
-                                    <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wide w-[14%]">Montant</th>
-                                    <th className="px-6 py-5 text-xs font-bold text-indigo-600 uppercase tracking-wide bg-indigo-50/30 w-[13%]">Commission</th>
-                                    <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wide w-[18%]">Statut</th>
-                                    <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wide text-right w-[15%]">Actions</th>
+                                    <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wide w-[12%]">
+                                        <SortableHeader
+                                            label="Référence"
+                                            sortKey="reference"
+                                            currentSort={sortConfig}
+                                            onSort={handleSort}
+                                        />
+                                    </th>
+                                    <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wide w-[18%]">
+                                        Expéditeur / Destinataire
+                                    </th>
+                                    <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wide w-[10%]">
+                                        Trajet
+                                    </th>
+                                    <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wide w-[14%]">
+                                        <SortableHeader
+                                            label="Montant"
+                                            sortKey="montant"
+                                            currentSort={sortConfig}
+                                            onSort={handleSort}
+                                        />
+                                    </th>
+                                    <th className="px-6 py-5 text-xs font-bold text-indigo-600 uppercase tracking-wide bg-indigo-50/30 w-[13%]">
+                                        <SortableHeader
+                                            label="Commission"
+                                            sortKey="commission"
+                                            currentSort={sortConfig}
+                                            onSort={handleSort}
+                                            className="text-indigo-600"
+                                        />
+                                    </th>
+                                    <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wide w-[18%]">
+                                        <SortableHeader
+                                            label="Statut"
+                                            sortKey="statut"
+                                            currentSort={sortConfig}
+                                            onSort={handleSort}
+                                        />
+                                    </th>
+                                    <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wide text-right w-[15%]">
+                                        Actions
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100/60">

@@ -8,7 +8,8 @@ import {
     selectFinancialData,
     selectLogisticsData,
     selectDashboardStatus,
-    selectDashboardError
+    selectDashboardError,
+    selectIsRefreshing
 } from '../store/slices/dashboardSlice';
 
 /**
@@ -24,15 +25,16 @@ export const useDashboard = () => {
     const logistics = useSelector(selectLogisticsData);
     const status = useSelector(selectDashboardStatus);
     const error = useSelector(selectDashboardError);
+    const isRefreshing = useSelector(selectIsRefreshing);
 
     // Actions
-    const fetchDashboard = useCallback((forceRefresh = false) => {
-        // Éviter de recharger si déjà en cours
-        if (!forceRefresh && status === 'loading') {
+    const fetchDashboard = useCallback((forceRefresh = false, silentRefresh = false) => {
+        // Éviter de recharger si déjà en cours (sauf si silentRefresh)
+        if (!forceRefresh && !silentRefresh && (status === 'loading' || isRefreshing)) {
             return;
         }
         // Éviter de recharger si déjà chargé récemment (moins de 30 secondes)
-        if (!forceRefresh && status === 'succeeded' && dashboardState.lastUpdated) {
+        if (!forceRefresh && !silentRefresh && status === 'succeeded' && dashboardState.lastUpdated) {
             const lastUpdate = new Date(dashboardState.lastUpdated);
             const now = new Date();
             const diffSeconds = (now - lastUpdate) / 1000;
@@ -40,8 +42,8 @@ export const useDashboard = () => {
                 return Promise.resolve({ payload: dashboardState });
             }
         }
-        return dispatch(loadDashboardData());
-    }, [dispatch, status, dashboardState]);
+        return dispatch(loadDashboardData(silentRefresh));
+    }, [dispatch, status, isRefreshing, dashboardState]);
 
     const clearError = useCallback(() => {
         dispatch(clearDashboardError());
@@ -55,6 +57,7 @@ export const useDashboard = () => {
         status,
         error,
         loading: status === 'loading',
+        isRefreshing,
         lastUpdated: dashboardState.lastUpdated,
 
         // Actions
