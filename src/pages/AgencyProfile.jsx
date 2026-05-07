@@ -209,20 +209,20 @@ const AgencyProfile = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-700">
+    <div className="max-w-6xl mx-auto px-3 sm:px-6 space-y-6 sm:space-y-8 animate-in fade-in duration-700">
 
-      {/* --- PREMIUM HERO HEADER --- */}
-      <div className="relative overflow-hidden rounded-3xl bg-white border border-slate-100 shadow-xl shadow-slate-200/50">
+      {/* --- PREMIUM HERO HEADER - Responsive --- */}
+      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-white border border-slate-100 shadow-xl shadow-slate-200/50">
         {/* Banner Gradient */}
-        <div className="h-32 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 relative">
+        <div className="h-24 sm:h-32 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 relative">
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
         </div>
 
-        <div className="px-8 pb-8 flex flex-col sm:flex-row items-end sm:items-center justify-between gap-6 -mt-12 relative z-10">
-          <div className="flex flex-col sm:flex-row items-end sm:items-center gap-6">
+        <div className="px-4 sm:px-8 pb-6 sm:pb-8 flex flex-col items-start gap-4 sm:gap-6 -mt-10 sm:-mt-12 relative z-10">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 w-full">
             {/* Logo Wrapper */}
             <div className="relative group">
-              <div className="w-32 h-32 rounded-2xl bg-white p-2 shadow-2xl border border-slate-100 flex items-center justify-center overflow-hidden">
+              <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-xl sm:rounded-2xl bg-white p-2 shadow-2xl border border-slate-100 flex items-center justify-center overflow-hidden">
                 {logoPreview || (agencyData?.agence?.logo) ? (
                   <img
                     src={logoPreview || getLogoUrl(agencyData?.agence?.logo)}
@@ -230,51 +230,51 @@ const AgencyProfile = () => {
                     className="w-full h-full object-contain"
                   />
                 ) : (
-                  <BuildingOffice2Icon className="w-16 h-16 text-slate-200" />
+                  <BuildingOffice2Icon className="w-12 sm:w-16 h-12 sm:h-16 text-slate-200" />
                 )}
               </div>
               {isEditing && (
-                <label className="absolute inset-0 flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px] rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                  <CameraIcon className="w-8 h-8 text-white" />
+                <label className="absolute inset-0 flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px] rounded-xl sm:rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                  <CameraIcon className="w-6 sm:w-8 h-6 sm:h-8 text-white" />
                   <input type="file" className="hidden" accept="image/*" onChange={handleLogoChange} />
                 </label>
               )}
             </div>
 
-            <div className="space-y-1 py-2">
-              <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold text-slate-900 tracking-tight mt-3">{formData.name || "Nouvelle Agence"}</h1>
-                <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold uppercase tracking-wider rounded-lg border border-emerald-100">Actif</span>
+            <div className="flex-1 space-y-1 py-2 min-w-0">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight truncate">{formData.name || "Nouvelle Agence"}</h1>
+                <span className="px-2 sm:px-2.5 py-0.5 sm:py-1 bg-emerald-50 text-emerald-700 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider rounded-lg border border-emerald-100 w-fit">Actif</span>
               </div>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-slate-500 font-bold text-sm">
-                <span className="flex items-center gap-1.5"><BriefcaseIcon className="w-4 h-4" /> {formData.code_agence || "CODE-000"}</span>
-                <span className="flex items-center gap-1.5"><MapPinIcon className="w-4 h-4" /> {formData.ville}, {formData.pays}</span>
+              <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-1 sm:gap-x-4 text-slate-500 font-bold text-xs sm:text-sm">
+                <span className="flex items-center gap-1.5"><BriefcaseIcon className="w-3.5 sm:w-4 h-3.5 sm:h-4" /> {formData.code_agence || "CODE-000"}</span>
+                <span className="flex items-center gap-1.5"><MapPinIcon className="w-3.5 sm:w-4 h-3.5 sm:h-4" /> {formData.ville}, {formData.pays}</span>
               </div>
             </div>
           </div>
 
           {isAdmin && (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
               <button
                 onClick={async () => {
                   setRefreshing(true);
                   await fetchAgencyData(true);
                   setRefreshing(false);
                 }}
-                className="p-3 bg-slate-50 text-slate-600 rounded-xl hover:bg-slate-100 transition-colors border border-slate-200"
+                className="p-2 sm:p-3 bg-slate-50 text-slate-600 rounded-lg sm:rounded-xl hover:bg-slate-100 transition-colors border border-slate-200"
                 title="Actualiser"
               >
-                <ArrowPathIcon className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
+                <ArrowPathIcon className={`w-4 sm:w-5 h-4 sm:h-5 ${refreshing ? 'animate-spin' : ''}`} />
               </button>
               <button
                 onClick={handleEditToggle}
-                className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all ${isEditing
+                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold transition-all ${isEditing
                   ? "bg-slate-100 text-slate-600 hover:bg-slate-200"
                   : "bg-slate-950 text-white hover:bg-slate-800 shadow-lg shadow-slate-200"
                   }`}
               >
-                {isEditing ? <XMarkIcon className="w-5 h-5" /> : <PencilSquareIcon className="w-5 h-5" />}
-                {isEditing ? "ANNULER" : "MODIFIER LE PROFIL"}
+                {isEditing ? <XMarkIcon className="w-4 sm:w-5 h-4 sm:h-5" /> : <PencilSquareIcon className="w-4 sm:w-5 h-4 sm:h-5" />}
+                {isEditing ? "ANNULER" : "MODIFIER"}
               </button>
             </div>
           )}
@@ -283,17 +283,17 @@ const AgencyProfile = () => {
 
       {/* Notifications */}
 
-      <form onSubmit={handleSubmit} className="space-y-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
 
           {/* Main Info Column */}
-          <div className="lg:col-span-2 space-y-8">
-            <section className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm space-y-8">
-              <div className="flex items-center gap-3 border-b border-slate-50 pb-5">
-                <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
-                  <BuildingOffice2Icon className="w-5 h-5" />
+          <div className="lg:col-span-2 space-y-6 sm:space-y-8">
+            <section className="bg-white p-6 sm:p-8 rounded-2xl sm:rounded-3xl border border-slate-100 shadow-sm space-y-6 sm:space-y-8">
+              <div className="flex items-center gap-2 sm:gap-3 border-b border-slate-50 pb-4 sm:pb-5">
+                <div className="p-1.5 sm:p-2 bg-indigo-50 rounded-lg text-indigo-600">
+                  <BuildingOffice2Icon className="w-4 sm:w-5 h-4 sm:h-5" />
                 </div>
-                <h3 className="text-lg font-bold text-slate-900 uppercase tracking-tight">Informations Générales</h3>
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 uppercase tracking-tight">Informations Générales</h3>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -355,18 +355,18 @@ const AgencyProfile = () => {
               </div>
             </section>
 
-            <section className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm space-y-8">
-              <div className="flex items-center justify-between border-b border-slate-50 pb-5">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
-                    <MapIcon className="w-5 h-5" />
+            <section className="bg-white p-6 sm:p-8 rounded-2xl sm:rounded-3xl border border-slate-100 shadow-sm space-y-6 sm:space-y-8">
+              <div className="flex items-center justify-between border-b border-slate-50 pb-4 sm:pb-5">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="p-1.5 sm:p-2 bg-emerald-50 rounded-lg text-emerald-600">
+                    <MapIcon className="w-4 sm:w-5 h-4 sm:h-5" />
                   </div>
-                  <h3 className="text-lg font-bold text-slate-900 uppercase tracking-tight">Positionnement GPS</h3>
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900 uppercase tracking-tight">Positionnement GPS</h3>
                 </div>
                 {isEditing && (
                   <button
                     type="button" onClick={getCurrentLocation}
-                    className="text-[10px] font-semibold uppercase tracking-wide text-indigo-600 hover:text-indigo-700 underline underline-offset-4"
+                    className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wide text-indigo-600 hover:text-indigo-700 underline underline-offset-4"
                   >
                     Auto-Détecter
                   </button>
@@ -393,13 +393,13 @@ const AgencyProfile = () => {
           </div>
 
           {/* Sidebar Info Column */}
-          <div className="space-y-8">
-            <section className="bg-slate-900 text-white p-8 rounded-3xl shadow-xl shadow-slate-200 border border-slate-900 space-y-8 h-full">
-              <div className="flex items-center gap-3 border-b border-white/10 pb-5">
-                <div className="p-2 bg-white/10 rounded-lg text-white">
-                  <ClockIcon className="w-5 h-5" />
+          <div className="space-y-6 sm:space-y-8">
+            <section className="bg-slate-900 text-white p-6 sm:p-8 rounded-2xl sm:rounded-3xl shadow-xl shadow-slate-200 border border-slate-900 space-y-6 sm:space-y-8 h-full">
+              <div className="flex items-center gap-2 sm:gap-3 border-b border-white/10 pb-4 sm:pb-5">
+                <div className="p-1.5 sm:p-2 bg-white/10 rounded-lg text-white">
+                  <ClockIcon className="w-4 sm:w-5 h-4 sm:h-5" />
                 </div>
-                <h3 className="text-lg font-bold uppercase tracking-tight">Horaires</h3>
+                <h3 className="text-base sm:text-lg font-bold uppercase tracking-tight">Horaires</h3>
               </div>
 
               <div className="space-y-4">
@@ -445,18 +445,18 @@ const AgencyProfile = () => {
           </div>
         </div>
 
-        {/* Description Section Full Width */}
-        <section className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm space-y-6">
-          <div className="flex items-center gap-3 border-b border-slate-50 pb-5">
-            <div className="p-2 bg-slate-900 rounded-lg text-white">
-              <BriefcaseIcon className="w-5 h-5" />
+        {/* Description Section Full Width - Responsive */}
+        <section className="bg-white p-6 sm:p-8 rounded-2xl sm:rounded-3xl border border-slate-100 shadow-sm space-y-6 sm:space-y-6">
+          <div className="flex items-center gap-2 sm:gap-3 border-b border-slate-50 pb-4 sm:pb-5">
+            <div className="p-1.5 sm:p-2 bg-slate-900 rounded-lg text-white">
+              <BriefcaseIcon className="w-4 sm:w-5 h-4 sm:h-5" />
             </div>
-            <h3 className="text-lg font-bold text-slate-900 uppercase tracking-tight">Description Agence</h3>
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 uppercase tracking-tight">Description Agence</h3>
           </div>
           <textarea
             name="description" rows={4} value={formData.description} onChange={handleInputChange} disabled={!isEditing}
             placeholder="Rédigez un court message de présentation..."
-            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium text-slate-600 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none resize-none"
+            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-medium text-slate-600 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none resize-none"
           />
           <p className="text-[10px] text-slate-400 font-bold leading-relaxed">
             Cette description sera visible par vos clients lors de la prise de commande et dans l'annuaire des partenaires.
@@ -464,19 +464,20 @@ const AgencyProfile = () => {
         </section>
       </form>
 
-      {/* Floating Action Button for saving (visible only if editing) */}
+      {/* Floating Action Button for saving (visible only if editing) - Responsive */}
       {isEditing && (
-        <div className="fixed bottom-10 right-10 z-50 animate-in slide-in-from-bottom-10">
+        <div className="fixed bottom-4 sm:bottom-10 right-4 sm:right-10 z-50 animate-in slide-in-from-bottom-10">
           <button
             type="button" onClick={handleSubmit} disabled={saving}
-            className="flex items-center gap-3 px-8 py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-2xl shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-95 disabled:bg-slate-400"
+            className="flex items-center gap-2 sm:gap-3 px-4 sm:px-8 py-3 sm:py-4 bg-indigo-600 text-white rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold shadow-2xl shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-95 disabled:bg-slate-400"
           >
             {saving ? (
-              <ArrowPathIcon className="w-6 h-6 animate-spin" />
+              <ArrowPathIcon className="w-5 sm:w-6 h-5 sm:h-6 animate-spin" />
             ) : (
-              <CheckIcon className="w-6 h-6" />
+              <CheckIcon className="w-5 sm:w-6 h-5 sm:h-6" />
             )}
-            <span>SAUVEGARDER LES MODIFICATIONS</span>
+            <span className="hidden sm:inline">SAUVEGARDER LES MODIFICATIONS</span>
+            <span className="sm:hidden">SAUVEGARDER</span>
           </button>
         </div>
       )}

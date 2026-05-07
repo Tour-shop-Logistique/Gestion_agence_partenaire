@@ -78,33 +78,38 @@ const RecentExpeditions = ({ expeditions = [] }) => {
                             </div>
 
                             {/* Infos */}
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-0.5">
-                                    <p className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                            <div className="flex-1 min-w-0 flex items-center gap-3">
+                                {/* Référence et détails */}
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors truncate mb-0.5">
                                         {expedition.reference}
                                     </p>
-                                    <span className={`px-2 py-0.5 text-[9px] font-bold uppercase rounded-full border ${getStatusColor(expedition.statut)}`}>
+                                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                                        <span className="flex items-center gap-1">
+                                            <MapPinIcon className="w-3 h-3" />
+                                            {expedition.pays_destination}
+                                        </span>
+                                        <span>•</span>
+                                        <span>{getTypeLabel(expedition.type)}</span>
+                                        <span>•</span>
+                                        <span className="font-semibold">{expedition.nombre_colis} colis</span>
+                                    </div>
+                                </div>
+
+                                {/* Statut */}
+                                <div className="flex-shrink-0">
+                                    <span className={`px-2.5 py-1 text-[9px] font-bold uppercase rounded-full border whitespace-nowrap ${getStatusColor(expedition.statut)}`}>
                                         {getStatusLabel(expedition.statut)}
                                     </span>
                                 </div>
-                                <div className="flex items-center gap-2 text-xs text-slate-500">
-                                    <span className="flex items-center gap-1">
-                                        <MapPinIcon className="w-3 h-3" />
-                                        {expedition.pays_destination}
-                                    </span>
-                                    <span>•</span>
-                                    <span>{getTypeLabel(expedition.type)}</span>
-                                    <span>•</span>
-                                    <span className="font-semibold">{expedition.nombre_colis} colis</span>
-                                </div>
-                            </div>
 
-                            {/* Montant */}
-                            <div className="text-right flex-shrink-0">
-                                <p className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
-                                    {new Intl.NumberFormat('fr-FR').format(expedition.montant || 0)}
-                                </p>
-                                <p className="text-[10px] text-slate-400 font-medium">CFA</p>
+                                {/* Montant */}
+                                <div className="text-right flex-shrink-0 min-w-[80px]">
+                                    <p className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                                        {new Intl.NumberFormat('fr-FR').format(expedition.montant || 0)}
+                                    </p>
+                                    <p className="text-[10px] text-slate-400 font-medium">CFA</p>
+                                </div>
                             </div>
 
                             {/* Flèche */}

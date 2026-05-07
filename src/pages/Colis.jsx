@@ -235,49 +235,53 @@ const Colis = () => {
     };
 
     return (
-        <div className="space-y-4 sm:space-y-8 max-w-[1600px] mx-auto px-1 sm:px-0">
-            {/* Header Section */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-semibold text-gray-900">
-                        Gestion des Colis
-                    </h1>
-                    <p className="mt-1 text-sm text-gray-500">
-                        {activeTab === 'agence'
-                            ? "Réceptionnez les colis des expéditions acceptées arrivant à votre agence"
-                            : "Envoyez les colis reçus (statut: reçu agence départ) vers l'entrepôt pour expédition"}
-                    </p>
-                    {selectedCodes.length > 0 && (
-                        <span className="inline-block mt-2 text-indigo-600 font-medium text-sm">
-                            {selectedCodes.length} colis sélectionné(s)
-                        </span>
-                    )}
+        <div className="space-y-3 sm:space-y-4 max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-6">
+            {/* Header Section - Responsive */}
+            <div className="flex flex-col gap-3 sm:gap-4">
+                <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                        <h1 className="text-lg sm:text-2xl font-semibold text-gray-900">
+                            Gestion des Colis
+                        </h1>
+                        <p className="mt-1 text-xs sm:text-sm text-gray-500 line-clamp-2">
+                            {activeTab === 'agence'
+                                ? "Réceptionnez les colis des expéditions acceptées"
+                                : "Envoyez les colis reçus vers l'entrepôt"}
+                        </p>
+                        {selectedCodes.length > 0 && (
+                            <span className="inline-block mt-1 sm:mt-2 text-indigo-600 font-medium text-xs sm:text-sm">
+                                {selectedCodes.length} colis sélectionné(s)
+                            </span>
+                        )}
+                    </div>
+
+                    {/* Tab Switcher - Compact on mobile */}
+                    <div className="flex flex-col sm:flex-row items-center bg-gray-100 p-0.5 sm:p-1 rounded-lg border border-gray-200 flex-shrink-0">
+                        <button
+                            onClick={() => { setActiveTab('agence'); setSelectedCodes([]); }}
+                            className={`px-3 sm:px-6 py-1.5 sm:py-2 rounded-md text-[10px] sm:text-sm font-medium transition-all whitespace-nowrap ${activeTab === 'agence' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+                        >
+                            En agence
+                        </button>
+                        <button
+                            onClick={() => { setActiveTab('entrepot'); setSelectedCodes([]); }}
+                            className={`px-3 sm:px-6 py-1.5 sm:py-2 rounded-md text-[10px] sm:text-sm font-medium transition-all whitespace-nowrap ${activeTab === 'entrepot' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+                        >
+                            Envoi expédition
+                        </button>
+                    </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-center bg-gray-100 p-1 rounded-lg border border-gray-200 self-start lg:self-center">
-                    <button
-                        onClick={() => { setActiveTab('agence'); setSelectedCodes([]); }}
-                        className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'agence' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
-                    >
-                        En agence
-                    </button>
-                    <button
-                        onClick={() => { setActiveTab('entrepot'); setSelectedCodes([]); }}
-                        className={`px-6 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'entrepot' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
-                    >
-                        Envoi pour expedition
-                    </button>
-                </div>
-
-                <div className="flex items-center gap-3">
+                {/* Search & Scanner Row */}
+                <div className="flex items-center gap-2">
                     {/* Search Bar */}
-                    <div className="relative group w-64">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+                    <div className="relative group flex-1">
+                        <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
+                            <MagnifyingGlassIcon className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                         </div>
                         <input
                             type="text"
-                            className="block w-full pl-10 pr-3 py-2 bg-white border border-gray-300 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                            className="block w-full pl-8 sm:pl-10 pr-2 sm:pr-3 py-1.5 sm:py-2 bg-white border border-gray-300 rounded-lg text-xs sm:text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                             placeholder="Rechercher..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -287,9 +291,9 @@ const Colis = () => {
                     {/* Scanner Button */}
                     <button
                         onClick={() => setScannerOpen(true)}
-                        className="inline-flex items-center justify-center px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-all gap-2"
+                        className="inline-flex items-center justify-center px-3 sm:px-4 py-1.5 sm:py-2 bg-indigo-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-indigo-700 transition-all gap-1.5 sm:gap-2 flex-shrink-0"
                     >
-                        <QrCodeIcon className="w-5 h-5" />
+                        <QrCodeIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                         <span className="hidden sm:inline">Scanner</span>
                     </button>
                 </div>
@@ -474,17 +478,17 @@ const Colis = () => {
                     </div>
                 </div>
 
-                {/* Multi-select Action Bar */}
+                {/* Multi-select Action Bar - Responsive */}
                 {selectedCodes.length > 0 && (
-                    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-2xl animate-in slide-in-from-bottom-8 duration-300">
-                        <div className="bg-slate-900 text-white rounded-2xl px-6 py-4 shadow-2xl shadow-indigo-500/20 border border-slate-800 flex items-center justify-between gap-4">
-                            <div className="flex items-center gap-4">
-                                <div className="bg-indigo-600 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">
-                                    {selectedCodes.length} sélectionnés
+                    <div className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-1rem)] sm:w-[calc(100%-2rem)] max-w-2xl animate-in slide-in-from-bottom-8 duration-300">
+                        <div className="bg-slate-900 text-white rounded-xl sm:rounded-2xl px-3 sm:px-6 py-3 sm:py-4 shadow-2xl shadow-indigo-500/20 border border-slate-800 flex items-center justify-between gap-2 sm:gap-4">
+                            <div className="flex items-center gap-2 sm:gap-4">
+                                <div className="bg-indigo-600 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wide">
+                                    {selectedCodes.length}
                                 </div>
                                 <button
                                     onClick={() => setSelectedCodes([])}
-                                    className="text-xs font-bold text-slate-400 hover:text-white transition-colors"
+                                    className="text-[10px] sm:text-xs font-bold text-slate-400 hover:text-white transition-colors"
                                 >
                                     Annuler
                                 </button>
@@ -492,153 +496,218 @@ const Colis = () => {
                             <button
                                 onClick={handleBulkAction}
                                 disabled={processing}
-                                className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 rounded-xl text-xs font-bold uppercase tracking-wide transition-all shadow-lg shadow-indigo-600/20 flex items-center gap-2 group"
+                                className="px-3 sm:px-6 py-2 sm:py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-wide transition-all shadow-lg shadow-indigo-600/20 flex items-center gap-1.5 sm:gap-2 group"
                             >
                                 {processing ? (
-                                    <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                                    <ArrowPathIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
                                 ) : (
-                                    <ArrowPathIcon className="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" />
+                                    <ArrowPathIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:rotate-180 transition-transform duration-500" />
                                 )}
-                                <span>
+                                <span className="hidden sm:inline">
                                     {activeTab === 'agence' ? "Confirmer la réception" : "Envoyer à l'entrepôt"}
+                                </span>
+                                <span className="sm:hidden">
+                                    {activeTab === 'agence' ? "Recevoir" : "Envoyer"}
                                 </span>
                             </button>
                         </div>
                     </div>
                 )}
 
-                {/* Mobile & Tablet Card View */}
-                <div className="lg:hidden space-y-4">
+                {/* Mobile & Tablet Card View - Version Ultra-Compacte */}
+                <div className="lg:hidden space-y-2 pb-20">
                     {loadingColis && allColis.length === 0 ? (
                         Array(3).fill(0).map((_, i) => (
-                            <div key={i} className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm animate-pulse space-y-3">
-                                <div className="h-5 bg-slate-100 rounded w-1/3"></div>
-                                <div className="h-4 bg-slate-100 rounded w-full"></div>
-                                <div className="h-4 bg-slate-100 rounded w-2/3"></div>
+                            <div key={i} className="bg-white rounded-xl p-3 border border-slate-100 shadow-sm animate-pulse space-y-2">
+                                <div className="h-4 bg-slate-100 rounded w-1/3"></div>
+                                <div className="h-3 bg-slate-100 rounded w-full"></div>
+                                <div className="h-3 bg-slate-100 rounded w-2/3"></div>
                             </div>
                         ))
                     ) : filteredColis.length > 0 ? (
-                        <div className="space-y-4 pb-20">
-                            {filteredColis.map((item) => {
-                                const isProcessed = activeTab === 'agence' ? item.is_received : item.is_sent;
-                                return (
-                                    <div
-                                        key={item.id}
-                                        id={`colis-${item.code_colis}`}
-                                        className={`bg-white rounded-2xl border transition-all active:scale-[0.98] overflow-hidden ${selectedCodes.includes(item.code_colis) ? 'border-indigo-500 ring-4 ring-indigo-500/10 shadow-lg shadow-indigo-500/10' : 'border-slate-200/60 shadow-sm'}`}
-                                        onClick={() => !isProcessed && toggleSelect(item.code_colis)}
-                                    >
-                                        <div className="p-4 sm:p-5 border-b border-slate-50 bg-slate-50/40 flex items-start gap-4">
-                                            <div className="pt-0.5" onClick={(e) => e.stopPropagation()}>
+                        filteredColis.map((item) => {
+                            const isProcessed = activeTab === 'agence' ? item.is_received : item.is_sent;
+                            return (
+                                <div
+                                    key={item.id}
+                                    id={`colis-${item.code_colis}`}
+                                    className={`bg-white rounded-xl border transition-all active:scale-[0.98] overflow-hidden ${selectedCodes.includes(item.code_colis) ? 'border-indigo-500 ring-2 ring-indigo-500/10 shadow-md' : 'border-slate-200 shadow-sm'}`}
+                                    onClick={() => !isProcessed && toggleSelect(item.code_colis)}
+                                >
+                                    {/* Header Compact */}
+                                    <div className="p-3 border-b border-slate-100 flex items-start justify-between gap-2">
+                                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                                            {/* Checkbox */}
+                                            <div onClick={(e) => e.stopPropagation()}>
                                                 {isProcessed ? (
                                                     <div className="p-1 rounded-md bg-emerald-50 text-emerald-600 border border-emerald-100">
-                                                        <IdentificationIcon className="w-5 h-5" />
+                                                        <IdentificationIcon className="w-4 h-4" />
                                                     </div>
                                                 ) : (
                                                     <input
                                                         type="checkbox"
-                                                        className="w-5 h-5 rounded-lg border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-all cursor-pointer"
+                                                        className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                                                         checked={selectedCodes.includes(item.code_colis)}
                                                         onChange={() => toggleSelect(item.code_colis)}
                                                     />
                                                 )}
                                             </div>
-                                            <div className="flex-1">
-                                                <div className="flex justify-between items-start mb-2">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-sm font-bold text-indigo-600 tracking-tight">{item.code_colis}</span>
-                                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Ref: {item.expedition?.reference}</span>
-                                                    </div>
-                                                    <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-bold uppercase border border-indigo-100">
+                                            
+                                            {/* Code & Info */}
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                    <span className="text-xs font-bold text-indigo-600 truncate">{item.code_colis}</span>
+                                                    <span className="px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-[8px] font-bold uppercase border border-indigo-100 whitespace-nowrap">
                                                         {item.category?.nom}
                                                     </span>
                                                 </div>
-                                                <h3 className="text-sm font-bold text-slate-900 line-clamp-1">{item.designation}</h3>
-                                                <p className="text-[11px] text-slate-500 line-clamp-1 font-medium italic mt-1">{item.articles?.join(', ')}</p>
+                                                <p className="text-[10px] font-semibold text-slate-500 truncate mt-0.5">{item.designation}</p>
                                             </div>
                                         </div>
 
-                                        <div className="p-4 sm:p-5 grid grid-cols-2 gap-4">
-                                            <div className="space-y-1">
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase">Dimensions</p>
-                                                <p className="text-xs font-bold text-slate-900 tabular-nums">
-                                                    {parseFloat(item.hauteur)}x{parseFloat(item.largeur)}x{parseFloat(item.longueur)} cm
-                                                </p>
-                                                <p className="text-[10px] font-bold text-slate-500 uppercase">{parseFloat(item.volume).toLocaleString()} cm³</p>
-                                            </div>
-                                            <div className="space-y-1 text-right">
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase">Poids</p>
-                                                <p className="text-xs font-bold text-slate-900 uppercase">{parseFloat(item.poids)} KG</p>
-                                            </div>
-                                            <div className="space-y-1 col-span-2 pt-2 border-t border-slate-50">
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase">Montant Total</p>
-                                                <div className="flex items-baseline justify-between">
-                                                    <p className="text-sm font-bold text-slate-900 tabular-nums">
-                                                        {formatPriceDual(item.montant_colis_total)}
-                                                    </p>
-                                                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                                                        {isProcessed ? (
-                                                            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-[10px] font-bold uppercase border border-emerald-100">
-                                                                <IdentificationIcon className="w-3.5 h-3.5" />
-                                                                {activeTab === 'agence' ? 'Reçu' : 'Expédié'}
-                                                            </span>
-                                                        ) : selectedCodes.length === 0 && (
-                                                            <button
-                                                                onClick={() => {
-                                                                    setSelectedCodes([item.code_colis]);
-                                                                    handleBulkAction();
-                                                                }}
-                                                                className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-indigo-600 hover:text-white transition-all border border-indigo-100 shadow-sm"
-                                                            >
-                                                                {activeTab === 'agence' ? 'Recevoir' : 'Envoyer'}
-                                                            </button>
-                                                        )}
-                                                        <Link
-                                                            to={`/expeditions/${item.expedition_id}`}
-                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 text-white text-[10px] font-bold uppercase tracking-wide shadow-lg shadow-slate-200"
-                                                        >
-                                                            Détails
-                                                        </Link>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                        {/* Expedition Badge */}
+                                        <Link 
+                                            to={`/expeditions/${item.expedition_id}`}
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="flex-shrink-0 px-2 py-1 bg-slate-100 rounded text-[9px] font-bold text-slate-700 hover:bg-indigo-600 hover:text-white transition-all"
+                                        >
+                                            {item.expedition?.reference}
+                                        </Link>
+                                    </div>
+
+                                    {/* Body Compact */}
+                                    <div className="p-3 grid grid-cols-3 gap-2 text-center">
+                                        <div>
+                                            <p className="text-[9px] font-semibold text-slate-400 uppercase">Poids</p>
+                                            <p className="text-xs font-bold text-slate-900">{parseFloat(item.poids)} kg</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[9px] font-semibold text-slate-400 uppercase">Dimensions</p>
+                                            <p className="text-[10px] font-bold text-slate-900 tabular-nums">
+                                                {parseFloat(item.longueur)}x{parseFloat(item.largeur)}x{parseFloat(item.hauteur)}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[9px] font-semibold text-slate-400 uppercase">Montant</p>
+                                            <p className="text-xs font-bold text-slate-900">
+                                                {new Intl.NumberFormat('fr-FR', { notation: 'compact' }).format(item.montant_colis_total || 0)}
+                                            </p>
                                         </div>
                                     </div>
-                                );
-                            })}
-                        </div>
+
+                                    {/* Footer Actions */}
+                                    <div className="p-3 pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                                        <div className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500">
+                                            <span className="truncate max-w-[80px]">{item.expedition?.pays_depart}</span>
+                                            <svg className="w-3 h-3 text-indigo-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                            </svg>
+                                            <span className="truncate max-w-[80px] text-indigo-600">{item.expedition?.pays_destination}</span>
+                                        </div>
+
+                                        <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                                            {isProcessed ? (
+                                                <span className="flex items-center gap-1 px-2 py-1 bg-emerald-50 text-emerald-700 rounded text-[9px] font-bold uppercase border border-emerald-100">
+                                                    <IdentificationIcon className="w-3 h-3" />
+                                                    {activeTab === 'agence' ? 'Reçu' : 'Expédié'}
+                                                </span>
+                                            ) : selectedCodes.length === 0 && (
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedCodes([item.code_colis]);
+                                                        handleBulkAction();
+                                                    }}
+                                                    className="px-2 py-1 bg-indigo-50 text-indigo-600 rounded text-[9px] font-bold uppercase hover:bg-indigo-600 hover:text-white transition-all border border-indigo-100"
+                                                >
+                                                    {activeTab === 'agence' ? 'Recevoir' : 'Envoyer'}
+                                                </button>
+                                            )}
+                                            <Link
+                                                to={`/expeditions/${item.expedition_id}`}
+                                                className="p-1.5 rounded-lg bg-slate-900 text-white"
+                                            >
+                                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                </svg>
+                                            </Link>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })
                     ) : (
-                        <div className="bg-white rounded-2xl p-10 text-center border border-slate-100 shadow-sm italic text-slate-400 font-bold">
-                            Désolé aucune donnée disponible
+                        <div className="bg-white rounded-xl p-8 text-center border border-slate-100 shadow-sm">
+                            <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-2">
+                                <CubeIcon className="w-6 h-6 text-slate-300" />
+                            </div>
+                            <p className="text-xs font-bold text-slate-400">Aucun colis trouvé</p>
                         </div>
                     )}
                 </div>
 
-                {/* Pagination */}
+                {/* Multi-select Action Bar - Responsive */}
+                {selectedCodes.length > 0 && (
+                    <div className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-1rem)] sm:w-[calc(100%-2rem)] max-w-2xl animate-in slide-in-from-bottom-8 duration-300">
+                        <div className="bg-slate-900 text-white rounded-xl sm:rounded-2xl px-3 sm:px-6 py-3 sm:py-4 shadow-2xl shadow-indigo-500/20 border border-slate-800 flex items-center justify-between gap-2 sm:gap-4">
+                            <div className="flex items-center gap-2 sm:gap-4">
+                                <div className="bg-indigo-600 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wide">
+                                    {selectedCodes.length}
+                                </div>
+                                <button
+                                    onClick={() => setSelectedCodes([])}
+                                    className="text-[10px] sm:text-xs font-bold text-slate-400 hover:text-white transition-colors"
+                                >
+                                    Annuler
+                                </button>
+                            </div>
+                            <button
+                                onClick={handleBulkAction}
+                                disabled={processing}
+                                className="px-3 sm:px-6 py-2 sm:py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-wide transition-all shadow-lg shadow-indigo-600/20 flex items-center gap-1.5 sm:gap-2 group"
+                            >
+                                {processing ? (
+                                    <ArrowPathIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" />
+                                ) : (
+                                    <ArrowPathIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:rotate-180 transition-transform duration-500" />
+                                )}
+                                <span className="hidden sm:inline">
+                                    {activeTab === 'agence' ? "Confirmer la réception" : "Envoyer à l'entrepôt"}
+                                </span>
+                                <span className="sm:hidden">
+                                    {activeTab === 'agence' ? "Recevoir" : "Envoyer"}
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Pagination - Responsive */}
                 {meta && meta.last_page > 1 && (
-                    <div className="mt-6 sm:mt-8 px-4 sm:px-8 py-5 sm:py-6 bg-white rounded-2xl sm:rounded-3xl border border-slate-200/60 shadow-lg shadow-slate-200/40 flex flex-col items-center gap-4">
+                    <div className="mt-4 sm:mt-6 px-3 sm:px-8 py-4 sm:py-6 bg-white rounded-xl sm:rounded-2xl border border-slate-200/60 shadow-lg shadow-slate-200/40 flex flex-col items-center gap-3 sm:gap-4">
                         <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Page</span>
+                            <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Page</span>
                             <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-900 text-xs font-bold">{meta.current_page} / {meta.last_page}</span>
                         </div>
 
-                        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
                             <button
                                 onClick={() => handlePageChange(meta.current_page - 1)}
                                 disabled={meta.current_page === 1}
-                                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase border border-slate-200 bg-white text-slate-600 disabled:opacity-50 transition-all font-bold"
+                                className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] font-bold uppercase border border-slate-200 bg-white text-slate-600 disabled:opacity-50 transition-all"
                             >
-                                <ChevronLeftIcon className="w-4 h-4" />
-                                <span>Précédent</span>
+                                <ChevronLeftIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                <span className="hidden sm:inline">Précédent</span>
+                                <span className="sm:hidden">Préc.</span>
                             </button>
 
                             <button
                                 onClick={() => handlePageChange(meta.current_page + 1)}
                                 disabled={meta.current_page === meta.last_page}
-                                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase bg-slate-900 text-white shadow-lg shadow-slate-200 disabled:opacity-50 transition-all font-bold"
+                                className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] font-bold uppercase bg-slate-900 text-white shadow-lg shadow-slate-200 disabled:opacity-50 transition-all"
                             >
-                                <span>Suivant</span>
-                                <ChevronRightIcon className="w-4 h-4" />
+                                <span className="hidden sm:inline">Suivant</span>
+                                <span className="sm:hidden">Suiv.</span>
+                                <ChevronRightIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                             </button>
                         </div>
                     </div>

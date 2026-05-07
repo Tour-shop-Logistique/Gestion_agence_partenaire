@@ -70,16 +70,16 @@ const KPICard = ({
 
     const content = (
         <>
-            <div className="flex justify-between items-start mb-3">
-                <div className={`p-2 ${colors.iconBg} ${colors.iconColor} rounded-lg ${isClickable ? 'group-hover:scale-110 transition-transform' : ''}`}>
-                    <Icon className="w-5 h-5" />
+            <div className="flex justify-between items-start mb-2 sm:mb-3">
+                <div className={`p-1.5 sm:p-2 ${colors.iconBg} ${colors.iconColor} rounded-lg ${isClickable ? 'group-hover:scale-110 transition-transform' : ''}`}>
+                    <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
                 <div className="flex items-center gap-1">
-                    <span className={`text-xs font-semibold ${colors.badgeBg} ${colors.badgeText} px-2 py-0.5 rounded-full`}>
+                    <span className={`text-[9px] sm:text-xs font-semibold ${colors.badgeBg} ${colors.badgeText} px-1.5 sm:px-2 py-0.5 rounded-full`}>
                         {badge}
                     </span>
                     {tooltip && (
-                        <div className="relative group/tooltip">
+                        <div className="relative group/tooltip hidden sm:block">
                             <InformationCircleIcon className="w-4 h-4 text-slate-400 cursor-help" />
                             <div className="absolute right-0 top-6 w-64 bg-slate-900 text-white text-xs rounded-lg p-3 opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-10 shadow-xl">
                                 {tooltip}
@@ -88,11 +88,11 @@ const KPICard = ({
                     )}
                 </div>
             </div>
-            <p className="text-xs font-semibold text-slate-500 uppercase mb-1">{label}</p>
-            <h3 className="text-2xl font-bold text-slate-900">
+            <p className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">{label}</p>
+            <h3 className="text-lg sm:text-2xl font-bold text-slate-900">
                 {typeof value === 'number' ? new Intl.NumberFormat('fr-FR').format(value) : value}
             </h3>
-            <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
+            <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5 sm:mt-1 flex items-center gap-1">
                 {unit}
                 {isClickable && <ArrowRightIcon className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />}
             </p>
@@ -103,7 +103,7 @@ const KPICard = ({
         return (
             <Link 
                 to={link}
-                className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all group relative"
+                className="bg-white p-3 sm:p-5 rounded-lg sm:rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all group relative"
             >
                 {content}
             </Link>
@@ -111,7 +111,7 @@ const KPICard = ({
     }
 
     return (
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm group relative">
+        <div className="bg-white p-3 sm:p-5 rounded-lg sm:rounded-xl border border-slate-200 shadow-sm group relative">
             {content}
         </div>
     );
@@ -122,17 +122,17 @@ const KPICard = ({
  */
 const KPISection = ({ financial, operational }) => {
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
             {/* 💰 Performance Financière */}
             <div>
-                <div className="mb-4">
-                    <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <div className="mb-3 sm:mb-4">
+                    <h2 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
                         <span className="text-emerald-600">💰</span>
                         Performance financière
                     </h2>
                     <p className="text-xs text-slate-500 mt-0.5">Indicateurs de revenus et trésorerie</p>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                     <KPICard
                         icon={CurrencyDollarIcon}
                         label="Chiffre d'affaires"
@@ -174,14 +174,14 @@ const KPISection = ({ financial, operational }) => {
 
             {/* 🚚 Activité Opérationnelle */}
             <div>
-                <div className="mb-4">
-                    <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <div className="mb-3 sm:mb-4">
+                    <h2 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
                         <span className="text-blue-600">🚚</span>
                         Activité opérationnelle
                     </h2>
                     <p className="text-xs text-slate-500 mt-0.5">Volume et flux de colis</p>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                     <KPICard
                         icon={CubeIcon}
                         label="Expéditions créées"

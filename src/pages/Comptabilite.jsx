@@ -11,7 +11,6 @@ import {
   BanknotesIcon,
   TruckIcon,
   BuildingOfficeIcon,
-  FunnelIcon,
   XMarkIcon,
   InformationCircleIcon,
   ReceiptPercentIcon,
@@ -426,28 +425,28 @@ const Comptabilite = () => {
   };
 
   return (
-    <div className="max-w-[1600px] mx-auto px-6 py-6 space-y-6">
+    <div className="max-w-[1600px] mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
       
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6">
+      {/* Page Header - Responsive */}
+      <div className="flex flex-col gap-3 sm:gap-4 border-b border-slate-200 pb-4 sm:pb-6">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900 tracking-tight">Comptabilité & Flux</h1>
+          <h1 className="text-lg sm:text-xl font-semibold text-slate-900 tracking-tight">Comptabilité & Flux</h1>
           <p className="text-xs text-slate-500 mt-1 font-medium">Analyse des revenus agence et répartition des commissions par période.</p>
         </div>
         
-        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+        <div className="flex items-center gap-2 flex-wrap">
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setIsExportDropdownOpen(!isExportDropdownOpen)}
-              className={`h-9 px-4 flex items-center gap-2 border rounded-md text-xs font-semibold transition-all shadow-sm active:scale-95 ${
+              className={`h-8 sm:h-9 px-3 sm:px-4 flex items-center gap-1.5 sm:gap-2 border rounded-md text-xs font-semibold transition-all shadow-sm active:scale-95 ${
                 isExportDropdownOpen 
                 ? 'bg-slate-100 border-slate-300 text-slate-900' 
                 : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
               }`}
               disabled={!filteredData || filteredData.length === 0}
             >
-              <ArrowDownLeftIcon className={`w-3.5 h-3.5 rotate-45 transition-transform ${isExportDropdownOpen ? 'scale-110' : ''}`} />
-              Exporter
+              <ArrowDownLeftIcon className={`w-3 sm:w-3.5 h-3 sm:h-3.5 rotate-45 transition-transform ${isExportDropdownOpen ? 'scale-110' : ''}`} />
+              <span className="hidden sm:inline">Exporter</span>
               <ChevronDownIcon className={`w-3 h-3 ml-1 transition-transform ${isExportDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
 
@@ -479,25 +478,25 @@ const Comptabilite = () => {
 
           <button
             onClick={() => navigate("/transactions")}
-            className="h-9 px-4 flex items-center gap-2 bg-slate-900 text-white rounded-md text-xs font-semibold hover:bg-slate-800 transition-all shadow-sm active:scale-95"
+            className="h-8 sm:h-9 px-3 sm:px-4 flex items-center gap-1.5 sm:gap-2 bg-slate-900 text-white rounded-md text-xs font-semibold hover:bg-slate-800 transition-all shadow-sm active:scale-95"
           >
-            <BanknotesIcon className="w-4 h-4" />
-            Historique
+            <BanknotesIcon className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
+            <span className="hidden sm:inline">Historique</span>
           </button>
 
-          <div className="flex items-center bg-white border border-slate-200 rounded-md overflow-hidden">
-            <div className="flex items-center px-3 py-1.5 gap-2 border-r border-slate-100">
+          <div className="flex items-center bg-white border border-slate-200 rounded-md overflow-hidden flex-1 sm:flex-none">
+            <div className="flex items-center px-2 sm:px-3 py-1.5 gap-1 sm:gap-2 border-r border-slate-100">
               <input
                 type="date"
-                className="text-xs font-medium text-slate-700 bg-transparent border-none focus:ring-0 p-0 cursor-pointer"
+                className="text-[11px] sm:text-xs font-medium text-slate-700 bg-transparent border-none focus:ring-0 p-0 cursor-pointer w-full"
                 value={dateDebut}
                 onChange={(e) => setDateDebut(e.target.value)}
               />
             </div>
-            <div className="flex items-center px-3 py-1.5 gap-2 border-r border-slate-100">
+            <div className="flex items-center px-2 sm:px-3 py-1.5 gap-1 sm:gap-2">
               <input
                 type="date"
-                className="text-xs font-medium text-slate-700 bg-transparent border-none focus:ring-0 p-0 cursor-pointer"
+                className="text-[11px] sm:text-xs font-medium text-slate-700 bg-transparent border-none focus:ring-0 p-0 cursor-pointer w-full"
                 value={dateFin}
                 onChange={(e) => setDateFin(e.target.value)}
               />
@@ -507,16 +506,16 @@ const Comptabilite = () => {
           <button
             onClick={() => loadAccounting({ date_debut: dateDebut, date_fin: dateFin }, true)}
             disabled={status === 'loading'}
-            className="flex items-center justify-center w-9 h-9 bg-white border border-slate-200 text-slate-500 rounded-md hover:bg-slate-50 hover:text-slate-900 transition-colors disabled:opacity-50"
+            className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 bg-white border border-slate-200 text-slate-500 rounded-md hover:bg-slate-50 hover:text-slate-900 transition-colors disabled:opacity-50"
             title="Actualiser les données"
           >
-            <ArrowPathIcon className={`w-4 h-4 ${status === 'loading' ? 'animate-spin' : ''}`} />
+            <ArrowPathIcon className={`w-3.5 sm:w-4 h-3.5 sm:h-4 ${status === 'loading' ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>
 
-      {/* KPI Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* KPI Section - Responsive Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Potentiel Stats */}
         {[
           { label: "Commission Agence (Total)", value: summary.potential?.total_agence, sub: "Déjà perçu + Attendue", color: "text-blue-600", bg: "bg-blue-50/50", icon: BuildingOfficeIcon, isMain: true },
@@ -524,32 +523,32 @@ const Comptabilite = () => {
           { label: "Réel Encaissé en Agence", value: summary.real?.total_cash_received, sub: "Physiquement perçu", color: "text-emerald-600", bg: "bg-emerald-50/50", icon: CheckCircleIcon, indicator: "bg-emerald-500" },
           { label: "Part Backoffice / HUB", value: summary.potential?.total_backoffice, sub: "Frais de service système", color: "text-slate-600", bg: "bg-slate-50", icon: BanknotesIcon }
         ].map((kpi, idx) => (
-          <div key={idx} className={`p-4 rounded-lg border border-slate-200 bg-white shadow-sm relative overflow-hidden`}>
+          <div key={idx} className={`p-3 sm:p-4 rounded-lg border border-slate-200 bg-white shadow-sm relative overflow-hidden`}>
             {kpi.indicator && <div className={`absolute top-0 left-0 w-1 h-full ${kpi.indicator}`} />}
-            <div className="flex justify-between items-start mb-2">
-              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-tight">{kpi.label}</p>
-              <kpi.icon className={`w-4 h-4 ${kpi.color} opacity-40`} />
+            <div className="flex justify-between items-start mb-1.5 sm:mb-2">
+              <p className="text-[10px] sm:text-[11px] font-semibold text-slate-500 uppercase tracking-tight">{kpi.label}</p>
+              <kpi.icon className={`w-3.5 sm:w-4 h-3.5 sm:h-4 ${kpi.color} opacity-40`} />
             </div>
             <div className="flex items-baseline gap-1">
-              <span className={`text-xl font-bold tabular-nums ${kpi.color}`}>
+              <span className={`text-base sm:text-xl font-bold tabular-nums ${kpi.color}`}>
                 {formatCurrency(kpi.value)}
               </span>
-              <span className="text-[10px] font-semibold text-slate-400">CFA</span>
+              <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400">CFA</span>
             </div>
-            <p className="text-[10px] text-slate-400 mt-1.5 font-medium">{kpi.sub}</p>
+            <p className="text-[9px] sm:text-[10px] text-slate-400 mt-1 sm:mt-1.5 font-medium line-clamp-1">{kpi.sub}</p>
           </div>
         ))}
       </div>
 
-      {/* Détail des Commissions Agence */}
+      {/* Détail des Commissions Agence - Responsive */}
       {summary.potential?.details_agence && (
-        <div className="bg-gradient-to-br from-blue-50 to-slate-50 border border-blue-100 rounded-lg p-5 shadow-sm">
-          <div className="flex items-center gap-2 mb-4">
-            <ReceiptPercentIcon className="w-5 h-5 text-blue-600" />
-            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-tight">Détail des Commissions Agence</h2>
-            <span className="ml-auto text-xs text-slate-500 font-medium">Période sélectionnée</span>
+        <div className="bg-gradient-to-br from-blue-50 to-slate-50 border border-blue-100 rounded-lg p-4 sm:p-5 shadow-sm">
+          <div className="flex items-center gap-2 mb-3 sm:mb-4">
+            <ReceiptPercentIcon className="w-4 sm:w-5 h-4 sm:h-5 text-blue-600" />
+            <h2 className="text-xs sm:text-sm font-bold text-slate-900 uppercase tracking-tight">Détail des Commissions Agence</h2>
+            <span className="ml-auto text-[10px] sm:text-xs text-slate-500 font-medium">Période sélectionnée</span>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
             {[
               { label: "Marge Prestation", value: summary.potential.details_agence.marge_prestation, icon: ShoppingBagIcon },
               { label: "Commission Enlèvement", value: summary.potential.details_agence.com_enlevement, icon: TruckIcon },
@@ -557,14 +556,14 @@ const Comptabilite = () => {
               { label: "Commission Livraison", value: summary.potential.details_agence.com_livraison, icon: MapPinIcon },
               { label: "Commission Retard", value: summary.potential.details_agence.com_retard, icon: InformationCircleIcon }
             ].map((item, idx) => (
-              <div key={idx} className="bg-white rounded-md p-3 border border-slate-200">
-                <div className="flex items-center gap-2 mb-2">
-                  <item.icon className="w-3.5 h-3.5 text-blue-500" />
-                  <p className="text-[10px] font-semibold text-slate-500 uppercase">{item.label}</p>
+              <div key={idx} className="bg-white rounded-md p-2.5 sm:p-3 border border-slate-200">
+                <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                  <item.icon className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-blue-500" />
+                  <p className="text-[9px] sm:text-[10px] font-semibold text-slate-500 uppercase line-clamp-1">{item.label}</p>
                 </div>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-lg font-bold text-blue-600 tabular-nums">{formatCurrency(item.value)}</span>
-                  <span className="text-[9px] font-semibold text-slate-400">CFA</span>
+                  <span className="text-sm sm:text-lg font-bold text-blue-600 tabular-nums">{formatCurrency(item.value)}</span>
+                  <span className="text-[8px] sm:text-[9px] font-semibold text-slate-400">CFA</span>
                 </div>
               </div>
             ))}
@@ -575,38 +574,107 @@ const Comptabilite = () => {
       {/* Combined Table Area */}
       <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
         
-        {/* Table Toolbar */}
-        <div className="px-4 py-3 bg-slate-50/50 border-b border-slate-100 flex flex-col sm:flex-row gap-4 items-center justify-between">
-          <div className="relative w-full sm:w-80">
-            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        {/* Table Toolbar - Responsive */}
+        <div className="px-3 sm:px-4 py-2.5 sm:py-3 bg-slate-50/50 border-b border-slate-100 flex flex-col gap-3 sm:gap-4">
+          <div className="relative w-full">
+            <MagnifyingGlassIcon className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 w-3.5 sm:w-4 h-3.5 sm:h-4 text-slate-400" />
             <input
               type="text"
-              className="w-full pl-9 pr-3 py-1.5 bg-white border border-slate-200 rounded-md text-sm placeholder:text-slate-400 focus:outline-none focus:border-slate-300 transition-all font-medium"
-              placeholder="Rechercher par référence, expéditeur..."
+              className="w-full pl-8 sm:pl-9 pr-2.5 sm:pr-3 py-1.5 bg-white border border-slate-200 rounded-md text-xs sm:text-sm placeholder:text-slate-400 focus:outline-none focus:border-slate-300 transition-all font-medium"
+              placeholder="Rechercher..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
 
-          <div className="flex items-center p-0.5 bg-white border border-slate-200 rounded-md shadow-xs">
+          <div className="flex items-center p-0.5 bg-white border border-slate-200 rounded-md shadow-xs overflow-x-auto">
             {['', 'paye', 'en_attente'].map(s => (
               <button
                 key={s}
                 onClick={() => setStatusFilter(s)}
-                className={`px-3 py-1 rounded-[4px] text-xs font-semibold whitespace-nowrap transition-all ${
+                className={`px-2.5 sm:px-3 py-1 rounded-[4px] text-[10px] sm:text-xs font-semibold whitespace-nowrap transition-all ${
                   statusFilter === s 
                   ? 'bg-slate-100 text-slate-900 border border-slate-200' 
                   : 'text-slate-500 hover:text-slate-700'
                 }`}
               >
-                {s === '' ? 'Tous les flux' : getStatusLabel(s)}
+                {s === '' ? 'Tous' : getStatusLabel(s)}
               </button>
             ))}
           </div>
         </div>
 
-        {/* The Table */}
-        <div className="overflow-x-auto">
+        {/* Mobile Card View */}
+        <div className="lg:hidden divide-y divide-slate-100">
+          {status === 'loading' && filteredData.length === 0 ? (
+            Array(3).fill(0).map((_, i) => (
+              <div key={i} className="p-3 animate-pulse space-y-2">
+                <div className="h-4 bg-slate-100 rounded w-1/3"></div>
+                <div className="h-3 bg-slate-100 rounded w-full"></div>
+                <div className="h-3 bg-slate-100 rounded w-2/3"></div>
+              </div>
+            ))
+          ) : filteredData.length > 0 ? (
+            filteredData.map((item) => (
+              <div
+                key={item.id}
+                onClick={() => handleRowClick(item)}
+                className="p-3 hover:bg-slate-50/80 transition-colors cursor-pointer active:scale-[0.99]"
+              >
+                {/* Header */}
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <span className="text-xs font-semibold text-slate-900 truncate">{item.reference}</span>
+                      <span className={`px-1.5 py-0.5 rounded border text-[8px] font-bold uppercase ${getStatusStyle(item.statut_paiement)}`}>
+                        {getStatusLabel(item.statut_paiement)}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 font-medium truncate">{item.expediteur?.nom_prenom || "Client Standard"}</p>
+                  </div>
+                  <ChevronRightIcon className="w-4 h-4 text-slate-300 flex-shrink-0" />
+                </div>
+
+                {/* Body - 3 Columns */}
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div>
+                    <p className="text-[9px] font-semibold text-slate-400 uppercase mb-0.5">CA Client</p>
+                    <p className="text-xs font-semibold text-slate-700 tabular-nums">
+                      {new Intl.NumberFormat('fr-FR', { notation: 'compact' }).format(item.accounting_details?.total_client_due || 0)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-semibold text-slate-400 uppercase mb-0.5">Agence</p>
+                    <p className="text-xs font-bold text-blue-600 tabular-nums">
+                      {new Intl.NumberFormat('fr-FR', { notation: 'compact' }).format((parseFloat(item.accounting_details?.agence_depart || 0) + parseFloat(item.accounting_details?.agence_arrivee || 0)))}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-semibold text-slate-400 uppercase mb-0.5">HUB</p>
+                    <p className="text-xs font-medium text-slate-500 tabular-nums">
+                      {new Intl.NumberFormat('fr-FR', { notation: 'compact' }).format((parseFloat(item.accounting_details?.backoffice_depart || 0) + parseFloat(item.accounting_details?.backoffice_arrivee || 0)))}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between">
+                  <span className="text-[10px] font-medium text-slate-500">{formatDate(item.created_at)}</span>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="p-8 text-center">
+              <div className="opacity-40 flex flex-col items-center gap-2">
+                <InboxIcon className="w-8 h-8 text-slate-300" />
+                <p className="text-xs font-semibold">Aucun flux financier</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Desktop Table */}
+        <div className="hidden lg:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/30 border-b border-slate-100">

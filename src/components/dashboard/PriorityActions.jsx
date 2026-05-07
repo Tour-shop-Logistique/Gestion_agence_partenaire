@@ -107,8 +107,8 @@ const PriorityActions = ({ operational, pendingDemandesCount }) => {
                 <h2 className="text-sm font-bold text-slate-900">Actions prioritaires</h2>
             </div>
 
-            {/* Cartes d'actions compactes */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {/* Cartes d'actions compactes - 3 colonnes sur toutes les tailles */}
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
                 {actions.map((action) => {
                     const colors = getColorClasses(action.color, action.urgent);
                     const Icon = action.icon;
@@ -117,33 +117,33 @@ const PriorityActions = ({ operational, pendingDemandesCount }) => {
                         <Link
                             key={action.id}
                             to={action.link}
-                            className={`${colors.bg} ${colors.hover} rounded-lg p-4 transition-all duration-200 border ${action.urgent ? 'border-red-400 shadow-md' : 'border-slate-200'} group relative hover:shadow-lg`}
+                            className={`${colors.bg} ${colors.hover} rounded-lg p-2 sm:p-4 transition-all duration-200 border ${action.urgent ? 'border-red-400 shadow-md' : 'border-slate-200'} group relative hover:shadow-lg`}
                         >
-                            {/* Layout horizontal compact */}
-                            <div className="flex items-center gap-3">
+                            {/* Layout vertical compact pour mobile */}
+                            <div className="flex flex-col items-center gap-2 text-center">
                                 {/* Icône */}
-                                <div className={`w-10 h-10 ${colors.iconBg} rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform shadow-sm`}>
-                                    <Icon className={`w-5 h-5 ${colors.iconColor}`} />
-                                </div>
-
-                                {/* Contenu */}
-                                <div className="flex-1 min-w-0">
-                                    <h3 className={`text-sm font-bold ${colors.text} mb-0.5`}>
-                                        {action.title}
-                                    </h3>
-                                    <p className={`text-xs ${colors.textSecondary}`}>
-                                        {action.description}
-                                    </p>
+                                <div className={`w-8 h-8 sm:w-10 sm:h-10 ${colors.iconBg} rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform shadow-sm`}>
+                                    <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${colors.iconColor}`} />
                                 </div>
 
                                 {/* Compteur */}
-                                <div className="text-right flex-shrink-0">
-                                    <div className={`text-2xl font-black ${colors.countText}`}>
+                                <div className="flex-shrink-0">
+                                    <div className={`text-xl sm:text-2xl font-black ${colors.countText} leading-none`}>
                                         {action.count}
                                     </div>
-                                    <div className={`text-[10px] font-semibold ${colors.subtitleText} uppercase`}>
+                                    <div className={`text-[8px] sm:text-[10px] font-semibold ${colors.subtitleText} uppercase mt-0.5`}>
                                         {action.subtitle}
                                     </div>
+                                </div>
+
+                                {/* Titre */}
+                                <div className="flex-1 min-w-0 w-full">
+                                    <h3 className={`text-[10px] sm:text-sm font-bold ${colors.text} leading-tight`}>
+                                        {action.title}
+                                    </h3>
+                                    <p className={`text-[8px] sm:text-xs ${colors.textSecondary} mt-1 hidden sm:block leading-tight`}>
+                                        {action.description}
+                                    </p>
                                 </div>
                             </div>
                         </Link>

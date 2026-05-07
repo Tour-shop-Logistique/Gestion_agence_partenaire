@@ -340,16 +340,21 @@ const Expeditions = () => {
         });
 
         // Table Data
-        const tableData = filteredExpeditions.map(exp => [
-            exp.reference,
-            getTypeLabel(exp.type_expedition),
-            exp.pays_depart + " → " + exp.pays_destination,
-            exp.expediteur?.nom_prenom || "---",
-            exp.destinataire?.nom_prenom || "---",
-            formatCurrencyForPDF(exp.montant_expedition),
-            formatCurrencyForPDF(getAgencyCommission(exp)),
-            getStatusLabel(exp.statut_expedition)
-        ]);
+        const tableData = filteredExpeditions.map(exp => {
+            // Format trajet vertical : Départ en haut, Arrivée en bas
+            const trajet = `${exp.pays_depart || 'N/A'}\n↓\n${exp.pays_destination || 'N/A'}`;
+            
+            return [
+                exp.reference,
+                getTypeLabel(exp.type_expedition),
+                trajet,
+                exp.expediteur?.nom_prenom || "---",
+                exp.destinataire?.nom_prenom || "---",
+                formatCurrencyForPDF(exp.montant_expedition),
+                formatCurrencyForPDF(getAgencyCommission(exp)),
+                getStatusLabel(exp.statut_expedition)
+            ];
+        });
 
         autoTable(doc, {
             startY: 90,
@@ -357,36 +362,38 @@ const Expeditions = () => {
             body: tableData,
             theme: 'grid',
             styles: {
-                fontSize: 7,
-                cellPadding: 2.5,
+                fontSize: 7.5,
+                cellPadding: 3,
                 overflow: 'linebreak',
                 halign: 'left',
                 valign: 'middle',
                 lineColor: [226, 232, 240],
-                lineWidth: 0.1
+                lineWidth: 0.1,
+                minCellHeight: 12
             },
             headStyles: {
                 fillColor: [15, 23, 42],
                 textColor: [255, 255, 255],
-                fontSize: 7,
+                fontSize: 8,
                 fontStyle: 'bold',
                 halign: 'center',
                 valign: 'middle'
             },
             columnStyles: {
-                0: { cellWidth: 32, halign: 'left', fontStyle: 'bold' },
-                1: { cellWidth: 20, halign: 'center', fontSize: 6.5 },
-                2: { cellWidth: 40, halign: 'left' },
-                3: { cellWidth: 30, halign: 'left' },
-                4: { cellWidth: 30, halign: 'left' },
-                5: { cellWidth: 22, halign: 'right', fontStyle: 'bold' },
-                6: { cellWidth: 22, halign: 'right', fontStyle: 'bold', textColor: [37, 99, 235] },
-                7: { cellWidth: 28, halign: 'center', fontSize: 6, textColor: [100, 116, 139] }
+                0: { cellWidth: 35, halign: 'left', fontStyle: 'bold', fontSize: 7 },
+                1: { cellWidth: 25, halign: 'center', fontSize: 7 },
+                2: { cellWidth: 45, halign: 'center', fontSize: 7, fontStyle: 'bold', valign: 'middle' },
+                3: { cellWidth: 35, halign: 'left', fontSize: 7 },
+                4: { cellWidth: 35, halign: 'left', fontSize: 7 },
+                5: { cellWidth: 25, halign: 'right', fontStyle: 'bold', fontSize: 7.5 },
+                6: { cellWidth: 25, halign: 'right', fontStyle: 'bold', textColor: [37, 99, 235], fontSize: 7.5 },
+                7: { cellWidth: 35, halign: 'center', fontSize: 6.5, textColor: [100, 116, 139] }
             },
             alternateRowStyles: {
                 fillColor: [252, 254, 255]
             },
-            margin: { left: 15, right: 15, bottom: 20 },
+            margin: { left: 10, right: 10, bottom: 20 },
+            tableWidth: 'auto',
             didDrawPage: (data) => {
                 doc.setFontSize(8);
                 doc.setTextColor(150);
@@ -464,26 +471,52 @@ const Expeditions = () => {
 
     return (
         <>
-            <div className="space-y-6 max-w-[1600px] mx-auto">
+            <div className="space-y-4 sm:space-y-6 max-w-[1600px] mx-auto px-3 sm:px-4 lg:px-6">
                 {/* Header Section */}
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-semibold text-gray-900">
-                            Expéditions
-                        </h1>
-                        <p className="mt-1 text-sm text-gray-500">
-                            Gérez et suivez toutes vos expéditions en temps réel
-                        </p>
+                <div className="flex flex-col gap-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">
+                                Expéditions
+                            </h1>
+                            <p className="mt-1 text-xs sm:text-sm text-gray-500">
+                                Gérez et suivez toutes vos expéditions en temps réel
+                            </p>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            {/* Refresh Button */}
+                            <button
+                                onClick={() => loadExpeditions({ page: currentPage, date_debut: dateDebut, date_fin: dateFin }, true)}
+                                disabled={status === 'loading'}
+                                className="inline-flex items-center p-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
+                                title="Rafraîchir"
+                            >
+                                <ArrowPathIcon className={`w-4 h-4 sm:w-5 sm:h-5 ${status === 'loading' ? 'animate-spin' : ''}`} />
+                            </button>
+
+                            {/* Export PDF Button */}
+                            <button
+                                onClick={handleExportPDF}
+                                disabled={!filteredExpeditions || filteredExpeditions.length === 0}
+                                className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-2 bg-red-600 text-white rounded-lg sm:rounded-xl hover:bg-red-700 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Exporter en PDF"
+                            >
+                                <DocumentArrowDownIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                                <span className="text-xs sm:text-sm font-bold hidden sm:inline">PDF</span>
+                            </button>
+                        </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    {/* Filters Row - Responsive */}
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                         {/* Date Filters */}
-                        <div className="flex items-center gap-2">
-                            <div className="relative">
-                                <span className="absolute -top-2 left-3 px-1 bg-white text-xs font-medium text-gray-500 z-10">Du</span>
+                        <div className="flex items-center gap-2 flex-1">
+                            <div className="relative flex-1">
+                                <span className="absolute -top-2 left-2 sm:left-3 px-1 bg-white text-[10px] sm:text-xs font-medium text-gray-500 z-10">Du</span>
                                 <input
                                     type="date"
-                                    className="block w-40 px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                    className="block w-full px-2 sm:px-3 py-1.5 sm:py-2 bg-white border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                                     value={dateDebut}
                                     onChange={(e) => {
                                         setDateDebut(e.target.value);
@@ -491,11 +524,11 @@ const Expeditions = () => {
                                     }}
                                 />
                             </div>
-                            <div className="relative">
-                                <span className="absolute -top-2 left-3 px-1 bg-white text-xs font-medium text-gray-500 z-10">Au</span>
+                            <div className="relative flex-1">
+                                <span className="absolute -top-2 left-2 sm:left-3 px-1 bg-white text-[10px] sm:text-xs font-medium text-gray-500 z-10">Au</span>
                                 <input
                                     type="date"
-                                    className="block w-40 px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                    className="block w-full px-2 sm:px-3 py-1.5 sm:py-2 bg-white border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                                     value={dateFin}
                                     onChange={(e) => {
                                         setDateFin(e.target.value);
@@ -506,47 +539,26 @@ const Expeditions = () => {
                         </div>
 
                         {/* Search Bar */}
-                        <div className="relative group w-64">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+                        <div className="relative group flex-1 sm:max-w-xs">
+                            <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
+                                <MagnifyingGlassIcon className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                             </div>
                             <input
                                 type="text"
-                                className="block w-full pl-10 pr-3 py-2 bg-white border border-gray-300 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                                placeholder="Rechercher (réf, nom, ville)..."
+                                className="block w-full pl-8 sm:pl-10 pr-2 sm:pr-3 py-1.5 sm:py-2 bg-white border border-gray-300 rounded-lg text-xs sm:text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                placeholder="Rechercher..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
-
-                        {/* Refresh Button */}
-                        <button
-                            onClick={() => loadExpeditions({ page: currentPage, date_debut: dateDebut, date_fin: dateFin }, true)}
-                            disabled={status === 'loading'}
-                            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
-                            title="Rafraîchir"
-                        >
-                            <ArrowPathIcon className={`w-5 h-5 ${status === 'loading' ? 'animate-spin' : ''}`} />
-                        </button>
-
-                        {/* Export PDF Button */}
-                        <button
-                            onClick={handleExportPDF}
-                            disabled={!filteredExpeditions || filteredExpeditions.length === 0}
-                            className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                            title="Exporter en PDF"
-                        >
-                            <DocumentArrowDownIcon className="w-5 h-5" />
-                            <span className="text-sm font-bold hidden sm:inline">PDF</span>
-                        </button>
                     </div>
                 </div>
 
                 {/* Sub-Header Toolbar with Type Filter */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/60 p-1 rounded-2xl border border-slate-200/50">
-                    <div className="flex items-center gap-3 w-full sm:w-auto">
-                        {/* Filtres par type */}
-                        <div className="flex items-center p-1 bg-slate-100/50 rounded-xl overflow-x-auto no-scrollbar">
+                <div className="flex flex-col gap-3 bg-white/60 p-2 sm:p-1 rounded-2xl border border-slate-200/50">
+                    {/* Filtres par type - Scroll horizontal sur mobile */}
+                    <div className="overflow-x-auto no-scrollbar">
+                        <div className="flex items-center gap-2 p-1 bg-slate-100/50 rounded-xl min-w-max">
                             {[
                                 { id: '', label: 'Tout', icon: '📦', color: 'indigo' },
                                 { id: 'simple', label: 'Simple', icon: '📮', color: 'blue' },
@@ -590,40 +602,43 @@ const Expeditions = () => {
                                         setType(btn.id);
                                         setCurrentPage(1);
                                     }}
-                                    className={`whitespace-nowrap px-3.5 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all flex items-center gap-1.5 ${
+                                    className={`whitespace-nowrap px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg text-[10px] sm:text-xs font-bold uppercase tracking-wide transition-all flex items-center gap-1 sm:gap-1.5 ${
                                         isActive
                                             ? colorClasses[btn.color].active
                                             : colorClasses[btn.color].inactive
                                     }`}
                                     title={btn.id === 'groupage_dhd_aerien' ? 'DHD Aérien' : btn.id === 'groupage_dhd_maritine' ? 'DHD Maritime' : btn.label}
                                 >
-                                    <span className={`text-sm ${isActive ? 'scale-110' : ''} transition-transform`}>{btn.icon}</span>
-                                    {btn.label}
+                                    <span className={`text-xs sm:text-sm ${isActive ? 'scale-110' : ''} transition-transform`}>{btn.icon}</span>
+                                    <span className="hidden sm:inline">{btn.label}</span>
                                 </button>
                             );
                         })}
                         </div>
+                    </div>
 
+                    {/* Filtre par statut et compteurs */}
+                    <div className="flex items-center justify-between w-full gap-3">
                         {/* Filtre par statut */}
                         <StatusFilter
                             selectedStatuses={selectedStatuses}
                             onStatusChange={setSelectedStatuses}
                             expeditions={expeditions}
                         />
-                    </div>
 
-                    <div className="flex items-center gap-4 px-2">
-                        <div className="flex items-center gap-3">
-                            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide leading-none">Global</span>
-                            <span className="text-sm font-bold text-slate-900 tracking-tight leading-none">{filteredExpeditions?.length || 0}</span>
-                        </div>
-                        <div className="w-px h-4 bg-slate-200"></div>
-                        <div className="flex items-center gap-1.5 text-emerald-500">
-                             <div className="relative flex h-1.5 w-1.5">
-                                <span className={`${status === 'loading' ? 'animate-ping' : ''} absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75`}></span>
-                                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                        <div className="flex items-center gap-3 sm:gap-4 px-2">
+                            <div className="flex items-center gap-2 sm:gap-3">
+                                <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 uppercase tracking-wide leading-none">Global</span>
+                                <span className="text-xs sm:text-sm font-bold text-slate-900 tracking-tight leading-none">{filteredExpeditions?.length || 0}</span>
                             </div>
-                            <span className="text-[10px] font-semibold uppercase tracking-wide">{status === 'loading' ? 'Actualisation...' : 'À jour'}</span>
+                            <div className="w-px h-3 sm:h-4 bg-slate-200"></div>
+                            <div className="flex items-center gap-1 sm:gap-1.5 text-emerald-500">
+                                 <div className="relative flex h-1.5 w-1.5">
+                                    <span className={`${status === 'loading' ? 'animate-ping' : ''} absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75`}></span>
+                                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                                </div>
+                                <span className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wide">{status === 'loading' ? 'Actualisation...' : 'À jour'}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -634,122 +649,97 @@ const Expeditions = () => {
                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/[0.02] via-transparent to-purple-500/[0.02] pointer-events-none"></div>
 
                     <div className="relative overflow-x-auto">
-                        {/* Mobile View (Cards) */}
-                        <div className="block lg:hidden space-y-4 p-4">
+                        {/* Mobile View (Cards) - Version Ultra-Compacte SaaS */}
+                        <div className="block lg:hidden space-y-2 p-2">
                             {status === 'loading' && expeditions.length === 0 ? (
                                 Array(3).fill(0).map((_, i) => (
-                                    <div key={i} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 animate-pulse space-y-4">
+                                    <div key={i} className="bg-white rounded-xl p-3 shadow-sm border border-slate-100 animate-pulse space-y-2">
                                         <div className="flex justify-between items-start">
-                                            <div className="h-4 bg-slate-200 rounded w-1/3"></div>
-                                            <div className="h-6 bg-slate-200 rounded-full w-20"></div>
+                                            <div className="h-3 bg-slate-200 rounded w-1/3"></div>
+                                            <div className="h-5 bg-slate-200 rounded-full w-16"></div>
                                         </div>
-                                        <div className="space-y-2">
-                                            <div className="h-3 bg-slate-100 rounded w-full"></div>
-                                            <div className="h-3 bg-slate-100 rounded w-2/3"></div>
-                                        </div>
-                                        <div className="flex justify-between items-center pt-2">
-                                            <div className="h-5 bg-slate-200 rounded w-1/4"></div>
-                                            <div className="h-8 bg-slate-200 rounded-lg w-8"></div>
+                                        <div className="h-2 bg-slate-100 rounded w-2/3"></div>
+                                        <div className="flex justify-between items-center pt-1">
+                                            <div className="h-4 bg-slate-200 rounded w-1/4"></div>
+                                            <div className="h-6 bg-slate-200 rounded-lg w-6"></div>
                                         </div>
                                     </div>
                                 ))
                             ) : filteredExpeditions.length > 0 ? (
                                 filteredExpeditions.map((exp) => (
-                                    <div key={exp.id} className={`bg-white rounded-2xl p-5 shadow-sm border border-slate-100 relative overflow-hidden group border-l-4 ${getStatusBorderColor(exp.statut_expedition)}`}>
-                                        <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-slate-50 to-indigo-50/50 rounded-bl-full -mr-4 -mt-4 opacity-50"></div>
-
-                                        <div className="relative z-10 space-y-4">
-                                            {/* Header Card */}
-                                            <div className="flex justify-between items-start gap-4">
-                                                <div className="flex flex-col">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-sm font-bold text-slate-900 tracking-tight">{exp.reference}</span>
-                                                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-tight border shadow-sm ${getTypeStyle(exp.type_expedition)}`}>
-                                                            {getTypeLabel(exp.type_expedition)}
-                                                        </span>
-                                                    </div>
-                                                    <span className="text-[10px] font-medium text-slate-400">{formatDate(exp.created_at)}</span>
-                                                </div>
-                                                <div className="flex flex-col items-end gap-1">
-                                                    <span className={`inline-flex items-center justify-center px-2 py-1 rounded-md text-[9px] font-bold uppercase tracking-wider border ${getStatusStyle(exp.statut_expedition)}`}>
-                                                        {getStatusLabel(exp.statut_expedition)}
-                                                    </span>
-                                                    <div className="flex flex-col items-end">
-                                                        <span className={`text-[10px] font-bold uppercase tracking-tight ${exp.statut_paiement_expedition === 'paye' ? 'text-emerald-600' : 'text-orange-500'}`}>
-                                                            T: {exp.statut_paiement_expedition === 'paye' ? 'Payé' : 'En attente'}
-                                                        </span>
-                                                        {parseFloat(exp.frais_annexes || 0) > 0 && (
-                                                            <span className={`text-[10px] font-bold uppercase tracking-tight ${exp.statut_paiement_frais === 'paye' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                                                F: {exp.statut_paiement_frais === 'paye' ? 'Payé' : 'Bloqué'}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
+                                    <Link
+                                        key={exp.id}
+                                        to={`/expeditions/${exp.id}`}
+                                        className={`block bg-white rounded-xl p-3 shadow-sm border border-slate-100 hover:shadow-md transition-all active:scale-[0.98] border-l-4 ${getStatusBorderColor(exp.statut_expedition)}`}
+                                    >
+                                        {/* Header - Référence + Statut */}
+                                        <div className="flex items-start justify-between gap-2 mb-2">
+                                            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                                <span className="text-xs font-bold text-slate-900 truncate">{exp.reference}</span>
+                                                <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase border shadow-sm whitespace-nowrap ${getTypeStyle(exp.type_expedition)}`}>
+                                                    {getTypeLabel(exp.type_expedition)}
+                                                </span>
                                             </div>
+                                            <span className={`px-1.5 py-0.5 rounded-md text-[8px] font-bold uppercase border whitespace-nowrap ${getStatusStyle(exp.statut_expedition)}`}>
+                                                {getStatusLabel(exp.statut_expedition)}
+                                            </span>
+                                        </div>
 
-                                            {/* Trajet */}
-                                            <div className="flex items-center gap-2 text-[11px] font-bold text-slate-600 bg-slate-50/50 p-2 rounded-lg border border-slate-100/50">
-                                                <span className="truncate max-w-[40%]">{exp.pays_depart}</span>
-                                                <div className="flex-1 flex items-center justify-center px-2">
-                                                    <div className="h-px bg-slate-300 w-full flex relative items-center justify-center">
-                                                        <div className="w-1 h-1 bg-slate-400 rounded-full absolute left-0"></div>
-                                                        <svg className="w-3 h-3 text-indigo-400 absolute -top-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M12 5l7 7-7 7" /></svg>
-                                                        <div className="w-1 h-1 bg-slate-400 rounded-full absolute right-0"></div>
-                                                    </div>
-                                                </div>
-                                                <span className="truncate max-w-[40%] text-indigo-600">{exp.pays_destination}</span>
+                                        {/* Trajet Compact */}
+                                        <div className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-600 mb-2">
+                                            <span className="truncate max-w-[35%]">{exp.pays_depart}</span>
+                                            <svg className="w-3 h-3 text-indigo-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                            </svg>
+                                            <span className="truncate max-w-[35%] text-indigo-600">{exp.pays_destination}</span>
+                                        </div>
+
+                                        {/* Footer - Montant + Actions */}
+                                        <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                                            <div className="flex items-baseline gap-1">
+                                                <span className="text-sm font-bold text-slate-900 tabular-nums">
+                                                    {new Intl.NumberFormat('fr-FR').format(exp.montant_expedition || 0)}
+                                                </span>
+                                                <span className="text-[8px] font-semibold text-slate-400">CFA</span>
                                             </div>
-
-                                            {/* Acteurs */}
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="space-y-1">
-                                                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Expéditeur</span>
-                                                    <p className="text-xs font-bold text-slate-700 truncate">{exp.expediteur?.nom_prenom}</p>
-                                                </div>
-                                                <div className="space-y-1 text-right">
-                                                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Destinataire</span>
-                                                    <p className="text-xs font-bold text-slate-700 truncate">{exp.destinataire?.nom_prenom}</p>
-                                                </div>
-                                            </div>
-
-                                            {/* Footer Card */}
-                                            <div className="pt-3 border-t border-slate-100 flex flex-wrap items-end justify-between gap-3">
-                                                <div className="flex flex-col">
-                                                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide leading-tight">Total</span>
-                                                    <span className="text-sm font-bold text-slate-900 tracking-tight tabular-nums">
-                                                        {formatPriceDual(exp.montant_expedition)}
-                                                    </span>
-                                                </div>
-                                                
-                                                <div className="flex flex-col items-center px-3 py-1 bg-indigo-50 border border-indigo-100 rounded-lg">
-                                                    <span className="text-[10px] font-semibold text-indigo-400 uppercase tracking-wide leading-tight">Ma Com.</span>
-                                                    <span className="text-xs font-bold text-indigo-600 tracking-tight">
-                                                        {new Intl.NumberFormat('fr-FR').format(getAgencyCommission(exp))} <span className="text-[8px]">CFA</span>
+                                            
+                                            <div className="flex items-center gap-2">
+                                                {/* Commission Badge */}
+                                                <div className="flex items-baseline gap-0.5 px-2 py-0.5 bg-indigo-50 border border-indigo-100 rounded">
+                                                    <span className="text-[8px] font-semibold text-indigo-400">Com.</span>
+                                                    <span className="text-[10px] font-bold text-indigo-600">
+                                                        {new Intl.NumberFormat('fr-FR', { notation: 'compact' }).format(getAgencyCommission(exp))}
                                                     </span>
                                                 </div>
 
-                                                <div className="flex gap-1.5 ml-auto">
-                                                    <button
-                                                        onClick={() => handlePrintReceipt(exp)}
-                                                        className="p-2 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-sm transition-transform active:scale-90"
-                                                    >
-                                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
-                                                    </button>
-                                                    <Link
-                                                        to={`/expeditions/${exp.id}`}
-                                                        className="p-2 rounded-lg bg-indigo-600 text-white shadow-indigo-200 shadow-md"
-                                                    >
-                                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                                                    </Link>
-                                                </div>
+                                                {/* Print Button */}
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        handlePrintReceipt(exp);
+                                                    }}
+                                                    className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100 active:scale-90 transition-transform"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                                    </svg>
+                                                </button>
+
+                                                {/* Arrow Icon */}
+                                                <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                </svg>
                                             </div>
                                         </div>
-                                    </div>
+                                    </Link>
                                 ))
                             ) : (
-                                <div className="text-center py-10 px-4">
-                                    <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3">
-                                        <svg className="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>
+                                <div className="text-center py-8 px-4">
+                                    <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-2">
+                                        <svg className="w-6 h-6 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                                        </svg>
                                     </div>
                                     <p className="text-xs font-bold text-slate-500">Aucune expédition trouvée</p>
                                 </div>
@@ -761,7 +751,7 @@ const Expeditions = () => {
                             {/* Sticky Premium Header */}
                             <thead className="sticky top-0 z-10">
                                 <tr className="bg-slate-50/90 backdrop-blur-md border-b border-slate-200/60">
-                                    <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wide w-[12%]">
+                                    <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wide w-[14%]">
                                         <SortableHeader
                                             label="Référence"
                                             sortKey="reference"
@@ -769,13 +759,13 @@ const Expeditions = () => {
                                             onSort={handleSort}
                                         />
                                     </th>
-                                    <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wide w-[18%]">
+                                    <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wide w-[22%]">
                                         Expéditeur / Destinataire
                                     </th>
-                                    <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wide w-[10%]">
+                                    <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wide w-[12%]">
                                         Trajet
                                     </th>
-                                    <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wide w-[14%]">
+                                    <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wide w-[16%]">
                                         <SortableHeader
                                             label="Montant"
                                             sortKey="montant"
@@ -783,16 +773,7 @@ const Expeditions = () => {
                                             onSort={handleSort}
                                         />
                                     </th>
-                                    <th className="px-6 py-5 text-xs font-bold text-indigo-600 uppercase tracking-wide bg-indigo-50/30 w-[13%]">
-                                        <SortableHeader
-                                            label="Commission"
-                                            sortKey="commission"
-                                            currentSort={sortConfig}
-                                            onSort={handleSort}
-                                            className="text-indigo-600"
-                                        />
-                                    </th>
-                                    <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wide w-[18%]">
+                                    <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wide w-[20%]">
                                         <SortableHeader
                                             label="Statut"
                                             sortKey="statut"
@@ -800,7 +781,7 @@ const Expeditions = () => {
                                             onSort={handleSort}
                                         />
                                     </th>
-                                    <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wide text-right w-[15%]">
+                                    <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wide text-right w-[16%]">
                                         Actions
                                     </th>
                                 </tr>
@@ -842,9 +823,6 @@ const Expeditions = () => {
                                                     <div className="h-6 bg-slate-200/60 rounded-full w-24"></div>
                                                     <div className="h-5 bg-slate-100/60 rounded-full w-28"></div>
                                                 </div>
-                                            </td>
-                                            <td className="px-8 py-6">
-                                                <div className="h-9 bg-slate-100/60 rounded-xl w-24"></div>
                                             </td>
                                             <td className="px-8 py-6">
                                                 <div className="flex justify-end gap-2">
@@ -917,14 +895,6 @@ const Expeditions = () => {
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-7 bg-indigo-50/10">
-                                                <div className="flex flex-col gap-1.5">
-                                                    <span className="text-base font-bold text-indigo-600 tabular-nums leading-tight whitespace-nowrap">
-                                                        {new Intl.NumberFormat('fr-FR').format(getAgencyCommission(exp))} <span className="text-xs font-bold">CFA</span>
-                                                    </span>
-                                                    <span className="text-[10px] font-bold text-slate-400 uppercase whitespace-nowrap">Votre gain</span>
-                                                </div>
-                                            </td>
                                             <td className="px-6 py-7">
                                                 <div className="flex flex-col gap-2.5">
                                                     <span className={`inline-flex items-center justify-center px-2.5 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wide border whitespace-nowrap ${getStatusStyle(exp.statut_expedition)}`}>
@@ -984,20 +954,21 @@ const Expeditions = () => {
 
                     {/* Premium Pagination */}
                     {meta && meta.last_page > 1 && (
-                        <div className="px-8 py-6 bg-slate-50/50 backdrop-blur-sm border-t border-slate-200/60 flex flex-col sm:flex-row items-center justify-between gap-4">
-                            <span className="text-xs font-semibold text-slate-500 uppercase tracking-[0.15em]">
+                        <div className="px-3 sm:px-8 py-4 sm:py-6 bg-slate-50/50 backdrop-blur-sm border-t border-slate-200/60 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+                            <span className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-[0.15em]">
                                 Page <span className="text-indigo-600 font-bold">{meta.current_page}</span> sur <span className="text-slate-900 font-bold">{meta.last_page}</span>
                             </span>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5 sm:gap-2">
                                 <button
                                     onClick={() => handlePageChange(meta.current_page - 1)}
                                     disabled={meta.current_page === 1}
-                                    className={`px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-[0.1em] transition-all duration-200 ${meta.current_page === 1
+                                    className={`px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-[0.1em] transition-all duration-200 ${meta.current_page === 1
                                         ? 'text-slate-300 cursor-not-allowed bg-slate-50/50'
                                         : 'text-slate-600 hover:bg-white hover:shadow-md hover:shadow-slate-200/50 hover:-translate-y-0.5'
                                         }`}
                                 >
-                                    Précédent
+                                    <span className="hidden sm:inline">Précédent</span>
+                                    <span className="sm:hidden">‹</span>
                                 </button>
 
                                 {Array.from({ length: meta.last_page }, (_, i) => i + 1)
@@ -1005,11 +976,11 @@ const Expeditions = () => {
                                     .map((page, index, array) => (
                                         <React.Fragment key={page}>
                                             {index > 0 && array[index - 1] !== page - 1 && (
-                                                <span className="px-2 text-slate-300 font-bold">···</span>
+                                                <span className="px-1 sm:px-2 text-slate-300 font-bold text-xs sm:text-base">···</span>
                                             )}
                                             <button
                                                 onClick={() => handlePageChange(page)}
-                                                className={`min-w-[2.75rem] h-11 rounded-xl text-xs font-bold transition-all duration-200 ${meta.current_page === page
+                                                className={`min-w-[2rem] sm:min-w-[2.75rem] h-8 sm:h-11 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold transition-all duration-200 ${meta.current_page === page
                                                     ? 'bg-gradient-to-br from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/30 scale-105'
                                                     : 'text-slate-600 hover:bg-white hover:shadow-md hover:shadow-slate-200/50 hover:-translate-y-0.5'
                                                     }`}
@@ -1022,12 +993,13 @@ const Expeditions = () => {
                                 <button
                                     onClick={() => handlePageChange(meta.current_page + 1)}
                                     disabled={meta.current_page === meta.last_page}
-                                    className={`px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-[0.1em] transition-all duration-200 ${meta.current_page === meta.last_page
+                                    className={`px-2.5 sm:px-4 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-[0.1em] transition-all duration-200 ${meta.current_page === meta.last_page
                                         ? 'text-slate-300 cursor-not-allowed bg-slate-50/50'
                                         : 'text-slate-600 hover:bg-white hover:shadow-md hover:shadow-slate-200/50 hover:-translate-y-0.5'
                                         }`}
                                 >
-                                    Suivant
+                                    <span className="hidden sm:inline">Suivant</span>
+                                    <span className="sm:hidden">›</span>
                                 </button>
                             </div>
                         </div>

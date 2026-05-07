@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { useAgency } from "../hooks/useAgency";
 import AgentCardMobile from "../components/AgentCardMobile";
@@ -219,26 +219,26 @@ const Agents = () => {
 
   return (
     <>
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
+      <div className="mb-4 sm:mb-6 px-3 sm:px-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900">
+            <h1 className="text-lg sm:text-2xl font-semibold text-gray-900">
               Gestion des agents
             </h1>
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-xs sm:text-sm text-gray-500">
               Administrez votre équipe d'agents
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
+              className="inline-flex items-center px-3 sm:px-4 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
             >
               {refreshing ? (
                 <>
                   <svg
-                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-700"
+                    className="animate-spin w-3.5 sm:w-4 h-3.5 sm:h-4 sm:mr-2"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
@@ -257,12 +257,12 @@ const Agents = () => {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Actualisation...
+                  <span className="hidden sm:inline">Actualisation...</span>
                 </>
               ) : (
                 <>
                   <svg
-                    className="w-4 h-4 mr-2"
+                    className="w-3.5 sm:w-4 h-3.5 sm:h-4 sm:mr-2"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -274,16 +274,16 @@ const Agents = () => {
                       d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                     ></path>
                   </svg>
-                  Actualiser
+                  <span className="hidden sm:inline">Actualiser</span>
                 </>
               )}
             </button>
             <button
               onClick={openAddModal}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center transition-colors"
+              className="bg-green-600 hover:bg-green-700 text-white px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center justify-center transition-colors"
             >
               <svg
-                className="w-4 h-4 mr-2"
+                className="w-3.5 sm:w-4 h-3.5 sm:h-4 sm:mr-2"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -296,37 +296,35 @@ const Agents = () => {
                   d="M12 6v6m0 0v6m0-6h6m-6 0H6"
                 ></path>
               </svg>
-              Ajouter un agent
+              <span className="hidden sm:inline">Ajouter un agent</span>
+              <span className="sm:hidden">Ajouter</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Section statistiques améliorée - mobile-first */}
+      {/* Section statistiques - Responsive */}
       {agencyUsers && agencyUsers.length > 0 && (
-        <div className="mb-6 sm:mb-8">
-          {/* Résumé rapide - responsive */}
-          <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4 border border-gray-200 shadow-sm">
-            <div className="flex flex-row items-center justify-between gap-4">
-              <div className="flex flex-row sm:items-center gap-4">
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                  <span className="text-sm sm:text-md text-gray-600 font-medium">
-                    Total: {agencyUsers.length}
-                  </span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <span className="text-sm sm:text-md text-gray-600 font-medium">
-                    Actifs: {agencyUsers.filter((a) => a.actif).length}
-                  </span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                  <span className="text-sm sm:text-md text-gray-600 font-medium">
-                    Inactifs: {agencyUsers.filter((a) => !a.actif).length}
-                  </span>
-                </div>
+        <div className="mb-4 sm:mb-6 px-3 sm:px-0">
+          <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-3 sm:p-4 border border-gray-200 shadow-sm">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+              <div className="flex items-center space-x-2">
+                <div className="w-2.5 sm:w-3 h-2.5 sm:h-3 bg-blue-500 rounded-full"></div>
+                <span className="text-xs sm:text-sm text-gray-600 font-medium">
+                  Total: {agencyUsers.length}
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-2.5 sm:w-3 h-2.5 sm:h-3 bg-green-500 rounded-full"></div>
+                <span className="text-xs sm:text-sm text-gray-600 font-medium">
+                  Actifs: {agencyUsers.filter((a) => a.actif).length}
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-2.5 sm:w-3 h-2.5 sm:h-3 bg-red-500 rounded-full"></div>
+                <span className="text-xs sm:text-sm text-gray-600 font-medium">
+                  Inactifs: {agencyUsers.filter((a) => !a.actif).length}
+                </span>
               </div>
             </div>
           </div>
@@ -334,8 +332,8 @@ const Agents = () => {
       )}
 
 
-      {/* Liste des agents - Design responsive : lignes sur desktop, cards sur mobile */}
-      <div className="bg-white shadow-sm rounded-lg border border-gray-100 overflow-hidden">
+      {/* Liste des agents - Design responsive */}
+      <div className="bg-white shadow-sm rounded-lg border border-gray-100 overflow-hidden mx-3 sm:mx-0">
         {usersStatus === "loading" && (!agencyUsers || agencyUsers.length === 0) ? (
           <div className="p-6">
             <div className="animate-pulse space-y-4">

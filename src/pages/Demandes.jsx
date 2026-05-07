@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useExpedition } from "../hooks/useExpedition";
 import { useAgency } from "../hooks/useAgency";
 import { formatPriceDual } from "../utils/format";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "../utils/toast";
-import { Check, X, Eye, Package, Calendar, MapPin, User, ArrowRight, Loader2, AlertCircle, RefreshCw } from "lucide-react";
+import { Check, X, Eye, Package, Calendar, MapPin, User, ArrowRight, Loader2, RefreshCw } from "lucide-react";
 import ConfirmationModal from "../components/ConfirmationModal";
 
 const Demandes = () => {
@@ -20,7 +20,7 @@ const Demandes = () => {
         error,
         resetStatus
     } = useExpedition();
-    const { agencyData, fetchAgencyData } = useAgency();
+    const { fetchAgencyData } = useAgency();
     const [currentPage, setCurrentPage] = useState(1);
     const [processingId, setProcessingId] = useState(null);
     const [isRefuseModalOpen, setIsRefuseModalOpen] = useState(false);
@@ -134,36 +134,36 @@ const Demandes = () => {
     };
 
     return (
-        <div className="space-y-8 max-w-[1600px] mx-auto pb-10">
-            {/* Header Section */}
-            <div className="flex items-center justify-between">
+        <div className="space-y-4 sm:space-y-8 max-w-[1600px] mx-auto px-3 sm:px-6 pb-6 sm:pb-10">
+            {/* Header Section - Responsive */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0">
                 <div>
-                    <h1 className="text-2xl font-semibold text-gray-900">
+                    <h1 className="text-lg sm:text-2xl font-semibold text-gray-900">
                         Demandes Clients
                     </h1>
-                    <p className="mt-1 text-sm text-gray-500">
-                        Gérez les demandes d'expédition effectuées par les clients via l'application
+                    <p className="mt-1 text-xs sm:text-sm text-gray-500">
+                        Gérez les demandes d'expédition effectuées par les clients
                     </p>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
                     <button
                         onClick={handleRefresh}
                         disabled={status === 'loading'}
-                        className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
+                        className="inline-flex items-center px-3 sm:px-4 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
                     >
-                        <RefreshCw className={`w-4 h-4 mr-2 ${status === 'loading' ? 'animate-spin' : ''}`} />
-                        Actualiser
+                        <RefreshCw className={`w-3.5 sm:w-4 h-3.5 sm:h-4 sm:mr-2 ${status === 'loading' ? 'animate-spin' : ''}`} />
+                        <span className="hidden sm:inline">Actualiser</span>
                     </button>
-                    <div className="bg-white px-5 py-3 rounded-lg border border-gray-200 shadow-sm">
-                        <div className="flex items-center gap-3">
-                            <span className="relative flex h-2.5 w-2.5">
+                    <div className="bg-white px-3 sm:px-5 py-2 sm:py-3 rounded-lg border border-gray-200 shadow-sm">
+                        <div className="flex items-center gap-2 sm:gap-3">
+                            <span className="relative flex h-2 w-2 sm:h-2.5 sm:w-2.5">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 sm:h-2.5 sm:w-2.5 bg-amber-500"></span>
                             </span>
                             <div className="flex flex-col">
-                                <span className="text-xs font-medium text-gray-500">En attente</span>
-                                <span className="text-lg font-semibold text-gray-900">{demandesMeta?.total || 0}</span>
+                                <span className="text-[10px] sm:text-xs font-medium text-gray-500">En attente</span>
+                                <span className="text-base sm:text-lg font-semibold text-gray-900">{demandesMeta?.total || 0}</span>
                             </div>
                         </div>
                     </div>
@@ -192,80 +192,106 @@ const Demandes = () => {
                 )}
 
                 <div className="relative overflow-x-auto">
-                    {/* Mobile view: Cards */}
-                    <div className="lg:hidden p-4 space-y-4">
+                    {/* Mobile view: Cards - Ultra-Compact */}
+                    <div className="lg:hidden p-3 sm:p-4 space-y-3">
                         {status === 'loading' && demandes.length === 0 ? (
                             Array(3).fill(0).map((_, i) => (
-                                <div key={i} className="bg-white p-4 rounded-2xl border border-slate-100 animate-pulse space-y-3">
-                                    <div className="flex justify-between items-center"><div className="h-4 bg-slate-200 rounded w-1/3"></div><div className="h-6 bg-slate-100 rounded-full w-20"></div></div>
+                                <div key={i} className="bg-white p-3 rounded-xl border border-slate-100 animate-pulse space-y-2">
+                                    <div className="flex justify-between items-center">
+                                        <div className="h-4 bg-slate-200 rounded w-1/3"></div>
+                                        <div className="h-6 bg-slate-100 rounded-full w-16"></div>
+                                    </div>
                                     <div className="h-3 bg-slate-100 rounded w-full"></div>
                                     <div className="h-4 bg-slate-200 rounded w-1/4"></div>
                                 </div>
                             ))
                         ) : demandes.length > 0 ? (
                             demandes.map((demande) => (
-                                <div key={demande.id} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm space-y-4 hover:border-indigo-200 transition-colors">
-                                    <div className="flex justify-between items-start gap-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
-                                                <User className="w-5 h-5 text-slate-500" />
+                                <div key={demande.id} className="bg-white rounded-xl border border-slate-200 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all active:scale-[0.99] overflow-hidden">
+                                    {/* Header Compact */}
+                                    <div className="p-3 border-b border-slate-100">
+                                        <div className="flex justify-between items-start gap-2 mb-2">
+                                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center shrink-0">
+                                                    <User className="w-4 h-4 text-indigo-600" />
+                                                </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-xs font-bold text-slate-900 truncate">{demande.expediteur?.nom_prenom}</p>
+                                                    <p className="text-[9px] text-slate-400 font-medium">{formatDate(demande.created_at).split(' ')[0]}</p>
+                                                </div>
                                             </div>
-                                            <div className="min-w-0">
-                                                <p className="text-sm font-bold text-slate-900 truncate">{demande.expediteur?.nom_prenom}</p>
-                                                <p className="text-[10px] text-slate-400 font-medium">{formatDate(demande.created_at)}</p>
-                                            </div>
-                                        </div>
-                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border shrink-0 ${getTypeStyle(demande.type_expedition)}`}>
-                                            {getTypeLabel(demande.type_expedition)}
-                                        </span>
-                                    </div>
-
-                                    <div className="flex items-center gap-2 text-[11px] font-bold text-slate-600 bg-slate-50/50 p-2 rounded-lg">
-                                        <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                                        <span>{demande.pays_depart}</span>
-                                        <ArrowRight className="w-3 h-3 text-slate-300" />
-                                        <span className="text-indigo-600">{demande.pays_destination}</span>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4 pt-2">
-                                        <div className="flex flex-col gap-0.5">
-                                            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Contenu</span>
-                                            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
-                                                <Package className="w-3.5 h-3.5 text-slate-400" />
-                                                {demande.colis?.length || 0} Colis
-                                            </div>
-                                        </div>
-                                        <div className="flex flex-col gap-0.5 items-end">
-                                            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Valeur</span>
-                                            <span className="text-sm font-bold text-slate-900 tabular-nums">
-                                                {formatPriceDual(demande.montant_expedition)}
+                                            <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase border shrink-0 ${getTypeStyle(demande.type_expedition)}`}>
+                                                {getTypeLabel(demande.type_expedition)}
                                             </span>
                                         </div>
+
+                                        <div className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-600 bg-slate-50 px-2 py-1.5 rounded-lg">
+                                            <MapPin className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                                            <span className="truncate">{demande.pays_depart}</span>
+                                            <ArrowRight className="w-2.5 h-2.5 text-slate-300 flex-shrink-0" />
+                                            <span className="text-indigo-600 truncate">{demande.pays_destination}</span>
+                                        </div>
                                     </div>
 
-                                    <div className="pt-3 border-t border-slate-50 flex items-center gap-2">
+                                    {/* Body - 2 Columns */}
+                                    <div className="p-3 grid grid-cols-2 gap-3 text-center border-b border-slate-100">
+                                        <div>
+                                            <p className="text-[9px] font-semibold text-slate-400 uppercase mb-0.5">Colis</p>
+                                            <div className="flex items-center justify-center gap-1 text-xs font-bold text-slate-700">
+                                                <Package className="w-3 h-3 text-slate-400" />
+                                                {demande.colis?.length || 0}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <p className="text-[9px] font-semibold text-slate-400 uppercase mb-0.5">Montant</p>
+                                            <p className="text-xs font-bold text-slate-900 tabular-nums">
+                                                {new Intl.NumberFormat('fr-FR', { notation: 'compact' }).format(demande.montant_expedition || 0)}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Footer Actions - Compact */}
+                                    <div className="p-2.5 flex items-center gap-1.5">
                                         <Link
                                             to={`/expeditions/${demande.id}`}
-                                            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-slate-50 text-slate-600 rounded-xl text-xs font-bold hover:bg-slate-100 transition-colors"
+                                            className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-slate-50 text-slate-600 rounded-lg text-[10px] font-bold hover:bg-slate-100 transition-colors"
                                         >
-                                            <Eye className="w-4 h-4" /> Détails
+                                            <Eye className="w-3.5 h-3.5" /> Détails
                                         </Link>
                                         <button
                                             onClick={() => handleRefuse(demande.id)}
-                                            className="p-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors"
+                                            disabled={processingId === demande.id}
+                                            className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50"
                                         >
-                                            <X className="w-5 h-5" />
+                                            <X className="w-4 h-4" />
                                         </button>
                                         <button
                                             onClick={() => handleAccept(demande.id)}
-                                            className="flex-[1.5] flex items-center justify-center gap-2 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 shadow-md shadow-indigo-100 transition-colors"
+                                            disabled={processingId === demande.id}
+                                            className="flex-[1.5] flex items-center justify-center gap-1.5 py-2 bg-emerald-600 text-white rounded-lg text-[10px] font-bold hover:bg-emerald-700 shadow-sm transition-colors disabled:opacity-50"
                                         >
-                                            <Check className="w-4 h-4" /> Accepter
+                                            {processingId === demande.id ? (
+                                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                            ) : (
+                                                <>
+                                                    <Check className="w-3.5 h-3.5" /> Accepter
+                                                </>
+                                            )}
                                         </button>
                                     </div>
                                 </div>
                             ))
-                        ) : null}
+                        ) : (
+                            <div className="bg-white p-8 rounded-xl text-center border border-slate-100">
+                                <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                                    <Package className="w-8 h-8 text-amber-300" />
+                                </div>
+                                <h3 className="text-sm font-bold text-slate-900 mb-1">Aucune demande</h3>
+                                <p className="text-xs text-slate-500">
+                                    Les nouvelles demandes apparaîtront ici
+                                </p>
+                            </div>
+                        )}
                     </div>
 
                     {/* Desktop view: Table */}
@@ -411,26 +437,26 @@ const Demandes = () => {
                     </table>
                 </div>
 
-                {/* Pagination */}
+                {/* Pagination - Responsive */}
                 {demandesMeta && demandesMeta.last_page > 1 && (
-                    <div className="px-6 sm:px-8 py-6 bg-slate-50/50 backdrop-blur-sm border-t border-slate-200/60 flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                    <div className="px-3 sm:px-6 lg:px-8 py-4 sm:py-6 bg-slate-50/50 backdrop-blur-sm border-t border-slate-200/60 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+                        <span className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wide">
                             Page <span className="text-indigo-600 font-bold">{demandesMeta.current_page}</span> sur <span className="text-slate-900 font-bold">{demandesMeta.last_page}</span>
                         </span>
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={() => handlePageChange(demandesMeta.current_page - 1)}
                                 disabled={demandesMeta.current_page === 1}
-                                className="px-4 py-2 text-xs font-bold uppercase tracking-wide text-slate-600 disabled:text-slate-300 hover:bg-white rounded-xl transition-all"
+                                className="px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs font-bold uppercase tracking-wide text-slate-600 disabled:text-slate-300 hover:bg-white rounded-lg sm:rounded-xl transition-all"
                             >
-                                Précédent
+                                Préc.
                             </button>
                             <button
                                 onClick={() => handlePageChange(demandesMeta.current_page + 1)}
                                 disabled={demandesMeta.current_page === demandesMeta.last_page}
-                                className="px-4 py-2 text-xs font-bold uppercase tracking-wide text-slate-600 disabled:text-slate-300 hover:bg-white rounded-xl transition-all"
+                                className="px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs font-bold uppercase tracking-wide text-slate-600 disabled:text-slate-300 hover:bg-white rounded-lg sm:rounded-xl transition-all"
                             >
-                                Suivant
+                                Suiv.
                             </button>
                         </div>
                     </div>
