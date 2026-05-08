@@ -9,7 +9,7 @@ const DashboardLayout = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Sidebar - fixed position for desktop only */}
-      <aside className="hidden lg:block fixed inset-y-0 left-0 z-40 w-72 bg-white border-r border-gray-200">
+      <aside className="hidden lg:block fixed inset-y-0 left-0 z-40 w-60 bg-white border-r border-gray-200">
         <div className="h-full overflow-hidden">
           <Sidebar onClose={() => setSidebarOpen(false)} />
         </div>
@@ -26,7 +26,7 @@ const DashboardLayout = () => {
 
       {/* Mobile sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 w-72 transform bg-white border-r border-gray-200 transition-transform duration-300 ease-in-out shadow-xl lg:hidden
+        className={`fixed inset-y-0 left-0 z-40 w-60 transform bg-white border-r border-gray-200 transition-transform duration-300 ease-in-out shadow-xl lg:hidden
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
         inert={!sidebarOpen ? true : undefined}
       >
@@ -36,7 +36,7 @@ const DashboardLayout = () => {
       </aside>
 
       {/* Main content area */}
-      <div className="lg:ml-72">
+      <div className="lg:ml-60">
         <div className="flex flex-col min-h-screen">
           <Header onToggleSidebar={() => setSidebarOpen(open => !open)} />
           <main className="flex-1 overflow-y-auto pt-16 pb-4">

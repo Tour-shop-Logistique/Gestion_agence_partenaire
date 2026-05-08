@@ -225,11 +225,11 @@ const Sidebar = ({ onClose }) => {
   const menuItems = isAdminLike ? adminMenuItems : agentMenuItems;
 
   return (
-    <div className="flex flex-col h-full bg-white border-r border-slate-200 w-72 lg:mt-0 mt-0">
+    <div className="flex flex-col h-full bg-white border-r border-slate-200 w-60 lg:mt-0 mt-0">
       {/* Branding Header */}
-      <div className="h-16 flex items-center px-6 border-b border-slate-100 shrink-0">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded-md bg-slate-900 flex items-center justify-center p-1 overflow-hidden">
+      <div className="h-16 flex items-center px-4 border-b border-slate-100 shrink-0">
+        <div className="flex items-center space-x-2.5 min-w-0 flex-1">
+          <div className="w-8 h-8 rounded-md bg-slate-900 flex items-center justify-center p-1 overflow-hidden flex-shrink-0">
             {agencyData?.agence?.logo ? (
               <img
                 src={getLogoUrl(agencyData.agence.logo)}
@@ -241,7 +241,7 @@ const Sidebar = ({ onClose }) => {
             )}
 
           </div>
-          <span className="font-bold text-slate-900 tracking-tight text-lg">
+          <span className="font-bold text-slate-900 tracking-tight text-base truncate">
             {agencyData?.agence?.nom_agence || "Tous Shop"}
           </span>
         </div>
