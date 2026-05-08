@@ -31,7 +31,7 @@ export const useDashboard = () => {
     const fetchDashboard = useCallback((forceRefresh = false, silentRefresh = false) => {
         // Éviter de recharger si déjà en cours (sauf si silentRefresh)
         if (!forceRefresh && !silentRefresh && (status === 'loading' || isRefreshing)) {
-            return;
+            return Promise.resolve({ payload: dashboardState });
         }
         // Éviter de recharger si déjà chargé récemment (moins de 30 secondes)
         if (!forceRefresh && !silentRefresh && status === 'succeeded' && dashboardState.lastUpdated) {

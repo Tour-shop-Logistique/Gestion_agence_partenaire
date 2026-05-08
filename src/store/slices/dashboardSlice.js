@@ -22,7 +22,8 @@ const initialState = {
         colis_recus_aujourdhui: 0,
         colis_attente_retrait_livraison: 0,
         expeditions_creees_aujourdhui: 0,
-        expeditions_attente_acceptation: 0
+        expeditions_attente_acceptation: 0,
+        demandes_en_attente: 0
     },
     financial: {
         chiffre_affaires_mois: 0,

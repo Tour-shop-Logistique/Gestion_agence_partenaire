@@ -17,8 +17,10 @@ import {
   CalendarIcon,
   InboxIcon,
   ChevronLeftIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  PlusIcon
 } from '@heroicons/react/24/outline';
+import { RecordTransactionModal } from '../components/transaction';
 
 const Transactions = () => {
   const dispatch = useDispatch();
@@ -39,6 +41,7 @@ const Transactions = () => {
   const [dateFin, setDateFin] = useState(getTodayDate());
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [isNewTransactionModalOpen, setIsNewTransactionModalOpen] = useState(false);
 
   useEffect(() => {
     dispatch(fetchTransactions({ date_debut: dateDebut, date_fin: dateFin }));
@@ -46,6 +49,12 @@ const Transactions = () => {
 
   const handleRefresh = () => {
     dispatch(fetchTransactions({ date_debut: dateDebut, date_fin: dateFin }));
+  };
+
+  const handleNewTransactionSubmit = async (transactionData) => {
+    // La soumission est gérée par le composant modal via useExpedition
+    // Après succès, on rafraîchit la liste
+    handleRefresh();
   };
 
   const formatCurrency = (amount) => {
@@ -158,6 +167,16 @@ const Transactions = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* Nouvelle Transaction Button */}
+          <button
+            onClick={() => setIsNewTransactionModalOpen(true)}
+            className="h-8 sm:h-9 px-3 flex items-center gap-1.5 sm:gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-all shadow-sm active:scale-95 text-xs font-semibold"
+          >
+            <PlusIcon className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
+            <span className="hidden sm:inline">Nouvelle transaction</span>
+            <span className="sm:hidden">Nouveau</span>
+          </button>
+
           {/* Export Button */}
           <button
             onClick={handleExportExcel}
@@ -475,6 +494,18 @@ const Transactions = () => {
            </div>
         </div>
       </div>
+
+      {/* Modal de nouvelle transaction */}
+      <RecordTransactionModal
+        isOpen={isNewTransactionModalOpen}
+        onClose={() => setIsNewTransactionModalOpen(false)}
+        onSubmit={handleNewTransactionSubmit}
+        expeditionId="" // Vide pour une transaction générale
+        expeditionReference=""
+        defaultAmount={0}
+        defaultType="encaissement"
+        defaultObject="autre"
+      />
     </div>
   );
 };

@@ -37,7 +37,7 @@ const Dashboard = () => {
     const location = useLocation();
     const { currentUser } = useAuth();
     const { data: agencyData, fetchAgencyData } = useAgency();
-    const { demandesMeta, loadDemandes } = useExpedition();
+    const { demandes = [], demandesMeta, loadDemandes } = useExpedition();
     const { operational, financial, logistics, loading: dashboardLoading, status, isRefreshing, lastUpdated, fetchDashboard } = useDashboard();
     const [showDemandesAlert, setShowDemandesAlert] = useState(true);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -52,34 +52,34 @@ const Dashboard = () => {
             }
             hasFetchedRef.current = true;
 
-            // Si on a déjà des données en cache
+            // ✅ Si on a déjà des données en cache (préchargées par App.jsx)
             if (status === 'succeeded' && lastUpdated) {
                 const lastUpdate = new Date(lastUpdated);
                 const now = new Date();
                 const diffSeconds = (now - lastUpdate) / 1000;
                 
+                // Pas de loader, on affiche directement les données
+                setIsInitialLoad(false);
+                
                 // Si les données ont plus de 30 secondes, on fait un refresh silencieux
                 if (diffSeconds > 30) {
-                    setIsInitialLoad(false);
-                    await fetchDashboard(true, true); // Rechargement silencieux
-                    await loadDemandes({ page: 1 }, true);
-                } else {
-                    // Données récentes, pas besoin de recharger
-                    setIsInitialLoad(false);
+                    fetchDashboard(true, true); // Rechargement silencieux en arrière-plan
+                    loadDemandes({ page: 1 }, true);
                 }
                 return;
             }
 
-            // Chargement initial complet avec loader
-            await fetchDashboard();
-            await loadDemandes({ page: 1 });
+            // ✅ Chargement initial sans loader si possible
+            setIsInitialLoad(false);
+            
+            // Charger les données en arrière-plan
+            fetchDashboard(false, true); // Silencieux pour éviter le loader
+            loadDemandes({ page: 1 }, true);
             
             // Charger l'agence si nécessaire
             if (!agencyData) {
-                await fetchAgencyData();
+                fetchAgencyData();
             }
-
-            setIsInitialLoad(false);
         };
 
         loadData();
@@ -109,11 +109,19 @@ const Dashboard = () => {
                        [currentUser?.nom, currentUser?.prenoms].filter(Boolean).join(" ") || 
                        "Agent";
 
-    const pendingDemandesCount = demandesMeta?.total || 0;
+    // Récupérer le nombre de demandes depuis l'API des demandes
+    // L'API ne retourne pas toujours meta, donc on utilise la longueur du tableau
+    const pendingDemandesCount = demandesMeta?.total || demandes?.length || 0;
+    
+    // Debug: afficher demandesMeta dans la console
+    console.log("📊 Dashboard - demandes:", demandes);
+    console.log("📊 Dashboard - demandesMeta:", demandesMeta);
+    console.log("📊 Dashboard - pendingDemandesCount:", pendingDemandesCount);
 
-    // Loading state - Afficher le loader seulement au chargement initial
-    // Si les données sont en cache, on affiche directement le dashboard
-    const showLoader = isInitialLoad && dashboardLoading && status !== 'succeeded';
+    // Loading state - Ne JAMAIS afficher le loader si on a déjà des données en cache
+    // Même si c'est un "chargement initial", on affiche les données existantes
+    const hasData = status === 'succeeded' || (operational && financial && logistics);
+    const showLoader = isInitialLoad && dashboardLoading && !hasData;
     
     if (showLoader) {
         return (

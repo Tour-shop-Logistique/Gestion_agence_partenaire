@@ -379,6 +379,7 @@ const expeditionSlice = createSlice({
 
             // Fetch Expeditions
             .addCase(fetchExpeditions.pending, (state) => {
+                // Ne montrer le loading que si on n'a pas encore de données
                 if (!state.expeditions || state.expeditions.length === 0) {
                     state.status = "loading";
                 }
@@ -391,6 +392,7 @@ const expeditionSlice = createSlice({
                 state.lastFilters = action.meta.arg; // The params passed to the thunk
             })
             .addCase(fetchExpeditions.rejected, (state, action) => {
+                // Ne pas effacer les données existantes en cas d'erreur
                 state.status = "failed";
                 state.error = action.payload;
             })
@@ -436,6 +438,7 @@ const expeditionSlice = createSlice({
 
             // Fetch Demandes Clients
             .addCase(fetchDemandesClients.pending, (state) => {
+                // Ne montrer le loading que si on n'a pas encore de données
                 if (!state.demandes || state.demandes.length === 0) {
                     state.status = "loading";
                 }
@@ -448,6 +451,7 @@ const expeditionSlice = createSlice({
                 state.lastDemandesFilters = action.meta.arg;
             })
             .addCase(fetchDemandesClients.rejected, (state, action) => {
+                // Ne pas effacer les données existantes en cas d'erreur
                 state.status = "failed";
                 state.error = action.payload;
             })

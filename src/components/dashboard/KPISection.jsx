@@ -189,6 +189,8 @@ const KPISection = ({ financial, operational }) => {
                         unit="Nouvelles fiches"
                         badge="Aujourd'hui"
                         colorScheme="blue"
+                        link="/expeditions"
+                        isClickable={true}
                         tooltip="Nombre total de nouvelles fiches d'expéditions enregistrées par votre agence depuis ce matin."
                     />
                     <KPICard
@@ -198,7 +200,7 @@ const KPISection = ({ financial, operational }) => {
                         unit="Colis clients"
                         badge={(operational.colis_attente_reception_depart || 0) > 10 ? 'Urgent' : 'Départ'}
                         colorScheme="amber"
-                        link="/colis-a-receptionner"
+                        link="/colis"
                         isClickable={true}
                         tooltip={
                             <>
@@ -232,6 +234,8 @@ const KPISection = ({ financial, operational }) => {
                         unit="Arrivages du jour"
                         badge="Aujourd'hui"
                         colorScheme="green"
+                        link="/colis-a-receptionner"
+                        isClickable={true}
                         tooltip="Nombre total de colis que votre agence a scannés comme 'arrivés à destination' au cours de la journée actuelle."
                     />
                 </div>

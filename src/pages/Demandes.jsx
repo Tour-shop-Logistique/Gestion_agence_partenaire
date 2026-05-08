@@ -298,22 +298,22 @@ const Demandes = () => {
                     <table className="hidden lg:table w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-slate-50/90 backdrop-blur-md border-b-2 border-slate-400">
-                                <th className="px-8 py-5 text-[10px] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200">Client / Date</th>
-                                <th className="px-8 py-5 text-[10px] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200">Type & Trajet</th>
-                                <th className="px-8 py-5 text-[10px] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200">Détails Colis</th>
-                                <th className="px-8 py-5 text-[10px] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200">Montant Estimé</th>
-                                <th className="px-8 py-5 text-[10px] font-semibold text-slate-500 uppercase tracking-wide text-right">Actions</th>
+                                <th className="px-4 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200 w-[22%]">Client / Date</th>
+                                <th className="px-4 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200 w-[25%]">Type & Trajet</th>
+                                <th className="px-4 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200 w-[18%]">Détails Colis</th>
+                                <th className="px-4 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200 w-[15%]">Montant</th>
+                                <th className="px-4 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide text-right w-[20%]">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y-2 divide-slate-300">
                             {status === 'loading' && demandes.length === 0 ? (
                                 Array(3).fill(0).map((_, i) => (
                                     <tr key={i} className="animate-pulse border-b-2 border-slate-200">
-                                        <td className="px-8 py-8 border-r border-slate-100"><div className="h-4 bg-slate-200 rounded w-32 mb-2"></div><div className="h-3 bg-slate-100 rounded w-24"></div></td>
-                                        <td className="px-8 py-8 border-r border-slate-100"><div className="h-6 bg-slate-200 rounded-lg w-24 mb-2"></div><div className="h-4 bg-slate-100 rounded w-32"></div></td>
-                                        <td className="px-8 py-8 border-r border-slate-100"><div className="h-4 bg-slate-200 rounded w-20"></div></td>
-                                        <td className="px-8 py-8 border-r border-slate-100"><div className="h-5 bg-slate-200 rounded w-24"></div></td>
-                                        <td className="px-8 py-8 text-right"><div className="flex justify-end gap-2"><div className="h-10 w-10 bg-slate-200 rounded-xl"></div><div className="h-10 w-10 bg-slate-200 rounded-xl"></div></div></td>
+                                        <td className="px-4 py-5 border-r border-slate-100"><div className="h-4 bg-slate-200 rounded w-32 mb-2"></div><div className="h-3 bg-slate-100 rounded w-24"></div></td>
+                                        <td className="px-4 py-5 border-r border-slate-100"><div className="h-6 bg-slate-200 rounded-lg w-24 mb-2"></div><div className="h-4 bg-slate-100 rounded w-32"></div></td>
+                                        <td className="px-4 py-5 border-r border-slate-100"><div className="h-4 bg-slate-200 rounded w-20"></div></td>
+                                        <td className="px-4 py-5 border-r border-slate-100"><div className="h-5 bg-slate-200 rounded w-24"></div></td>
+                                        <td className="px-4 py-5 text-right"><div className="flex justify-end gap-2"><div className="h-8 w-16 bg-slate-200 rounded-lg"></div><div className="h-8 w-20 bg-slate-200 rounded-lg"></div></div></td>
                                     </tr>
                                 ))
                             ) : demandes.length > 0 ? (
@@ -321,95 +321,94 @@ const Demandes = () => {
                                     <tr key={demande.id} className="group hover:bg-indigo-50/30 transition-all duration-200 border-b-2 border-slate-200 cursor-pointer">
                                         <td 
                                             onClick={() => navigate(`/expeditions/${demande.id}`)}
-                                            className="px-8 py-6 border-r border-slate-100"
+                                            className="px-4 py-4 border-r border-slate-100"
                                         >
-                                            <div className="flex flex-col gap-1.5">
+                                            <div className="flex flex-col gap-1">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-indigo-100 transition-colors">
-                                                        <User className="w-4 h-4 text-slate-500 group-hover:text-indigo-600 transition-colors" />
+                                                    <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-indigo-100 transition-colors flex-shrink-0">
+                                                        <User className="w-3.5 h-3.5 text-slate-500 group-hover:text-indigo-600 transition-colors" />
                                                     </div>
-                                                    <span className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                                                    <span className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors truncate">
                                                         {demande.expediteur?.nom_prenom}
                                                     </span>
                                                 </div>
-                                                <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-400 ml-10">
-                                                    <Calendar className="w-3 h-3" />
-                                                    {formatDate(demande.created_at)}
+                                                <div className="flex items-center gap-1 text-[10px] font-medium text-slate-400 ml-9">
+                                                    <Calendar className="w-3 h-3 flex-shrink-0" />
+                                                    <span className="truncate">{formatDate(demande.created_at)}</span>
                                                 </div>
                                             </div>
                                         </td>
                                         <td 
                                             onClick={() => navigate(`/expeditions/${demande.id}`)}
-                                            className="px-8 py-6 border-r border-slate-100"
+                                            className="px-4 py-4 border-r border-slate-100"
                                         >
-                                            <div className="flex flex-col gap-2">
-                                                <span className={`inline-flex self-start px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border shadow-sm ${getTypeStyle(demande.type_expedition)}`}>
+                                            <div className="flex flex-col gap-1.5">
+                                                <span className={`inline-flex self-start px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide border shadow-sm ${getTypeStyle(demande.type_expedition)}`}>
                                                     {getTypeLabel(demande.type_expedition)}
                                                 </span>
-                                                <div className="flex items-center gap-2 text-xs font-bold text-slate-600">
-                                                    <span className="px-1.5 py-0.5 bg-slate-100 rounded">{demande.pays_depart}</span>
-                                                    <ArrowRight className="w-3 h-3 text-slate-400" />
-                                                    <span className="px-1.5 py-0.5 bg-indigo-50 text-indigo-600 rounded">{demande.pays_destination}</span>
+                                                <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-600">
+                                                    <span className="px-1.5 py-0.5 bg-slate-100 rounded text-[10px] truncate max-w-[60px]">{demande.pays_depart}</span>
+                                                    <ArrowRight className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                                                    <span className="px-1.5 py-0.5 bg-indigo-50 text-indigo-600 rounded text-[10px] truncate max-w-[60px]">{demande.pays_destination}</span>
                                                 </div>
                                             </div>
                                         </td>
                                         <td 
                                             onClick={() => navigate(`/expeditions/${demande.id}`)}
-                                            className="px-8 py-6 border-r border-slate-100"
+                                            className="px-4 py-4 border-r border-slate-100"
                                         >
                                             <div className="flex flex-col gap-1">
                                                 <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
-                                                    <Package className="w-4 h-4 text-slate-400" />
-                                                    {demande.colis?.length || 0} Colis
+                                                    <Package className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                                                    <span>{demande.colis?.length || 0} Colis</span>
                                                 </div>
-                                                <div className="text-[10px] text-slate-400 font-medium">
+                                                <div className="text-[9px] text-slate-400 font-medium truncate">
                                                     {demande.colis?.map(c => c.produit_nom).join(', ')}
                                                 </div>
                                             </div>
                                         </td>
                                         <td 
                                             onClick={() => navigate(`/expeditions/${demande.id}`)}
-                                            className="px-8 py-6 border-r border-slate-100"
+                                            className="px-4 py-4 border-r border-slate-100"
                                         >
                                             <div className="flex flex-col gap-0.5">
-                                                <span className="text-base font-bold text-slate-900 tabular-nums">
-                                                    {formatPriceDual(demande.montant_expedition)}
+                                                <span className="text-sm font-bold text-slate-900 tabular-nums">
+                                                    {new Intl.NumberFormat('fr-FR', { notation: 'compact' }).format(demande.montant_expedition || 0)}
                                                 </span>
-                                                <span className="text-[9px] font-bold text-slate-400 uppercase">Tarif calculé</span>
+                                                <span className="text-[8px] font-bold text-slate-400 uppercase">CFA</span>
                                             </div>
                                         </td>
-                                        <td className="px-8 py-6 text-right">
-                                            <div className="flex items-center justify-end gap-3" onClick={(e) => e.stopPropagation()}>
+                                        <td className="px-4 py-4 text-right">
+                                            <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                                                 <button
                                                     onClick={() => handleRefuse(demande.id)}
                                                     disabled={processingId === demande.id}
-                                                    className="group/btn relative px-5 py-3 bg-white border-2 border-red-200 rounded-xl text-red-600 hover:bg-red-600 hover:border-red-600 hover:text-white shadow-sm hover:shadow-lg hover:shadow-red-200 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    className="group/btn relative px-3 py-2 bg-white border border-red-200 rounded-lg text-red-600 hover:bg-red-600 hover:border-red-600 hover:text-white shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                                     title="Refuser la demande"
                                                 >
-                                                    <div className="flex items-center gap-2">
+                                                    <div className="flex items-center gap-1">
                                                         {processingId === demande.id ? (
-                                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                                            <Loader2 className="w-4 h-4 animate-spin" />
                                                         ) : (
-                                                            <X className="w-5 h-5" />
+                                                            <X className="w-4 h-4" />
                                                         )}
-                                                        <span className="text-sm font-bold">Refuser</span>
+                                                        <span className="text-xs font-bold">Refuser</span>
                                                     </div>
                                                 </button>
                                                 <button
                                                     onClick={() => handleAccept(demande.id)}
                                                     disabled={processingId === demande.id}
-                                                    className="group/btn relative px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-xl shadow-lg shadow-emerald-200 hover:shadow-xl hover:shadow-emerald-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
+                                                    className="group/btn relative px-4 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-lg shadow-md shadow-emerald-200 hover:shadow-lg hover:shadow-emerald-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                                     title="Accepter la demande"
                                                 >
-                                                    <div className="flex items-center gap-2">
+                                                    <div className="flex items-center gap-1">
                                                         {processingId === demande.id ? (
-                                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                                            <Loader2 className="w-4 h-4 animate-spin" />
                                                         ) : (
-                                                            <Check className="w-5 h-5" />
+                                                            <Check className="w-4 h-4" />
                                                         )}
-                                                        <span className="text-sm font-bold">Accepter</span>
+                                                        <span className="text-xs font-bold">Accepter</span>
                                                     </div>
-                                                    <div className="absolute inset-0 rounded-xl bg-white opacity-0 group-hover/btn:opacity-20 transition-opacity"></div>
                                                 </button>
                                             </div>
                                         </td>
@@ -417,16 +416,16 @@ const Demandes = () => {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan="5" className="px-8 py-24 text-center">
+                                    <td colSpan="5" className="px-4 py-16 text-center">
                                         <div className="flex flex-col items-center max-w-md mx-auto">
-                                            <div className="relative w-24 h-24 mb-6">
-                                                <div className="absolute inset-0 bg-gradient-to-br from-amber-50 to-amber-100/30 rounded-3xl rotate-6"></div>
-                                                <div className="relative w-full h-full bg-white rounded-3xl shadow-xl flex items-center justify-center border border-amber-100">
-                                                    <Package className="w-10 h-10 text-amber-200" />
+                                            <div className="relative w-20 h-20 mb-4">
+                                                <div className="absolute inset-0 bg-gradient-to-br from-amber-50 to-amber-100/30 rounded-2xl rotate-6"></div>
+                                                <div className="relative w-full h-full bg-white rounded-2xl shadow-lg flex items-center justify-center border border-amber-100">
+                                                    <Package className="w-8 h-8 text-amber-200" />
                                                 </div>
                                             </div>
-                                            <h3 className="text-xl font-bold text-slate-900 mb-2 tracking-tight">Aucune demande en attente</h3>
-                                            <p className="text-sm font-medium text-slate-500 leading-relaxed">
+                                            <h3 className="text-lg font-bold text-slate-900 mb-2">Aucune demande en attente</h3>
+                                            <p className="text-sm font-medium text-slate-500">
                                                 Les nouvelles demandes d'expédition de vos clients apparaîtront ici.
                                             </p>
                                         </div>

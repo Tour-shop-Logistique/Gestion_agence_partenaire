@@ -19,6 +19,7 @@ const Header = ({ onToggleSidebar }) => {
   const [agencyLogo, setAgencyLogo] = useState(null);
   const [showRateModal, setShowRateModal] = useState(false);
   const [exchangeRate, setExchangeRate] = useState(localStorage.getItem('exchange_rate_cfa_eur') || '655.957');
+  const [tempExchangeRate, setTempExchangeRate] = useState(exchangeRate);
 
   useEffect(() => {
     const getAgencyData = () => {
@@ -59,9 +60,24 @@ const Header = ({ onToggleSidebar }) => {
   const handleLogout = () => dispatch(logout());
 
   const handleSaveRate = () => {
-    localStorage.setItem('exchange_rate_cfa_eur', exchangeRate);
+    const rate = parseFloat(tempExchangeRate);
+    if (isNaN(rate) || rate <= 0) {
+      alert('Veuillez entrer un taux valide');
+      return;
+    }
+    localStorage.setItem('exchange_rate_cfa_eur', tempExchangeRate);
+    setExchangeRate(tempExchangeRate);
     setShowRateModal(false);
     window.location.reload(); // Recharger pour appliquer le nouveau taux partout
+  };
+
+  const handleOpenModal = () => {
+    setTempExchangeRate(exchangeRate);
+    setShowRateModal(true);
+  };
+
+  const handleResetRate = () => {
+    setTempExchangeRate('655.957');
   };
 
   const pendingDemandesCount = demandesMeta?.total || 0;
@@ -117,19 +133,20 @@ const Header = ({ onToggleSidebar }) => {
 
           {/* Conversion Rate Pill */}
           <button
-            onClick={() => setShowRateModal(true)}
-            className="hidden sm:flex items-center gap-3 px-3 py-1.5 rounded-2xl bg-slate-50 border border-slate-200/60 hover:bg-white hover:shadow-sm hover:border-indigo-200 transition-all group"
+            onClick={handleOpenModal}
+            className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-200/60 hover:from-indigo-100 hover:to-blue-100 hover:shadow-md hover:border-indigo-300 transition-all group"
           >
-            <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-white shadow-sm border border-slate-100 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300">
+            <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-white shadow-sm border border-indigo-100 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300">
               <Euro className="w-4 h-4" />
             </div>
-            <div className="hidden md:flex flex-col items-start leading-tight pr-1">
-              <span className="text-badge-sm font-semibold text-slate-400 uppercase tracking-wider">Taux de conversion</span>
-              <span className="text-label-sm font-semibold text-slate-900">1€ = {exchangeRate} CFA</span>
+            <div className="hidden lg:flex flex-col items-start leading-tight">
+              <span className="text-[9px] font-bold text-indigo-500 uppercase tracking-wider">Taux EUR</span>
+              <span className="text-xs font-bold text-slate-900">1€ = {parseFloat(exchangeRate).toLocaleString('fr-FR')} CFA</span>
             </div>
-            <div className="md:hidden flex flex-col items-start leading-tight">
-              <span className="text-badge-sm font-semibold text-indigo-600">1€ = {exchangeRate}</span>
+            <div className="lg:hidden">
+              <span className="text-xs font-bold text-indigo-600">{parseFloat(exchangeRate).toLocaleString('fr-FR')}</span>
             </div>
+            <RefreshCcw className="w-3 h-3 text-indigo-400 group-hover:rotate-180 transition-transform duration-500" />
           </button>
 
           {/* Notifications */}
@@ -199,12 +216,14 @@ const Header = ({ onToggleSidebar }) => {
 
                 <button
                   onClick={() => {
-                    setShowRateModal(true);
+                    handleOpenModal();
                     setShowDropdown(false);
                   }}
                   className="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 text-label flex items-center gap-2"
                 >
-                  <span className="w-7 h-7 flex items-center justify-center bg-slate-100 rounded-lg">⚙️</span>
+                  <span className="w-7 h-7 flex items-center justify-center bg-indigo-50 rounded-lg">
+                    <Euro className="w-4 h-4 text-indigo-600" />
+                  </span>
                   Taux de conversion EUR
                 </button>
 
@@ -226,53 +245,95 @@ const Header = ({ onToggleSidebar }) => {
       {showRateModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300"
+            className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-300"
             onClick={() => setShowRateModal(false)}
           />
-          <div className="relative bg-white rounded-[32px] p-8 w-full max-w-sm shadow-2xl border border-white/20 animate-in fade-in zoom-in duration-300 overflow-hidden">
+          <div className="relative bg-white rounded-3xl p-6 sm:p-8 w-full max-w-md shadow-2xl border border-slate-200 animate-in fade-in zoom-in duration-300 overflow-hidden">
             {/* Background pattern */}
-            <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 bg-indigo-50 rounded-full blur-3xl opacity-50" />
-            <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-48 h-48 bg-blue-50 rounded-full blur-3xl opacity-50" />
+            <div className="absolute top-0 right-0 -mr-20 -mt-20 w-56 h-56 bg-gradient-to-br from-indigo-100 to-blue-100 rounded-full blur-3xl opacity-40" />
+            <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-56 h-56 bg-gradient-to-tr from-purple-100 to-indigo-100 rounded-full blur-3xl opacity-40" />
 
             <div className="relative">
-              <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-200 mb-6">
-                <RefreshCcw className="w-6 h-6 text-white" />
+              {/* Header */}
+              <div className="flex items-start justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-200">
+                    <Euro className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">Taux de conversion</h3>
+                    <p className="text-xs text-slate-500 font-medium">Euro vers CFA</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowRateModal(false)}
+                  className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                >
+                  <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
 
-              <h3 className="text-h3 font-display text-slate-900 mb-1">Configuration</h3>
-              <p className="text-body-sm text-slate-500 mb-8 font-medium">Définissez le taux de conversion Euro vers CFA pour les simulations.</p>
+              {/* Current Rate Display */}
+              <div className="mb-6 p-4 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-2xl border border-indigo-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold text-indigo-600 uppercase tracking-wide mb-1">Taux actuel</p>
+                    <p className="text-2xl font-bold text-slate-900">
+                      1 € = {parseFloat(exchangeRate).toLocaleString('fr-FR')} <span className="text-lg text-indigo-600">CFA</span>
+                    </p>
+                  </div>
+                  <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                    <RefreshCcw className="w-6 h-6 text-indigo-600" />
+                  </div>
+                </div>
+              </div>
 
+              {/* Input */}
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <label className="text-badge-sm font-semibold text-slate-400 uppercase tracking-wide ml-1">
-                    Valeur pour 1 Euro
+                  <label className="text-xs font-bold text-slate-600 uppercase tracking-wide ml-1 flex items-center justify-between">
+                    <span>Nouveau taux (1 Euro =)</span>
+                    <button
+                      onClick={handleResetRate}
+                      className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 normal-case"
+                    >
+                      Réinitialiser
+                    </button>
                   </label>
                   <div className="relative group">
                     <input
                       type="number"
                       step="0.001"
-                      value={exchangeRate}
-                      onChange={(e) => setExchangeRate(e.target.value)}
-                      className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-body-lg font-semibold text-slate-900 focus:bg-white focus:border-indigo-500 outline-none transition-all duration-300 pr-16"
+                      value={tempExchangeRate}
+                      onChange={(e) => setTempExchangeRate(e.target.value)}
+                      className="w-full px-5 py-4 bg-slate-50 border-2 border-slate-200 rounded-2xl text-lg font-bold text-slate-900 focus:bg-white focus:border-indigo-500 outline-none transition-all duration-300 pr-20"
                       placeholder="655.957"
                     />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 px-2 py-1 bg-indigo-100 rounded-lg">
-                      <span className="text-badge-sm font-semibold text-indigo-700">CFA</span>
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-indigo-600 rounded-xl shadow-sm">
+                      <span className="text-xs font-bold text-white">CFA</span>
                     </div>
                   </div>
-                  <p className="text-caption text-slate-400 italic ml-1">* Le taux par défaut est 655.957 CFA</p>
+                  <div className="flex items-start gap-2 ml-1">
+                    <svg className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-xs text-slate-500">Le taux par défaut est <span className="font-semibold text-slate-700">655.957 CFA</span>. Ce taux sera utilisé pour toutes les conversions dans l'application.</p>
+                  </div>
                 </div>
 
-                <div className="flex gap-3 pt-4">
+                {/* Actions */}
+                <div className="flex gap-3 pt-2">
                   <button
                     onClick={() => setShowRateModal(false)}
-                    className="flex-1 py-4 px-6 rounded-2xl text-label-sm font-semibold text-slate-500 hover:bg-slate-50 transition-all active:scale-95 border border-slate-100"
+                    className="flex-1 py-3 px-6 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition-all active:scale-95 border-2 border-slate-200"
                   >
-                    Fermer
+                    Annuler
                   </button>
                   <button
                     onClick={handleSaveRate}
-                    className="flex-[1.5] py-4 px-6 rounded-2xl text-label-sm font-semibold bg-indigo-600 text-white shadow-xl shadow-indigo-100 hover:bg-slate-900 hover:shadow-indigo-200 hover:-translate-y-0.5 active:scale-95 transition-all duration-300"
+                    className="flex-[1.5] py-3 px-6 rounded-xl text-sm font-bold bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-lg shadow-indigo-200 hover:from-indigo-700 hover:to-indigo-800 hover:shadow-xl hover:shadow-indigo-300 hover:-translate-y-0.5 active:scale-95 transition-all duration-300"
                   >
                     Enregistrer
                   </button>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -11,6 +11,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { useAuth } from "./hooks/useAuth";
 import { useAgency } from "./hooks/useAgency";
 import { useTarifs } from "./hooks/useTarifs";
+import { useDashboard } from "./hooks/useDashboard";
 import { getLogoUrl } from "./utils/apiConfig";
 
 // Import des pages
@@ -69,16 +70,15 @@ function AppContent() {
   const { fetchAgencyData, fetchUsers } = useAgency();
   const { checkAuth } = useAuth();
   const { isAuthenticated, status } = useSelector((state) => state.auth);
-  // État pour contrôler l'affichage du loader initial
-  const [initialCheckDone, setInitialCheckDone] = useState(false);
+  const { fetchDashboard } = useDashboard();
+  const hasLoadedDataRef = useRef(false);
 
   useEffect(() => {
     // Vérifier si un token existe au démarrage de l'application
+    // Chargement en arrière-plan sans bloquer l'interface
     const token = localStorage.getItem("auth_token");
     if (token) {
-      checkAuth().finally(() => setInitialCheckDone(true));
-    } else {
-      setInitialCheckDone(true);
+      checkAuth();
     }
   }, [checkAuth]);
 
@@ -86,38 +86,22 @@ function AppContent() {
   const { fetchAgencyTarifs, fetchTarifs, fetchTarifsGroupageBase, fetchTarifGroupageAgence } = useTarifs();
 
   useEffect(() => {
-    if (isAuthenticated && status === "succeeded") {
-      console.log("Utilisateur authentifié, chargement des données...");
-      // Charger les données de l'agence et les tarifs
-      fetchAgencyData();
-      fetchUsers();
-      fetchTarifs();
-      fetchAgencyTarifs();
-      fetchTarifsGroupageBase();
-      fetchTarifGroupageAgence();
+    if (isAuthenticated && status === "succeeded" && !hasLoadedDataRef.current) {
+      hasLoadedDataRef.current = true;
+      // Charger les données en arrière-plan de manière asynchrone
+      // Sans bloquer l'affichage de l'interface
+      // ✅ Précharger aussi les données du Dashboard pour éviter le loader
+      Promise.all([
+        fetchAgencyData(),
+        fetchUsers(),
+        fetchTarifs(),
+        fetchAgencyTarifs(),
+        fetchTarifsGroupageBase(),
+        fetchTarifGroupageAgence(),
+        fetchDashboard(false, true) // Préchargement silencieux du Dashboard
+      ]).catch(err => console.error("Erreur lors du chargement des données:", err));
     }
-  }, [isAuthenticated, status]);
-
-  // Afficher un loader pendant la vérification initiale
-  if (!initialCheckDone) {
-    const storedAgencyData = JSON.parse(localStorage.getItem("agencyData") || "{}");
-    const storedLogo = storedAgencyData?.agence?.logo;
-
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="text-center">
-          {storedLogo ? (
-            <img src={getLogoUrl(storedLogo)} alt="Logo Agence" className="h-24 w-auto mx-auto mb-6 drop-shadow-lg" />
-          ) : (
-            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
-          )}
-          <p className="text-gray-600 text-lg font-medium">
-            Chargement de votre espace...
-          </p>
-        </div>
-      </div>
-    );
-  }
+  }, [isAuthenticated, status, fetchAgencyData, fetchUsers, fetchTarifs, fetchAgencyTarifs, fetchTarifsGroupageBase, fetchTarifGroupageAgence, fetchDashboard]);
 
   return (
     <AutoRedirect>

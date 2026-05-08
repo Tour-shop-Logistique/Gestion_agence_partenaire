@@ -156,46 +156,48 @@ const ExpeditionDetails = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-            <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-6 space-y-6">
+        <div className="min-h-screen bg-gray-50">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
 
-                {/* 🎯 HEADER COMPACT */}
-                <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                    <div className="px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="flex items-center gap-4">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                icon={ArrowLeft}
+                {/* 🎯 HEADER COMPACT - Mobile Optimized */}
+                <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+                    <div className="px-4 sm:px-6 py-3 sm:py-4">
+                        {/* Mobile: Stack layout */}
+                        <div className="flex items-start gap-3 sm:gap-4">
+                            <button
                                 onClick={() => navigate(-1)}
-                                className="hover:bg-slate-100"
-                            />
-                            <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                    <span className="text-xs font-bold text-indigo-600 uppercase tracking-wide">
-                                        Dossier Expédition
+                                className="flex-shrink-0 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <ArrowLeft className="w-5 h-5 text-gray-600" />
+                            </button>
+                            <div className="flex-1 min-w-0">
+                                <div className="flex flex-wrap items-center gap-2 mb-1">
+                                    <span className="text-xs font-medium text-indigo-600 uppercase">
+                                        Expédition
                                     </span>
-                                    <span className="text-slate-300">•</span>
-                                    <span className="text-xs text-slate-500">
+                                    <span className="text-gray-300">•</span>
+                                    <span className="text-xs text-gray-500 truncate">
                                         {expedition.type_expedition?.replace(/_/g, ' ')}
                                     </span>
                                 </div>
-                                <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                                    {expedition.reference}
+                                <div className="flex items-center gap-2">
+                                    <h1 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">
+                                        {expedition.reference}
+                                    </h1>
                                     <button 
-                                        className="text-slate-400 hover:text-indigo-600 transition-colors"
+                                        className="flex-shrink-0 text-gray-400 hover:text-indigo-600 transition-colors p-1"
                                         onClick={() => {
                                             navigator.clipboard.writeText(expedition.reference);
                                             toast.success('Référence copiée');
                                         }}
                                     >
-                                        <Copy className="w-5 h-5" />
+                                        <Copy className="w-4 h-4" />
                                     </button>
-                                </h1>
+                                </div>
+                                <div className="text-xs sm:text-sm text-gray-500 mt-1">
+                                    Créé le {formatDate(expedition.created_at)}
+                                </div>
                             </div>
-                        </div>
-                        <div className="text-sm text-slate-500">
-                            Créé le {formatDate(expedition.created_at)}
                         </div>
                     </div>
                 </div>
@@ -221,11 +223,11 @@ const ExpeditionDetails = () => {
                     formatCurrency={formatCurrency}
                 />
 
-                {/* LAYOUT PRINCIPAL */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* LAYOUT PRINCIPAL - Mobile First */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
 
-                    {/* COLONNE PRINCIPALE (8/12) */}
-                    <div className="lg:col-span-8 space-y-6">
+                    {/* COLONNE PRINCIPALE - Full width on mobile */}
+                    <div className="lg:col-span-2 space-y-4 sm:space-y-6">
                         
                         {/* 🔄 FLUX LOGISTIQUE */}
                         <LogisticsFlow 
@@ -241,11 +243,11 @@ const ExpeditionDetails = () => {
 
                     </div>
 
-                    {/* COLONNE LATÉRALE (4/12) */}
-                    <div className="lg:col-span-4 space-y-6">
+                    {/* COLONNE LATÉRALE - Stack on mobile */}
+                    <div className="lg:col-span-1 space-y-4 sm:space-y-6">
 
                         {/* 👤 CONTACTS */}
-                        <div className="space-y-4">
+                        <div className="space-y-3 sm:space-y-4">
                             <ContactCard 
                                 type="shipper"
                                 contact={expediteur}
@@ -267,41 +269,41 @@ const ExpeditionDetails = () => {
 
                         {/* 💼 COMMISSIONS AGENCE (si disponible) */}
                         {expedition.commission_details && Object.keys(expedition.commission_details).length > 0 && (
-                            <div className="bg-slate-900 border-2 border-slate-800 rounded-2xl overflow-hidden shadow-xl">
-                                <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
-                                    <h2 className="text-sm font-bold text-indigo-400 uppercase tracking-wide">
+                            <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden shadow-sm">
+                                <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-800 flex items-center justify-between">
+                                    <h2 className="text-sm font-semibold text-indigo-400 uppercase">
                                         Ma Commission
                                     </h2>
-                                    <span className="px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-bold uppercase rounded-lg">
-                                        Vue Interne
+                                    <span className="px-2 py-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-medium rounded">
+                                        Interne
                                     </span>
                                 </div>
-                                <div className="p-6 space-y-4">
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-                                            <p className="text-xs font-bold text-slate-400 uppercase mb-2">Enlèvement</p>
-                                            <p className="text-lg font-bold text-white">
+                                <div className="p-4 sm:p-6 space-y-4">
+                                    <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                                        <div className="p-3 sm:p-4 bg-white/5 rounded-lg border border-white/10">
+                                            <p className="text-xs font-medium text-gray-400 mb-1 sm:mb-2">Enlèvement</p>
+                                            <p className="text-base sm:text-lg font-semibold text-white">
                                                 {new Intl.NumberFormat('fr-FR').format(expedition.commission_details.enlevement?.agence || 0)}
                                                 <span className="text-xs text-indigo-400 ml-1">CFA</span>
                                             </p>
                                         </div>
-                                        <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-                                            <p className="text-xs font-bold text-slate-400 uppercase mb-2">Livraison</p>
-                                            <p className="text-lg font-bold text-white">
+                                        <div className="p-3 sm:p-4 bg-white/5 rounded-lg border border-white/10">
+                                            <p className="text-xs font-medium text-gray-400 mb-1 sm:mb-2">Livraison</p>
+                                            <p className="text-base sm:text-lg font-semibold text-white">
                                                 {new Intl.NumberFormat('fr-FR').format(expedition.commission_details.livraison?.agence || 0)}
                                                 <span className="text-xs text-indigo-400 ml-1">CFA</span>
                                             </p>
                                         </div>
-                                        <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-                                            <p className="text-xs font-bold text-slate-400 uppercase mb-2">Emballage</p>
-                                            <p className="text-lg font-bold text-white">
+                                        <div className="p-3 sm:p-4 bg-white/5 rounded-lg border border-white/10">
+                                            <p className="text-xs font-medium text-gray-400 mb-1 sm:mb-2">Emballage</p>
+                                            <p className="text-base sm:text-lg font-semibold text-white">
                                                 {new Intl.NumberFormat('fr-FR').format(expedition.commission_details.emballage?.agence || 0)}
                                                 <span className="text-xs text-indigo-400 ml-1">CFA</span>
                                             </p>
                                         </div>
-                                        <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-                                            <p className="text-xs font-bold text-slate-400 uppercase mb-2">Retards</p>
-                                            <p className="text-lg font-bold text-white">
+                                        <div className="p-3 sm:p-4 bg-white/5 rounded-lg border border-white/10">
+                                            <p className="text-xs font-medium text-gray-400 mb-1 sm:mb-2">Retards</p>
+                                            <p className="text-base sm:text-lg font-semibold text-white">
                                                 {new Intl.NumberFormat('fr-FR').format(expedition.commission_details.retard?.agence || 0)}
                                                 <span className="text-xs text-indigo-400 ml-1">CFA</span>
                                             </p>
@@ -311,8 +313,8 @@ const ExpeditionDetails = () => {
                                     <div className="h-px bg-white/10"></div>
 
                                     <div className="text-right">
-                                        <p className="text-xs font-bold text-indigo-400 uppercase mb-2">Total Commission</p>
-                                        <p className="text-3xl font-bold text-white">
+                                        <p className="text-xs font-medium text-indigo-400 uppercase mb-2">Total Commission</p>
+                                        <p className="text-2xl sm:text-3xl font-bold text-white">
                                             {new Intl.NumberFormat('fr-FR').format(
                                                 (expedition.commission_details.enlevement?.agence || 0) +
                                                 (expedition.commission_details.livraison?.agence || 0) +
@@ -331,7 +333,7 @@ const ExpeditionDetails = () => {
 
             </div>
 
-            {/* MODALES */}
+            {/* MODALES - Mobile Optimized */}
             <ConfirmationModal
                 isOpen={isRefuseModalOpen}
                 onClose={() => {
@@ -353,14 +355,14 @@ const ExpeditionDetails = () => {
                 isLoading={isProcessing}
             >
                 <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    <label className="text-xs font-medium text-gray-600 uppercase">
                         Motif du refus
                     </label>
                     <textarea
                         value={motifRefus}
                         onChange={(e) => setMotifRefus(e.target.value)}
                         placeholder="Ex: Articles non autorisés, poids incorrect, etc..."
-                        className="w-full h-24 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-red-500/10 focus:border-red-500 transition-all resize-none"
+                        className="w-full h-24 px-3 sm:px-4 py-2 sm:py-3 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all resize-none"
                     />
                 </div>
             </ConfirmationModal>
@@ -417,11 +419,11 @@ const ExpeditionDetails = () => {
                 type="success"
                 isLoading={isProcessing}
             >
-                <div className="space-y-5">
-                    <div className="border border-slate-200 rounded-lg px-4 py-3 bg-white">
+                <div className="space-y-4 sm:space-y-5">
+                    <div className="border border-gray-200 rounded-lg px-3 sm:px-4 py-2 sm:py-3 bg-white">
                         <div className="flex items-center justify-between">
-                            <span className="text-xs text-slate-500 font-medium">Montant</span>
-                            <span className="text-base font-semibold text-slate-900">
+                            <span className="text-xs text-gray-500 font-medium">Montant</span>
+                            <span className="text-sm sm:text-base font-semibold text-gray-900">
                                 {formatCurrency(
                                     transactionType === 'frais_annexes'
                                         ? expedition.frais_annexes
@@ -431,9 +433,9 @@ const ExpeditionDetails = () => {
                         </div>
                     </div>
 
-                    <div className="flex items-center justify-between text-xs text-slate-500">
+                    <div className="flex items-center justify-between text-xs text-gray-500">
                         <span>Type</span>
-                        <span className="font-medium text-slate-700">
+                        <span className="font-medium text-gray-700">
                             {transactionType === 'frais_annexes'
                                 ? 'Frais annexes / HUB'
                                 : 'Frais de transport'}
@@ -441,14 +443,14 @@ const ExpeditionDetails = () => {
                     </div>
 
                     <div className="space-y-1.5">
-                        <label className="text-xs font-medium text-slate-600">
+                        <label className="text-xs font-medium text-gray-600">
                             Méthode de paiement
                         </label>
                         <select
                             value={paymentMethod}
                             onChange={(e) => setPaymentMethod(e.target.value)}
-                            className="w-full px-3 py-2.5 border border-slate-300 rounded-md text-sm bg-white
-                            focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition"
+                            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white
+                            focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
                         >
                             <option value="cash">Espèces</option>
                             <option value="mobile_money">Mobile Money</option>
@@ -457,7 +459,7 @@ const ExpeditionDetails = () => {
 
                     {paymentMethod === 'mobile_money' && (
                         <div className="space-y-1.5">
-                            <label className="text-xs font-medium text-slate-600">
+                            <label className="text-xs font-medium text-gray-600">
                                 Référence transaction
                             </label>
                             <input
@@ -465,13 +467,13 @@ const ExpeditionDetails = () => {
                                 value={paymentReference}
                                 onChange={(e) => setPaymentReference(e.target.value)}
                                 placeholder="Ex: OM-123456789"
-                                className="w-full px-3 py-2.5 border border-slate-300 rounded-md text-sm font-mono
-                                focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition"
+                                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm font-mono
+                                focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
                             />
                         </div>
                     )}
 
-                    <div className="text-sm text-slate-500 border-t pt-3">
+                    <div className="text-xs sm:text-sm text-gray-500 border-t border-gray-200 pt-3">
                         Vérifiez que le paiement a bien été reçu avant validation.
                     </div>
                 </div>

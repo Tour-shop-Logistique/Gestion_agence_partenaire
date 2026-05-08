@@ -49,7 +49,7 @@ export const useExpedition = () => {
     const loadExpeditions = useCallback((params = { page: 1 }, forceRefresh = false) => {
         // Si on est déjà en cours de chargement, on ne relance pas l'appel (sauf forceRefresh)
         if (!forceRefresh && status === "loading") {
-            return;
+            return Promise.resolve();
         }
 
         // Optimisation : ne pas recharger si les filtres sont identiques et qu'on a déjà réussi
@@ -58,11 +58,11 @@ export const useExpedition = () => {
             String(params.date_debut) === String(lastFilters.date_debut) &&
             String(params.date_fin) === String(lastFilters.date_fin);
 
-        if (!forceRefresh && lastFilters && isSameParams && status === 'succeeded') {
-            return;
+        if (!forceRefresh && lastFilters && isSameParams && status === 'succeeded' && expeditions.length > 0) {
+            return Promise.resolve();
         }
         return dispatch(fetchExpeditions(params));
-    }, [dispatch, lastFilters, status]);
+    }, [dispatch, lastFilters, status, expeditions.length]);
 
     const loadColis = useCallback((params = { page: 1 }, forceRefresh = false) => {
         if (!forceRefresh && (colisStatus === 'loading')) {

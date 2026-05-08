@@ -49,22 +49,22 @@ const ParcelTable = ({ colis = [], formatCurrency }) => {
 
             {/* Table */}
             <div className="overflow-x-auto">
-                <table className="w-full border-collapse min-w-[700px]">
+                <table className="w-full border-collapse">
                     <thead>
                         <tr className="bg-slate-50 border-b border-slate-200">
-                            <th className="px-6 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                            <th className="px-3 py-3 text-left text-[10px] font-bold text-slate-600 uppercase tracking-wider w-[15%]">
                                 Code
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                            <th className="px-3 py-3 text-left text-[10px] font-bold text-slate-600 uppercase tracking-wider w-[35%]">
                                 Désignation
                             </th>
-                            <th className="px-6 py-3 text-right text-xs font-bold text-slate-600 uppercase tracking-wider">
+                            <th className="px-3 py-3 text-center text-[10px] font-bold text-slate-600 uppercase tracking-wider w-[12%]">
                                 Poids
                             </th>
-                            <th className="px-6 py-3 text-right text-xs font-bold text-slate-600 uppercase tracking-wider">
+                            <th className="px-3 py-3 text-center text-[10px] font-bold text-slate-600 uppercase tracking-wider w-[18%]">
                                 Catégorie
                             </th>
-                            <th className="px-6 py-3 text-right text-xs font-bold text-slate-600 uppercase tracking-wider">
+                            <th className="px-3 py-3 text-right text-[10px] font-bold text-slate-600 uppercase tracking-wider w-[20%]">
                                 Frais
                             </th>
                         </tr>
@@ -79,19 +79,19 @@ const ParcelTable = ({ colis = [], formatCurrency }) => {
                                 `}
                             >
                                 {/* Code */}
-                                <td className="px-6 py-4">
-                                    <span className="text-sm font-mono font-bold text-slate-700">
+                                <td className="px-3 py-3">
+                                    <span className="text-xs font-mono font-bold text-slate-700 block truncate">
                                         {parcel.code_colis || `COL-${idx + 1}`}
                                     </span>
                                 </td>
 
                                 {/* Désignation */}
-                                <td className="px-6 py-4">
-                                    <div>
-                                        <p className="text-sm font-bold text-slate-900">
+                                <td className="px-3 py-3">
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-bold text-slate-900 truncate">
                                             {parcel.designation}
                                         </p>
-                                        <p className="text-xs text-slate-500 mt-1 line-clamp-1">
+                                        <p className="text-[10px] text-slate-500 mt-0.5 truncate">
                                             {Array.isArray(parcel.articles) 
                                                 ? parcel.articles.join(', ') 
                                                 : parcel.articles || 'N/A'}
@@ -100,28 +100,30 @@ const ParcelTable = ({ colis = [], formatCurrency }) => {
                                 </td>
 
                                 {/* Poids */}
-                                <td className="px-6 py-4 text-right">
-                                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-50 border border-blue-200 rounded-lg">
-                                        <span className="text-sm font-bold text-blue-900">
+                                <td className="px-3 py-3 text-center">
+                                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 border border-blue-200 rounded-lg whitespace-nowrap">
+                                        <span className="text-xs font-bold text-blue-900">
                                             {parcel.poids}
                                         </span>
-                                        <span className="text-xs font-bold text-blue-600">KG</span>
+                                        <span className="text-[10px] font-bold text-blue-600">KG</span>
                                     </span>
                                 </td>
 
                                 {/* Catégorie */}
-                                <td className="px-6 py-4 text-right">
-                                    <span className="text-sm font-medium text-slate-600 uppercase">
+                                <td className="px-3 py-3 text-center">
+                                    <span className="text-xs font-medium text-slate-600 uppercase truncate block">
                                         {parcel.category?.nom || '-'}
                                     </span>
                                 </td>
 
                                 {/* Frais */}
-                                <td className="px-6 py-4 text-right">
-                                    <span className="text-sm font-bold text-slate-900">
-                                        {new Intl.NumberFormat('fr-FR').format(parcel.montant_colis_total || 0)}
-                                    </span>
-                                    <span className="text-xs text-slate-500 ml-1">CFA</span>
+                                <td className="px-3 py-3 text-right">
+                                    <div className="flex flex-col items-end">
+                                        <span className="text-sm font-bold text-slate-900 tabular-nums">
+                                            {new Intl.NumberFormat('fr-FR').format(parcel.montant_colis_total || 0)}
+                                        </span>
+                                        <span className="text-[9px] text-slate-500 font-bold">CFA</span>
+                                    </div>
                                 </td>
                             </tr>
                         ))}
@@ -130,25 +132,27 @@ const ParcelTable = ({ colis = [], formatCurrency }) => {
                     {/* Footer avec totaux */}
                     <tfoot>
                         <tr className="bg-slate-100 border-t-2 border-slate-300">
-                            <td colSpan="2" className="px-6 py-4">
-                                <span className="text-sm font-bold text-slate-700 uppercase">
+                            <td colSpan="2" className="px-3 py-3">
+                                <span className="text-xs font-bold text-slate-700 uppercase">
                                     Total ({colis.length} colis)
                                 </span>
                             </td>
-                            <td className="px-6 py-4 text-right">
-                                <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 border border-blue-300 rounded-lg">
-                                    <span className="text-sm font-bold text-blue-900">
+                            <td className="px-3 py-3 text-center">
+                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 border border-blue-300 rounded-lg whitespace-nowrap">
+                                    <span className="text-xs font-bold text-blue-900">
                                         {totalWeight.toFixed(1)}
                                     </span>
-                                    <span className="text-xs font-bold text-blue-700">KG</span>
+                                    <span className="text-[10px] font-bold text-blue-700">KG</span>
                                 </span>
                             </td>
-                            <td className="px-6 py-4"></td>
-                            <td className="px-6 py-4 text-right">
-                                <span className="text-base font-bold text-indigo-600">
-                                    {new Intl.NumberFormat('fr-FR').format(totalAmount)}
-                                </span>
-                                <span className="text-xs text-indigo-500 ml-1 font-bold">CFA</span>
+                            <td className="px-3 py-3"></td>
+                            <td className="px-3 py-3 text-right">
+                                <div className="flex flex-col items-end">
+                                    <span className="text-base font-bold text-indigo-600 tabular-nums">
+                                        {new Intl.NumberFormat('fr-FR').format(totalAmount)}
+                                    </span>
+                                    <span className="text-[10px] text-indigo-500 font-bold">CFA</span>
+                                </div>
                             </td>
                         </tr>
                     </tfoot>

@@ -17,7 +17,7 @@ import {
 const Expeditions = () => {
     const navigate = useNavigate();
     const { expeditions, meta, loadExpeditions, status, lastFilters } = useExpedition();
-    const { agencyData, fetchAgencyData } = useAgency();
+    const { data: agencyData, fetchAgencyData } = useAgency();
 
     // Helper to get today's date in YYYY-MM-DD
     const getTodayDate = () => {
@@ -748,10 +748,10 @@ const Expeditions = () => {
 
                         {/* Desktop View (Table) */}
                         <table className="hidden lg:table w-full text-left border-collapse">
-                            {/* Sticky Premium Header */}
+                            {/* Table Header */}
                             <thead className="sticky top-0 z-10">
-                                <tr className="bg-slate-50/90 backdrop-blur-md border-b border-slate-200/60">
-                                    <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wide w-[14%]">
+                                <tr className="bg-gray-50 border-b border-gray-200">
+                                    <th className="px-4 py-3 text-xs font-medium text-gray-600 uppercase w-[14%]">
                                         <SortableHeader
                                             label="Référence"
                                             sortKey="reference"
@@ -759,13 +759,13 @@ const Expeditions = () => {
                                             onSort={handleSort}
                                         />
                                     </th>
-                                    <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wide w-[22%]">
+                                    <th className="px-4 py-3 text-xs font-medium text-gray-600 uppercase w-[22%]">
                                         Expéditeur / Destinataire
                                     </th>
-                                    <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wide w-[12%]">
+                                    <th className="px-4 py-3 text-xs font-medium text-gray-600 uppercase w-[12%]">
                                         Trajet
                                     </th>
-                                    <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wide w-[16%]">
+                                    <th className="px-4 py-3 text-xs font-medium text-gray-600 uppercase w-[16%]">
                                         <SortableHeader
                                             label="Montant"
                                             sortKey="montant"
@@ -773,7 +773,7 @@ const Expeditions = () => {
                                             onSort={handleSort}
                                         />
                                     </th>
-                                    <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wide w-[20%]">
+                                    <th className="px-4 py-3 text-xs font-medium text-gray-600 uppercase w-[20%]">
                                         <SortableHeader
                                             label="Statut"
                                             sortKey="statut"
@@ -781,53 +781,48 @@ const Expeditions = () => {
                                             onSort={handleSort}
                                         />
                                     </th>
-                                    <th className="px-6 py-5 text-xs font-bold text-slate-500 uppercase tracking-wide text-right w-[16%]">
+                                    <th className="px-4 py-3 text-xs font-medium text-gray-600 uppercase text-right w-[16%]">
                                         Actions
                                     </th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100/60">
+                            <tbody className="divide-y divide-gray-100">
                                 {status === 'loading' && expeditions.length === 0 ? (
-                                    // Premium Skeleton Loading
+                                    // Skeleton Loading
                                     Array(5).fill(0).map((_, i) => (
                                         <tr key={i} className="animate-pulse">
-                                            <td className="px-8 py-6">
-                                                <div className="space-y-2.5">
-                                                    <div className="h-4 bg-slate-200/60 rounded-lg w-32"></div>
-                                                    <div className="h-3 bg-slate-100/60 rounded w-24"></div>
-                                                </div>
-                                            </td>
-                                            <td className="px-8 py-6">
-                                                <div className="space-y-2.5">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-6 h-6 bg-slate-200/60 rounded-lg"></div>
-                                                        <div className="h-3 bg-slate-200/60 rounded w-28"></div>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-6 h-6 bg-slate-100/60 rounded-lg"></div>
-                                                        <div className="h-3 bg-slate-100/60 rounded w-28"></div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-8 py-6">
-                                                <div className="h-16 bg-slate-100/60 rounded-xl w-24"></div>
-                                            </td>
-                                            <td className="px-8 py-6">
+                                            <td className="px-4 py-3">
                                                 <div className="space-y-2">
-                                                    <div className="h-4 bg-slate-200/60 rounded w-24"></div>
-                                                    <div className="h-3 bg-slate-100/60 rounded w-16"></div>
+                                                    <div className="h-4 bg-gray-200 rounded w-24"></div>
+                                                    <div className="h-3 bg-gray-100 rounded w-32"></div>
                                                 </div>
                                             </td>
-                                            <td className="px-8 py-6">
+                                            <td className="px-4 py-3">
                                                 <div className="space-y-2">
-                                                    <div className="h-6 bg-slate-200/60 rounded-full w-24"></div>
-                                                    <div className="h-5 bg-slate-100/60 rounded-full w-28"></div>
+                                                    <div className="h-4 bg-gray-200 rounded w-32"></div>
+                                                    <div className="h-4 bg-gray-200 rounded w-28"></div>
                                                 </div>
                                             </td>
-                                            <td className="px-8 py-6">
-                                                <div className="flex justify-end gap-2">
-                                                    <div className="h-9 w-9 bg-slate-100/60 rounded-xl"></div>
-                                                    <div className="h-9 w-9 bg-slate-100/60 rounded-xl"></div>
+                                            <td className="px-4 py-3">
+                                                <div className="flex justify-center">
+                                                    <div className="h-12 bg-gray-200 rounded w-20"></div>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <div className="space-y-2">
+                                                    <div className="h-4 bg-gray-200 rounded w-28"></div>
+                                                    <div className="h-3 bg-gray-100 rounded w-20"></div>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <div className="space-y-2">
+                                                    <div className="h-6 bg-gray-200 rounded w-24"></div>
+                                                    <div className="h-3 bg-gray-100 rounded w-16"></div>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3 text-right">
+                                                <div className="flex justify-end">
+                                                    <div className="h-8 w-8 bg-gray-200 rounded"></div>
                                                 </div>
                                             </td>
                                         </tr>
@@ -836,90 +831,90 @@ const Expeditions = () => {
                                     filteredExpeditions.map((exp) => (
                                         <tr
                                             key={exp.id}
-                                            className={`group relative hover:bg-slate-50/40 transition-all duration-200 ease-out border-l-4 ${getStatusBorderColor(exp.statut_expedition)} cursor-pointer`}
+                                            className={`group relative hover:bg-gray-50 transition-colors border-l-2 ${getStatusBorderColor(exp.statut_expedition)} cursor-pointer`}
                                             onClick={() => navigate(`/expeditions/${exp.id}`)}
                                         >
-                                            <td className="px-6 py-7">
-                                                <div className="flex flex-col gap-1.5">
-                                                    <span className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors duration-200 leading-tight">
+                                            <td className="px-4 py-3">
+                                                <div className="flex flex-col gap-0.5">
+                                                    <span className="text-sm font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
                                                         {exp.reference}
                                                     </span>
-                                                    <span className="text-xs font-medium text-slate-400 leading-tight">
+                                                    <span className="text-xs text-gray-500">
                                                         {formatDate(exp.created_at)}
                                                     </span>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-7">
-                                                <div className="flex flex-col gap-3">
-                                                    <div className="flex items-center gap-2.5">
-                                                        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100/50 border border-blue-200/40 flex items-center justify-center flex-shrink-0">
-                                                            <span className="text-xs font-bold text-blue-600">E</span>
+                                            <td className="px-4 py-3">
+                                                <div className="flex flex-col gap-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-6 h-6 rounded-md bg-blue-50 border border-blue-200 flex items-center justify-center flex-shrink-0">
+                                                            <span className="text-xs font-semibold text-blue-600">E</span>
                                                         </div>
-                                                        <span className="text-sm font-semibold text-slate-700 leading-tight">{exp.expediteur?.nom_prenom}</span>
+                                                        <span className="text-sm font-medium text-gray-700 truncate">{exp.expediteur?.nom_prenom}</span>
                                                     </div>
-                                                    <div className="flex items-center gap-2.5">
-                                                        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-50 to-purple-100/50 border border-purple-200/40 flex items-center justify-center flex-shrink-0">
-                                                            <span className="text-xs font-bold text-purple-600">D</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-6 h-6 rounded-md bg-purple-50 border border-purple-200 flex items-center justify-center flex-shrink-0">
+                                                            <span className="text-xs font-semibold text-purple-600">D</span>
                                                         </div>
-                                                        <span className="text-sm font-semibold text-slate-700 leading-tight">{exp.destinataire?.nom_prenom}</span>
+                                                        <span className="text-sm font-medium text-gray-700 truncate">{exp.destinataire?.nom_prenom}</span>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-7">
+                                            <td className="px-4 py-3">
                                                 <div className="flex items-center justify-center">
-                                                    <div className="flex flex-col items-center gap-1.5">
-                                                        <span className="text-xs font-bold text-slate-600 uppercase tracking-wide px-2.5 py-1 bg-slate-100/60 rounded-md whitespace-nowrap">
+                                                    <div className="flex flex-col items-center gap-1">
+                                                        <span className="text-xs font-medium text-gray-600 px-2 py-0.5 bg-gray-100 rounded whitespace-nowrap">
                                                             {exp.pays_depart}
                                                         </span>
-                                                        <svg className="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <svg className="w-3 h-3 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                                                         </svg>
-                                                        <span className="text-xs font-bold text-indigo-600 uppercase tracking-wide px-2.5 py-1 bg-indigo-50/60 rounded-md border border-indigo-100 whitespace-nowrap">
+                                                        <span className="text-xs font-medium text-indigo-600 px-2 py-0.5 bg-indigo-50 rounded border border-indigo-200 whitespace-nowrap">
                                                             {exp.pays_destination}
                                                         </span>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-7">
-                                                <div className="flex flex-col gap-2">
-                                                    <span className="text-base font-bold text-slate-900 tabular-nums leading-tight">
+                                            <td className="px-4 py-3">
+                                                <div className="flex flex-col gap-1">
+                                                    <span className="text-sm font-semibold text-gray-900 tabular-nums">
                                                         {formatPriceDual(exp.montant_expedition)}
                                                     </span>
-                                                    <div className="flex flex-wrap items-center gap-2 mt-1">
-                                                        <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">
+                                                    <div className="flex flex-wrap items-center gap-1.5">
+                                                        <span className="text-xs font-medium text-gray-500 whitespace-nowrap">
                                                             {exp.colis?.length || 0} Colis
                                                         </span>
-                                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border shadow-sm whitespace-nowrap ${getTypeStyle(exp.type_expedition)}`}>
+                                                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium border whitespace-nowrap ${getTypeStyle(exp.type_expedition)}`}>
                                                             {getTypeLabel(exp.type_expedition)}
                                                         </span>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-7">
-                                                <div className="flex flex-col gap-2.5">
-                                                    <span className={`inline-flex items-center justify-center px-2.5 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wide border whitespace-nowrap ${getStatusStyle(exp.statut_expedition)}`}>
+                                            <td className="px-4 py-3">
+                                                <div className="flex flex-col gap-1.5">
+                                                    <span className={`inline-flex items-center justify-center px-2 py-1 rounded text-[10px] font-medium border whitespace-nowrap ${getStatusStyle(exp.statut_expedition)}`}>
                                                         {getStatusLabel(exp.statut_expedition)}
                                                     </span>
-                                                    <div className="flex flex-col gap-1.5 pt-1.5 border-t border-slate-100/60">
-                                                        <span className={`text-[10px] font-bold uppercase whitespace-nowrap ${exp.statut_paiement_expedition === 'paye' ? 'text-emerald-600' : 'text-orange-500'}`}>
+                                                    <div className="flex flex-col gap-0.5 pt-1 border-t border-gray-100">
+                                                        <span className={`text-[10px] font-medium whitespace-nowrap ${exp.statut_paiement_expedition === 'paye' ? 'text-emerald-600' : 'text-orange-500'}`}>
                                                             T: {exp.statut_paiement_expedition === 'paye' ? 'Payé' : 'Attente'}
                                                         </span>
                                                         {parseFloat(exp.frais_annexes || 0) > 0 && (
-                                                            <span className={`text-[10px] font-bold uppercase whitespace-nowrap ${exp.statut_paiement_frais === 'paye' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                            <span className={`text-[10px] font-medium whitespace-nowrap ${exp.statut_paiement_frais === 'paye' ? 'text-emerald-600' : 'text-rose-600'}`}>
                                                                 H: {exp.statut_paiement_frais === 'paye' ? 'Payé' : 'Bloqué'}
                                                             </span>
                                                         )}
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-7 text-right">
+                                            <td className="px-4 py-3 text-right">
                                                 <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                                                     <button
                                                         onClick={() => handlePrintReceipt(exp)}
-                                                        className="group/btn relative p-2.5 hover:bg-white rounded-xl transition-all duration-200 text-slate-400 hover:text-emerald-600 border border-transparent hover:border-slate-200 hover:shadow-lg hover:shadow-emerald-200/50"
+                                                        className="p-2 hover:bg-white rounded-lg transition-colors text-gray-400 hover:text-emerald-600 border border-transparent hover:border-gray-200"
                                                         title="Imprimer les reçus"
                                                     >
-                                                        <svg className="w-5 h-5 transition-transform duration-200 group-hover/btn:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                                                         </svg>
                                                     </button>
@@ -929,19 +924,15 @@ const Expeditions = () => {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="7" className="px-8 py-24 text-center">
+                                        <td colSpan="7" className="px-4 py-16 text-center">
                                             <div className="flex flex-col items-center max-w-md mx-auto">
-                                                <div className="relative w-24 h-24 mb-6">
-                                                    <div className="absolute inset-0 bg-gradient-to-br from-slate-100 to-slate-50 rounded-3xl rotate-6"></div>
-                                                    <div className="absolute inset-0 bg-gradient-to-br from-slate-50 to-white rounded-3xl -rotate-6 shadow-lg"></div>
-                                                    <div className="relative w-full h-full bg-white rounded-3xl shadow-xl flex items-center justify-center border border-slate-100">
-                                                        <svg className="w-12 h-12 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                                                        </svg>
-                                                    </div>
+                                                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                                    <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                                                    </svg>
                                                 </div>
-                                                <h3 className="text-xl font-bold text-slate-900 mb-2 tracking-tight">Aucune expédition</h3>
-                                                <p className="text-sm font-medium text-slate-500 leading-relaxed">
+                                                <h3 className="text-lg font-semibold text-gray-900 mb-1">Aucune expédition</h3>
+                                                <p className="text-sm text-gray-500">
                                                     Aucune donnée ne correspond à vos critères.
                                                 </p>
                                             </div>

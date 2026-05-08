@@ -67,8 +67,12 @@ export const useAgency = () => {
 
   // Actions pour les utilisateurs
   const fetchAgencyUsers = useCallback((forceRefresh = false) => {
+    // Éviter les appels répétés si on a déjà des utilisateurs et pas de forceRefresh
+    if (!forceRefresh && users && users.length > 0 && usersStatus === 'succeeded') {
+      return Promise.resolve({ payload: users });
+    }
     return dispatch(fetchUsers());
-  }, [dispatch]);
+  }, [dispatch, users, usersStatus]);
 
   const createAgencyUser = useCallback((userData) => {
     return dispatch(createUser(userData));
