@@ -365,7 +365,7 @@ const Colis = () => {
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead>
-                                <tr className="bg-slate-50/80 border-b border-slate-200">
+                                <tr className="bg-slate-50/80 border-b-2 border-slate-200">
                                     <th className="px-4 py-5 w-10">
                                         <input
                                             type="checkbox"
@@ -382,7 +382,7 @@ const Colis = () => {
                                     <th className="px-6 py-5 text-[10px] font-semibold text-slate-500 uppercase tracking-wide text-right">Détails</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100">
+                            <tbody className="divide-y divide-slate-200">
                                 {loadingColis && allColis.length === 0 ? (
                                     Array(5).fill(0).map((_, i) => (
                                         <tr key={i} className="animate-pulse">

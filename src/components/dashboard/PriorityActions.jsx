@@ -22,7 +22,7 @@ const PriorityActions = ({ operational, pendingDemandesCount }) => {
             urgent: (operational.colis_attente_reception_depart || 0) > 10,
             icon: ArchiveBoxIcon,
             link: '/colis',
-            color: 'red',
+            color: 'orange',
             description: 'Colis clients en attente de réception physique'
         },
         {
@@ -52,27 +52,27 @@ const PriorityActions = ({ operational, pendingDemandesCount }) => {
     const getColorClasses = (color, isUrgent) => {
         if (isUrgent) {
             return {
-                bg: 'bg-gradient-to-br from-red-500 to-red-600',
-                hover: 'hover:from-red-600 hover:to-red-700',
-                iconBg: 'bg-white',
-                iconColor: 'text-red-600',
-                text: 'text-white',
-                textSecondary: 'text-red-50',
-                countText: 'text-white',
-                subtitleText: 'text-red-100'
+                bg: 'bg-gradient-to-br from-sky-100 to-sky-200',
+                hover: 'hover:from-sky-200 hover:to-sky-300',
+                iconBg: 'bg-sky-500',
+                iconColor: 'text-white',
+                text: 'text-sky-900',
+                textSecondary: 'text-sky-700',
+                countText: 'text-sky-900',
+                subtitleText: 'text-sky-600'
             };
         }
 
         const colorMap = {
-            red: {
-                bg: 'bg-gradient-to-br from-red-50 to-red-100',
-                hover: 'hover:from-red-100 hover:to-red-200',
-                iconBg: 'bg-red-500',
+            orange: {
+                bg: 'bg-gradient-to-br from-sky-50 to-sky-100',
+                hover: 'hover:from-sky-100 hover:to-sky-200',
+                iconBg: 'bg-sky-500',
                 iconColor: 'text-white',
-                text: 'text-red-900',
-                textSecondary: 'text-red-700',
-                countText: 'text-red-900',
-                subtitleText: 'text-red-600'
+                text: 'text-sky-900',
+                textSecondary: 'text-sky-700',
+                countText: 'text-sky-900',
+                subtitleText: 'text-sky-500'
             },
             emerald: {
                 bg: 'bg-gradient-to-br from-emerald-50 to-emerald-100',
@@ -117,7 +117,7 @@ const PriorityActions = ({ operational, pendingDemandesCount }) => {
                         <Link
                             key={action.id}
                             to={action.link}
-                            className={`${colors.bg} ${colors.hover} rounded-lg p-2 sm:p-4 transition-all duration-200 border ${action.urgent ? 'border-red-400 shadow-md' : 'border-slate-200'} group relative hover:shadow-lg`}
+                            className={`${colors.bg} ${colors.hover} rounded-lg p-2 sm:p-4 transition-all duration-200 border ${action.urgent && action.id === 'reception' ? 'border-sky-300 shadow-md' : action.urgent ? 'border-red-400 shadow-md' : 'border-slate-200'} group relative hover:shadow-lg`}
                         >
                             {/* Layout vertical compact pour mobile */}
                             <div className="flex flex-col items-center gap-2 text-center">

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { useAgency } from "../hooks/useAgency";
 import { selectIsAdmin } from "../store/slices/authSlice";
+import { selectAgencyConfigured } from "../store/slices/agencySlice";
 import { getLogoUrl } from "../utils/apiConfig";
 import { toast } from "../utils/toast";
 
@@ -15,10 +16,60 @@ import {
   XMarkIcon,
   ArrowPathIcon,
   GlobeAltIcon,
-  MapIcon,
+  MapPinIcon as MapPinSolidIcon,
   BriefcaseIcon,
-  CameraIcon
+  CameraIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
+
+/* ─────────────────────────────────────────────
+   Composants utilitaires
+───────────────────────────────────────────── */
+
+/** Label de champ */
+const FieldLabel = ({ children }) => (
+  <label className="block text-xs font-medium text-slate-500 mb-1.5">
+    {children}
+  </label>
+);
+
+/** Input standard */
+const Field = ({ icon: Icon, ...props }) => (
+  <div className="relative">
+    {Icon && (
+      <Icon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+    )}
+    <input
+      {...props}
+      className={`w-full ${Icon ? "pl-9" : "pl-3"} pr-3 py-2.5 text-sm text-slate-800 bg-white border border-slate-200 rounded-lg
+        focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400
+        disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-default
+        transition-colors placeholder:text-slate-300`}
+    />
+  </div>
+);
+
+/** En-tête de section */
+const SectionHeader = ({ icon: Icon, title, action }) => (
+  <div className="flex items-center justify-between mb-5">
+    <div className="flex items-center gap-2.5">
+      <Icon className="w-4 h-4 text-slate-400" />
+      <h2 className="text-sm font-semibold text-slate-700">{title}</h2>
+    </div>
+    {action}
+  </div>
+);
+
+/** Carte de section */
+const Card = ({ children, className = "" }) => (
+  <div className={`bg-white border border-slate-200 rounded-xl p-5 sm:p-6 ${className}`}>
+    {children}
+  </div>
+);
+
+/* ─────────────────────────────────────────────
+   Page principale
+───────────────────────────────────────────── */
 
 const AgencyProfile = () => {
   const {
@@ -30,168 +81,144 @@ const AgencyProfile = () => {
   } = useAgency();
 
   const isAdmin = useSelector(selectIsAdmin);
+  const agencyConfigured = useSelector(selectAgencyConfigured);
 
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  const defaultHoraires = [
+    { jour: "Lundi",    ouverture: "08:00", fermeture: "18:00", ferme: false },
+    { jour: "Mardi",    ouverture: "08:00", fermeture: "18:00", ferme: false },
+    { jour: "Mercredi", ouverture: "08:00", fermeture: "18:00", ferme: false },
+    { jour: "Jeudi",    ouverture: "08:00", fermeture: "18:00", ferme: false },
+    { jour: "Vendredi", ouverture: "08:00", fermeture: "18:00", ferme: false },
+    { jour: "Samedi",   ouverture: "08:00", fermeture: "12:00", ferme: false },
+  ];
+
   const [formData, setFormData] = useState({
-    name: "",
-    code_agence: "",
-    address: "",
-    ville: "",
-    pays: "Côte d'Ivoire",
-    telephone: "",
-    email: "",
-    website: "",
-    latitude: "",
-    longitude: "",
-    businessHours: "",
-    description: "",
-    commune: "",
-    services: [],
-    horaires: [
-      { jour: "lundi", ouverture: "08:00", fermeture: "18:00", ferme: false },
-      { jour: "mardi", ouverture: "08:00", fermeture: "18:00", ferme: false },
-      { jour: "mercredi", ouverture: "08:00", fermeture: "18:00", ferme: false },
-      { jour: "jeudi", ouverture: "08:00", fermeture: "18:00", ferme: false },
-      { jour: "vendredi", ouverture: "08:00", fermeture: "18:00", ferme: false },
-      { jour: "samedi", ouverture: "08:00", fermeture: "12:00", ferme: false },
-    ],
-    logo: null,
+    name: "", code_agence: "", address: "", ville: "",
+    pays: "Côte d'Ivoire", telephone: "", email: "", website: "",
+    latitude: "", longitude: "", description: "", commune: "",
+    horaires: defaultHoraires, logo: null,
   });
 
-  const [logoFile, setLogoFile] = useState(null);
+  const [logoFile, setLogoFile]       = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
   const [originalFormData, setOriginalFormData] = useState(null);
 
+  /* Ouvrir l'édition automatiquement si pas encore configuré */
   useEffect(() => {
-    if (agencyData && agencyData.agence) {
-      const agence = agencyData.agence;
-      const newFormData = { ...formData };
+    if (!agencyConfigured && isAdmin) setIsEditing(true);
+  }, [agencyConfigured, isAdmin]);
 
-      if (agence.nom_agence) newFormData.name = agence.nom_agence;
-      if (agence.code_agence) newFormData.code_agence = agence.code_agence;
-      if (agence.adresse) newFormData.address = agence.adresse;
-      if (agence.ville) newFormData.ville = agence.ville;
-      if (agence.pays) newFormData.pays = agence.pays;
-      if (agence.telephone) newFormData.telephone = agence.telephone;
-      if (agence.email) newFormData.email = agence.email;
-      if (agence.website) newFormData.website = agence.website;
-      if (agence.description) newFormData.description = agence.description;
-      if (agence.commune) newFormData.commune = agence.commune;
-      if (agence.logo) newFormData.logo = agence.logo;
+  /* Remplir le formulaire depuis Redux */
+  useEffect(() => {
+    if (agencyData?.agence) {
+      const a = agencyData.agence;
+      const next = { ...formData };
+      if (a.nom_agence)  next.name        = a.nom_agence;
+      if (a.code_agence) next.code_agence = a.code_agence;
+      if (a.adresse)     next.address     = a.adresse;
+      if (a.ville)       next.ville       = a.ville;
+      if (a.pays)        next.pays        = a.pays;
+      if (a.telephone)   next.telephone   = a.telephone;
+      if (a.email)       next.email       = a.email;
+      if (a.website)     next.website     = a.website;
+      if (a.description) next.description = a.description;
+      if (a.commune)     next.commune     = a.commune;
+      if (a.logo)        next.logo        = a.logo;
+      if (a.latitude  != null) next.latitude  = String(a.latitude);
+      if (a.longitude != null) next.longitude = String(a.longitude);
 
-      if (agence.latitude !== undefined && agence.latitude !== null) {
-        newFormData.latitude = String(agence.latitude);
-      }
-      if (agence.longitude !== undefined && agence.longitude !== null) {
-        newFormData.longitude = String(agence.longitude);
-      }
-
-      if (Array.isArray(agence.horaires) && agence.horaires.length > 0) {
-        const horairesMap = {};
-        agence.horaires.forEach((h) => {
-          if (h.jour) horairesMap[h.jour] = h;
-        });
-
-        newFormData.horaires = newFormData.horaires.map((horaire) => {
-          const updatedHoraire = horairesMap[horaire.jour];
-          if (updatedHoraire) {
-            return {
-              ...horaire,
-              ouverture: updatedHoraire.ouverture || horaire.ouverture,
-              fermeture: updatedHoraire.fermeture || horaire.fermeture,
-              ferme: updatedHoraire.ferme !== undefined ? updatedHoraire.ferme : horaire.ferme,
-            };
-          }
-          return horaire;
+      if (Array.isArray(a.horaires) && a.horaires.length > 0) {
+        const map = {};
+        a.horaires.forEach((h) => { if (h.jour) map[h.jour.toLowerCase()] = h; });
+        next.horaires = next.horaires.map((h) => {
+          const upd = map[h.jour.toLowerCase()];
+          return upd
+            ? { ...h, ouverture: upd.ouverture || h.ouverture, fermeture: upd.fermeture || h.fermeture, ferme: upd.ferme ?? h.ferme }
+            : h;
         });
       }
 
-      setFormData(newFormData);
-      if (!originalFormData && agencyData?.agence) {
-        setOriginalFormData({ ...newFormData });
-      }
+      setFormData(next);
+      if (!originalFormData) setOriginalFormData({ ...next });
     }
-  }, [agencyData, originalFormData]);
+  }, [agencyData]); // eslint-disable-line
 
   useEffect(() => {
-    if (agencyError) {
-      toast.error(agencyError);
-    }
+    if (agencyError) toast.error(agencyError);
   }, [agencyError]);
 
-  const handleInputChange = (e) => {
+  /* Handlers */
+  const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((p) => ({ ...p, [name]: value }));
   };
 
   const handleLogoChange = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setLogoFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setLogoPreview(reader.result);
-      reader.readAsDataURL(file);
-    }
+    if (!file) return;
+    setLogoFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setLogoPreview(reader.result);
+    reader.readAsDataURL(file);
   };
 
   const handleHoraireChange = (index, field, value) => {
-    const newHoraires = [...formData.horaires];
-    newHoraires[index] = { ...newHoraires[index], [field]: value };
-    setFormData((prev) => ({ ...prev, horaires: newHoraires }));
+    setFormData((p) => {
+      const h = [...p.horaires];
+      h[index] = { ...h[index], [field]: value };
+      return { ...p, horaires: h };
+    });
   };
 
   const getCurrentLocation = () => {
-    if (navigator.geolocation) {
-      toast.info("Récupération de votre position...");
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setFormData((prev) => ({
-            ...prev,
-            latitude: position.coords.latitude.toFixed(6),
-            longitude: position.coords.longitude.toFixed(6),
-          }));
-          toast.success("Localisation récupérée avec succès !");
-        },
-        () => {
-          toast.error("Impossible de récupérer la localisation.");
-        }
-      );
-    }
+    if (!navigator.geolocation) return;
+    toast.info("Récupération de votre position…");
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        setFormData((p) => ({
+          ...p,
+          latitude:  coords.latitude.toFixed(6),
+          longitude: coords.longitude.toFixed(6),
+        }));
+        toast.success("Position récupérée.");
+      },
+      () => toast.error("Impossible de récupérer la localisation.")
+    );
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e?.preventDefault) e.preventDefault();
     if (!isAdmin) return;
     setSaving(true);
-
     try {
-      const agencyPayload = {
-        nom_agence: formData.name,
+      const payload = {
+        nom_agence:  formData.name,
         code_agence: formData.code_agence,
-        telephone: formData.telephone,
+        telephone:   formData.telephone,
         description: formData.description,
-        adresse: formData.address,
-        ville: formData.ville,
-        commune: formData.commune,
-        pays: formData.pays,
-        latitude: formData.latitude === "" ? null : parseFloat(formData.latitude),
-        longitude: formData.longitude === "" ? null : parseFloat(formData.longitude),
-        horaires: formData.horaires,
+        adresse:     formData.address,
+        ville:       formData.ville,
+        commune:     formData.commune,
+        pays:        formData.pays,
+        latitude:    formData.latitude  === "" ? null : parseFloat(formData.latitude),
+        longitude:   formData.longitude === "" ? null : parseFloat(formData.longitude),
+        horaires:    formData.horaires,
       };
+      if (logoFile) payload.logo = logoFile;
 
-      if (logoFile) agencyPayload.logo = logoFile;
-
-      const hasAgencyId = !!(agencyData?.agence?.id || agencyData?.id);
-      const result = hasAgencyId ? await updateAgencyData(agencyPayload) : await setupAgency(agencyPayload);
+      const hasId = !!(agencyData?.agence?.id || agencyData?.id);
+      const result = hasId ? await updateAgencyData(payload) : await setupAgency(payload);
 
       if (result.type?.includes("fulfilled") || result.success) {
-        toast.success("Profil agence mis à jour avec succès !");
+        toast.success("Profil agence mis à jour.");
         setIsEditing(false);
-        await fetchAgencyData();
+        await fetchAgencyData(true);
       }
-    } catch (error) {
+    } catch {
       toast.error("Erreur lors de la sauvegarde.");
     } finally {
       setSaving(false);
@@ -208,280 +235,295 @@ const AgencyProfile = () => {
     }
   };
 
+  /* ── Render ── */
   return (
-    <div className="max-w-6xl mx-auto px-3 sm:px-6 space-y-6 sm:space-y-8 animate-in fade-in duration-700">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 pb-24 space-y-5">
 
-      {/* --- PREMIUM HERO HEADER - Responsive --- */}
-      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-white border border-slate-100 shadow-xl shadow-slate-200/50">
-        {/* Banner Gradient */}
-        <div className="h-24 sm:h-32 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 relative">
-          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
+      {/* ── Bannière setup requis ── */}
+      {!agencyConfigured && (
+        <div className="flex items-start gap-3 px-4 py-3.5 bg-amber-50 border border-amber-200 rounded-lg">
+          <ExclamationTriangleIcon className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-amber-800">Configuration requise</p>
+            <p className="text-xs text-amber-700 mt-0.5 leading-relaxed">
+              Renseignez les informations de votre agence et sauvegardez pour accéder à toutes les fonctionnalités.
+            </p>
+          </div>
         </div>
+      )}
 
-        <div className="px-4 sm:px-8 pb-6 sm:pb-8 flex flex-col items-start gap-4 sm:gap-6 -mt-10 sm:-mt-12 relative z-10">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 w-full">
-            {/* Logo Wrapper */}
-            <div className="relative group">
-              <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-xl sm:rounded-2xl bg-white p-2 shadow-2xl border border-slate-100 flex items-center justify-center overflow-hidden">
-                {logoPreview || (agencyData?.agence?.logo) ? (
-                  <img
-                    src={logoPreview || getLogoUrl(agencyData?.agence?.logo)}
-                    alt="Logo"
-                    className="w-full h-full object-contain"
-                  />
-                ) : (
-                  <BuildingOffice2Icon className="w-12 sm:w-16 h-12 sm:h-16 text-slate-200" />
-                )}
-              </div>
-              {isEditing && (
-                <label className="absolute inset-0 flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px] rounded-xl sm:rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                  <CameraIcon className="w-6 sm:w-8 h-6 sm:h-8 text-white" />
-                  <input type="file" className="hidden" accept="image/*" onChange={handleLogoChange} />
-                </label>
+      {/* ── En-tête identité ── */}
+      <Card>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+
+          {/* Logo */}
+          <div className="relative group flex-shrink-0">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden">
+              {logoPreview || agencyData?.agence?.logo ? (
+                <img
+                  src={logoPreview || getLogoUrl(agencyData?.agence?.logo)}
+                  alt="Logo agence"
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                <BuildingOffice2Icon className="w-8 h-8 text-slate-300" />
               )}
             </div>
+            {isEditing && (
+              <label className="absolute inset-0 flex items-center justify-center bg-slate-900/50 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                <CameraIcon className="w-5 h-5 text-white" />
+                <input type="file" className="hidden" accept="image/*" onChange={handleLogoChange} />
+              </label>
+            )}
+          </div>
 
-            <div className="flex-1 space-y-1 py-2 min-w-0">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight truncate">{formData.name || "Nouvelle Agence"}</h1>
-                <span className="px-2 sm:px-2.5 py-0.5 sm:py-1 bg-emerald-50 text-emerald-700 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider rounded-lg border border-emerald-100 w-fit">Actif</span>
-              </div>
-              <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-1 sm:gap-x-4 text-slate-500 font-bold text-xs sm:text-sm">
-                <span className="flex items-center gap-1.5"><BriefcaseIcon className="w-3.5 sm:w-4 h-3.5 sm:h-4" /> {formData.code_agence || "CODE-000"}</span>
-                <span className="flex items-center gap-1.5"><MapPinIcon className="w-3.5 sm:w-4 h-3.5 sm:h-4" /> {formData.ville}, {formData.pays}</span>
-              </div>
+          {/* Infos */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-base font-semibold text-slate-800 truncate">
+                {formData.name || "Nouvelle agence"}
+              </h1>
+              {agencyConfigured && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  Actif
+                </span>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs text-slate-500">
+              {formData.code_agence && (
+                <span className="flex items-center gap-1">
+                  <BriefcaseIcon className="w-3.5 h-3.5" />
+                  {formData.code_agence}
+                </span>
+              )}
+              {(formData.ville || formData.pays) && (
+                <span className="flex items-center gap-1">
+                  <MapPinIcon className="w-3.5 h-3.5" />
+                  {[formData.ville, formData.pays].filter(Boolean).join(", ")}
+                </span>
+              )}
             </div>
           </div>
 
+          {/* Actions */}
           {isAdmin && (
-            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <button
-                onClick={async () => {
-                  setRefreshing(true);
-                  await fetchAgencyData(true);
-                  setRefreshing(false);
-                }}
-                className="p-2 sm:p-3 bg-slate-50 text-slate-600 rounded-lg sm:rounded-xl hover:bg-slate-100 transition-colors border border-slate-200"
+                type="button"
+                onClick={async () => { setRefreshing(true); await fetchAgencyData(true); setRefreshing(false); }}
+                className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
                 title="Actualiser"
               >
-                <ArrowPathIcon className={`w-4 sm:w-5 h-4 sm:h-5 ${refreshing ? 'animate-spin' : ''}`} />
+                <ArrowPathIcon className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
               </button>
               <button
+                type="button"
                 onClick={handleEditToggle}
-                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold transition-all ${isEditing
-                  ? "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                  : "bg-slate-950 text-white hover:bg-slate-800 shadow-lg shadow-slate-200"
-                  }`}
+                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium transition-colors border ${
+                  isEditing
+                    ? "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
+                    : "border-slate-800 bg-slate-800 text-white hover:bg-slate-700"
+                }`}
               >
-                {isEditing ? <XMarkIcon className="w-4 sm:w-5 h-4 sm:h-5" /> : <PencilSquareIcon className="w-4 sm:w-5 h-4 sm:h-5" />}
-                {isEditing ? "ANNULER" : "MODIFIER"}
+                {isEditing
+                  ? <><XMarkIcon className="w-3.5 h-3.5" /> Annuler</>
+                  : <><PencilSquareIcon className="w-3.5 h-3.5" /> Modifier</>
+                }
               </button>
             </div>
           )}
         </div>
-      </div>
+      </Card>
 
-      {/* Notifications */}
+      {/* ── Corps du formulaire ── */}
+      <form onSubmit={handleSubmit}>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
-      <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+          {/* Colonne principale */}
+          <div className="lg:col-span-2 space-y-5">
 
-          {/* Main Info Column */}
-          <div className="lg:col-span-2 space-y-6 sm:space-y-8">
-            <section className="bg-white p-6 sm:p-8 rounded-2xl sm:rounded-3xl border border-slate-100 shadow-sm space-y-6 sm:space-y-8">
-              <div className="flex items-center gap-2 sm:gap-3 border-b border-slate-50 pb-4 sm:pb-5">
-                <div className="p-1.5 sm:p-2 bg-indigo-50 rounded-lg text-indigo-600">
-                  <BuildingOffice2Icon className="w-4 sm:w-5 h-4 sm:h-5" />
+            {/* Informations générales */}
+            <Card>
+              <SectionHeader icon={BuildingOffice2Icon} title="Informations générales" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <FieldLabel>Nom de l'agence</FieldLabel>
+                  <Field name="name" value={formData.name} onChange={handleChange} disabled={!isEditing} placeholder="Ex : Agence Centrale Abidjan" />
                 </div>
-                <h3 className="text-base sm:text-lg font-bold text-slate-900 uppercase tracking-tight">Informations Générales</h3>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.1em] ml-1">Désignation Officielle</label>
-                  <input
-                    type="text" name="name" value={formData.name} onChange={handleInputChange} disabled={!isEditing}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none disabled:opacity-60 disabled:bg-slate-50/50"
-                  />
+                <div>
+                  <FieldLabel>Code agence</FieldLabel>
+                  <Field name="code_agence" value={formData.code_agence} onChange={handleChange} disabled={!isEditing} placeholder="Ex : AGC-001" />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.1em] ml-1">Code Agence (Identification)</label>
-                  <input
-                    type="text" name="code_agence" value={formData.code_agence} onChange={handleInputChange} disabled={!isEditing}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none disabled:opacity-60"
-                  />
+                <div className="sm:col-span-2">
+                  <FieldLabel>Adresse</FieldLabel>
+                  <Field name="address" value={formData.address} onChange={handleChange} disabled={!isEditing} placeholder="Rue, quartier…" />
                 </div>
-                <div className="space-y-2 md:col-span-2">
-                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.1em] ml-1">Adresse Physique Complète</label>
-                  <input
-                    type="text" name="address" value={formData.address} onChange={handleInputChange} disabled={!isEditing}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none disabled:opacity-60"
-                  />
+                <div>
+                  <FieldLabel>Ville</FieldLabel>
+                  <Field name="ville" value={formData.ville} onChange={handleChange} disabled={!isEditing} placeholder="Ex : Abidjan" />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.1em] ml-1">Ville</label>
-                  <input
-                    type="text" name="ville" value={formData.ville} onChange={handleInputChange} disabled={!isEditing}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none disabled:opacity-60"
-                  />
+                <div>
+                  <FieldLabel>Commune</FieldLabel>
+                  <Field name="commune" value={formData.commune} onChange={handleChange} disabled={!isEditing} placeholder="Ex : Cocody" />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.1em] ml-1">Commune / District</label>
-                  <input
-                    type="text" name="commune" value={formData.commune} onChange={handleInputChange} disabled={!isEditing}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none disabled:opacity-60"
-                  />
+                <div>
+                  <FieldLabel>Téléphone</FieldLabel>
+                  <Field icon={PhoneIcon} type="tel" name="telephone" value={formData.telephone} onChange={handleChange} disabled={!isEditing} placeholder="+225 07 00 00 00 00" />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.1em] ml-1">Contact Téléphonique</label>
-                  <div className="relative">
-                    <PhoneIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <input
-                      type="tel" name="telephone" value={formData.telephone} onChange={handleInputChange} disabled={!isEditing}
-                      className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none disabled:opacity-60"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.1em] ml-1">Pays d'Opération</label>
-                  <div className="relative">
-                    <GlobeAltIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <input
-                      type="text" name="pays" value={formData.pays} onChange={handleInputChange} disabled={!isEditing}
-                      className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none disabled:opacity-60"
-                    />
-                  </div>
+                <div>
+                  <FieldLabel>Pays</FieldLabel>
+                  <Field icon={GlobeAltIcon} name="pays" value={formData.pays} onChange={handleChange} disabled={!isEditing} placeholder="Côte d'Ivoire" />
                 </div>
               </div>
-            </section>
+            </Card>
 
-            <section className="bg-white p-6 sm:p-8 rounded-2xl sm:rounded-3xl border border-slate-100 shadow-sm space-y-6 sm:space-y-8">
-              <div className="flex items-center justify-between border-b border-slate-50 pb-4 sm:pb-5">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="p-1.5 sm:p-2 bg-emerald-50 rounded-lg text-emerald-600">
-                    <MapIcon className="w-4 sm:w-5 h-4 sm:h-5" />
-                  </div>
-                  <h3 className="text-base sm:text-lg font-bold text-slate-900 uppercase tracking-tight">Positionnement GPS</h3>
-                </div>
-                {isEditing && (
-                  <button
-                    type="button" onClick={getCurrentLocation}
-                    className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wide text-indigo-600 hover:text-indigo-700 underline underline-offset-4"
-                  >
-                    Auto-Détecter
-                  </button>
-                )}
-              </div>
+            {/* Description */}
+            <Card>
+              <SectionHeader icon={BriefcaseIcon} title="Description" />
+              <textarea
+                name="description"
+                rows={4}
+                value={formData.description}
+                onChange={handleChange}
+                disabled={!isEditing}
+                placeholder="Présentez votre agence en quelques lignes…"
+                className="w-full px-3 py-2.5 text-sm text-slate-800 bg-white border border-slate-200 rounded-lg
+                  focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400
+                  disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-default
+                  transition-colors placeholder:text-slate-300 resize-none"
+              />
+              <p className="mt-2 text-xs text-slate-400">
+                Visible par vos clients lors de la prise de commande.
+              </p>
+            </Card>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.1em] ml-1">Latitude</label>
-                  <input
-                    type="text" name="latitude" value={formData.latitude} onChange={handleInputChange} disabled={!isEditing}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none"
-                  />
+            {/* GPS */}
+            <Card>
+              <SectionHeader
+                icon={MapPinSolidIcon}
+                title="Coordonnées GPS"
+                action={
+                  isEditing && (
+                    <button
+                      type="button"
+                      onClick={getCurrentLocation}
+                      className="text-xs font-medium text-indigo-600 hover:text-indigo-700 hover:underline transition-colors"
+                    >
+                      Détecter ma position
+                    </button>
+                  )
+                }
+              />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <FieldLabel>Latitude</FieldLabel>
+                  <Field name="latitude" value={formData.latitude} onChange={handleChange} disabled={!isEditing} placeholder="5.354722" />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.1em] ml-1">Longitude</label>
-                  <input
-                    type="text" name="longitude" value={formData.longitude} onChange={handleInputChange} disabled={!isEditing}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-900 focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none"
-                  />
+                <div>
+                  <FieldLabel>Longitude</FieldLabel>
+                  <Field name="longitude" value={formData.longitude} onChange={handleChange} disabled={!isEditing} placeholder="-4.008256" />
                 </div>
               </div>
-            </section>
+            </Card>
           </div>
 
-          {/* Sidebar Info Column */}
-          <div className="space-y-6 sm:space-y-8">
-            <section className="bg-slate-900 text-white p-6 sm:p-8 rounded-2xl sm:rounded-3xl shadow-xl shadow-slate-200 border border-slate-900 space-y-6 sm:space-y-8 h-full">
-              <div className="flex items-center gap-2 sm:gap-3 border-b border-white/10 pb-4 sm:pb-5">
-                <div className="p-1.5 sm:p-2 bg-white/10 rounded-lg text-white">
-                  <ClockIcon className="w-4 sm:w-5 h-4 sm:h-5" />
-                </div>
-                <h3 className="text-base sm:text-lg font-bold uppercase tracking-tight">Horaires</h3>
-              </div>
-
-              <div className="space-y-4">
-                {formData.horaires.map((horaire, index) => (
-                  <div key={index} className="group relative">
-                    <div className={`p-4 rounded-2xl border transition-all ${horaire.ferme ? 'bg-white/10 border-white/10 opacity-50' : 'bg-white/10 border-white/10 active:bg-white/15'
-                      }`}>
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-bold uppercase tracking-[0.2em]">{horaire.jour}</span>
-                        <div className="flex items-center gap-2">
-                          {isEditing && (
-                            <input
-                              type="checkbox" checked={horaire.ferme} onChange={(e) => handleHoraireChange(index, "ferme", e.target.checked)}
-                              className="accent-indigo-500 w-4 h-4"
-                            />
-                          )}
-                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase ${horaire.ferme ? 'bg-rose-500/20 text-rose-300' : 'bg-emerald-500/20 text-emerald-300'}`}>
-                            {horaire.ferme ? 'Fermé' : 'Ouvert'}
-                          </span>
-                        </div>
+          {/* Colonne horaires */}
+          <div>
+            <Card className="h-full">
+              <SectionHeader icon={ClockIcon} title="Horaires d'ouverture" />
+              <div className="space-y-2">
+                {formData.horaires.map((h, i) => (
+                  <div
+                    key={i}
+                    className={`rounded-lg border px-3 py-2.5 transition-colors ${
+                      h.ferme ? "bg-slate-50 border-slate-100" : "bg-white border-slate-200"
+                    }`}
+                  >
+                    {/* Ligne jour + statut */}
+                    <div className="flex items-center justify-between">
+                      <span className={`text-xs font-medium ${h.ferme ? "text-slate-400" : "text-slate-700"}`}>
+                        {h.jour}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        {isEditing && (
+                          <input
+                            type="checkbox"
+                            checked={h.ferme}
+                            onChange={(e) => handleHoraireChange(i, "ferme", e.target.checked)}
+                            className="w-3.5 h-3.5 accent-slate-700 cursor-pointer"
+                            title="Marquer comme fermé"
+                          />
+                        )}
+                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                          h.ferme
+                            ? "bg-slate-100 text-slate-400"
+                            : "bg-emerald-50 text-emerald-600"
+                        }`}>
+                          {h.ferme ? "Fermé" : "Ouvert"}
+                        </span>
                       </div>
-
-                      {!horaire.ferme && (
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="time" value={horaire.ouverture} onChange={(e) => handleHoraireChange(index, "ouverture", e.target.value)}
-                            disabled={!isEditing}
-                            className="flex-1 bg-black/20 border-white/10 rounded-lg px-2 py-1.5 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                          />
-                          <span className="text-white/20 font-bold">/</span>
-                          <input
-                            type="time" value={horaire.fermeture} onChange={(e) => handleHoraireChange(index, "fermeture", e.target.value)}
-                            disabled={!isEditing}
-                            className="flex-1 bg-black/20 border-white/10 rounded-lg px-2 py-1.5 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                          />
-                        </div>
-                      )}
                     </div>
+
+                    {/* Plage horaire */}
+                    {!h.ferme && (
+                      <div className="flex items-center gap-1.5 mt-2">
+                        <input
+                          type="time"
+                          value={h.ouverture}
+                          onChange={(e) => handleHoraireChange(i, "ouverture", e.target.value)}
+                          disabled={!isEditing}
+                          className="flex-1 px-2 py-1 text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-indigo-400 disabled:cursor-default"
+                        />
+                        <span className="text-slate-300 text-xs">–</span>
+                        <input
+                          type="time"
+                          value={h.fermeture}
+                          onChange={(e) => handleHoraireChange(i, "fermeture", e.target.value)}
+                          disabled={!isEditing}
+                          className="flex-1 px-2 py-1 text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-indigo-400 disabled:cursor-default"
+                        />
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
-            </section>
+            </Card>
           </div>
         </div>
 
-        {/* Description Section Full Width - Responsive */}
-        <section className="bg-white p-6 sm:p-8 rounded-2xl sm:rounded-3xl border border-slate-100 shadow-sm space-y-6 sm:space-y-6">
-          <div className="flex items-center gap-2 sm:gap-3 border-b border-slate-50 pb-4 sm:pb-5">
-            <div className="p-1.5 sm:p-2 bg-slate-900 rounded-lg text-white">
-              <BriefcaseIcon className="w-4 sm:w-5 h-4 sm:h-5" />
+        {/* ── Barre de sauvegarde fixe ── */}
+        {isEditing && (
+          <div className="fixed bottom-0 left-0 right-0 z-50 lg:left-60">
+            <div className="bg-white border-t border-slate-200 px-4 py-3 sm:px-6">
+              <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
+                <p className="text-xs text-slate-500 hidden sm:block">
+                  Les modifications ne sont pas encore enregistrées.
+                </p>
+                <div className="flex items-center gap-2 ml-auto">
+                  <button
+                    type="button"
+                    onClick={handleEditToggle}
+                    className="px-4 py-2 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="flex items-center gap-2 px-5 py-2 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-400 rounded-lg transition-colors"
+                  >
+                    {saving
+                      ? <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                      : <CheckIcon className="w-4 h-4" />
+                    }
+                    {saving ? "Enregistrement…" : "Enregistrer les modifications"}
+                  </button>
+                </div>
+              </div>
             </div>
-            <h3 className="text-base sm:text-lg font-bold text-slate-900 uppercase tracking-tight">Description Agence</h3>
           </div>
-          <textarea
-            name="description" rows={4} value={formData.description} onChange={handleInputChange} disabled={!isEditing}
-            placeholder="Rédigez un court message de présentation..."
-            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-medium text-slate-600 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none resize-none"
-          />
-          <p className="text-[10px] text-slate-400 font-bold leading-relaxed">
-            Cette description sera visible par vos clients lors de la prise de commande et dans l'annuaire des partenaires.
-          </p>
-        </section>
+        )}
       </form>
-
-      {/* Floating Action Button for saving (visible only if editing) - Responsive */}
-      {isEditing && (
-        <div className="fixed bottom-4 sm:bottom-10 right-4 sm:right-10 z-50 animate-in slide-in-from-bottom-10">
-          <button
-            type="button" onClick={handleSubmit} disabled={saving}
-            className="flex items-center gap-2 sm:gap-3 px-4 sm:px-8 py-3 sm:py-4 bg-indigo-600 text-white rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold shadow-2xl shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-95 disabled:bg-slate-400"
-          >
-            {saving ? (
-              <ArrowPathIcon className="w-5 sm:w-6 h-5 sm:h-6 animate-spin" />
-            ) : (
-              <CheckIcon className="w-5 sm:w-6 h-5 sm:h-6" />
-            )}
-            <span className="hidden sm:inline">SAUVEGARDER LES MODIFICATIONS</span>
-            <span className="sm:hidden">SAUVEGARDER</span>
-          </button>
-        </div>
-      )}
-
     </div>
   );
 };

@@ -13,13 +13,14 @@ import { useAgency } from "./hooks/useAgency";
 import { useTarifs } from "./hooks/useTarifs";
 import { useDashboard } from "./hooks/useDashboard";
 import { getLogoUrl } from "./utils/apiConfig";
+import { selectAgencyConfigured } from "./store/slices/agencySlice";
 
 // Import des pages
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import AgencyProfile from "./pages/AgencyProfile";
 import Agents from "./pages/Agents";
-import CreateExpedition from "./pages/CreateExpedition";
+import CreateExpeditionV2 from "./pages/CreateExpeditionV2";
 import TarifsSimples from "./pages/TarifsSimples";
 import TarifsGroupes from "./pages/TarifsGroupes";
 import Comptabilite from "./pages/Comptabilite";
@@ -63,6 +64,34 @@ const ProtectedRoute = ({ children }) => {
 const PublicRoute = ({ children }) => {
   const { isAuthenticated } = useSelector((state) => state.auth);
   return !isAuthenticated ? children : <Navigate to="/dashboard" replace />;
+};
+
+/**
+ * Guard : redirige vers /agency-profile si le profil agence n'est pas encore configuré.
+ * S'applique à toutes les routes protégées SAUF /agency-profile elle-même.
+ * Attend que le fetch agence soit terminé (status !== 'loading') avant de décider.
+ */
+const AgencySetupGuard = ({ children }) => {
+  const agencyConfigured = useSelector(selectAgencyConfigured);
+  const agencyStatus = useSelector((state) => state.agency.status);
+  const location = useLocation();
+
+  // Laisser passer la page de configuration elle-même
+  if (location.pathname === "/agency-profile") {
+    return children;
+  }
+
+  // Pendant le chargement initial, ne pas rediriger (évite un flash)
+  if (agencyStatus === "loading" || agencyStatus === "idle") {
+    return children;
+  }
+
+  // Si le profil n'est pas configuré, forcer la redirection
+  if (!agencyConfigured) {
+    return <Navigate to="/agency-profile" replace />;
+  }
+
+  return children;
 };
 
 function AppContent() {
@@ -119,21 +148,21 @@ function AppContent() {
 
         {/* Routes protégées */}
         <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/tarifs-simples" element={<TarifsSimples />} />
-          <Route path="/tarifs-groupage" element={<TarifsGroupes />} />
+          <Route path="/dashboard" element={<AgencySetupGuard><Dashboard /></AgencySetupGuard>} />
+          <Route path="/tarifs-simples" element={<AgencySetupGuard><TarifsSimples /></AgencySetupGuard>} />
+          <Route path="/tarifs-groupage" element={<AgencySetupGuard><TarifsGroupes /></AgencySetupGuard>} />
           <Route path="/agency-profile" element={<AgencyProfile />} />
-          <Route path="/comptabilite" element={<Comptabilite />} />
-          <Route path="/agents" element={<Agents />} />
-          <Route path="/expeditions" element={<Expeditions />} />
-          <Route path="/demandes" element={<Demandes />} />
-          <Route path="/colis" element={<Colis />} />
-          <Route path="/reception-colis" element={<ReceptionColis />} />
-          <Route path="/colis-a-receptionner" element={<ColisAReceptionner />} />
-          <Route path="/expeditions/:id" element={<ExpeditionDetails />} />
-          <Route path="/create-expedition" element={<CreateExpedition />} />
-          <Route path="/retrait-colis" element={<RetraitColis />} />
-          <Route path="/transactions" element={<Transactions />} />
+          <Route path="/comptabilite" element={<AgencySetupGuard><Comptabilite /></AgencySetupGuard>} />
+          <Route path="/agents" element={<AgencySetupGuard><Agents /></AgencySetupGuard>} />
+          <Route path="/expeditions" element={<AgencySetupGuard><Expeditions /></AgencySetupGuard>} />
+          <Route path="/demandes" element={<AgencySetupGuard><Demandes /></AgencySetupGuard>} />
+          <Route path="/colis" element={<AgencySetupGuard><Colis /></AgencySetupGuard>} />
+          <Route path="/reception-colis" element={<AgencySetupGuard><ReceptionColis /></AgencySetupGuard>} />
+          <Route path="/colis-a-receptionner" element={<AgencySetupGuard><ColisAReceptionner /></AgencySetupGuard>} />
+          <Route path="/expeditions/:id" element={<AgencySetupGuard><ExpeditionDetails /></AgencySetupGuard>} />
+          <Route path="/create-expedition" element={<AgencySetupGuard><CreateExpeditionV2 /></AgencySetupGuard>} />
+          <Route path="/retrait-colis" element={<AgencySetupGuard><RetraitColis /></AgencySetupGuard>} />
+          <Route path="/transactions" element={<AgencySetupGuard><Transactions /></AgencySetupGuard>} />
         </Route>
         {/* Route par défaut */}
         <Route path="*" element={<Navigate to="/" replace />} />

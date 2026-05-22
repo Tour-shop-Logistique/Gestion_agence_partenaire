@@ -370,5 +370,17 @@ export const selectTransactionsSummary = (state) => state.agency.transactionsSum
 export const selectTransactionsStatus = (state) => state.agency.transactionsStatus;
 export const selectTransactionsError = (state) => state.agency.transactionsError;
 
+/**
+ * Sélecteur : l'agence est considérée comme configurée si les données existent
+ * et contiennent au minimum un nom d'agence (nom_agence).
+ */
+export const selectAgencyConfigured = (state) => {
+  const data = state.agency.data;
+  if (!data) return false;
+  // L'API retourne { agence: { ... } } ou directement l'objet agence
+  const agence = data.agence || data;
+  return !!(agence && agence.nom_agence);
+};
+
 export default agencySlice.reducer;
 
