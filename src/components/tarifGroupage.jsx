@@ -9,7 +9,9 @@ import {
   PencilSquareIcon,
   TrashIcon,
   ChevronRightIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon
 } from "@heroicons/react/24/outline";
 import { toast } from "../utils/toast";
 
@@ -35,9 +37,12 @@ const StatusToggle = ({ active, onClick, disabled }) => (
 
 const TarifGroupageComponent = () => {
   const [showTarifGroupage, setShowTarifGroupage] = useState(false);
-  const [activeTab, setActiveTab] = useState("agency"); // Changed default to "agency"
+  const [mainTab, setMainTab] = useState("agency"); // "agency" or "base"
+  const [activeTab, setActiveTab] = useState("tous");
   const [editingTarif, setEditingTarif] = useState(null);
   const [selectedBaseRate, setSelectedBaseRate] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedExpeditionType, setSelectedExpeditionType] = useState("Tous les types d'expedition");
 
   const {
     loading,
@@ -72,25 +77,7 @@ const TarifGroupageComponent = () => {
     }
   }, [message, error, clearMessage]);
 
-  const groupRates = (rates) => {
-    if (!rates || !Array.isArray(rates)) return [];
-    const groups = {};
-    rates.forEach((rate) => {
-      const categoryName = rate.category?.nom || (rate.type_expedition === 'groupage_afrique' ? 'Expédition Afrique' : (rate.type_expedition === 'groupage_ca' ? 'Expédition CA' : 'Général'));
-      const key = `${categoryName}-${rate.pays}-${rate.type_expedition}`;
-      if (!groups[key]) {
-        groups[key] = {
-          id: key,
-          categoryName,
-          pays: rate.pays,
-          type_expedition: rate.type_expedition,
-          modes: []
-        };
-      }
-      groups[key].modes.push(rate);
-    });
-    return Object.values(groups);
-  };
+
 
   const handleNewTarif = (baseRate = null) => {
     setEditingTarif(null);
@@ -132,13 +119,93 @@ const TarifGroupageComponent = () => {
     }
   };
 
-  const groupedBaseTarifs = useMemo(() => groupRates(groupageTarifs), [groupageTarifs]);
-  const groupedAgencyTarifs = useMemo(() => groupRates(existingGroupageTarifs), [existingGroupageTarifs]);
+  // Flatten rates for table view
+  const flattenedAgencyTarifs = useMemo(() => {
+    if (!existingGroupageTarifs || !Array.isArray(existingGroupageTarifs)) return [];
+    return existingGroupageTarifs;
+  }, [existingGroupageTarifs]);
+
+  const flattenedBaseTarifs = useMemo(() => {
+    if (!groupageTarifs || !Array.isArray(groupageTarifs)) return [];
+    return groupageTarifs;
+  }, [groupageTarifs]);
+
+  // Filter tarifs based on search, active tab, and expedition type
+  const filteredTarifs = useMemo(() => {
+    let result = mainTab === "agency" ? flattenedAgencyTarifs : flattenedBaseTarifs;
+
+    // Filter by status tab (only for agency tarifs)
+    if (mainTab === "agency") {
+      if (activeTab === "actives") {
+        result = result.filter(t => t.actif === true);
+      } else if (activeTab === "inactives") {
+        result = result.filter(t => t.actif === false);
+      }
+    }
+
+    // Filter by expedition type
+    if (selectedExpeditionType !== "Tous les types d'expedition") {
+      result = result.filter(t => {
+        const typeMatch = t.type_expedition?.toLowerCase().includes(selectedExpeditionType.toLowerCase());
+        return typeMatch;
+      });
+    }
+
+    // Filter by search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(t => 
+        t.pays?.toLowerCase().includes(query) ||
+        t.category?.nom?.toLowerCase().includes(query) ||
+        t.mode?.toLowerCase().includes(query) ||
+        t.ligne?.toLowerCase().includes(query) ||
+        t.type_expedition?.toLowerCase().includes(query)
+      );
+    }
+
+    return result;
+  }, [flattenedAgencyTarifs, flattenedBaseTarifs, mainTab, activeTab, selectedExpeditionType, searchQuery]);
+
+  // Get unique expedition types for filter dropdown
+  const expeditionTypes = useMemo(() => {
+    const types = new Set();
+    const sourceData = mainTab === "agency" ? flattenedAgencyTarifs : flattenedBaseTarifs;
+    sourceData.forEach(t => {
+      if (t.type_expedition) {
+        types.add(t.type_expedition);
+      }
+    });
+    return ["Tous les types d'expedition", ...Array.from(types)];
+  }, [flattenedAgencyTarifs, flattenedBaseTarifs, mainTab]);
+
+  // Count by status
+  const statusCounts = useMemo(() => {
+    return {
+      tous: flattenedAgencyTarifs.length,
+      actives: flattenedAgencyTarifs.filter(t => t.actif === true).length,
+      inactives: flattenedAgencyTarifs.filter(t => t.actif === false).length
+    };
+  }, [flattenedAgencyTarifs]);
 
   const kpis = [
-    { label: "Tarifs Agence", value: existingGroupageTarifs?.length || 0, icon: ArchiveBoxIcon, color: "text-indigo-600" },
-    { label: "Modèles Groupage", value: groupageTarifs?.length || 0, icon: GlobeAltIcon, color: "text-slate-600" },
-    { label: "Modes Actifs", value: (existingGroupageTarifs?.length || 0), icon: TruckIcon, color: "text-emerald-600" },
+    { 
+      label: mainTab === "agency" ? "Tarifs Agence" : "Tarifs Base", 
+      value: mainTab === "agency" ? statusCounts.tous : flattenedBaseTarifs.length, 
+      icon: ArchiveBoxIcon, 
+      color: "text-indigo-600" 
+    },
+    { 
+      label: mainTab === "agency" ? "Actifs" : "Modèles Disponibles", 
+      value: mainTab === "agency" ? statusCounts.actives : flattenedBaseTarifs.length, 
+      icon: GlobeAltIcon, 
+      color: "text-emerald-600" 
+    },
+    { 
+      label: mainTab === "agency" ? "Inactifs" : "Types Expédition", 
+      value: mainTab === "agency" ? statusCounts.inactives : expeditionTypes.length - 1, 
+      icon: TruckIcon, 
+      color: "text-slate-600" 
+    },
   ];
 
   return (
@@ -158,271 +225,374 @@ const TarifGroupageComponent = () => {
         ))}
       </div>
 
-      {/* Action Bar - SaaS Style */}
-      <div className="flex flex-col sm:flex-row justify-between items-center bg-white p-3 rounded-xl border border-slate-200 shadow-sm gap-3">
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <div className="inline-flex flex-1 sm:flex-none p-1 bg-slate-100 rounded-lg">
-            <button
-              onClick={() => setActiveTab("agency")}
-              className={`flex-1 sm:flex-none px-4 py-2 text-[11px] font-bold rounded-md transition-all ${activeTab === "agency" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500 hover:text-slate-700"
-                }`}
-            >
-              Mes Groupages
-            </button>
-            <button
-              onClick={() => setActiveTab("base")}
-              className={`flex-1 sm:flex-none px-4 py-2 text-[11px] font-bold rounded-md transition-all ${activeTab === "base" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500 hover:text-slate-700"
-                }`}
-            >
-              Modèles
-            </button>
-          </div>
-
+      {/* Main Tab Selector */}
+      <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+        <div className="inline-flex p-1 bg-slate-100 rounded-lg">
           <button
-            onClick={handleRefresh}
-            disabled={loading}
-            className={`p-2.5 bg-white border border-slate-200 rounded-lg text-slate-600 hover:text-blue-600 hover:border-blue-100 transition-all shadow-none hover:shadow-sm active:scale-95 ${loading ? 'opacity-50' : ''}`}
-            title="Rafraîchir les données"
+            onClick={() => {
+              setMainTab("agency");
+              setActiveTab("tous");
+            }}
+            className={`px-6 py-2.5 text-sm font-semibold rounded-md transition-all ${
+              mainTab === "agency" 
+                ? "bg-white text-slate-950 shadow-sm" 
+                : "text-slate-500 hover:text-slate-700"
+            }`}
           >
-            <ArrowPathIcon className={`w-4 h-4 ${loading ? 'animate-spin text-blue-600' : ''}`} />
+            Mes Groupages
+          </button>
+          <button
+            onClick={() => {
+              setMainTab("base");
+              setActiveTab("tous");
+            }}
+            className={`px-6 py-2.5 text-sm font-semibold rounded-md transition-all ${
+              mainTab === "base" 
+                ? "bg-white text-slate-950 shadow-sm" 
+                : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            Tarifs de Base
           </button>
         </div>
-
-        <button
-          onClick={() => handleNewTarif()}
-          className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all shadow-sm"
-        >
-          <PlusIcon className="w-4 h-4 mr-2" />
-          Nouveau Tarif
-        </button>
       </div>
 
-      {/* Alerts - Refined */}
+      {/* Action Bar - Search and Filters */}
+      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
+        {/* Top Row: Search + Filters + Actions */}
+        <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
+          {/* Search Bar */}
+          <div className="relative flex-1 max-w-md">
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Rechercher par pays ou catégorie..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
 
-      {/* Main Grid / Data Table */}
+          {/* Filter Dropdown */}
+          <div className="relative">
+            <FunnelIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            <select
+              value={selectedExpeditionType}
+              onChange={(e) => setSelectedExpeditionType(e.target.value)}
+              className="pl-10 pr-8 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none bg-white cursor-pointer min-w-[200px]"
+            >
+              {expeditionTypes.map(type => (
+                <option key={type} value={type}>
+                  {type === "Tous les types d'expedition" ? type : type.replace('groupage_', '').toUpperCase()}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-2">
+            <button
+              onClick={handleRefresh}
+              disabled={loading}
+              className={`p-2.5 bg-white border border-slate-200 rounded-lg text-slate-600 hover:text-blue-600 hover:border-blue-100 transition-all shadow-none hover:shadow-sm active:scale-95 ${loading ? 'opacity-50' : ''}`}
+              title="Rafraîchir"
+            >
+              <ArrowPathIcon className={`w-5 h-5 ${loading ? 'animate-spin text-blue-600' : ''}`} />
+            </button>
+
+            <button
+              onClick={() => handleNewTarif()}
+              className="inline-flex items-center justify-center px-4 py-2.5 bg-slate-950 hover:bg-slate-800 text-white rounded-lg text-sm font-semibold transition-all shadow-sm"
+            >
+              <PlusIcon className="w-4 h-4 mr-2" />
+              {mainTab === "agency" ? "Ajouter" : "Nouveau depuis Base"}
+            </button>
+          </div>
+        </div>
+
+        {/* Tabs Row - Only for Agency */}
+        {mainTab === "agency" && (
+          <div className="flex items-center gap-2 border-b border-slate-200 pb-0">
+            <button
+              onClick={() => setActiveTab("tous")}
+              className={`px-4 py-2.5 text-sm font-semibold transition-all border-b-2 -mb-[1px] ${
+                activeTab === "tous"
+                  ? "text-slate-900 border-slate-900"
+                  : "text-slate-500 border-transparent hover:text-slate-700 hover:border-slate-300"
+              }`}
+            >
+              Toutes ({statusCounts.tous})
+            </button>
+            <button
+              onClick={() => setActiveTab("actives")}
+              className={`px-4 py-2.5 text-sm font-semibold transition-all border-b-2 -mb-[1px] ${
+                activeTab === "actives"
+                  ? "text-emerald-600 border-emerald-600"
+                  : "text-slate-500 border-transparent hover:text-slate-700 hover:border-slate-300"
+              }`}
+            >
+              Actives ({statusCounts.actives})
+            </button>
+            <button
+              onClick={() => setActiveTab("inactives")}
+              className={`px-4 py-2.5 text-sm font-semibold transition-all border-b-2 -mb-[1px] ${
+                activeTab === "inactives"
+                  ? "text-slate-600 border-slate-600"
+                  : "text-slate-500 border-transparent hover:text-slate-700 hover:border-slate-300"
+              }`}
+            >
+              Inactives ({statusCounts.inactives})
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Main Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        {loading && (!groupedAgencyTarifs.length && !groupedBaseTarifs.length) ? (
-          <div className="p-10 space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {[1, 2].map((i) => (
-                <div key={i} className="space-y-4">
-                  <div className="h-4 w-32 bg-slate-100 rounded animate-pulse"></div>
-                  <div className="h-24 bg-slate-50 rounded-2xl animate-pulse"></div>
-                </div>
+        {loading && !filteredTarifs.length ? (
+          <div className="p-10">
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-16 bg-slate-50 rounded-lg animate-pulse"></div>
               ))}
             </div>
           </div>
-        ) : activeTab === "agency" ? (
-          existingGroupageTarifs?.length > 0 ? (
-            <>
-              {/* Desktop Table (Agency) */}
-              <div className="hidden lg:block overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-950 border-b border-slate-800">
-                      <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Type</th>
-                      <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Catégorie / Pays</th>
-                      <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide text-right">Modes configurés</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {groupedAgencyTarifs.map((group) => (
-                      <tr key={group.id} className="hover:bg-slate-50/50 transition-colors align-top">
-                        <td className="px-6 py-5">
-                          <span className={`inline-flex px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-tighter shadow-sm border ${group.type_expedition?.includes('dhd') ? 'bg-indigo-50 text-indigo-700 border-indigo-100' :
-                            group.type_expedition?.includes('afrique') ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
-                              'bg-slate-100 text-slate-700 border-slate-200'
-                            }`}>
-                            {group.type_expedition?.replace('groupage_', '').toUpperCase() || 'GROUPAGE'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-5">
-                          <p className="text-sm font-bold text-slate-900 leading-tight mb-1">{group.categoryName}</p>
-                          <p className="text-xs font-medium text-slate-500">{group.pays}</p>
-                        </td>
-                        <td className="px-6 py-5 min-w-[300px]">
-                          <div className="flex flex-col gap-2">
-                            {group.modes.map((mode) => (
-                              <div key={mode.id} className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-lg hover:border-indigo-300 hover:shadow-sm transition-all group/mode">
-                                <div className="flex flex-col">
-                                  <span className="text-[10px] font-bold text-slate-900 border-b border-slate-100 pb-1 mb-1">
-                                    {mode.mode} {mode.ligne ? `(${mode.ligne})` : ''}
-                                  </span>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-sm font-bold text-slate-900">{mode.montant_expedition?.toLocaleString()}</span>
-                                    <span className="text-[9px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">+{mode.pourcentage_prestation}%</span>
-                                    <span className="text-[10px] font-medium text-slate-400">FCFA</span>
-                                  </div>
-                                </div>
-                                <div className="flex gap-1 opacity-0 group-hover/mode:opacity-100 transition-opacity items-center">
-                                  <StatusToggle
-                                    active={mode.actif}
-                                    onClick={() => handleToggleStatus(mode)}
-                                  />
-                                  <button onClick={() => handleEditTarif(mode)} className="p-1.5 text-slate-600 hover:text-indigo-600 hover:bg-slate-50 rounded transition-colors" title="Modifier">
-                                    <PencilSquareIcon className="w-4 h-4" />
-                                  </button>
-                                  <button onClick={() => handleDeleteTarif(mode)} className="p-1.5 text-slate-600 hover:text-rose-600 hover:bg-slate-50 rounded transition-colors" title="Supprimer">
-                                    <TrashIcon className="w-4 h-4" />
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Mobile Cards (Agency) - Premium Cards */}
-              <div className="lg:hidden space-y-4 p-4 bg-slate-50/50">
-                {groupedAgencyTarifs.map((group) => (
-                  <div key={group.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <span className={`inline-flex px-2 py-0.5 mb-2 rounded text-[10px] font-bold uppercase tracking-wide border ${group.type_expedition?.includes('dhd') ? 'bg-indigo-50 text-indigo-700 border-indigo-100' :
-                          group.type_expedition?.includes('afrique') ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
-                            'bg-slate-100 text-slate-700 border-slate-200'
-                          }`}>
-                          {group.type_expedition?.replace('groupage_', '').toUpperCase() || 'GROUPAGE'}
-                        </span>
-                        <h4 className="text-sm font-bold text-slate-900">{group.categoryName}</h4>
-                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">{group.pays}</p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      {group.modes.map((mode) => (
-                        <div key={mode.id} className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between group">
-                          <div>
-                            <p className="text-[10px] font-bold text-slate-900 mb-1 flex items-center gap-2">
-                              {mode.mode}
-                              {mode.ligne && <span className="text-[9px] font-bold text-blue-500">{mode.ligne}</span>}
-                            </p>
-                            <div className="flex items-center gap-2">
-                              <span className="text-base font-bold text-slate-900 font-mono tracking-tighter">{mode.montant_expedition?.toLocaleString()}</span>
-                              <span className="text-[10px] font-bold text-indigo-600 bg-white border border-indigo-100 px-1.5 py-0.5 rounded shadow-sm">+{mode.pourcentage_prestation}%</span>
-                            </div>
-                          </div>
-                          <div className="flex gap-1.5 items-center">
-                            <StatusToggle
-                              active={mode.actif}
-                              onClick={() => handleToggleStatus(mode)}
-                            />
-                            <button
-                              onClick={() => handleEditTarif(mode)}
-                              className="p-2 bg-white text-slate-600 border border-slate-200 rounded-lg shadow-sm"
-                            >
-                              <PencilSquareIcon className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteTarif(mode)}
-                              className="p-2 bg-rose-50 text-rose-600 border border-rose-100 rounded-lg shadow-sm"
-                            >
-                              <TrashIcon className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : (
-            <EmptyState onAction={() => setActiveTab("base")} />
-          )
-        ) : (
+        ) : filteredTarifs.length > 0 ? (
           <>
-            {/* Desktop Table (Base) */}
+            {/* Desktop Table */}
             <div className="hidden lg:block overflow-x-auto">
-              {/* ... table content remains similar ... */}
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200">
-                    <th className="px-6 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Type d'expédition</th>
-                    <th className="px-6 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Détails modèle</th>
-                    <th className="px-6 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide text-right">Modes disponibles</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-slate-600 uppercase tracking-wide">Type / Catégorie</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-slate-600 uppercase tracking-wide">Itinéraire / Pays</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-slate-600 uppercase tracking-wide text-right">
+                      {mainTab === "agency" ? "Montant Base" : "Montant Base"}
+                    </th>
+                    {mainTab === "agency" && (
+                      <>
+                        <th className="px-6 py-4 text-[11px] font-bold text-slate-600 uppercase tracking-wide text-right">Prestation</th>
+                        <th className="px-6 py-4 text-[11px] font-bold text-slate-600 uppercase tracking-wide text-right">Total</th>
+                      </>
+                    )}
+                    <th className="px-6 py-4 text-[11px] font-bold text-slate-600 uppercase tracking-wide text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {groupedBaseTarifs.map((group) => (
-                    <tr key={group.id} className="hover:bg-slate-50/50 transition-colors align-top">
-                      <td className="px-6 py-5">
-                        <span className="inline-flex px-2 py-1 rounded-md bg-slate-100 text-[10px] font-bold text-slate-600 uppercase tracking-tighter shadow-sm border border-slate-200">
-                          {group.type_expedition?.replace('groupage_', '').toUpperCase() || 'MOCKED'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-5">
-                        <p className="text-sm font-bold text-slate-900 leading-tight mb-1">{group.categoryName}</p>
-                        <p className="text-xs font-medium text-slate-500">{group.pays}</p>
-                      </td>
-                      <td className="px-6 py-5 min-w-[250px]">
-                        <div className="flex flex-col gap-2">
-                          {group.modes.map((mode) => (
-                            <div key={mode.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200 group/base">
-                              <div className="flex flex-col">
-                                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-1">{mode.mode}</span>
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-sm font-bold text-slate-900">{mode.montant_base?.toLocaleString()}</span>
-                                  <span className="text-[10px] font-medium text-slate-400 uppercase">FCFA</span>
-                                </div>
+                  {filteredTarifs.map((tarif) => {
+                    const montantBase = mainTab === "agency" ? (tarif.montant_expedition || 0) : (tarif.montant_base || 0);
+                    const pourcentage = tarif.pourcentage_prestation || 0;
+                    const montantPrestation = Math.round(montantBase * pourcentage / 100);
+                    const total = montantBase + montantPrestation;
+
+                    return (
+                      <tr key={tarif.id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="space-y-1">
+                            <span className={`inline-flex px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-tight ${
+                              tarif.type_expedition?.includes('afrique') 
+                                ? 'bg-amber-50 text-amber-700 border border-amber-100'
+                                : tarif.type_expedition?.includes('dhd_aerien')
+                                ? 'bg-blue-50 text-blue-700 border border-blue-100'
+                                : tarif.type_expedition?.includes('dhd_maritime')
+                                ? 'bg-indigo-50 text-indigo-700 border border-indigo-100'
+                                : tarif.type_expedition?.includes('ca')
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                                : 'bg-slate-100 text-slate-700 border border-slate-200'
+                            }`}>
+                              {tarif.type_expedition?.replace('groupage_', '').replace('_', ' ').toUpperCase() || 'N/A'}
+                            </span>
+                            {tarif.mode && (
+                              <p className="text-xs font-medium text-slate-600">
+                                {tarif.mode} {tarif.ligne ? `→ ${tarif.ligne}` : ''}
+                              </p>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="space-y-0.5">
+                            <p className="text-sm font-bold text-slate-900">
+                              {tarif.category?.nom || 'N/A'}
+                            </p>
+                            <p className="text-xs text-slate-500 font-medium">
+                              {tarif.pays || 'N/A'}
+                            </p>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <span className="text-sm font-semibold text-slate-900">
+                            {montantBase.toLocaleString()} <span className="text-xs text-slate-500 font-normal">FCFA</span>
+                          </span>
+                        </td>
+                        {mainTab === "agency" && (
+                          <>
+                            <td className="px-6 py-4 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <span className="text-xs font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded border border-orange-100">
+                                  {pourcentage}%
+                                </span>
+                                <span className="text-sm text-slate-600 font-medium">
+                                  ({montantPrestation.toLocaleString()} <span className="text-xs text-slate-400">FCFA</span>)
+                                </span>
                               </div>
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <span className="text-base font-bold text-slate-900">
+                                {total.toLocaleString()} <span className="text-xs text-slate-500 font-medium">FCFA</span>
+                              </span>
+                            </td>
+                          </>
+                        )}
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-center gap-2">
+                            {mainTab === "agency" ? (
+                              <>
+                                <StatusToggle
+                                  active={tarif.actif}
+                                  onClick={() => handleToggleStatus(tarif)}
+                                />
+                                <button
+                                  onClick={() => handleEditTarif(tarif)}
+                                  className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                  title="Modifier"
+                                >
+                                  <PencilSquareIcon className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteTarif(tarif)}
+                                  className="p-2 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                                  title="Supprimer"
+                                >
+                                  <TrashIcon className="w-4 h-4" />
+                                </button>
+                              </>
+                            ) : (
                               <button
-                                onClick={() => handleNewTarif(mode)}
-                                className="px-3 py-1.5 bg-white hover:bg-slate-950 text-slate-950 hover:text-white text-[10px] font-bold rounded border border-slate-200 hover:border-slate-950 transition-all shadow-sm"
+                                onClick={() => handleNewTarif(tarif)}
+                                className="px-4 py-2 bg-slate-950 hover:bg-slate-800 text-white text-xs font-bold rounded-lg transition-all"
                               >
-                                IMPORT
+                                Configurer
                               </button>
-                            </div>
-                          ))}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
 
-            {/* Mobile Cards (Base) */}
-            <div className="lg:hidden space-y-4 p-4 bg-slate-50/50">
-              {groupedBaseTarifs.map((group) => (
-                <div key={group.id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <span className="inline-flex px-2 py-0.5 mb-2 rounded text-[10px] font-bold text-slate-500 bg-slate-100 uppercase tracking-wide border border-slate-200">
-                        {group.type_expedition?.replace('groupage_', '').toUpperCase() || 'MOCKED'}
-                      </span>
-                      <h4 className="text-sm font-bold text-slate-900">{group.categoryName}</h4>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">{group.pays}</p>
-                    </div>
-                  </div>
+            {/* Mobile Cards */}
+            <div className="lg:hidden space-y-3 p-4">
+              {filteredTarifs.map((tarif) => {
+                const montantBase = mainTab === "agency" ? (tarif.montant_expedition || 0) : (tarif.montant_base || 0);
+                const pourcentage = tarif.pourcentage_prestation || 0;
+                const montantPrestation = Math.round(montantBase * pourcentage / 100);
+                const total = montantBase + montantPrestation;
 
-                  <div className="space-y-3">
-                    {group.modes.map((mode) => (
-                      <div key={mode.id} className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
-                        <div>
-                          <p className="text-[10px] font-bold text-slate-900 mb-1 uppercase tracking-tighter">{mode.mode}</p>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-base font-bold text-slate-900 font-mono tracking-tighter">{mode.montant_base?.toLocaleString()}</span>
-                            <span className="text-[10px] font-bold text-slate-400 uppercase">FCFA</span>
+                return (
+                  <div key={tarif.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                    {/* Header */}
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <span className={`inline-flex px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-tight ${
+                          tarif.type_expedition?.includes('afrique') 
+                            ? 'bg-amber-50 text-amber-700 border border-amber-100'
+                            : tarif.type_expedition?.includes('dhd')
+                            ? 'bg-blue-50 text-blue-700 border border-blue-100'
+                            : tarif.type_expedition?.includes('ca')
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                            : 'bg-slate-100 text-slate-700 border border-slate-200'
+                        }`}>
+                          {tarif.type_expedition?.replace('groupage_', '').replace('_', ' ').toUpperCase() || 'N/A'}
+                        </span>
+                        <p className="text-sm font-bold text-slate-900">
+                          {tarif.category?.nom || 'N/A'}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {tarif.pays || 'N/A'}
+                        </p>
+                      </div>
+                      {mainTab === "agency" && (
+                        <StatusToggle
+                          active={tarif.actif}
+                          onClick={() => handleToggleStatus(tarif)}
+                        />
+                      )}
+                    </div>
+
+                    {/* Mode info */}
+                    {tarif.mode && (
+                      <div className="text-xs font-medium text-slate-600 pb-2 border-b border-slate-100">
+                        {tarif.mode} {tarif.ligne ? `→ ${tarif.ligne}` : ''}
+                      </div>
+                    )}
+
+                    {/* Pricing */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-slate-500 font-medium">Montant Base</span>
+                        <span className="text-sm font-semibold text-slate-900">
+                          {montantBase.toLocaleString()} FCFA
+                        </span>
+                      </div>
+                      {mainTab === "agency" && (
+                        <>
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-slate-500 font-medium">Prestation</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded border border-orange-100">
+                                {pourcentage}%
+                              </span>
+                              <span className="text-sm text-slate-600">
+                                {montantPrestation.toLocaleString()} FCFA
+                              </span>
+                            </div>
                           </div>
-                        </div>
+                          <div className="flex justify-between items-center pt-2 border-t border-slate-200">
+                            <span className="text-sm font-bold text-slate-900">Total</span>
+                            <span className="text-base font-bold text-slate-900">
+                              {total.toLocaleString()} FCFA
+                            </span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    {mainTab === "agency" ? (
+                      <div className="flex gap-2 pt-2">
                         <button
-                          onClick={() => handleNewTarif(mode)}
-                          className="px-4 py-2 bg-white text-slate-950 text-[10px] font-bold border border-slate-200 rounded-lg shadow-sm"
+                          onClick={() => handleEditTarif(tarif)}
+                          className="flex-1 py-2 px-3 bg-blue-50 text-blue-700 text-xs font-semibold rounded-lg border border-blue-100 hover:bg-blue-100 transition-all"
                         >
-                          IMPORT
+                          <PencilSquareIcon className="w-4 h-4 inline mr-1" />
+                          Modifier
+                        </button>
+                        <button
+                          onClick={() => handleDeleteTarif(tarif)}
+                          className="flex-1 py-2 px-3 bg-rose-50 text-rose-700 text-xs font-semibold rounded-lg border border-rose-100 hover:bg-rose-100 transition-all"
+                        >
+                          <TrashIcon className="w-4 h-4 inline mr-1" />
+                          Supprimer
                         </button>
                       </div>
-                    ))}
+                    ) : (
+                      <button
+                        onClick={() => handleNewTarif(tarif)}
+                        className="w-full py-2.5 px-4 bg-slate-950 hover:bg-slate-800 text-white text-sm font-bold rounded-lg transition-all"
+                      >
+                        Configurer ce tarif
+                      </button>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </>
+        ) : (
+          <EmptyState onAction={() => handleNewTarif()} />
         )}
       </div>
 
@@ -448,16 +618,17 @@ const EmptyState = ({ onAction }) => (
     <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mb-4 border border-slate-100">
       <ArchiveBoxIcon className="w-8 h-8 text-slate-300" />
     </div>
-    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-2">Aucun tarif personnalisé</h3>
+    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-2">Aucun tarif groupage</h3>
     <p className="text-xs font-medium text-slate-500 mb-8 max-w-xs mx-auto leading-relaxed">
-      Vous n'avez pas encore configuré de marges pour les expéditions en groupage.
-      Utilisez les modèles de base pour commencer.
+      Vous n'avez pas encore configuré de tarifs pour les expéditions en groupage.
+      Commencez par ajouter un nouveau tarif.
     </p>
     <button
       onClick={onAction}
       className="inline-flex items-center px-6 py-2 bg-slate-950 text-white text-xs font-bold rounded-lg hover:bg-slate-800 transition-all shadow-sm"
     >
-      VOIR LES MODÈLES
+      <PlusIcon className="w-4 h-4 mr-2" />
+      AJOUTER UN TARIF
     </button>
   </div>
 );
