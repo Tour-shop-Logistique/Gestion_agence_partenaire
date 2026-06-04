@@ -2,12 +2,14 @@ import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { useExpedition } from '../hooks/useExpedition';
+import { useAgency } from '../hooks/useAgency';
+import PrintSuccessModal from '../components/Receipts/PrintSuccessModal';
+import { getLogoUrl } from '../utils/apiConfig';
 import { toast } from '../utils/toast';
 import { ArrowLeft, Copy } from 'lucide-react';
 import { Button } from "../components/ui";
 import {
     OperationalSummary,
-    ActionBar,
     KPICards,
     LogisticsFlow,
     ParcelTable,
@@ -39,12 +41,14 @@ const ExpeditionDetails = () => {
         resetStatus,
         recordTransaction
     } = useExpedition();
+    const { data: agencyData, fetchAgencyData } = useAgency();
 
     // États des modales
     const [isRefuseModalOpen, setIsRefuseModalOpen] = React.useState(false);
     const [isAcceptModalOpen, setIsAcceptModalOpen] = React.useState(false);
     const [isConfirmReceptionModalOpen, setIsConfirmReceptionModalOpen] = React.useState(false);
     const [isTransactionModalOpen, setIsTransactionModalOpen] = React.useState(false);
+    const [showPrintModal, setShowPrintModal] = React.useState(false);
     const [transactionType, setTransactionType] = React.useState(null);
     const [paymentMethod, setPaymentMethod] = React.useState('cash');
     const [paymentReference, setPaymentReference] = React.useState("");
@@ -57,6 +61,10 @@ const ExpeditionDetails = () => {
             getExpeditionDetails(id);
         }
     }, [id, getExpeditionDetails]);
+
+    useEffect(() => {
+        fetchAgencyData();
+    }, [fetchAgencyData]);
 
     // Gestion des transactions
     const handleRecordTransaction = (type) => {
@@ -162,7 +170,6 @@ const ExpeditionDetails = () => {
                 {/* 🎯 HEADER COMPACT - Mobile Optimized */}
                 <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
                     <div className="px-4 sm:px-6 py-3 sm:py-4">
-                        {/* Mobile: Stack layout */}
                         <div className="flex items-start gap-3 sm:gap-4">
                             <button
                                 onClick={() => navigate(-1)}
@@ -170,6 +177,8 @@ const ExpeditionDetails = () => {
                             >
                                 <ArrowLeft className="w-5 h-5 text-gray-600" />
                             </button>
+
+                            {/* Infos expédition */}
                             <div className="flex-1 min-w-0">
                                 <div className="flex flex-wrap items-center gap-2 mb-1">
                                     <span className="text-xs font-medium text-indigo-600 uppercase">
@@ -184,7 +193,7 @@ const ExpeditionDetails = () => {
                                     <h1 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">
                                         {expedition.reference}
                                     </h1>
-                                    <button 
+                                    <button
                                         className="flex-shrink-0 text-gray-400 hover:text-indigo-600 transition-colors p-1"
                                         onClick={() => {
                                             navigator.clipboard.writeText(expedition.reference);
@@ -198,6 +207,69 @@ const ExpeditionDetails = () => {
                                     Créé le {formatDate(expedition.created_at)}
                                 </div>
                             </div>
+
+                            {/* Actions rapides inline */}
+                            <div className="flex-shrink-0 flex flex-wrap items-center gap-2">
+                                {/* Bouton imprimer le reçu - toujours visible */}
+                                <button
+                                    onClick={() => setShowPrintModal(true)}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors"
+                                    title="Imprimer les reçus"
+                                >
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                    </svg>
+                                    <span className="hidden sm:inline">Reçu</span>
+                                </button>
+                                {expedition.statut_expedition === 'en_attente' && (
+                                    <>
+                                        <button
+                                            onClick={() => setIsRefuseModalOpen(true)}
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-colors"
+                                        >
+                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                            <span className="hidden sm:inline">Refuser</span>
+                                        </button>
+                                        <button
+                                            onClick={() => setIsAcceptModalOpen(true)}
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm transition-colors"
+                                        >
+                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                                            <span className="hidden sm:inline">Accepter</span>
+                                        </button>
+                                    </>
+                                )}
+
+                                {expedition.statut_expedition === 'accepted' && (
+                                    <button
+                                        onClick={() => setIsConfirmReceptionModalOpen(true)}
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm transition-colors"
+                                    >
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8 8-4-4" /></svg>
+                                        <span className="hidden sm:inline">Confirmer réception</span>
+                                    </button>
+                                )}
+
+                                {expedition.statut_paiement_expedition !== 'paye' && !expedition.is_paiement_credit && (
+                                    <button
+                                        onClick={() => handleRecordTransaction('montant_expedition')}
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors"
+                                    >
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                        <span className="hidden sm:inline">Encaisser transport</span>
+                                    </button>
+                                )}
+
+                                {parseFloat(expedition.frais_annexes || 0) > 0 && expedition.statut_paiement_frais !== 'paye' && (
+                                    <button
+                                        onClick={() => handleRecordTransaction('frais_annexes')}
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors"
+                                    >
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                        <span className="hidden sm:inline">Encaisser annexes</span>
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -206,15 +278,6 @@ const ExpeditionDetails = () => {
                 <OperationalSummary 
                     expedition={expedition} 
                     formatCurrency={formatCurrency}
-                />
-
-                {/* ⚡ ACTIONS RAPIDES */}
-                <ActionBar
-                    expedition={expedition}
-                    onAccept={() => setIsAcceptModalOpen(true)}
-                    onRefuse={() => setIsRefuseModalOpen(true)}
-                    onConfirmReception={() => setIsConfirmReceptionModalOpen(true)}
-                    onRecordTransaction={handleRecordTransaction}
                 />
 
                 {/* 📊 CARTES KPI */}
@@ -478,6 +541,16 @@ const ExpeditionDetails = () => {
                     </div>
                 </div>
             </ConfirmationModal>
+            {showPrintModal && expedition && (
+                <PrintSuccessModal
+                    expedition={expedition}
+                    agency={{
+                        ...(agencyData?.agence || agencyData),
+                        logo: getLogoUrl(agencyData?.agence?.logo || agencyData?.logo)
+                    }}
+                    onClose={() => setShowPrintModal(false)}
+                />
+            )}
         </div>
     );
 };

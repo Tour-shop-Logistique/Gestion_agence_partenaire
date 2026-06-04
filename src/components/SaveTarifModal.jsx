@@ -163,8 +163,11 @@ const SaveTarifModal = ({
                     <tbody className="divide-y divide-slate-100">
                       {editedZones.map((zone) => (
                         <tr key={zone.zone_destination_id} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="px-6 py-3 text-sm font-bold text-slate-900 leading-none">
-                            Z{zone.zone_destination_id.replace(/z/i, "")}
+                          <td className="px-6 py-3">
+                            <div className="flex flex-col">
+                              <span className="text-sm font-bold text-slate-900 leading-none">{zone.nom_zone || `Zone ${zone.zone_destination_id}`}</span>
+                              <span className="text-[9px] font-medium text-slate-400 uppercase tracking-tighter mt-0.5">{zone.zone_destination_id}</span>
+                            </div>
                           </td>
                           <td className="px-6 py-3 text-xs font-medium text-slate-500">
                             {formatPrice(zone.montant_base, "XOF")}

@@ -23,7 +23,6 @@ const Colis = () => {
     const [currentPage, setCurrentPage] = useState(lastFilters?.page || 1);
     const [selectedCodes, setSelectedCodes] = useState([]);
     const [processing, setProcessing] = useState(false);
-    const [activeTab, setActiveTab] = useState('agence'); // 'agence' or 'entrepot'
     const [scannerOpen, setScannerOpen] = useState(false);
 
     // Helper to get today's date in YYYY-MM-DD
@@ -81,54 +80,21 @@ const Colis = () => {
             }))
         );
         
-        // 🔍 DEBUG: Afficher les colis pour comprendre leur structure
-        console.log("📦 Tous les colis:", colis);
-        console.log("📊 Statistiques colis:", {
-            total: colis.length,
-            reçus_depart: colis.filter(c => c.is_received_depart).length,
-            reçus_destination: colis.filter(c => c.is_received_destination).length,
-            expédiés_entrepot: colis.filter(c => c.is_sent).length,
-            prêts_envoi: colis.filter(c => c.is_received_depart && !c.is_sent).length,
-            avec_statut_recu_agence_depart: colis.filter(c => c.expedition_status === 'recu_agence_depart').length
-        });
-        
         return colis;
     }, [expeditions]);
 
-    // Filtrer les colis selon l'onglet actif
+    // Filtrer uniquement les colis "Envoi pour expédition" : Colis avec statut expédition "recu_agence_depart"
+    // qui ne sont PAS encore expédiés vers l'entrepôt
     const tabColis = useMemo(() => {
-        if (activeTab === 'agence') {
-            // Onglet "En agence" : Colis des expéditions ACCEPTÉES qui ne sont PAS encore reçus
-            // Statut expédition = 'accepted' ET is_received = false
-            const filtered = allColis.filter(c => 
-                c.expedition_status === 'accepted' && !c.is_received
-            );
-            console.log("🏢 Onglet 'En agence' - Expéditions acceptées à réceptionner:", {
-                total: filtered.length,
-                expeditions: [...new Set(filtered.map(c => c.expedition?.reference))]
-            });
-            return filtered;
-        } else {
-            // Onglet "Envoi pour expédition" : Colis avec statut expédition "recu_agence_depart"
-            // qui ne sont PAS encore expédiés vers l'entrepôt
-            // On se base principalement sur le statut de l'expédition
-            const filtered = allColis.filter(c => 
-                c.expedition_status === 'recu_agence_depart' && !c.is_sent
-            );
-            console.log("🚚 Onglet 'Envoi pour expédition' - Colis reçus à envoyer:", {
-                total: filtered.length,
-                expeditions: [...new Set(filtered.map(c => c.expedition?.reference))],
-                details: filtered.map(c => ({
-                    code: c.code_colis,
-                    expedition: c.expedition?.reference,
-                    status: c.expedition_status,
-                    is_received_depart: c.is_received_depart,
-                    is_sent: c.is_sent
-                }))
-            });
-            return filtered;
-        }
-    }, [allColis, activeTab]);
+        const filtered = allColis.filter(c => 
+            c.expedition_status === 'recu_agence_depart' && !c.is_sent
+        );
+        console.log("🚚 Colis reçus à envoyer:", {
+            total: filtered.length,
+            expeditions: [...new Set(filtered.map(c => c.expedition?.reference))],
+        });
+        return filtered;
+    }, [allColis]);
 
     const handlePageChange = (page) => {
         if (page >= 1 && page <= (meta?.last_page || 1)) {
@@ -159,9 +125,28 @@ const Colis = () => {
         );
     }, [tabColis, searchQuery]);
 
+    // Grouper les colis par expédition pour l'affichage structuré
+    const groupedExpeditions = useMemo(() => {
+        const groups = {};
+        filteredColis.forEach(item => {
+            const expId = item.expedition_id || item.expedition?.id;
+            if (!expId) return;
+            
+            if (!groups[expId]) {
+                groups[expId] = {
+                    ...(item.expedition || {}),
+                    id: expId,
+                    colis: []
+                };
+            }
+            groups[expId].colis.push(item);
+        });
+        return Object.values(groups);
+    }, [filteredColis]);
+
     const selectableColis = useMemo(() =>
-        filteredColis.filter(c => activeTab === 'agence' ? !c.is_received : !c.is_sent),
-        [filteredColis, activeTab]);
+        filteredColis.filter(c => !c.is_sent),
+        [filteredColis]);
 
     const toggleSelect = (code) => {
         setSelectedCodes(prev =>
@@ -182,11 +167,7 @@ const Colis = () => {
     const handleBulkAction = async () => {
         if (selectedCodes.length === 0) return;
         setProcessing(true);
-        if (activeTab === 'agence') {
-            await receiveColisDepart(selectedCodes);
-        } else {
-            await sendColisToEntrepot(selectedCodes);
-        }
+        await sendColisToEntrepot(selectedCodes);
         setProcessing(false);
     };
 
@@ -208,7 +189,7 @@ const Colis = () => {
         }
         
         // Vérifier si le colis peut être sélectionné
-        const isProcessed = activeTab === 'agence' ? foundColis?.is_received : foundColis?.is_sent;
+        const isProcessed = foundColis?.is_sent;
         
         if (foundColis && !isProcessed) {
             // Sélectionner le colis trouvé
@@ -227,8 +208,7 @@ const Colis = () => {
                 }
             }, 100);
         } else if (foundColis && isProcessed) {
-            const action = activeTab === 'agence' ? 'réceptionné' : 'expédié';
-            toast.info(`Le colis ${foundColis.code_colis} a déjà été ${action}.`);
+            toast.info(`Le colis ${foundColis.code_colis} a déjà été expédié.`);
         } else {
             toast.error(`Aucun colis trouvé avec le code scanné : ${scannedData}`);
         }
@@ -241,12 +221,10 @@ const Colis = () => {
                 <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                         <h1 className="text-lg sm:text-2xl font-semibold text-gray-900">
-                            Gestion des Colis
+                            Gestion des Colis - À envoyer
                         </h1>
                         <p className="mt-1 text-xs sm:text-sm text-gray-500 line-clamp-2">
-                            {activeTab === 'agence'
-                                ? "Réceptionnez les colis des expéditions acceptées"
-                                : "Envoyez les colis reçus vers l'entrepôt"}
+                            Envoyez les colis reçus vers l'entrepôt
                         </p>
                         {selectedCodes.length > 0 && (
                             <span className="inline-block mt-1 sm:mt-2 text-indigo-600 font-medium text-xs sm:text-sm">
@@ -254,25 +232,9 @@ const Colis = () => {
                             </span>
                         )}
                     </div>
-
-                    {/* Tab Switcher - Compact on mobile */}
-                    <div className="flex flex-col sm:flex-row items-center bg-gray-100 p-0.5 sm:p-1 rounded-lg border border-gray-200 flex-shrink-0">
-                        <button
-                            onClick={() => { setActiveTab('agence'); setSelectedCodes([]); }}
-                            className={`px-3 sm:px-6 py-1.5 sm:py-2 rounded-md text-[10px] sm:text-sm font-medium transition-all whitespace-nowrap ${activeTab === 'agence' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
-                        >
-                            En agence
-                        </button>
-                        <button
-                            onClick={() => { setActiveTab('entrepot'); setSelectedCodes([]); }}
-                            className={`px-3 sm:px-6 py-1.5 sm:py-2 rounded-md text-[10px] sm:text-sm font-medium transition-all whitespace-nowrap ${activeTab === 'entrepot' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
-                        >
-                            Envoi expédition
-                        </button>
-                    </div>
                 </div>
 
-                {/* Search & Scanner Row */}
+                {/* Scanner Row */}
                 <div className="flex items-center gap-2">
                     {/* Search Bar */}
                     <div className="relative group flex-1">
@@ -382,7 +344,7 @@ const Colis = () => {
                                     <th className="px-6 py-5 text-[10px] font-semibold text-slate-500 uppercase tracking-wide text-right">Détails</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-200">
+                            <tbody className="divide-y-0">
                                 {loadingColis && allColis.length === 0 ? (
                                     Array(5).fill(0).map((_, i) => (
                                         <tr key={i} className="animate-pulse">
@@ -391,85 +353,152 @@ const Colis = () => {
                                             </td>
                                         </tr>
                                     ))
-                                ) : filteredColis.length > 0 ? (
-                                    filteredColis.map((item) => (
-                                        <tr
-                                            key={item.id}
-                                            id={`colis-${item.code_colis}`}
-                                            className={`hover:bg-slate-50/30 transition-colors group ${selectedCodes.includes(item.code_colis) ? 'bg-indigo-50/30' : ''}`}
-                                            onClick={() => toggleSelect(item.code_colis)}
-                                        >
-                                            <td className="px-4 py-6" onClick={(e) => e.stopPropagation()}>
-                                                {(activeTab === 'agence' ? item.is_received : item.is_sent) ? (
-                                                    <div className="flex justify-center">
-                                                        <div className="p-1 px-2 rounded-md bg-emerald-50 text-emerald-600 border border-emerald-100">
-                                                            <IdentificationIcon className="w-4 h-4" />
+                                ) : groupedExpeditions.length > 0 ? (
+                                    groupedExpeditions.map((exp) => {
+                                        const expColis = exp.colis || [];
+                                        return (
+                                            <React.Fragment key={exp.id}>
+                                                {/* ══ SÉPARATEUR ENTRE EXPÉDITIONS ══ */}
+                                                <tr className="h-3 bg-gradient-to-r from-slate-100 via-slate-50 to-slate-100">
+                                                    <td colSpan="7" className="border-t-4 border-slate-200"></td>
+                                                </tr>
+
+                                                {/* 📦 EXPEDITION HEADER - Design Card-like avec ombre */}
+                                                <tr className="bg-gradient-to-r from-indigo-500 to-indigo-600 shadow-lg">
+                                                    <td className="px-5 py-3.5" colSpan="7">
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex items-center gap-4">
+                                                                {/* Badge référence */}
+                                                                <div className="flex items-center gap-2.5">
+                                                                    <svg className="w-5 h-5 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                                                                    </svg>
+                                                                    <span className="text-sm font-bold text-white tracking-wide">
+                                                                        {exp.reference}
+                                                                    </span>
+                                                                </div>
+                                                                
+                                                                {/* Séparateur vertical */}
+                                                                <div className="w-px h-5 bg-white/30"></div>
+                                                                
+                                                                {/* Trajet */}
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-xs font-medium text-white/90">{exp.pays_depart}</span>
+                                                                    <svg className="w-4 h-4 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                                                    </svg>
+                                                                    <span className="text-xs font-medium text-white">{exp.pays_destination}</span>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Compteur colis */}
+                                                            <div className="flex items-center gap-2 px-3 py-1.5 bg-white/20 rounded-lg backdrop-blur-sm border border-white/30">
+                                                                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                                                </svg>
+                                                                <span className="text-xs font-bold text-white">{expColis.length}</span>
+                                                                <span className="text-xs font-medium text-white/80">colis</span>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                ) : (
-                                                    <input
-                                                        type="checkbox"
-                                                        className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-all cursor-pointer"
-                                                        checked={selectedCodes.includes(item.code_colis)}
-                                                        onChange={() => toggleSelect(item.code_colis)}
-                                                    />
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-6 font-bold text-slate-900">
-                                                <div className="flex flex-col">
-                                                    <span className="text-indigo-600">{item.code_colis}</span>
-                                                    <span className="text-xs font-semibold text-slate-500">{item.designation}</span>
-                                                    <span className="text-[10px] text-slate-400 mt-1">Le {formatDate(item.created_at)}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-6">
-                                                <div className="flex flex-col gap-1.5">
-                                                    <span className="inline-flex px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-100 uppercase w-fit">
-                                                        {item.category?.nom}
-                                                    </span>
-                                                    <p className="text-[11px] text-slate-600 line-clamp-1 italic">{item.articles?.join(', ')}</p>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-6">
-                                                <Link to={`/expeditions/${item.expedition_id}`} className="group/exp">
-                                                    <span className="text-xs font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg group-hover/exp:bg-indigo-600 group-hover/exp:text-white transition-all">
-                                                        {item.expedition?.reference}
-                                                    </span>
-                                                    <div className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 mt-1">
-                                                        <span>{item.expedition?.pays_depart}</span>
-                                                        <ArrowPathIcon className="w-2.5 h-2.5" />
-                                                        <span className="text-indigo-600">{item.expedition?.pays_destination}</span>
-                                                    </div>
-                                                </Link>
-                                            </td>
-                                            <td className="px-6 py-6 text-center">
-                                                <div className="flex flex-col items-center gap-1">
-                                                    <span className="text-xs font-bold text-slate-900">{parseFloat(item.poids)} kg</span>
-                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
-                                                        {parseFloat(item.longueur)}x{parseFloat(item.largeur)}x{parseFloat(item.hauteur)} cm
-                                                    </span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-6 text-right">
-                                                <div className="flex flex-col items-end">
-                                                    <span className="text-sm font-bold text-slate-900 tabular-nums">
-                                                        {formatPriceDual(item.montant_colis_total)}
-                                                    </span>
-                                                    <span className="text-[9px] font-bold text-slate-400 uppercase italic">
-                                                        Prestation: {formatPriceDual(item.montant_colis_prestation)}
-                                                    </span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-6 text-right">
-                                                <Link
-                                                    to={`/expeditions/${item.expedition_id}`}
-                                                    className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-slate-900 text-white text-[10px] font-bold uppercase tracking-wide hover:bg-slate-800 transition-all shadow-lg shadow-slate-200"
-                                                >
-                                                    Détails
-                                                </Link>
-                                            </td>
-                                        </tr>
-                                    ))
+                                                    </td>
+                                                </tr>
+
+                                                {/* ── Ligne de transition header → colis (bordure fine) ── */}
+                                                <tr className="h-0.5 bg-indigo-100">
+                                                    <td colSpan="7" className="border-b border-indigo-200"></td>
+                                                </tr>
+
+                                                {/* 📋 COLIS ROWS */}
+                                                {expColis.map((item, idx) => (
+                                                    <tr
+                                                        key={item.id}
+                                                        id={`colis-${item.code_colis}`}
+                                                        className={`
+                                                            ${item.is_sent 
+                                                                ? 'bg-emerald-50/30' 
+                                                                : selectedCodes.includes(item.code_colis) 
+                                                                    ? 'bg-indigo-50 ring-2 ring-inset ring-indigo-200' 
+                                                                    : 'bg-white hover:bg-slate-50'
+                                                            } 
+                                                            ${idx !== expColis.length - 1 ? 'border-b border-slate-100' : 'border-b-2 border-slate-200'}
+                                                            cursor-pointer transition-all duration-150
+                                                        `}
+                                                        onClick={() => !item.is_sent && toggleSelect(item.code_colis)}
+                                                    >
+                                                        <td className="px-4 py-6" onClick={(e) => e.stopPropagation()}>
+                                                            {item.is_sent ? (
+                                                                <div className="flex justify-center">
+                                                                    <div className="p-1 px-2 rounded-md bg-emerald-50 text-emerald-600 border border-emerald-100">
+                                                                        <IdentificationIcon className="w-4 h-4" />
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
+                                                                <input
+                                                                    type="checkbox"
+                                                                    className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-all cursor-pointer"
+                                                                    checked={selectedCodes.includes(item.code_colis)}
+                                                                    onChange={() => toggleSelect(item.code_colis)}
+                                                                />
+                                                            )}
+                                                        </td>
+                                                        <td className="px-6 py-6 font-bold text-slate-900">
+                                                            <div className="flex flex-col">
+                                                                <span className="text-indigo-600">{item.code_colis}</span>
+                                                                <span className="text-xs font-semibold text-slate-500">{item.designation}</span>
+                                                                <span className="text-[10px] text-slate-400 mt-1">Le {formatDate(item.created_at)}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-6">
+                                                            <div className="flex flex-col gap-1.5">
+                                                                <span className="inline-flex px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-100 uppercase w-fit">
+                                                                    {item.category?.nom}
+                                                                </span>
+                                                                <p className="text-[11px] text-slate-600 line-clamp-1 italic">{item.articles?.join(', ')}</p>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-6">
+                                                            <Link to={`/expeditions/${item.expedition_id}`} className="group/exp">
+                                                                <span className="text-xs font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg group-hover/exp:bg-indigo-600 group-hover/exp:text-white transition-all">
+                                                                    {item.expedition?.reference}
+                                                                </span>
+                                                                <div className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 mt-1">
+                                                                    <span>{item.expedition?.pays_depart}</span>
+                                                                    <ArrowPathIcon className="w-2.5 h-2.5" />
+                                                                    <span className="text-indigo-600">{item.expedition?.pays_destination}</span>
+                                                                </div>
+                                                            </Link>
+                                                        </td>
+                                                        <td className="px-6 py-6 text-center">
+                                                            <div className="flex flex-col items-center gap-1">
+                                                                <span className="text-xs font-bold text-slate-900">{parseFloat(item.poids)} kg</span>
+                                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
+                                                                    {parseFloat(item.longueur)}x{parseFloat(item.largeur)}x{parseFloat(item.hauteur)} cm
+                                                                </span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-6 text-right">
+                                                            <div className="flex flex-col items-end">
+                                                                <span className="text-sm font-bold text-slate-900 tabular-nums">
+                                                                    {formatPriceDual(item.montant_colis_total)}
+                                                                </span>
+                                                                <span className="text-[9px] font-bold text-slate-400 uppercase italic">
+                                                                    Prestation: {formatPriceDual(item.montant_colis_prestation)}
+                                                                </span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-6 text-right">
+                                                            <Link
+                                                                to={`/expeditions/${item.expedition_id}`}
+                                                                className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-slate-900 text-white text-[10px] font-bold uppercase tracking-wide hover:bg-slate-800 transition-all shadow-lg shadow-slate-200"
+                                                            >
+                                                                Détails
+                                                            </Link>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </React.Fragment>
+                                        );
+                                    })
                                 ) : (
                                     <tr><td colSpan="7" className="py-20 text-center font-bold text-slate-400 italic">Aucun colis trouvé</td></tr>
                                 )}
@@ -507,7 +536,7 @@ const Colis = () => {
                                     {activeTab === 'agence' ? "Confirmer la réception" : "Envoyer à l'entrepôt"}
                                 </span>
                                 <span className="sm:hidden">
-                                    {activeTab === 'agence' ? "Recevoir" : "Envoyer"}
+                                    Envoyer
                                 </span>
                             </button>
                         </div>
@@ -526,7 +555,7 @@ const Colis = () => {
                         ))
                     ) : filteredColis.length > 0 ? (
                         filteredColis.map((item) => {
-                            const isProcessed = activeTab === 'agence' ? item.is_received : item.is_sent;
+                            const isProcessed = item.is_sent;
                             return (
                                 <div
                                     key={item.id}
@@ -609,7 +638,7 @@ const Colis = () => {
                                             {isProcessed ? (
                                                 <span className="flex items-center gap-1 px-2 py-1 bg-emerald-50 text-emerald-700 rounded text-[9px] font-bold uppercase border border-emerald-100">
                                                     <IdentificationIcon className="w-3 h-3" />
-                                                    {activeTab === 'agence' ? 'Reçu' : 'Expédié'}
+                                                    Expédié
                                                 </span>
                                             ) : selectedCodes.length === 0 && (
                                                 <button
@@ -619,7 +648,7 @@ const Colis = () => {
                                                     }}
                                                     className="px-2 py-1 bg-indigo-50 text-indigo-600 rounded text-[9px] font-bold uppercase hover:bg-indigo-600 hover:text-white transition-all border border-indigo-100"
                                                 >
-                                                    {activeTab === 'agence' ? 'Recevoir' : 'Envoyer'}
+                                                    Envoyer
                                                 </button>
                                             )}
                                             <Link
@@ -674,7 +703,7 @@ const Colis = () => {
                                     {activeTab === 'agence' ? "Confirmer la réception" : "Envoyer à l'entrepôt"}
                                 </span>
                                 <span className="sm:hidden">
-                                    {activeTab === 'agence' ? "Recevoir" : "Envoyer"}
+                                    Envoyer
                                 </span>
                             </button>
                         </div>

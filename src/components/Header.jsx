@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { selectCurrentUser, logout } from "../store/slices/authSlice";
 import { useAgency } from "../hooks/useAgency";
 import { useExpedition } from "../hooks/useExpedition";
 import { getLogoUrl } from "../utils/apiConfig";
-import { Bell, ChevronDown, Menu, Euro, RefreshCcw } from "lucide-react";
+import { Bell, Menu, Euro, RefreshCcw } from "lucide-react";
+import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
 
 const Header = ({ onToggleSidebar }) => {
@@ -89,127 +90,97 @@ const Header = ({ onToggleSidebar }) => {
     .toUpperCase();
 
   return (
-    <header className="h-16 fixed top-0 left-0 right-0 z-50 
-    bg-white/80 backdrop-blur-xl border-b border-slate-200/60">
-
+    <header className="h-16 sticky top-0 bg-white border-b border-gray-100 z-50">
       <div className="h-full px-6 flex items-center justify-between">
 
         {/* LEFT */}
-        <div className="flex items-center gap-4 min-w-0">
-
-          {/* Burger */}
+        <div className="flex items-center gap-4">
+          {/* Burger - mobile only */}
           <button
             onClick={onToggleSidebar}
-            className="lg:hidden p-2 rounded-xl hover:bg-slate-100 transition"
+            className="lg:hidden p-2 rounded-lg hover:bg-slate-100 transition"
           >
             <Menu className="w-6 h-6 text-slate-700" />
           </button>
-
-          {/* Agency */}
-          <div className="flex items-center gap-3">
-            {agencyLogo && (
-              <div className="p-1 rounded-xl bg-gradient-to-br from-indigo-50 to-indigo-100">
-                <img
-                  src={agencyLogo}
-                  alt="logo"
-                  className="w-9 h-9 rounded-lg object-contain"
-                />
-              </div>
-            )}
-
-            <div className="leading-tight">
-              <h1 className="text-h4 font-display text-slate-900 truncate">
-                {agencyName}
-              </h1>
-              <p className="text-caption text-slate-400 hidden sm:block">
-                Gestion d'agence
-              </p>
-            </div>
-          </div>
         </div>
 
         {/* RIGHT */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
 
-          {/* Conversion Rate Pill */}
+          {/* Conversion Rate */}
           <button
             onClick={handleOpenModal}
-            className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-200/60 hover:from-indigo-100 hover:to-blue-100 hover:shadow-md hover:border-indigo-300 transition-all group"
+            className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 hover:border-slate-300 transition-all"
           >
-            <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-white shadow-sm border border-indigo-100 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300">
-              <Euro className="w-4 h-4" />
-            </div>
-            <div className="hidden lg:flex flex-col items-start leading-tight">
-              <span className="text-[9px] font-bold text-indigo-500 uppercase tracking-wider">Taux EUR</span>
-              <span className="text-xs font-bold text-slate-900">1€ = {parseFloat(exchangeRate).toLocaleString('fr-FR')} CFA</span>
+            <Euro className="w-4 h-4 text-indigo-600" />
+            <div className="hidden lg:block">
+              <span className="text-xs font-semibold text-slate-900">1€ = {parseFloat(exchangeRate).toLocaleString('fr-FR')} CFA</span>
             </div>
             <div className="lg:hidden">
-              <span className="text-xs font-bold text-indigo-600">{parseFloat(exchangeRate).toLocaleString('fr-FR')}</span>
+              <span className="text-xs font-semibold text-indigo-600">{parseFloat(exchangeRate).toLocaleString('fr-FR')}</span>
             </div>
-            <RefreshCcw className="w-3 h-3 text-indigo-400 group-hover:rotate-180 transition-transform duration-500" />
           </button>
 
           {/* Notifications */}
           <button 
             onClick={() => navigate('/demandes')}
-            className="relative p-2 rounded-xl hover:bg-slate-100 transition group"
+            className="relative p-2 rounded-lg hover:bg-slate-100 transition"
           >
-            <Bell className="w-5 h-5 text-slate-600 group-hover:text-indigo-600 transition-colors" />
+            <Bell className="w-5 h-5 text-slate-600" />
             {pendingDemandesCount > 0 && (
-              <>
-                  <span className="absolute top-1 right-1 flex h-4 w-4">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 items-center justify-center">
-                    <span className="text-badge-sm font-semibold text-white">{pendingDemandesCount > 9 ? '9+' : pendingDemandesCount}</span>
-                  </span>
+              <span className="absolute top-1 right-1 flex h-4 w-4">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 items-center justify-center">
+                  <span className="text-[10px] font-semibold text-white">{pendingDemandesCount > 9 ? '9+' : pendingDemandesCount}</span>
                 </span>
-              </>
+              </span>
             )}
+          </button>
+
+          {/* Settings Icon */}
+          <button className="p-2 rounded-lg hover:bg-slate-100 transition">
+            <svg className="w-5 h-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
           </button>
 
           {/* USER */}
           <div className="relative">
             <button
               onClick={() => setShowDropdown(!showDropdown)}
-              className="flex items-center gap-3 px-3 py-2 rounded-2xl hover:bg-slate-100 transition"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-100 transition"
             >
               {/* Avatar */}
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center shadow text-white font-bold text-sm">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm">
                 {initials}
               </div>
 
-              {/* Infos */}
+              {/* Name */}
               <div className="hidden md:block text-left">
-                <p className="text-label font-semibold text-slate-900">
+                <p className="text-sm font-semibold text-slate-900">
                   {currentUser?.name}
-                </p>
-                <p className="text-caption text-slate-500">
-                  {currentUser?.role === "admin"
-                    ? "Administrateur"
-                    : "Agent"}
                 </p>
               </div>
 
-              <ChevronDown className="w-4 h-4 text-slate-400" />
+              <ChevronRightIcon className="w-4 h-4 text-slate-400" />
             </button>
 
             {/* DROPDOWN */}
             {showDropdown && (
-              <div className="absolute right-0 mt-3 w-64 
-              bg-white rounded-2xl shadow-xl border border-slate-200 p-2">
-
+              <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-200 p-2">
                 {/* User card */}
-                <div className="p-3 rounded-xl bg-slate-50 mb-2">
-                  <p className="text-label font-semibold text-slate-900">
+                <div className="p-3 rounded-lg bg-slate-50 mb-2">
+                  <p className="text-sm font-semibold text-slate-900">
                     {currentUser?.name}
                   </p>
-                  <p className="text-caption text-slate-500">
+                  <p className="text-xs text-slate-500">
                     {currentUser?.email}
                   </p>
                 </div>
 
                 {/* Actions */}
-                <button className="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 text-label flex items-center gap-2">
+                <button className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 text-sm flex items-center gap-2 text-slate-700">
                   <span className="w-7 h-7 flex items-center justify-center bg-slate-100 rounded-lg">👤</span>
                   Mon profil
                 </button>
@@ -219,7 +190,7 @@ const Header = ({ onToggleSidebar }) => {
                     handleOpenModal();
                     setShowDropdown(false);
                   }}
-                  className="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 text-label flex items-center gap-2"
+                  className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 text-sm flex items-center gap-2 text-slate-700"
                 >
                   <span className="w-7 h-7 flex items-center justify-center bg-indigo-50 rounded-lg">
                     <Euro className="w-4 h-4 text-indigo-600" />
@@ -231,7 +202,7 @@ const Header = ({ onToggleSidebar }) => {
 
                 <button
                   onClick={handleLogout}
-                  className="w-full text-left px-3 py-2 rounded-xl hover:bg-red-50 text-red-600 text-label font-medium"
+                  className="w-full text-left px-3 py-2 rounded-lg hover:bg-red-50 text-red-600 text-sm font-medium"
                 >
                   🚪 Se déconnecter
                 </button>

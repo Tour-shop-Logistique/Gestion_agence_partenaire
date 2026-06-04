@@ -39,7 +39,7 @@ const DashboardLayout = () => {
       <div className="lg:ml-60">
         <div className="flex flex-col min-h-screen">
           <Header onToggleSidebar={() => setSidebarOpen(open => !open)} />
-          <main className="flex-1 overflow-y-auto pt-16 pb-4">
+          <main className="flex-1 overflow-y-auto pt-1 pb-4">
             <div className="px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10 max-w-full">
               <Outlet />
             </div>

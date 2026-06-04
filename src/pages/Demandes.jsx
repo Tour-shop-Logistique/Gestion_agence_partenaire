@@ -4,7 +4,7 @@ import { useAgency } from "../hooks/useAgency";
 import { formatPriceDual } from "../utils/format";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "../utils/toast";
-import { Check, X, Eye, Package, Calendar, MapPin, User, ArrowRight, Loader2, RefreshCw } from "lucide-react";
+import { Check, X, Eye, Package, Calendar, MapPin, User, ArrowRight, Loader2, RefreshCw, Search } from "lucide-react";
 import ConfirmationModal from "../components/ConfirmationModal";
 
 const Demandes = () => {
@@ -18,7 +18,9 @@ const Demandes = () => {
         refuseDemande,
         message,
         error,
-        resetStatus
+        resetStatus,
+        expeditions,
+        loadExpeditions
     } = useExpedition();
     const { fetchAgencyData } = useAgency();
     const [currentPage, setCurrentPage] = useState(1);
@@ -28,6 +30,8 @@ const Demandes = () => {
     const [idToRefuse, setIdToRefuse] = useState(null);
     const [idToAccept, setIdToAccept] = useState(null);
     const [motifRefus, setMotifRefus] = useState("");
+    const [searchQuery, setSearchQuery] = useState("");
+    const [activeTab, setActiveTab] = useState('demandes'); // 'demandes' or 'en-agence'
 
     useEffect(() => {
         loadDemandes({ page: currentPage });
@@ -36,6 +40,8 @@ const Demandes = () => {
 
     useEffect(() => {
         fetchAgencyData();
+        // Charger les expéditions pour l'onglet "À envoyer"
+        loadExpeditions({ page: 1 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -133,6 +139,50 @@ const Demandes = () => {
         
     };
 
+    // Filtrer les demandes basé sur la recherche
+    const filteredDemandes = demandes.filter(demande => {
+        if (!searchQuery.trim()) return true;
+        
+        const query = searchQuery.toLowerCase();
+        const clientName = demande.expediteur?.nom_prenom?.toLowerCase() || '';
+        const destination = demande.pays_destination?.toLowerCase() || '';
+        const origin = demande.pays_depart?.toLowerCase() || '';
+        const type = getTypeLabel(demande.type_expedition).toLowerCase();
+        
+        return clientName.includes(query) || 
+               destination.includes(query) || 
+               origin.includes(query) ||
+               type.includes(query);
+    });
+
+    // Récupérer les colis en agence depuis les expéditions (colis acceptés non encore reçus)
+    const colisEnAgence = expeditions ? expeditions.flatMap(exp =>
+        (exp.colis || []).filter(colis => 
+            exp.statut_expedition === 'accepted' && !colis.is_received_by_agence_depart
+        ).map(colis => ({
+            ...colis,
+            expedition: exp,
+            expedition_id: exp.id,
+            expedition_status: exp.statut_expedition
+        }))
+    ) : [];
+
+    // Filtrer les colis en agence selon la recherche
+    const filteredColisEnAgence = colisEnAgence.filter(colis => {
+        if (!searchQuery.trim()) return true;
+        
+        const query = searchQuery.toLowerCase();
+        const code = colis.code_colis?.toLowerCase() || '';
+        const reference = colis.expedition?.reference?.toLowerCase() || '';
+        const produit = colis.produit_nom?.toLowerCase() || '';
+        const destination = colis.expedition?.pays_destination?.toLowerCase() || '';
+        
+        return code.includes(query) || 
+               reference.includes(query) || 
+               produit.includes(query) ||
+               destination.includes(query);
+    });
+
     return (
         <div className="space-y-4 sm:space-y-8 max-w-[1600px] mx-auto px-3 sm:px-6 pb-6 sm:pb-10">
             {/* Header Section - Responsive */}
@@ -170,8 +220,90 @@ const Demandes = () => {
                 </div>
             </div>
 
+            {/* Search Filter */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <input
+                        type="text"
+                        placeholder={activeTab === 'demandes' 
+                            ? "Rechercher par client, destination, origine ou type..." 
+                            : "Rechercher par code colis, référence, produit ou destination..."
+                        }
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    />
+                    {searchQuery && (
+                        <button
+                            onClick={() => setSearchQuery('')}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded-full transition-colors"
+                        >
+                            <X className="w-4 h-4 text-slate-400" />
+                        </button>
+                    )}
+                </div>
+                {searchQuery && (
+                    <div className="mt-2 text-xs text-slate-500">
+                        <span className="font-semibold text-indigo-600">
+                            {activeTab === 'demandes' ? filteredDemandes.length : filteredColisEnAgence.length}
+                        </span> résultat{(activeTab === 'demandes' ? filteredDemandes.length : filteredColisEnAgence.length) > 1 ? 's' : ''} trouvé{(activeTab === 'demandes' ? filteredDemandes.length : filteredColisEnAgence.length) > 1 ? 's' : ''}
+                    </div>
+                )}
+            </div>
+
+            {/* Tabs */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-2">
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => setActiveTab('demandes')}
+                        className={`flex-1 px-4 py-3 rounded-lg text-sm font-semibold transition-all ${
+                            activeTab === 'demandes'
+                                ? 'bg-indigo-600 text-white shadow-md'
+                                : 'text-slate-600 hover:bg-slate-50'
+                        }`}
+                    >
+                        <div className="flex items-center justify-center gap-2">
+                            <Package className="w-4 h-4" />
+                            <span>Demandes</span>
+                            {demandesMeta?.total > 0 && (
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                                    activeTab === 'demandes' 
+                                        ? 'bg-white/20 text-white' 
+                                        : 'bg-amber-100 text-amber-700'
+                                }`}>
+                                    {demandesMeta.total}
+                                </span>
+                            )}
+                        </div>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('en-agence')}
+                        className={`flex-1 px-4 py-3 rounded-lg text-sm font-semibold transition-all ${
+                            activeTab === 'en-agence'
+                                ? 'bg-indigo-600 text-white shadow-md'
+                                : 'text-slate-600 hover:bg-slate-50'
+                        }`}
+                    >
+                        <div className="flex items-center justify-center gap-2">
+                            <Package className="w-4 h-4" />
+                            <span>En agence</span>
+                            {colisEnAgence.length > 0 && (
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                                    activeTab === 'en-agence' 
+                                        ? 'bg-white/20 text-white' 
+                                        : 'bg-blue-100 text-blue-700'
+                                }`}>
+                                    {colisEnAgence.length}
+                                </span>
+                            )}
+                        </div>
+                    </button>
+                </div>
+            </div>
 
             {/* Main Content Card */}
+            {activeTab === 'demandes' ? (
             <div className="relative bg-gradient-to-br from-white via-white to-slate-50/30 rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-200/60 overflow-hidden backdrop-blur-sm">
                 <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/[0.02] via-transparent to-purple-500/[0.02] pointer-events-none"></div>
 
@@ -205,8 +337,8 @@ const Demandes = () => {
                                     <div className="h-4 bg-slate-200 rounded w-1/4"></div>
                                 </div>
                             ))
-                        ) : demandes.length > 0 ? (
-                            demandes.map((demande) => (
+                        ) : filteredDemandes.length > 0 ? (
+                            filteredDemandes.map((demande) => (
                                 <div key={demande.id} className="bg-white rounded-xl border border-slate-200 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all active:scale-[0.99] overflow-hidden">
                                     {/* Header Compact */}
                                     <div className="p-3 border-b border-slate-100">
@@ -227,9 +359,7 @@ const Demandes = () => {
 
                                         <div className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-600 bg-slate-50 px-2 py-1.5 rounded-lg">
                                             <MapPin className="w-3 h-3 text-slate-400 flex-shrink-0" />
-                                            <span className="truncate">{demande.pays_depart}</span>
-                                            <ArrowRight className="w-2.5 h-2.5 text-slate-300 flex-shrink-0" />
-                                            <span className="text-indigo-600 truncate">{demande.pays_destination}</span>
+                                            <span className="text-indigo-600">{demande.pays_destination}</span>
                                         </div>
                                     </div>
 
@@ -245,7 +375,7 @@ const Demandes = () => {
                                         <div>
                                             <p className="text-[9px] font-semibold text-slate-400 uppercase mb-0.5">Montant</p>
                                             <p className="text-xs font-bold text-slate-900 tabular-nums">
-                                                {new Intl.NumberFormat('fr-FR', { notation: 'compact' }).format(demande.montant_expedition || 0)}
+                                                {new Intl.NumberFormat('fr-FR').format(demande.montant_expedition || 0)} CFA
                                             </p>
                                         </div>
                                     </div>
@@ -286,9 +416,11 @@ const Demandes = () => {
                                 <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
                                     <Package className="w-8 h-8 text-amber-300" />
                                 </div>
-                                <h3 className="text-sm font-bold text-slate-900 mb-1">Aucune demande</h3>
+                                <h3 className="text-sm font-bold text-slate-900 mb-1">
+                                    {searchQuery ? 'Aucun résultat' : 'Aucune demande'}
+                                </h3>
                                 <p className="text-xs text-slate-500">
-                                    Les nouvelles demandes apparaîtront ici
+                                    {searchQuery ? 'Essayez avec d\'autres mots-clés' : 'Les nouvelles demandes apparaîtront ici'}
                                 </p>
                             </div>
                         )}
@@ -299,7 +431,7 @@ const Demandes = () => {
                         <thead>
                             <tr className="bg-slate-50/90 backdrop-blur-md border-b-2 border-slate-400">
                                 <th className="px-4 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200 w-[22%]">Client / Date</th>
-                                <th className="px-4 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200 w-[25%]">Type & Trajet</th>
+                                <th className="px-4 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200 w-[25%]">Type & Destination </th>
                                 <th className="px-4 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200 w-[18%]">Détails Colis</th>
                                 <th className="px-4 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200 w-[15%]">Montant</th>
                                 <th className="px-4 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide text-right w-[20%]">Actions</th>
@@ -316,8 +448,8 @@ const Demandes = () => {
                                         <td className="px-4 py-5 text-right"><div className="flex justify-end gap-2"><div className="h-8 w-16 bg-slate-200 rounded-lg"></div><div className="h-8 w-20 bg-slate-200 rounded-lg"></div></div></td>
                                     </tr>
                                 ))
-                            ) : demandes.length > 0 ? (
-                                demandes.map((demande) => (
+                            ) : filteredDemandes.length > 0 ? (
+                                filteredDemandes.map((demande) => (
                                     <tr key={demande.id} className="group hover:bg-indigo-50/30 transition-all duration-200 border-b-2 border-slate-200 cursor-pointer">
                                         <td 
                                             onClick={() => navigate(`/expeditions/${demande.id}`)}
@@ -346,10 +478,9 @@ const Demandes = () => {
                                                 <span className={`inline-flex self-start px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide border shadow-sm ${getTypeStyle(demande.type_expedition)}`}>
                                                     {getTypeLabel(demande.type_expedition)}
                                                 </span>
-                                                <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-600">
-                                                    <span className="px-1.5 py-0.5 bg-slate-100 rounded text-[10px] truncate max-w-[60px]">{demande.pays_depart}</span>
-                                                    <ArrowRight className="w-3 h-3 text-slate-400 flex-shrink-0" />
-                                                    <span className="px-1.5 py-0.5 bg-indigo-50 text-indigo-600 rounded text-[10px] truncate max-w-[60px]">{demande.pays_destination}</span>
+                                                <div className="flex items-center gap-1.5 text-[11px] font-bold text-indigo-600">
+                                                    <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                                                    <span className="py-0.5">{demande.pays_destination}</span>
                                                 </div>
                                             </div>
                                         </td>
@@ -373,7 +504,7 @@ const Demandes = () => {
                                         >
                                             <div className="flex flex-col gap-0.5">
                                                 <span className="text-sm font-bold text-slate-900 tabular-nums">
-                                                    {new Intl.NumberFormat('fr-FR', { notation: 'compact' }).format(demande.montant_expedition || 0)}
+                                                    {new Intl.NumberFormat('fr-FR').format(demande.montant_expedition || 0)}
                                                 </span>
                                                 <span className="text-[8px] font-bold text-slate-400 uppercase">CFA</span>
                                             </div>
@@ -424,9 +555,14 @@ const Demandes = () => {
                                                     <Package className="w-8 h-8 text-amber-200" />
                                                 </div>
                                             </div>
-                                            <h3 className="text-lg font-bold text-slate-900 mb-2">Aucune demande en attente</h3>
+                                            <h3 className="text-lg font-bold text-slate-900 mb-2">
+                                                {searchQuery ? 'Aucun résultat trouvé' : 'Aucune demande en attente'}
+                                            </h3>
                                             <p className="text-sm font-medium text-slate-500">
-                                                Les nouvelles demandes d'expédition de vos clients apparaîtront ici.
+                                                {searchQuery 
+                                                    ? 'Essayez avec d\'autres mots-clés de recherche'
+                                                    : 'Les nouvelles demandes d\'expédition de vos clients apparaîtront ici.'
+                                                }
                                             </p>
                                         </div>
                                     </td>
@@ -461,6 +597,135 @@ const Demandes = () => {
                     </div>
                 )}
             </div>
+            ) : (
+            /* Section "En agence" - Liste des colis acceptés à réceptionner */
+            <div className="relative bg-gradient-to-br from-white via-white to-slate-50/30 rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-200/60 overflow-hidden backdrop-blur-sm">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/[0.02] via-transparent to-indigo-500/[0.02] pointer-events-none"></div>
+
+                <div className="relative overflow-x-auto">
+                    {/* Mobile view: Cards */}
+                    <div className="lg:hidden p-3 sm:p-4 space-y-3">
+                        {filteredColisEnAgence.length > 0 ? (
+                            filteredColisEnAgence.map((colis) => (
+                                <div key={colis.id} className="bg-white rounded-xl border border-slate-200 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all overflow-hidden">
+                                    <div className="p-3 border-b border-slate-100">
+                                        <div className="flex justify-between items-start gap-2 mb-2">
+                                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                                                    <Package className="w-4 h-4 text-blue-600" />
+                                                </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-xs font-bold text-slate-900 truncate">{colis.code_colis}</p>
+                                                    <p className="text-[9px] text-slate-400 font-medium">{colis.expedition?.reference}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="text-[10px] font-semibold text-slate-600 bg-slate-50 px-2 py-1.5 rounded-lg">
+                                            <span className="text-indigo-600">{colis.produit_nom}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-3 grid grid-cols-2 gap-3 text-center">
+                                        <div>
+                                            <p className="text-[9px] font-semibold text-slate-400 uppercase mb-0.5">Poids</p>
+                                            <p className="text-xs font-bold text-slate-900">{colis.poids || 0} kg</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[9px] font-semibold text-slate-400 uppercase mb-0.5">Destination</p>
+                                            <p className="text-xs font-bold text-indigo-600 truncate">{colis.expedition?.pays_destination}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="bg-white p-8 rounded-xl text-center border border-slate-100">
+                                <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                                    <Package className="w-8 h-8 text-blue-300" />
+                                </div>
+                                <h3 className="text-sm font-bold text-slate-900 mb-1">
+                                    {searchQuery ? 'Aucun résultat' : 'Aucun colis en agence'}
+                                </h3>
+                                <p className="text-xs text-slate-500">
+                                    {searchQuery ? 'Essayez avec d\'autres mots-clés' : 'Les colis des expéditions acceptées apparaîtront ici'}
+                                </p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Desktop view: Table */}
+                    <table className="hidden lg:table w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-slate-50/90 backdrop-blur-md border-b-2 border-slate-400">
+                                <th className="px-4 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200">Code Colis</th>
+                                <th className="px-4 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200">Référence Exp.</th>
+                                <th className="px-4 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200">Produit</th>
+                                <th className="px-4 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200">Poids</th>
+                                <th className="px-4 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Destination</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y-2 divide-slate-300">
+                            {filteredColisEnAgence.length > 0 ? (
+                                filteredColisEnAgence.map((colis) => (
+                                    <tr 
+                                        key={colis.id} 
+                                        onClick={() => navigate(`/expeditions/${colis.expedition_id}`)}
+                                        className="group hover:bg-blue-50/30 transition-all duration-200 border-b-2 border-slate-200 cursor-pointer"
+                                    >
+                                        <td className="px-4 py-4 border-r border-slate-100">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                                                    <Package className="w-3.5 h-3.5 text-blue-600" />
+                                                </div>
+                                                <span className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                                                    {colis.code_colis}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-4 border-r border-slate-100">
+                                            <span className="text-xs font-semibold text-slate-600">{colis.expedition?.reference}</span>
+                                        </td>
+                                        <td className="px-4 py-4 border-r border-slate-100">
+                                            <span className="text-xs font-medium text-slate-700">{colis.produit_nom}</span>
+                                        </td>
+                                        <td className="px-4 py-4 border-r border-slate-100">
+                                            <span className="text-sm font-bold text-slate-900">{colis.poids || 0} kg</span>
+                                        </td>
+                                        <td className="px-4 py-4">
+                                            <div className="flex items-center gap-1.5">
+                                                <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                                                <span className="text-sm font-semibold text-indigo-600">{colis.expedition?.pays_destination}</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan="5" className="px-4 py-16 text-center">
+                                        <div className="flex flex-col items-center max-w-md mx-auto">
+                                            <div className="relative w-20 h-20 mb-4">
+                                                <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-blue-100/30 rounded-2xl rotate-6"></div>
+                                                <div className="relative w-full h-full bg-white rounded-2xl shadow-lg flex items-center justify-center border border-blue-100">
+                                                    <Package className="w-8 h-8 text-blue-200" />
+                                                </div>
+                                            </div>
+                                            <h3 className="text-lg font-bold text-slate-900 mb-2">
+                                                {searchQuery ? 'Aucun résultat trouvé' : 'Aucun colis en agence'}
+                                            </h3>
+                                            <p className="text-sm font-medium text-slate-500">
+                                                {searchQuery 
+                                                    ? 'Essayez avec d\'autres mots-clés de recherche'
+                                                    : 'Les colis des expéditions acceptées à réceptionner apparaîtront ici.'
+                                                }
+                                            </p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            )}
 
             <ConfirmationModal
                 isOpen={isRefuseModalOpen}

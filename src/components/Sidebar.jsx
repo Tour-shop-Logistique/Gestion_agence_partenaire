@@ -36,59 +36,59 @@ import { getLogoUrl } from "../utils/apiConfig";
 ────────────────────────────────────────────────────────────────────────────── */
 const SECTION_COLORS = {
   Principal: {
-    labelColor: "text-sky-500",
-    dot: "bg-sky-500",
-    activeBg: "bg-sky-50",
-    activeText: "text-sky-700",
-    activeBorder: "border-l-[3px] border-sky-500",
-    activeIcon: "text-sky-600",
-    hoverBg: "hover:bg-sky-50/60",
-    hoverText: "hover:text-sky-700",
-    hoverIcon: "group-hover:text-sky-500",
+    labelColor: "text-sky-400",
+    dot: "bg-sky-400",
+    activeBg: "bg-sky-500/20",
+    activeText: "text-sky-300",
+    activeBorder: "border-l-[3px] border-sky-400",
+    activeIcon: "text-sky-400",
+    hoverBg: "hover:bg-white/5",
+    hoverText: "hover:text-sky-200",
+    hoverIcon: "group-hover:text-sky-400",
   },
   Colis: {
-    labelColor: "text-violet-500",
-    dot: "bg-violet-500",
-    activeBg: "bg-violet-50",
-    activeText: "text-violet-700",
-    activeBorder: "border-l-[3px] border-violet-500",
-    activeIcon: "text-violet-600",
-    hoverBg: "hover:bg-violet-50/60",
-    hoverText: "hover:text-violet-700",
-    hoverIcon: "group-hover:text-violet-500",
+    labelColor: "text-violet-400",
+    dot: "bg-violet-400",
+    activeBg: "bg-violet-500/20",
+    activeText: "text-violet-300",
+    activeBorder: "border-l-[3px] border-violet-400",
+    activeIcon: "text-violet-400",
+    hoverBg: "hover:bg-white/5",
+    hoverText: "hover:text-violet-200",
+    hoverIcon: "group-hover:text-violet-400",
   },
   Finance: {
-    labelColor: "text-emerald-600",
-    dot: "bg-emerald-500",
-    activeBg: "bg-emerald-50",
-    activeText: "text-emerald-700",
-    activeBorder: "border-l-[3px] border-emerald-500",
-    activeIcon: "text-emerald-600",
-    hoverBg: "hover:bg-emerald-50/60",
-    hoverText: "hover:text-emerald-700",
-    hoverIcon: "group-hover:text-emerald-500",
+    labelColor: "text-emerald-400",
+    dot: "bg-emerald-400",
+    activeBg: "bg-emerald-500/20",
+    activeText: "text-emerald-300",
+    activeBorder: "border-l-[3px] border-emerald-400",
+    activeIcon: "text-emerald-400",
+    hoverBg: "hover:bg-white/5",
+    hoverText: "hover:text-emerald-200",
+    hoverIcon: "group-hover:text-emerald-400",
   },
   Tarifs: {
-    labelColor: "text-amber-600",
-    dot: "bg-amber-500",
-    activeBg: "bg-amber-50",
-    activeText: "text-amber-700",
-    activeBorder: "border-l-[3px] border-amber-500",
-    activeIcon: "text-amber-600",
-    hoverBg: "hover:bg-amber-50/60",
-    hoverText: "hover:text-amber-700",
-    hoverIcon: "group-hover:text-amber-500",
+    labelColor: "text-amber-400",
+    dot: "bg-amber-400",
+    activeBg: "bg-amber-500/20",
+    activeText: "text-amber-300",
+    activeBorder: "border-l-[3px] border-amber-400",
+    activeIcon: "text-amber-400",
+    hoverBg: "hover:bg-white/5",
+    hoverText: "hover:text-amber-200",
+    hoverIcon: "group-hover:text-amber-400",
   },
   Configuration: {
-    labelColor: "text-rose-500",
-    dot: "bg-rose-500",
-    activeBg: "bg-rose-50",
-    activeText: "text-rose-700",
-    activeBorder: "border-l-[3px] border-rose-500",
-    activeIcon: "text-rose-600",
-    hoverBg: "hover:bg-rose-50/60",
-    hoverText: "hover:text-rose-700",
-    hoverIcon: "group-hover:text-rose-500",
+    labelColor: "text-rose-400",
+    dot: "bg-rose-400",
+    activeBg: "bg-rose-500/20",
+    activeText: "text-rose-300",
+    activeBorder: "border-l-[3px] border-rose-400",
+    activeIcon: "text-rose-400",
+    hoverBg: "hover:bg-white/5",
+    hoverText: "hover:text-rose-200",
+    hoverIcon: "group-hover:text-rose-400",
   },
 };
 
@@ -134,9 +134,9 @@ const Sidebar = ({ onClose }) => {
     {
       section: "Colis",
       items: [
-        { path: "/colis",                name: "Gestion colis",  icon: CubeIcon },
+        { path: "/colis",                name: "À envoyer",  icon: CubeIcon },
         { path: "/colis-a-receptionner", name: "À réceptionner",  icon: InboxArrowDownIcon },
-        { path: "/retrait-colis",        name: "Retrait",         icon: UserCircleIcon },
+        { path: "/retrait-colis",        name: "À retirer",         icon: UserCircleIcon },
       ],
     },
     {
@@ -209,12 +209,19 @@ const Sidebar = ({ onClose }) => {
   const menuItems = isAdminLike ? adminMenuItems : agentMenuItems;
 
   return (
-    <div className="flex flex-col h-full bg-white border-r border-slate-100 w-60 lg:mt-0 mt-0">
-
+    <div 
+      className="flex flex-col h-full w-60 lg:mt-0 mt-0"
+      style={{
+        background: "#1e293b",
+      }}
+    >
       {/* ── Branding Header ─────────────────────────────────────────────────── */}
-      <div className="h-16 flex items-center px-4 border-b border-slate-100 shrink-0">
+      <div className="relative z-10 h-16 flex items-center px-4 shrink-0 border-b border-white/10">
         <div className="flex items-center space-x-3 min-w-0 flex-1">
-          <div className="w-9 h-9 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center bg-slate-900 p-1">
+          {/* Logo container */}
+          <div
+            className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center p-1.5 bg-white"
+          >
             {agencyData?.agence?.logo ? (
               <img
                 src={getLogoUrl(agencyData.agence.logo)}
@@ -222,15 +229,12 @@ const Sidebar = ({ onClose }) => {
                 className="w-full h-full object-contain"
               />
             ) : (
-              <TruckIcon className="w-5 h-5 text-white" />
+              <TruckIcon className="w-5 h-5 text-slate-700" />
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <span className="font-bold text-slate-900 tracking-tight text-sm truncate block leading-tight">
+            <span className="font-bold text-white tracking-tight text-sm truncate block">
               {agencyData?.agence?.nom_agence || "Tous Shop"}
-            </span>
-            <span className="text-[9px] font-semibold text-sky-500 uppercase tracking-widest">
-              Expédition
             </span>
           </div>
         </div>
@@ -238,7 +242,7 @@ const Sidebar = ({ onClose }) => {
         {onClose && (
           <button
             onClick={onClose}
-            className="lg:hidden ml-auto p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+            className="lg:hidden ml-auto p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
           >
             <XMarkIcon className="w-5 h-5" />
           </button>
@@ -246,75 +250,64 @@ const Sidebar = ({ onClose }) => {
       </div>
 
       {/* ── Navigation ──────────────────────────────────────────────────────── */}
-      <nav className="flex-1 overflow-y-auto py-4 px-2.5 space-y-5">
-        {menuItems.map((section, sectionIdx) => {
-          const c = SECTION_COLORS[section.section] || DEFAULT_COLOR;
+      <nav className="relative z-10 flex-1 overflow-y-auto py-4 px-3 space-y-1 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+        {menuItems.map((section, sectionIdx) => (
+          <div key={sectionIdx}>
+            {section.items.map((item) => {
+              const active = isActive(item.path);
+              const showBadge = item.path === "/demandes" && pendingDemandesCount > 0;
 
-          return (
-            <div key={sectionIdx}>
-              {/* Section label */}
-              <div className="flex items-center gap-1.5 px-2 mb-1.5">
-                <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${c.dot}`} />
-                <p className={`text-[9px] font-bold uppercase tracking-widest ${c.labelColor}`}>
-                  {section.section}
-                </p>
-              </div>
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={onClose}
+                  className={`
+                    group flex items-center px-3 py-2.5 rounded-lg text-sm font-medium mb-1
+                    transition-all duration-150 relative
+                    ${active
+                      ? "bg-slate-700/60 text-white"
+                      : "text-slate-300 hover:bg-slate-700/40 hover:text-white"
+                    }
+                  `}
+                >
+                  <item.icon
+                    className={`w-5 h-5 mr-3 shrink-0 transition-colors ${
+                      active ? "text-white" : "text-slate-400 group-hover:text-slate-200"
+                    }`}
+                  />
+                  <span className="flex-1 truncate">{item.name}</span>
 
-              {/* Items */}
-              <div className="space-y-0.5">
-                {section.items.map((item) => {
-                  const active = isActive(item.path);
-                  const showBadge = item.path === "/demandes" && pendingDemandesCount > 0;
+                  {showBadge && (
+                    <span className="flex items-center justify-center min-w-[18px] h-5 px-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full">
+                      {pendingDemandesCount > 99 ? "99+" : pendingDemandesCount}
+                    </span>
+                  )}
 
-                  return (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      onClick={onClose}
-                      className={`
-                        group flex items-center px-3 py-2 rounded-lg text-sm font-medium
-                        transition-all duration-150 relative
-                        ${active
-                          ? `${c.activeBg} ${c.activeText} ${c.activeBorder} shadow-sm`
-                          : `text-slate-500 ${c.hoverBg} ${c.hoverText}`
-                        }
-                      `}
-                    >
-                      <item.icon
-                        className={`w-4 h-4 mr-2.5 shrink-0 transition-colors ${
-                          active ? c.activeIcon : `text-slate-400 ${c.hoverIcon}`
-                        }`}
-                      />
-                      <span className="flex-1 truncate">{item.name}</span>
-
-                      {showBadge && (
-                        <span className="flex items-center justify-center min-w-[18px] h-4 px-1.5 bg-red-500 text-white text-[9px] font-bold rounded-full">
-                          {pendingDemandesCount > 99 ? "99+" : pendingDemandesCount}
-                        </span>
-                      )}
-
-                      {active && !showBadge && (
-                        <ChevronRightIcon className={`w-3 h-3 ${c.activeIcon} opacity-60`} />
-                      )}
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
+                  {active && !showBadge && (
+                    <ChevronRightIcon className="w-4 h-4 text-slate-400 opacity-60" />
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
       {/* ── User Footer ─────────────────────────────────────────────────────── */}
-      <div className="p-3 border-t border-slate-100 shrink-0">
-        <div className="flex items-center p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+      <div className="relative z-10 p-3 shrink-0 border-t border-white/10">
+        <div
+          className="flex items-center p-2.5 rounded-lg"
+          style={{
+            background: "rgba(0,0,0,0.2)",
+          }}
+        >
           {/* Avatar */}
           <div
-            className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
-              isAdminLike
-                ? "bg-rose-500"
-                : "bg-sky-500"
-            }`}
+            className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+            style={{
+              background: isAdminLike ? "#dc2626" : "#3b82f6",
+            }}
           >
             <span className="text-white font-bold text-xs">
               {(currentUser?.name || currentUser?.nom || "U")[0].toUpperCase()}
@@ -322,26 +315,20 @@ const Sidebar = ({ onClose }) => {
           </div>
 
           <div className="ml-2.5 min-w-0 flex-1">
-            <p className="text-xs font-semibold text-slate-800 truncate leading-tight">
+            <p className="text-xs font-semibold text-white truncate leading-tight">
               {currentUser?.name ||
                 `${currentUser?.prenoms || ""} ${currentUser?.nom || ""}`.trim()}
             </p>
-            <span
-              className={`inline-block text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md mt-0.5 ${
-                isAdminLike
-                  ? "bg-rose-100 text-rose-600 border border-rose-200"
-                  : "bg-sky-100 text-sky-600 border border-sky-200"
-              }`}
-            >
-              {isAdminLike ? "Admin" : "Agent"}
+            <span className="text-[10px] text-slate-400">
+              {isAdminLike ? "Administrateur" : "Agent"}
             </span>
           </div>
 
-          {/* Statut en ligne */}
+          {/* Status dot */}
           <div className="flex-shrink-0 ml-1">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
             </span>
           </div>
         </div>

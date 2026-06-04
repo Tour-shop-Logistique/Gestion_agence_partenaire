@@ -425,7 +425,7 @@ const Comptabilite = () => {
   };
 
   return (
-    <div className="max-w-[1600px] mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
+    <div className="max-w-[1600px] mx-auto px-3 sm:px-6 py-1 sm:py-6 space-y-4 sm:space-y-6">
       
       {/* Page Header - Responsive */}
       <div className="flex flex-col gap-3 sm:gap-4 border-b border-slate-200 pb-4 sm:pb-6">

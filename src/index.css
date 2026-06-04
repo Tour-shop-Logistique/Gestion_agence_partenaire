@@ -495,3 +495,15 @@
 .animation-delay-4000 {
   animation-delay: 4s;
 }
+
+/* ========================================
+   🚫 MASQUER SCROLLBAR
+   ======================================== */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE et Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari et Opera */
+}

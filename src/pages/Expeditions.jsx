@@ -9,9 +9,10 @@ import PrintSuccessModal from "../components/Receipts/PrintSuccessModal";
 import { getLogoUrl } from "../utils/apiConfig";
 import { formatPriceDual } from "../utils/format";
 import { ArrowPathIcon, MagnifyingGlassIcon, DocumentArrowDownIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon } from "@heroicons/react/24/solid";
 import {
-    StatusFilter,
-    SortableHeader
+    SortableHeader,
+    FiltersPanel
 } from '../components/expeditions';
 
 const Expeditions = () => {
@@ -471,177 +472,148 @@ const Expeditions = () => {
 
     return (
         <>
-            <div className="space-y-4 sm:space-y-6 max-w-[1600px] mx-auto px-3 sm:px-4 lg:px-6">
-                {/* Header Section */}
-                <div className="flex flex-col gap-4">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">
-                                Expéditions
-                            </h1>
-                            <p className="mt-1 text-xs sm:text-sm text-gray-500">
-                                Gérez et suivez toutes vos expéditions en temps réel
-                            </p>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                            {/* Refresh Button */}
-                            <button
-                                onClick={() => loadExpeditions({ page: currentPage, date_debut: dateDebut, date_fin: dateFin }, true)}
-                                disabled={status === 'loading'}
-                                className="inline-flex items-center p-2 sm:px-4 sm:py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
-                                title="Rafraîchir"
-                            >
-                                <ArrowPathIcon className={`w-4 h-4 sm:w-5 sm:h-5 ${status === 'loading' ? 'animate-spin' : ''}`} />
-                            </button>
-
-                            {/* Export PDF Button */}
-                            <button
-                                onClick={handleExportPDF}
-                                disabled={!filteredExpeditions || filteredExpeditions.length === 0}
-                                className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-2 bg-red-600 text-white rounded-lg sm:rounded-xl hover:bg-red-700 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                                title="Exporter en PDF"
-                            >
-                                <DocumentArrowDownIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-                                <span className="text-xs sm:text-sm font-bold hidden sm:inline">PDF</span>
-                            </button>
-                        </div>
+            <div className="max-w-[1600px] mx-auto px-3 sm:px-4 lg:px-6 space-y-4">
+                {/* ── Page Header ── */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between">
+                    <div className="flex-shrink-0">
+                        <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">Expéditions</h1>
+                        <p className="mt-0.5 text-xs sm:text-sm text-gray-500">
+                            Gérez et suivez toutes vos expéditions en temps réel
+                        </p>
                     </div>
-
-                    {/* Filters Row - Responsive */}
-                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                        {/* Date Filters */}
-                        <div className="flex items-center gap-2 flex-1">
-                            <div className="relative flex-1">
-                                <span className="absolute -top-2 left-2 sm:left-3 px-1 bg-white text-[10px] sm:text-xs font-medium text-gray-500 z-10">Du</span>
-                                <input
-                                    type="date"
-                                    className="block w-full px-2 sm:px-3 py-1.5 sm:py-2 bg-white border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                                    value={dateDebut}
-                                    onChange={(e) => {
-                                        setDateDebut(e.target.value);
-                                        setCurrentPage(1);
-                                    }}
-                                />
-                            </div>
-                            <div className="relative flex-1">
-                                <span className="absolute -top-2 left-2 sm:left-3 px-1 bg-white text-[10px] sm:text-xs font-medium text-gray-500 z-10">Au</span>
-                                <input
-                                    type="date"
-                                    className="block w-full px-2 sm:px-3 py-1.5 sm:py-2 bg-white border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                                    value={dateFin}
-                                    onChange={(e) => {
-                                        setDateFin(e.target.value);
-                                        setCurrentPage(1);
-                                    }}
-                                />
-                            </div>
-                        </div>
-
-                        {/* Search Bar */}
-                        <div className="relative group flex-1 sm:max-w-xs">
-                            <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
-                                <MagnifyingGlassIcon className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
-                            </div>
+                    <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                        {/* Date range filters - inline in header */}
+                        <div className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-xl px-3 py-1.5 shadow-sm">
+                            <svg className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
                             <input
-                                type="text"
-                                className="block w-full pl-8 sm:pl-10 pr-2 sm:pr-3 py-1.5 sm:py-2 bg-white border border-gray-300 rounded-lg text-xs sm:text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                                placeholder="Rechercher..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
+                                type="date"
+                                value={dateDebut}
+                                onChange={(e) => { setDateDebut(e.target.value); setCurrentPage(1); }}
+                                className="text-xs text-gray-700 bg-transparent border-none outline-none w-[110px] cursor-pointer"
+                            />
+                            <span className="text-gray-300 text-xs font-medium">→</span>
+                            <input
+                                type="date"
+                                value={dateFin}
+                                onChange={(e) => { setDateFin(e.target.value); setCurrentPage(1); }}
+                                className="text-xs text-gray-700 bg-transparent border-none outline-none w-[110px] cursor-pointer"
                             />
                         </div>
+                        {/* Refresh */}
+                        <button
+                            onClick={() => loadExpeditions({ page: currentPage, date_debut: dateDebut, date_fin: dateFin }, true)}
+                            disabled={status === 'loading'}
+                            className="inline-flex items-center p-2 border border-gray-200 rounded-xl text-gray-600 bg-white hover:bg-gray-50 disabled:opacity-50 transition-colors shadow-sm"
+                            title="Rafraîchir"
+                        >
+                            <ArrowPathIcon className={`w-4 h-4 ${status === 'loading' ? 'animate-spin' : ''}`} />
+                        </button>
+                        {/* Export PDF */}
+                        <button
+                            onClick={handleExportPDF}
+                            disabled={!filteredExpeditions || filteredExpeditions.length === 0}
+                            className="flex items-center gap-1.5 px-3 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Exporter en PDF"
+                        >
+                            <DocumentArrowDownIcon className="w-4 h-4" />
+                            <span className="text-xs font-bold hidden sm:inline">PDF</span>
+                        </button>
                     </div>
                 </div>
 
-                {/* Sub-Header Toolbar with Type Filter */}
-                <div className="flex flex-col gap-3 bg-white/60 p-2 sm:p-1 rounded-2xl border border-slate-200/50">
-                    {/* Filtres par type - Scroll horizontal sur mobile */}
-                    <div className="overflow-x-auto no-scrollbar">
-                        <div className="flex items-center gap-2 p-1 bg-slate-100/50 rounded-xl min-w-max">
+                {/* ── 2-Column Layout : Filters sidebar + Content ── */}
+                <div className="flex gap-5 items-start">
+
+                    {/* ── LEFT : Filters Panel (hidden on mobile, shown via toggle) ── */}
+                    <aside className="hidden lg:block w-64 xl:w-72 flex-shrink-0 sticky top-4">
+                        <FiltersPanel
+                            expeditions={expeditions}
+                            selectedStatuses={selectedStatuses}
+                            onStatusChange={(v) => { setSelectedStatuses(v); setCurrentPage(1); }}
+                            type={type}
+                            onTypeChange={(v) => { setType(v); setCurrentPage(1); }}
+                            dateDebut={dateDebut}
+                            dateFin={dateFin}
+                            onDateDebutChange={(v) => { setDateDebut(v); setCurrentPage(1); }}
+                            onDateFinChange={(v) => { setDateFin(v); setCurrentPage(1); }}
+                            searchQuery={searchQuery}
+                            onSearchChange={(v) => { setSearchQuery(v); setCurrentPage(1); }}
+                            onResetAll={resetAllFilters}
+                        />
+                    </aside>
+
+                    {/* ── RIGHT : Content area ── */}
+                    <div className="flex-1 min-w-0 space-y-3">
+
+                        {/* Mobile filters bar (visible only on small screens) */}
+                        <div className="flex lg:hidden gap-2 overflow-x-auto no-scrollbar pb-1">
+                            {/* Search */}
+                            <div className="relative flex-1 min-w-[160px]">
+                                <MagnifyingGlassIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Rechercher..."
+                                    value={searchQuery}
+                                    onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                                    className="w-full pl-8 pr-3 py-2 bg-white border border-gray-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Mobile type tabs */}
+                        <div className="flex lg:hidden overflow-x-auto no-scrollbar gap-1.5 pb-1">
                             {[
-                                { id: '', label: 'Tout', icon: '📦', color: 'indigo' },
-                                { id: 'simple', label: 'Simple', icon: '📮', color: 'blue' },
-                                { id: 'groupage_dhd_aerien', label: 'Aérien', icon: '✈️', color: 'sky' },
-                                { id: 'groupage_dhd_maritine', label: 'Maritime', icon: '🚢', color: 'cyan' },
-                                { id: 'groupage_afrique', label: 'Afrique', icon: '🌍', color: 'orange' },
-                                { id: 'groupage_ca', label: 'CA', icon: '📋', color: 'purple' }
-                            ].map((btn) => {
-                            const isActive = type === btn.id;
-                            const colorClasses = {
-                                indigo: {
-                                    active: 'bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-lg shadow-indigo-200',
-                                    inactive: 'text-slate-500 hover:text-indigo-600 hover:bg-indigo-50'
-                                },
-                                blue: {
-                                    active: 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-200',
-                                    inactive: 'text-slate-500 hover:text-blue-600 hover:bg-blue-50'
-                                },
-                                sky: {
-                                    active: 'bg-gradient-to-br from-sky-500 to-sky-600 text-white shadow-lg shadow-lg shadow-sky-200',
-                                    inactive: 'text-slate-500 hover:text-sky-600 hover:bg-sky-50'
-                                },
-                                cyan: {
-                                    active: 'bg-gradient-to-br from-cyan-500 to-cyan-600 text-white shadow-lg shadow-cyan-200',
-                                    inactive: 'text-slate-500 hover:text-cyan-600 hover:bg-cyan-50'
-                                },
-                                orange: {
-                                    active: 'bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-200',
-                                    inactive: 'text-slate-500 hover:text-orange-600 hover:bg-orange-50'
-                                },
-                                purple: {
-                                    active: 'bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-lg shadow-purple-200',
-                                    inactive: 'text-slate-500 hover:text-purple-600 hover:bg-purple-50'
-                                }
-                            };
-                            
-                            return (
+                                { id: '', label: 'Tout', icon: '📦' },
+                                { id: 'simple', label: 'Simple', icon: '📮' },
+                                { id: 'groupage_dhd_aerien', label: 'Aérien', icon: '✈️' },
+                                { id: 'groupage_dhd_maritine', label: 'Maritime', icon: '🚢' },
+                                { id: 'groupage_afrique', label: 'Afrique', icon: '🌍' },
+                                { id: 'groupage_ca', label: 'CA', icon: '📋' },
+                            ].map((btn) => (
                                 <button
                                     key={btn.id}
-                                    onClick={() => {
-                                        setType(btn.id);
-                                        setCurrentPage(1);
-                                    }}
-                                    className={`whitespace-nowrap px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-lg text-[10px] sm:text-xs font-bold uppercase tracking-wide transition-all flex items-center gap-1 sm:gap-1.5 ${
-                                        isActive
-                                            ? colorClasses[btn.color].active
-                                            : colorClasses[btn.color].inactive
+                                    onClick={() => { setType(btn.id); setCurrentPage(1); }}
+                                    className={`whitespace-nowrap flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wide transition-all flex-shrink-0 ${
+                                        type === btn.id
+                                            ? 'bg-indigo-600 text-white shadow-md'
+                                            : 'bg-white border border-slate-200 text-slate-500 hover:border-indigo-300'
                                     }`}
-                                    title={btn.id === 'groupage_dhd_aerien' ? 'DHD Aérien' : btn.id === 'groupage_dhd_maritine' ? 'DHD Maritime' : btn.label}
                                 >
-                                    <span className={`text-xs sm:text-sm ${isActive ? 'scale-110' : ''} transition-transform`}>{btn.icon}</span>
-                                    <span className="hidden sm:inline">{btn.label}</span>
+                                    <span>{btn.icon}</span>
+                                    <span>{btn.label}</span>
                                 </button>
-                            );
-                        })}
+                            ))}
                         </div>
-                    </div>
 
-                    {/* Filtre par statut et compteurs */}
-                    <div className="flex items-center justify-between w-full gap-3">
-                        {/* Filtre par statut */}
-                        <StatusFilter
-                            selectedStatuses={selectedStatuses}
-                            onStatusChange={setSelectedStatuses}
-                            expeditions={expeditions}
-                        />
-
-                        <div className="flex items-center gap-3 sm:gap-4 px-2">
-                            <div className="flex items-center gap-2 sm:gap-3">
-                                <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 uppercase tracking-wide leading-none">Global</span>
-                                <span className="text-xs sm:text-sm font-bold text-slate-900 tracking-tight leading-none">{filteredExpeditions?.length || 0}</span>
+                        {/* Toolbar : result count + live indicator */}
+                        <div className="flex items-center justify-between bg-white/70 rounded-xl border border-slate-200/60 px-4 py-2.5">
+                            <div className="flex items-center gap-3">
+                                <span className="text-xs font-bold text-slate-900">
+                                    {filteredExpeditions?.length || 0}
+                                    <span className="font-normal text-slate-500 ml-1">expédition{filteredExpeditions?.length !== 1 ? 's' : ''}</span>
+                                </span>
+                                {(selectedStatuses.length > 0 || type || searchQuery) && (
+                                    <button
+                                        onClick={resetAllFilters}
+                                        className="text-[10px] font-bold text-red-500 hover:text-red-700 flex items-center gap-1 transition-colors"
+                                    >
+                                        <XMarkIcon className="w-3.5 h-3.5" />
+                                        Effacer les filtres
+                                    </button>
+                                )}
                             </div>
-                            <div className="w-px h-3 sm:h-4 bg-slate-200"></div>
-                            <div className="flex items-center gap-1 sm:gap-1.5 text-emerald-500">
-                                 <div className="relative flex h-1.5 w-1.5">
+                            <div className="flex items-center gap-1.5 text-emerald-500">
+                                <div className="relative flex h-1.5 w-1.5">
                                     <span className={`${status === 'loading' ? 'animate-ping' : ''} absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75`}></span>
                                     <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
                                 </div>
-                                <span className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wide">{status === 'loading' ? 'Actualisation...' : 'À jour'}</span>
+                                <span className="text-[10px] font-semibold uppercase tracking-wide">
+                                    {status === 'loading' ? 'Actualisation...' : 'À jour'}
+                                </span>
                             </div>
                         </div>
-                    </div>
-                </div>
 
                 {/* Premium Data Card Container */}
                 <div className="relative bg-gradient-to-br from-white via-white to-slate-50/30 rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-200/60 overflow-hidden backdrop-blur-sm">
@@ -750,191 +722,141 @@ const Expeditions = () => {
                         <table className="hidden lg:table w-full text-left border-collapse">
                             {/* Table Header */}
                             <thead className="sticky top-0 z-10">
-                                <tr className="bg-gray-50 border-b border-gray-200">
-                                    <th className="px-4 py-3 text-xs font-medium text-gray-600 uppercase w-[14%]">
-                                        <SortableHeader
-                                            label="Référence"
-                                            sortKey="reference"
-                                            currentSort={sortConfig}
-                                            onSort={handleSort}
-                                        />
+                                <tr className="bg-slate-50 border-b-2 border-slate-100">
+                                    <th className="px-5 py-3.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-[18%]">
+                                        <SortableHeader label="Référence" sortKey="reference" currentSort={sortConfig} onSort={handleSort} />
                                     </th>
-                                    <th className="px-4 py-3 text-xs font-medium text-gray-600 uppercase w-[22%]">
+                                    <th className="px-5 py-3.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-[20%]">
                                         Expéditeur / Destinataire
                                     </th>
-                                    <th className="px-4 py-3 text-xs font-medium text-gray-600 uppercase w-[12%]">
+                                    <th className="px-5 py-3.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-[14%]">
                                         Trajet
                                     </th>
-                                    <th className="px-4 py-3 text-xs font-medium text-gray-600 uppercase w-[16%]">
-                                        <SortableHeader
-                                            label="Montant"
-                                            sortKey="montant"
-                                            currentSort={sortConfig}
-                                            onSort={handleSort}
-                                        />
+                                    <th className="px-5 py-3.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-[14%]">
+                                        <SortableHeader label="Montant" sortKey="montant" currentSort={sortConfig} onSort={handleSort} />
                                     </th>
-                                    <th className="px-4 py-3 text-xs font-medium text-gray-600 uppercase w-[20%]">
-                                        <SortableHeader
-                                            label="Statut"
-                                            sortKey="statut"
-                                            currentSort={sortConfig}
-                                            onSort={handleSort}
-                                        />
+                                    <th className="px-5 py-3.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-[18%]">
+                                        <SortableHeader label="Statut" sortKey="statut" currentSort={sortConfig} onSort={handleSort} />
                                     </th>
-                                    <th className="px-4 py-3 text-xs font-medium text-gray-600 uppercase text-right w-[16%]">
-                                        Actions
+                                    <th className="px-5 py-3.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-[16%]">
+                                        Paiement
                                     </th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100">
+                            <tbody className="divide-y divide-slate-100">
                                 {status === 'loading' && expeditions.length === 0 ? (
-                                    // Skeleton Loading
                                     Array(5).fill(0).map((_, i) => (
                                         <tr key={i} className="animate-pulse">
-                                            <td className="px-4 py-3">
-                                                <div className="space-y-2">
-                                                    <div className="h-4 bg-gray-200 rounded w-24"></div>
-                                                    <div className="h-3 bg-gray-100 rounded w-32"></div>
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <div className="space-y-2">
-                                                    <div className="h-4 bg-gray-200 rounded w-32"></div>
-                                                    <div className="h-4 bg-gray-200 rounded w-28"></div>
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <div className="flex justify-center">
-                                                    <div className="h-12 bg-gray-200 rounded w-20"></div>
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <div className="space-y-2">
-                                                    <div className="h-4 bg-gray-200 rounded w-28"></div>
-                                                    <div className="h-3 bg-gray-100 rounded w-20"></div>
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <div className="space-y-2">
-                                                    <div className="h-6 bg-gray-200 rounded w-24"></div>
-                                                    <div className="h-3 bg-gray-100 rounded w-16"></div>
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-3 text-right">
-                                                <div className="flex justify-end">
-                                                    <div className="h-8 w-8 bg-gray-200 rounded"></div>
-                                                </div>
-                                            </td>
+                                            <td className="px-5 py-4"><div className="space-y-2"><div className="h-3.5 bg-slate-100 rounded w-24"></div><div className="h-3 bg-slate-100 rounded w-32"></div></div></td>
+                                            <td className="px-5 py-4"><div className="space-y-2.5"><div className="h-3.5 bg-slate-100 rounded w-32"></div><div className="h-3.5 bg-slate-100 rounded w-28"></div></div></td>
+                                            <td className="px-5 py-4"><div className="flex flex-col items-center gap-1"><div className="h-5 bg-slate-100 rounded-full w-16"></div><div className="h-3 bg-slate-100 rounded w-3"></div><div className="h-5 bg-slate-100 rounded-full w-16"></div></div></td>
+                                            <td className="px-5 py-4"><div className="h-4 bg-slate-100 rounded w-24"></div></td>
+                                            <td className="px-5 py-4"><div className="h-6 bg-slate-100 rounded-full w-20"></div></td>
+                                            <td className="px-5 py-4"><div className="h-5 bg-slate-100 rounded w-16"></div></td>
                                         </tr>
                                     ))
                                 ) : filteredExpeditions.length > 0 ? (
                                     filteredExpeditions.map((exp) => (
                                         <tr
                                             key={exp.id}
-                                            className={`group relative hover:bg-gray-50 transition-colors border-l-2 ${getStatusBorderColor(exp.statut_expedition)} cursor-pointer`}
                                             onClick={() => navigate(`/expeditions/${exp.id}`)}
+                                            className={`group hover:bg-indigo-50/40 transition-all duration-150 cursor-pointer border-l-[3px] ${getStatusBorderColor(exp.statut_expedition)}`}
                                         >
-                                            <td className="px-4 py-3">
+                                            {/* Référence + date */}
+                                            <td className="px-5 py-4">
                                                 <div className="flex flex-col gap-0.5">
-                                                    <span className="text-sm font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
+                                                    <span className="text-sm font-bold text-slate-800 group-hover:text-indigo-600 transition-colors tabular-nums tracking-tight">
                                                         {exp.reference}
                                                     </span>
-                                                    <span className="text-xs text-gray-500">
+                                                    <span className="text-[10px] text-slate-400">
                                                         {formatDate(exp.created_at)}
                                                     </span>
+                                                    <span className={`mt-1 self-start px-1.5 py-0.5 rounded text-[9px] font-bold uppercase border ${getTypeStyle(exp.type_expedition)}`}>
+                                                        {getTypeLabel(exp.type_expedition)}
+                                                    </span>
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-3">
+
+                                            {/* Expéditeur / Destinataire */}
+                                            <td className="px-5 py-4">
                                                 <div className="flex flex-col gap-2">
                                                     <div className="flex items-center gap-2">
-                                                        <div className="w-6 h-6 rounded-md bg-blue-50 border border-blue-200 flex items-center justify-center flex-shrink-0">
-                                                            <span className="text-xs font-semibold text-blue-600">E</span>
-                                                        </div>
-                                                        <span className="text-sm font-medium text-gray-700 truncate">{exp.expediteur?.nom_prenom}</span>
+                                                        <span className="w-5 h-5 rounded-md bg-blue-100 text-blue-600 text-[9px] font-bold flex items-center justify-center flex-shrink-0">E</span>
+                                                        <span className="text-xs font-semibold text-slate-700 truncate max-w-[140px]">{exp.expediteur?.nom_prenom || '—'}</span>
                                                     </div>
                                                     <div className="flex items-center gap-2">
-                                                        <div className="w-6 h-6 rounded-md bg-purple-50 border border-purple-200 flex items-center justify-center flex-shrink-0">
-                                                            <span className="text-xs font-semibold text-purple-600">D</span>
-                                                        </div>
-                                                        <span className="text-sm font-medium text-gray-700 truncate">{exp.destinataire?.nom_prenom}</span>
+                                                        <span className="w-5 h-5 rounded-md bg-violet-100 text-violet-600 text-[9px] font-bold flex items-center justify-center flex-shrink-0">D</span>
+                                                        <span className="text-xs font-semibold text-slate-700 truncate max-w-[140px]">{exp.destinataire?.nom_prenom || '—'}</span>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-3">
-                                                <div className="flex items-center justify-center">
-                                                    <div className="flex flex-col items-center gap-1">
-                                                        <span className="text-xs font-medium text-gray-600 px-2 py-0.5 bg-gray-100 rounded whitespace-nowrap">
-                                                            {exp.pays_depart}
-                                                        </span>
-                                                        <svg className="w-3 h-3 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                                                        </svg>
-                                                        <span className="text-xs font-medium text-indigo-600 px-2 py-0.5 bg-indigo-50 rounded border border-indigo-200 whitespace-nowrap">
-                                                            {exp.pays_destination}
-                                                        </span>
-                                                    </div>
+
+                                            {/* Trajet */}
+                                            <td className="px-5 py-4">
+                                                <div className="flex flex-col items-start gap-0.5">
+                                                    <span className="text-[11px] font-semibold text-slate-600 px-2 py-0.5 bg-slate-100 rounded-full whitespace-nowrap">
+                                                        {exp.pays_depart}
+                                                    </span>
+                                                    <svg className="w-3 h-3 text-indigo-300 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                                                    </svg>
+                                                    <span className="text-[11px] font-semibold text-indigo-600 px-2 py-0.5 bg-indigo-50 border border-indigo-100 rounded-full whitespace-nowrap">
+                                                        {exp.pays_destination}
+                                                    </span>
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-3">
+
+                                            {/* Montant */}
+                                            <td className="px-5 py-4">
                                                 <div className="flex flex-col gap-1">
-                                                    <span className="text-sm font-semibold text-gray-900 tabular-nums">
+                                                    <span className="text-sm font-bold text-slate-900 tabular-nums">
                                                         {formatPriceDual(exp.montant_expedition)}
                                                     </span>
-                                                    <div className="flex flex-wrap items-center gap-1.5">
-                                                        <span className="text-xs font-medium text-gray-500 whitespace-nowrap">
-                                                            {exp.colis?.length || 0} Colis
-                                                        </span>
-                                                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium border whitespace-nowrap ${getTypeStyle(exp.type_expedition)}`}>
-                                                            {getTypeLabel(exp.type_expedition)}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <div className="flex flex-col gap-1.5">
-                                                    <span className={`inline-flex items-center justify-center px-2 py-1 rounded text-[10px] font-medium border whitespace-nowrap ${getStatusStyle(exp.statut_expedition)}`}>
-                                                        {getStatusLabel(exp.statut_expedition)}
+                                                    <span className="text-[10px] text-slate-400">
+                                                        {exp.colis?.length || 0} colis
                                                     </span>
-                                                    <div className="flex flex-col gap-0.5 pt-1 border-t border-gray-100">
-                                                        <span className={`text-[10px] font-medium whitespace-nowrap ${exp.statut_paiement_expedition === 'paye' ? 'text-emerald-600' : 'text-orange-500'}`}>
-                                                            T: {exp.statut_paiement_expedition === 'paye' ? 'Payé' : 'Attente'}
-                                                        </span>
-                                                        {parseFloat(exp.frais_annexes || 0) > 0 && (
-                                                            <span className={`text-[10px] font-medium whitespace-nowrap ${exp.statut_paiement_frais === 'paye' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                                                H: {exp.statut_paiement_frais === 'paye' ? 'Payé' : 'Bloqué'}
-                                                            </span>
-                                                        )}
-                                                    </div>
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-3 text-right">
-                                                <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                                                    <button
-                                                        onClick={() => handlePrintReceipt(exp)}
-                                                        className="p-2 hover:bg-white rounded-lg transition-colors text-gray-400 hover:text-emerald-600 border border-transparent hover:border-gray-200"
-                                                        title="Imprimer les reçus"
-                                                    >
-                                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                                                        </svg>
-                                                    </button>
+
+                                            {/* Statut */}
+                                            <td className="px-5 py-4">
+                                                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold border ${getStatusStyle(exp.statut_expedition)}`}>
+                                                    {getStatusLabel(exp.statut_expedition)}
+                                                </span>
+                                            </td>
+
+                                            {/* Paiement */}
+                                            <td className="px-5 py-4">
+                                                <div className="flex flex-col gap-1">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${exp.statut_paiement_expedition === 'paye' ? 'bg-emerald-400' : 'bg-orange-400'}`}></span>
+                                                        <span className={`text-[10px] font-semibold ${exp.statut_paiement_expedition === 'paye' ? 'text-emerald-600' : 'text-orange-500'}`}>
+                                                            Transport {exp.statut_paiement_expedition === 'paye' ? 'Payé' : 'Impayé'}
+                                                        </span>
+                                                    </div>
+                                                    {parseFloat(exp.frais_annexes || 0) > 0 && (
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${exp.statut_paiement_frais === 'paye' ? 'bg-emerald-400' : 'bg-rose-400'}`}></span>
+                                                            <span className={`text-[10px] font-semibold ${exp.statut_paiement_frais === 'paye' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                                Annexes {exp.statut_paiement_frais === 'paye' ? 'Payé' : 'Bloqué'}
+                                                            </span>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="7" className="px-4 py-16 text-center">
+                                        <td colSpan="6" className="px-5 py-16 text-center">
                                             <div className="flex flex-col items-center max-w-md mx-auto">
-                                                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                                                    <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center mb-3 border border-slate-100">
+                                                    <svg className="w-7 h-7 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                                                     </svg>
                                                 </div>
-                                                <h3 className="text-lg font-semibold text-gray-900 mb-1">Aucune expédition</h3>
-                                                <p className="text-sm text-gray-500">
-                                                    Aucune donnée ne correspond à vos critères.
-                                                </p>
+                                                <h3 className="text-sm font-bold text-slate-700 mb-1">Aucune expédition</h3>
+                                                <p className="text-xs text-slate-400">Aucun résultat ne correspond à vos critères.</p>
                                             </div>
                                         </td>
                                     </tr>
@@ -995,8 +917,10 @@ const Expeditions = () => {
                             </div>
                         </div>
                     )}
-                </div>
-            </div>
+                </div>{/* end Premium Data Card */}
+                </div>{/* end flex-1 content area */}
+                </div>{/* end flex gap-5 layout */}
+            </div>{/* end max-w container */}
 
             {showPrintModal && selectedExpedition && (
                 <PrintSuccessModal

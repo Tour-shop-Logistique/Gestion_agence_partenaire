@@ -210,7 +210,7 @@ const ColisAReceptionner = () => {
     };
 
     return (
-        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8 space-y-3 sm:space-y-6">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-1 space-y-3 sm:space-y-6">
             {/* Header Section - Responsive */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
@@ -485,31 +485,72 @@ const ColisAReceptionner = () => {
 
                             return (
                                 <React.Fragment key={exp.id}>
-                                    {/* Expedition Header Row - Minimaliste */}
-                                    <tr className="bg-gray-50">
-                                        <td className="px-4 py-2"></td>
-                                        <td colSpan="6" className="px-4 py-2">
-                                            <div className="flex items-center gap-3 text-xs">
-                                                <span className="font-medium text-gray-900">{exp.reference}</span>
-                                                <span className="text-gray-500">•</span>
-                                                <span className="text-gray-600">{exp.pays_depart} → {exp.pays_destination}</span>
-                                                <span className="text-gray-500">•</span>
-                                                <span className="text-gray-500">{exp.colis?.length} colis</span>
+                                    {/* ══ SÉPARATEUR ENTRE EXPÉDITIONS ══ */}
+                                    <tr className="h-3 bg-gradient-to-r from-slate-100 via-slate-50 to-slate-100">
+                                        <td colSpan="7" className="border-t-4 border-slate-200"></td>
+                                    </tr>
+
+                                    {/* 📦 EXPEDITION HEADER - Design Card-like avec ombre */}
+                                    <tr className="bg-gradient-to-r from-indigo-500 to-indigo-600 shadow-lg">
+                                        <td className="px-5 py-3.5" colSpan="7">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-4">
+                                                    {/* Badge référence */}
+                                                    <div className="flex items-center gap-2.5">
+                                                        <svg className="w-5 h-5 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                                                        </svg>
+                                                        <span className="text-sm font-bold text-white tracking-wide">
+                                                            {exp.reference}
+                                                        </span>
+                                                    </div>
+                                                    
+                                                    {/* Séparateur vertical */}
+                                                    <div className="w-px h-5 bg-white/30"></div>
+                                                    
+                                                    {/* Trajet */}
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xs font-medium text-white/90">{exp.pays_depart}</span>
+                                                        <svg className="w-4 h-4 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                                        </svg>
+                                                        <span className="text-xs font-medium text-white">{exp.pays_destination}</span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Compteur colis */}
+                                                <div className="flex items-center gap-2 px-3 py-1.5 bg-white/20 rounded-lg backdrop-blur-sm border border-white/30">
+                                                    <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                                    </svg>
+                                                    <span className="text-xs font-bold text-white">{exp.colis?.length}</span>
+                                                    <span className="text-xs font-medium text-white/80">colis</span>
+                                                </div>
                                             </div>
                                         </td>
                                     </tr>
-                                    {expColis.map((item) => (
+
+                                    {/* ── Ligne de transition header → colis (bordure fine) ── */}
+                                    <tr className="h-0.5 bg-indigo-100">
+                                        <td colSpan="7" className="border-b border-indigo-200"></td>
+                                    </tr>
+
+                                    {/* 📋 COLIS ROWS */}
+                                    {expColis.map((item, idx) => (
                                         <tr
                                             key={item.id}
                                             id={`colis-${item.code_colis}`}
                                             onClick={() => !item.is_received && toggleSelect(item.code_colis)}
-                                            className={`${
-                                                item.is_received 
-                                                    ? 'bg-gray-50' 
+                                            className={`
+                                                ${item.is_received 
+                                                    ? 'bg-emerald-50/30' 
                                                     : selectedCodes.includes(item.code_colis) 
-                                                        ? 'bg-indigo-50' 
-                                                        : 'hover:bg-gray-50'
-                                            } cursor-pointer transition-colors`}
+                                                        ? 'bg-indigo-50 ring-2 ring-inset ring-indigo-200' 
+                                                        : 'bg-white hover:bg-slate-50'
+                                                } 
+                                                ${idx !== expColis.length - 1 ? 'border-b border-slate-100' : 'border-b-2 border-slate-200'}
+                                                cursor-pointer transition-all duration-150
+                                            `}
                                         >
                                             <td className="px-4 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                                                 {!item.is_received ? (

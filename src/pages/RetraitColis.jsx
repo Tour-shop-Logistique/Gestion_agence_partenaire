@@ -32,8 +32,7 @@ const RetraitColis = () => {
     const hasPendingPayment = useMemo(() => {
         return searchResults.some(item => 
             selectedColis.includes(item.code_colis) && 
-            (item.expedition?.statut_paiement_expedition === 'en_attente' || 
-             item.expedition?.statut_paiement_frais === 'en_attente')
+            item.expedition?.statut_paiement !== 'paye'
         );
     }, [searchResults, selectedColis]);
 
@@ -44,15 +43,9 @@ const RetraitColis = () => {
                 const exp = item.expedition;
                 if (!exp) return;
 
-                let due = 0;
-                if (exp.statut_paiement_expedition === 'en_attente') {
-                    due += parseFloat(exp.montant_expedition || 0);
-                }
-                if (exp.statut_paiement_frais === 'en_attente') {
-                    due += parseFloat(exp.frais_annexes || 0);
-                }
-
-                if (due > 0) {
+                // Si le statut de paiement n'est pas "paye", calculer le montant dû
+                if (exp.statut_paiement !== 'paye') {
+                    let due = parseFloat(exp.montant_expedition || 0);
                     uniqueExpeditions.set(exp.id, due);
                 }
             }
@@ -132,11 +125,8 @@ const RetraitColis = () => {
                     !processedIds.has(item.expedition?.id)) {
                     
                     const exp = item.expedition;
-                    let due = 0;
-                    if (exp.statut_paiement_expedition === 'en_attente') due += parseFloat(exp.montant_expedition || 0);
-                    if (exp.statut_paiement_frais === 'en_attente') due += parseFloat(exp.frais_annexes || 0);
-
-                    if (due > 0) {
+                    if (exp.statut_paiement !== 'paye') {
+                        const due = parseFloat(exp.montant_expedition || 0);
                         uniqueExpeditions.push(exp);
                         processedIds.add(exp.id);
                         amountsMap.set(exp.id, due);
@@ -145,22 +135,14 @@ const RetraitColis = () => {
             });
 
             for (const exp of uniqueExpeditions) {
-                // Determine transaction object based on what is unpaid
-                let payment_object = "montant_expedition";
-                if (exp.statut_paiement_expedition === 'en_attente' && exp.statut_paiement_frais === 'en_attente') {
-                    payment_object = "tout_compris"; // Total payment (credit case)
-                } else if (exp.statut_paiement_frais === 'en_attente') {
-                    payment_object = "frais_annexes";
-                }
-
                 await recordTransaction({
                     expedition_id: exp.id,
                     amount: amountsMap.get(exp.id),
                     payment_method: paymentMethod,
-                    payment_object: payment_object,
+                    payment_object: "montant_expedition",
                     type: "encaissement",
                     reference: paymentMethod === 'mobile_money' ? paymentReference : null,
-                    description: "Paiement total à la livraison finalisé"
+                    description: "Paiement à la livraison finalisé"
                 });
             }
         }
@@ -263,59 +245,149 @@ const RetraitColis = () => {
                         )}
                     </div>
 
-                    {/* List of Colis (ERP Style) */}
+                    {/* Grouped List of Colis (Same style as ColisAReceptionner) */}
                     <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
-                        <div className="divide-y divide-slate-100">
-                            {searchResults.map((item) => {
-                                const isSelected = selectedColis.includes(item.code_colis);
-                                return (
-                                    <div 
-                                        key={item.id}
-                                        onClick={() => toggleSelection(item.code_colis)}
-                                        className={`flex flex-col sm:flex-row sm:items-center gap-4 p-4 transition-colors cursor-pointer hover:bg-slate-50 ${isSelected ? 'bg-slate-50/80' : ''}`}
-                                    >
-                                        <div className="flex items-center gap-4 sm:flex-[0_0_auto]">
-                                            <input 
-                                                type="checkbox"
-                                                checked={isSelected}
-                                                readOnly
-                                                className="w-4 h-4 text-slate-900 border-slate-300 rounded focus:ring-slate-500 cursor-pointer"
-                                            />
-                                            <div className="flex flex-col">
-                                                <span className="text-xs font-bold text-slate-400 uppercase tracking-tight">#{item.code_colis}</span>
-                                                <span className="text-sm font-semibold text-slate-900">{item.designation}</span>
+                        <div className="divide-y-0">
+                            {(() => {
+                                // Grouper les colis par expédition
+                                const groupedByExpedition = {};
+                                searchResults.forEach(item => {
+                                    const expId = item.expedition?.id || item.expedition_id;
+                                    if (!expId) return;
+                                    
+                                    if (!groupedByExpedition[expId]) {
+                                        groupedByExpedition[expId] = {
+                                            expedition: item.expedition,
+                                            colis: []
+                                        };
+                                    }
+                                    groupedByExpedition[expId].colis.push(item);
+                                });
+
+                                return Object.entries(groupedByExpedition).map(([expId, group], groupIndex) => (
+                                    <React.Fragment key={expId}>
+                                        {/* ══ SÉPARATEUR ENTRE EXPÉDITIONS ══ */}
+                                        {groupIndex > 0 && (
+                                            <div className="h-3 bg-gradient-to-r from-slate-100 via-slate-50 to-slate-100 border-t-4 border-slate-200"></div>
+                                        )}
+
+                                        {/* 📦 EXPEDITION HEADER - Design Card-like avec ombre */}
+                                        <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 shadow-lg px-5 py-3.5">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-4">
+                                                    {/* Badge référence */}
+                                                    <div className="flex items-center gap-2.5">
+                                                        <svg className="w-5 h-5 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                                                        </svg>
+                                                        <span className="text-sm font-bold text-white tracking-wide">
+                                                            {group.expedition?.reference || 'N/A'}
+                                                        </span>
+                                                    </div>
+                                                    
+                                                    {/* Séparateur vertical */}
+                                                    <div className="w-px h-5 bg-white/30"></div>
+                                                    
+                                                    {/* Trajet */}
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xs font-medium text-white/90">{group.expedition?.pays_depart || '?'}</span>
+                                                        <svg className="w-4 h-4 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                                        </svg>
+                                                        <span className="text-xs font-medium text-white">{group.expedition?.pays_destination || '?'}</span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Compteur colis */}
+                                                <div className="flex items-center gap-2 px-3 py-1.5 bg-white/20 rounded-lg backdrop-blur-sm border border-white/30">
+                                                    <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                                    </svg>
+                                                    <span className="text-xs font-bold text-white">{group.colis.length}</span>
+                                                    <span className="text-xs font-medium text-white/80">colis</span>
+                                                </div>
                                             </div>
                                         </div>
 
-                                        <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 gap-4">
-                                            <div className="flex flex-col">
-                                                <span className="text-[10px] text-slate-400 font-bold uppercase">Client</span>
-                                                <span className="text-xs font-semibold text-slate-700">{item.expedition?.destinataire_nom_prenom || 'n/a'}</span>
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <span className="text-[10px] text-slate-400 font-bold uppercase">Téléphone</span>
-                                                <span className="text-xs font-semibold text-slate-700">{item.expedition?.destinataire_telephone || 'n/a'}</span>
-                                            </div>
-                                            <div className="flex flex-col sm:items-end">
-                                                <span className="text-[10px] text-slate-400 font-bold uppercase">Poids</span>
-                                                <span className="text-xs font-semibold text-slate-900">{item.poids} kg</span>
-                                            </div>
-                                        </div>
+                                        {/* ── Ligne de transition header → colis (bordure fine) ── */}
+                                        <div className="h-0.5 bg-indigo-100 border-b border-indigo-200"></div>
 
-                                        <div className="sm:w-32 flex sm:justify-end items-center">
-                                            <span className={`text-[11px] font-bold ${
-                                                item.expedition?.statut_paiement_expedition === 'paye' && 
-                                                (parseFloat(item.expedition?.frais_annexes || 0) === 0 || item.expedition?.statut_paiement_frais === 'paye')
-                                                    ? 'text-emerald-600' : 'text-rose-600'
-                                            }`}>
-                                                {item.expedition?.statut_paiement_expedition === 'paye' && 
-                                                (parseFloat(item.expedition?.frais_annexes || 0) === 0 || item.expedition?.statut_paiement_frais === 'paye')
-                                                    ? 'OUVERT' : 'BLOCAGE'}
-                                            </span>
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                                        {/* 📋 COLIS ROWS */}
+                                        {group.colis.map((item, idx) => {
+                                            const isSelected = selectedColis.includes(item.code_colis);
+                                            const isLastColis = idx === group.colis.length - 1;
+                                            
+                                            return (
+                                                <div 
+                                                    key={item.id}
+                                                    onClick={() => toggleSelection(item.code_colis)}
+                                                    className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 transition-all cursor-pointer ${
+                                                        isSelected 
+                                                            ? 'bg-indigo-50 ring-2 ring-inset ring-indigo-200' 
+                                                            : 'bg-white hover:bg-slate-50'
+                                                    } ${
+                                                        isLastColis 
+                                                            ? 'border-b-2 border-slate-200' 
+                                                            : 'border-b border-slate-100'
+                                                    }`}
+                                                >
+                                                    {/* Checkbox */}
+                                                    <div className="flex-shrink-0">
+                                                        <input 
+                                                            type="checkbox"
+                                                            checked={isSelected}
+                                                            readOnly
+                                                            className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer"
+                                                        />
+                                                    </div>
+
+                                                    {/* Colis Info */}
+                                                    <div className="flex flex-col min-w-[140px] sm:min-w-[180px]">
+                                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight leading-none mb-0.5">Colis</span>
+                                                        <span className="text-xs sm:text-sm font-bold text-indigo-600 leading-tight">#{item.code_colis}</span>
+                                                        <span className="text-[10px] sm:text-xs font-semibold text-slate-600 truncate mt-0.5">{item.designation || 'Sans désignation'}</span>
+                                                    </div>
+
+                                                    {/* Code Validation */}
+                                                    <div className="flex flex-col flex-1 min-w-0">
+                                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight leading-none mb-0.5">Code Validation</span>
+                                                        <div className="flex items-center gap-1.5 min-w-0">
+                                                            <ShieldCheckIcon className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                                                            <span className="text-xs sm:text-sm font-mono font-bold text-slate-900">
+                                                                {item.code_validation_retrait || 'N/A'}
+                                                            </span>
+                                                        </div>
+                                                        {item.date_limite_retrait && (
+                                                            <span className="text-[9px] text-amber-600 font-medium mt-0.5">
+                                                                Limite: {new Date(item.date_limite_retrait).toLocaleDateString('fr-FR')}
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Poids */}
+                                                    <div className="flex flex-col items-end min-w-[70px]">
+                                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight leading-none mb-0.5">Poids</span>
+                                                        <span className="text-xs sm:text-sm font-bold text-slate-900 tabular-nums">
+                                                            {parseFloat(item.poids || 0).toFixed(2)} kg
+                                                        </span>
+                                                    </div>
+
+                                                    {/* Statut Paiement */}
+                                                    <div className="flex-shrink-0 flex items-center justify-center min-w-[80px]">
+                                                        <span className={`px-2.5 py-1 text-[10px] font-bold uppercase rounded-full border-2 whitespace-nowrap ${
+                                                            item.expedition?.statut_paiement === 'paye'
+                                                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                                                                : 'bg-rose-50 text-rose-700 border-rose-200'
+                                                        }`}>
+                                                            {item.expedition?.statut_paiement === 'paye' ? 'OUVERT' : 'BLOCAGE'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </React.Fragment>
+                                ));
+                            })()}
                         </div>
                     </div>
                 </div>
