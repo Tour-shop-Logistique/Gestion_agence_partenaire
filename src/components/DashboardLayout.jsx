@@ -7,7 +7,7 @@ const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-transparent">
       {/* Sidebar - fixed position for desktop only */}
       <aside className="hidden lg:block fixed inset-y-0 left-0 z-40 w-60 bg-white border-r border-gray-200">
         <div className="h-full overflow-hidden">
@@ -39,7 +39,7 @@ const DashboardLayout = () => {
       <div className="lg:ml-60">
         <div className="flex flex-col min-h-screen">
           <Header onToggleSidebar={() => setSidebarOpen(open => !open)} />
-          <main className="flex-1 overflow-y-auto pt-1 pb-4">
+          <main className="flex-1 overflow-y-auto pt-1 pb-4 bg-transparent">
             <div className="px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10 max-w-full">
               <Outlet />
             </div>

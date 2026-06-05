@@ -168,45 +168,57 @@ const Header = ({ onToggleSidebar }) => {
 
             {/* DROPDOWN */}
             {showDropdown && (
-              <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-200 p-2">
-                {/* User card */}
-                <div className="p-3 rounded-lg bg-slate-50 mb-2">
-                  <p className="text-sm font-semibold text-slate-900">
-                    {currentUser?.name}
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    {currentUser?.email}
-                  </p>
+              <>
+                {/* Overlay */}
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setShowDropdown(false)}
+                />
+                
+                {/* Dropdown Menu */}
+                <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-200 p-2 z-50">
+                  {/* User card */}
+                  <div className="p-3 rounded-lg bg-slate-50 mb-2">
+                    <p className="text-sm font-semibold text-slate-900">
+                      {currentUser?.name}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {currentUser?.email}
+                    </p>
+                  </div>
+
+                  {/* Actions */}
+                  <button className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 text-sm flex items-center gap-2 text-slate-700 transition-colors">
+                    <span className="w-7 h-7 flex items-center justify-center bg-slate-100 rounded-lg">👤</span>
+                    Mon profil
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      handleOpenModal();
+                      setShowDropdown(false);
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 text-sm flex items-center gap-2 text-slate-700 transition-colors"
+                  >
+                    <span className="w-7 h-7 flex items-center justify-center bg-indigo-50 rounded-lg">
+                      <Euro className="w-4 h-4 text-indigo-600" />
+                    </span>
+                    Taux de conversion EUR
+                  </button>
+
+                  <div className="h-px bg-slate-200 my-2" />
+
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setShowDropdown(false);
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-lg hover:bg-red-50 text-red-600 text-sm font-medium transition-colors"
+                  >
+                    🚪 Se déconnecter
+                  </button>
                 </div>
-
-                {/* Actions */}
-                <button className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 text-sm flex items-center gap-2 text-slate-700">
-                  <span className="w-7 h-7 flex items-center justify-center bg-slate-100 rounded-lg">👤</span>
-                  Mon profil
-                </button>
-
-                <button
-                  onClick={() => {
-                    handleOpenModal();
-                    setShowDropdown(false);
-                  }}
-                  className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 text-sm flex items-center gap-2 text-slate-700"
-                >
-                  <span className="w-7 h-7 flex items-center justify-center bg-indigo-50 rounded-lg">
-                    <Euro className="w-4 h-4 text-indigo-600" />
-                  </span>
-                  Taux de conversion EUR
-                </button>
-
-                <div className="h-px bg-slate-200 my-2" />
-
-                <button
-                  onClick={handleLogout}
-                  className="w-full text-left px-3 py-2 rounded-lg hover:bg-red-50 text-red-600 text-sm font-medium"
-                >
-                  🚪 Se déconnecter
-                </button>
-              </div>
+              </>
             )}
           </div>
         </div>
@@ -313,14 +325,6 @@ const Header = ({ onToggleSidebar }) => {
             </div>
           </div>
         </div>
-      )}
-
-      {/* Overlay */}
-      {showDropdown && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setShowDropdown(false)}
-        />
       )}
     </header>
   );
