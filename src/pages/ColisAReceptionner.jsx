@@ -42,15 +42,16 @@ const ColisAReceptionner = () => {
     }, [currentPage]);
 
     useEffect(() => {
-        if (message || error) {
-            if (message) {
-                // fetchReceptionData(true); // Redux s'occupe de la mise à jour instantanée
-                setSelectedCodes([]);
-            }
+        if (error) {
+            // Afficher uniquement les messages d'erreur
             const timer = setTimeout(() => resetStatus(), 3000);
             return () => clearTimeout(timer);
         }
-    }, [message, error, resetStatus]);
+        // Réinitialiser la sélection après une action réussie
+        if (status === 'succeeded') {
+            setSelectedCodes([]);
+        }
+    }, [status, error, resetStatus]);
 
     // Transformer les données en liste de colis à plat pour la recherche/filtre
     const flatColis = useMemo(() => {
@@ -60,7 +61,8 @@ const ColisAReceptionner = () => {
         if (reception.length > 0 && !reception[0].colis) {
             return reception.map(item => ({
                 ...item,
-                is_received: item.is_received_by_agence_destination === true
+                is_received: item.is_received_by_agence_destination === true,
+                is_received_by_backoffice: item.isReceivedByBackoffice === true
             }));
         }
 
@@ -70,7 +72,8 @@ const ColisAReceptionner = () => {
                 ...item,
                 expedition: exp,
                 expedition_id: exp.id,
-                is_received: item.is_received_by_agence_destination === true
+                is_received: item.is_received_by_agence_destination === true,
+                is_received_by_backoffice: item.isReceivedByBackoffice === true
             }))
         );
     }, [reception]);
@@ -97,12 +100,15 @@ const ColisAReceptionner = () => {
                     colis: []
                 };
             }
-            groups[expId].colis.push(item);
+            groups[expId].colis.push({
+                ...item,
+                is_received_by_backoffice: item.isReceivedByBackoffice === true
+            });
         });
         return Object.values(groups);
     }, [reception]);
 
-    // Filtrer et trier les colis - Non réceptionnés en premier
+    // Filtrer et trier les colis - En transit d'abord, puis non réceptionnés, puis réceptionnés
     const filteredColis = useMemo(() => {
         let filtered = flatColis;
         
@@ -117,11 +123,22 @@ const ColisAReceptionner = () => {
             );
         }
         
-        // Trier : colis non réceptionnés en premier
+        // Trier : colis en transit (isReceivedByBackoffice=false) en premier, 
+        // puis colis prêts à réceptionner (isReceivedByBackoffice=true & is_received=false),
+        // puis colis déjà réceptionnés (is_received=true)
         return filtered.sort((a, b) => {
-            const aReceived = a.is_received ? 1 : 0;
-            const bReceived = b.is_received ? 1 : 0;
-            return aReceived - bReceived;
+            // Ordre de priorité:
+            // 1. En transit (isReceivedByBackoffice=false) = priorité 0
+            // 2. Prêt à réceptionner (isReceivedByBackoffice=true & is_received=false) = priorité 1
+            // 3. Déjà réceptionné (is_received=true) = priorité 2
+            
+            const getPriority = (item) => {
+                if (item.is_received) return 2;
+                if (!item.is_received_by_backoffice) return 0;
+                return 1;
+            };
+            
+            return getPriority(a) - getPriority(b);
         });
     }, [flatColis, searchQuery]);
 
@@ -132,6 +149,10 @@ const ColisAReceptionner = () => {
     };
 
     const toggleSelect = (code) => {
+        // Ne permettre la sélection que si le colis est arrivé au backoffice et non réceptionné
+        const colis = filteredColis.find(c => c.code_colis === code);
+        if (!colis || colis.is_received || !colis.is_received_by_backoffice) return;
+        
         setSelectedCodes(prev =>
             prev.includes(code)
                 ? prev.filter(c => c !== code)
@@ -140,7 +161,9 @@ const ColisAReceptionner = () => {
     };
 
     const selectableColis = useMemo(() =>
-        filteredColis.filter(c => !c.is_received),
+        // Seuls les colis qui sont arrivés au backoffice (isReceivedByBackoffice=true) 
+        // et qui ne sont pas encore réceptionnés (is_received=false) sont sélectionnables
+        filteredColis.filter(c => !c.is_received && c.is_received_by_backoffice),
         [filteredColis]
     );
 
@@ -186,24 +209,31 @@ const ColisAReceptionner = () => {
             );
         }
         
-        if (foundColis && !foundColis.is_received) {
-            // Sélectionner le colis trouvé
-            if (!selectedCodes.includes(foundColis.code_colis)) {
-                setSelectedCodes(prev => [...prev, foundColis.code_colis]);
+        if (foundColis) {
+            // Vérifier d'abord si le colis a déjà été réceptionné
+            if (foundColis.is_received) {
+                toast.info(`Le colis ${foundColis.code_colis} a déjà été réceptionné.`);
             }
-            
-            // Afficher un message de succès
-            toast.success(`Colis ${foundColis.code_colis} sélectionné !`);
-            
-            // Scroll vers le colis dans la liste
-            setTimeout(() => {
-                const element = document.getElementById(`colis-${foundColis.code_colis}`);
-                if (element) {
-                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Vérifier si le colis est arrivé au backoffice
+            else if (!foundColis.is_received_by_backoffice) {
+                toast.warning(`Le colis ${foundColis.code_colis} est toujours en transit vers le backoffice.`);
+            }
+            // Le colis peut être sélectionné
+            else {
+                if (!selectedCodes.includes(foundColis.code_colis)) {
+                    setSelectedCodes(prev => [...prev, foundColis.code_colis]);
                 }
-            }, 100);
-        } else if (foundColis && foundColis.is_received) {
-            toast.info(`Le colis ${foundColis.code_colis} a déjà été réceptionné.`);
+                
+                toast.success(`Colis ${foundColis.code_colis} sélectionné !`);
+                
+                // Scroll vers le colis dans la liste
+                setTimeout(() => {
+                    const element = document.getElementById(`colis-${foundColis.code_colis}`);
+                    if (element) {
+                        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }, 100);
+            }
         } else {
             toast.error(`Aucun colis trouvé avec le code scanné : ${scannedData}`);
         }
@@ -254,7 +284,7 @@ const ColisAReceptionner = () => {
                 </div>
                 <input
                     type="text"
-                    className="block w-full pl-8 sm:pl-10 pr-2 sm:pr-3 py-2 sm:py-2.5 border border-gray-300 rounded-lg text-xs sm:text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow"
+                    className="block w-full pl-8 sm:pl-10 pr-2 sm:pr-3 py-2 sm:py-2.5 border-2 border-gray-400 rounded-lg text-xs sm:text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow"
                     placeholder="Rechercher..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -308,27 +338,41 @@ const ColisAReceptionner = () => {
                         </div>
                     ))
                 ) : filteredColis.length > 0 ? (
-                    filteredColis.map((item) => (
+                    filteredColis.map((item) => {
+                        // Déterminer l'état du colis
+                        const isInTransit = !item.is_received_by_backoffice;
+                        const isReadyToReceive = item.is_received_by_backoffice && !item.is_received;
+                        const isReceived = item.is_received;
+                        
+                        return (
                         <div
                             key={item.id}
                             id={`colis-${item.code_colis}`}
                             className={`bg-white rounded-xl border transition-all active:scale-[0.98] overflow-hidden ${
                                 selectedCodes.includes(item.code_colis) 
                                     ? 'border-indigo-500 ring-2 ring-indigo-500/10 shadow-md' 
-                                    : item.is_received 
-                                        ? 'border-green-200 bg-green-50/30' 
-                                        : 'border-slate-200 shadow-sm'
+                                    : isReceived 
+                                        ? 'border-green-200 bg-green-50/30 opacity-60' 
+                                        : isInTransit
+                                            ? 'border-amber-200 bg-amber-50/30'
+                                            : 'border-slate-200 shadow-sm'
                             }`}
-                            onClick={() => !item.is_received && toggleSelect(item.code_colis)}
+                            onClick={() => isReadyToReceive && toggleSelect(item.code_colis)}
                         >
                             {/* Header Compact */}
                             <div className="p-3 border-b border-slate-100 flex items-start justify-between gap-2">
                                 <div className="flex items-center gap-2 min-w-0 flex-1">
-                                    {/* Checkbox */}
+                                    {/* Checkbox ou Icône de statut */}
                                     <div onClick={(e) => e.stopPropagation()}>
-                                        {item.is_received ? (
+                                        {isReceived ? (
                                             <div className="p-1 rounded-md bg-emerald-50 text-emerald-600 border border-emerald-100">
                                                 <CheckCircleIcon className="w-4 h-4" />
+                                            </div>
+                                        ) : isInTransit ? (
+                                            <div className="p-1 rounded-md bg-amber-50 text-amber-600 border border-amber-100">
+                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
                                             </div>
                                         ) : (
                                             <input
@@ -344,13 +388,17 @@ const ColisAReceptionner = () => {
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-1.5 flex-wrap">
                                             <span className="text-xs font-bold text-indigo-600 truncate">{item.code_colis}</span>
-                                            {item.is_received ? (
+                                            {isReceived ? (
                                                 <span className="px-1.5 py-0.5 rounded-full bg-green-50 text-green-700 text-[8px] font-bold uppercase border border-green-200">
-                                                    Reçu
+                                                    ✓ Réceptionné
+                                                </span>
+                                            ) : isInTransit ? (
+                                                <span className="px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[8px] font-bold uppercase border border-amber-200">
+                                                    ⏱ En transit
                                                 </span>
                                             ) : (
-                                                <span className="px-1.5 py-0.5 rounded-full bg-yellow-50 text-yellow-700 text-[8px] font-bold uppercase border border-yellow-200">
-                                                    En attente
+                                                <span className="px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[8px] font-bold uppercase border border-blue-200 animate-pulse">
+                                                    → À réceptionner
                                                 </span>
                                             )}
                                         </div>
@@ -390,7 +438,8 @@ const ColisAReceptionner = () => {
                             {/* Footer Actions */}
                             <div className="p-3 pt-2 border-t border-slate-100 flex items-center justify-end gap-2">
                                 <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                                    {!item.is_received && (
+                                    {/* Afficher le bouton de réception uniquement si le colis est arrivé au backoffice et non réceptionné */}
+                                    {isReadyToReceive && (
                                         <button
                                             onClick={() => handleReceiveSingle(item.code_colis)}
                                             disabled={processing}
@@ -399,6 +448,12 @@ const ColisAReceptionner = () => {
                                             <CheckCircleIcon className="w-3 h-3" />
                                             Réceptionner
                                         </button>
+                                    )}
+                                    {/* Message informatif pour les colis en transit */}
+                                    {isInTransit && (
+                                        <span className="px-2.5 py-1.5 bg-amber-100 text-amber-700 rounded text-[9px] font-bold uppercase">
+                                            En cours d'acheminement
+                                        </span>
                                     )}
                                     <Link
                                         to={`/expeditions/${item.expedition?.id || item.expedition_id}`}
@@ -411,7 +466,7 @@ const ColisAReceptionner = () => {
                                 </div>
                             </div>
                         </div>
-                    ))
+                    )})
                 ) : (
                     <div className="bg-white rounded-xl p-8 text-center border border-slate-100 shadow-sm">
                         <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-2">
@@ -468,17 +523,21 @@ const ColisAReceptionner = () => {
                             const expColis = (exp.colis || []).map(c => ({
                                 ...c,
                                 expedition: exp,
-                                is_received: c.is_received_by_agence_destination === true
+                                is_received: c.is_received_by_agence_destination === true,
+                                is_received_by_backoffice: c.isReceivedByBackoffice === true || c.is_received_by_backoffice === true
                             })).filter(c => {
                                 if (!searchQuery) return true;
                                 const lowQuery = searchQuery.toLowerCase();
                                 return c.code_colis?.toLowerCase().includes(lowQuery) ||
                                     c.designation?.toLowerCase().includes(lowQuery);
                             }).sort((a, b) => {
-                                // Trier : non réceptionnés en premier
-                                const aReceived = a.is_received ? 1 : 0;
-                                const bReceived = b.is_received ? 1 : 0;
-                                return aReceived - bReceived;
+                                // Trier : en transit, puis prêts à réceptionner, puis réceptionnés
+                                const getPriority = (item) => {
+                                    if (item.is_received) return 2;
+                                    if (!item.is_received_by_backoffice) return 0;
+                                    return 1;
+                                };
+                                return getPriority(a) - getPriority(b);
                             });
 
                             if (expColis.length === 0) return null;
@@ -536,38 +595,55 @@ const ColisAReceptionner = () => {
                                     </tr>
 
                                     {/* 📋 COLIS ROWS */}
-                                    {expColis.map((item, idx) => (
+                                    {expColis.map((item, idx) => {
+                                        // Déterminer l'état du colis
+                                        const isInTransit = !item.is_received_by_backoffice;
+                                        const isReadyToReceive = item.is_received_by_backoffice && !item.is_received;
+                                        const isReceived = item.is_received;
+                                        
+                                        return (
                                         <tr
                                             key={item.id}
                                             id={`colis-${item.code_colis}`}
-                                            onClick={() => !item.is_received && toggleSelect(item.code_colis)}
+                                            onClick={() => isReadyToReceive && toggleSelect(item.code_colis)}
                                             className={`
-                                                ${item.is_received 
-                                                    ? 'bg-emerald-50/30' 
-                                                    : selectedCodes.includes(item.code_colis) 
-                                                        ? 'bg-indigo-50 ring-2 ring-inset ring-indigo-200' 
-                                                        : 'bg-white hover:bg-slate-50'
+                                                ${isReceived 
+                                                    ? 'bg-emerald-50/30 opacity-60' 
+                                                    : isInTransit
+                                                        ? 'bg-amber-50/30'
+                                                        : selectedCodes.includes(item.code_colis) 
+                                                            ? 'bg-indigo-50 ring-2 ring-inset ring-indigo-200' 
+                                                            : 'bg-white hover:bg-slate-50'
                                                 } 
                                                 ${idx !== expColis.length - 1 ? 'border-b border-slate-100' : 'border-b-2 border-slate-200'}
-                                                cursor-pointer transition-all duration-150
+                                                ${isReadyToReceive ? 'cursor-pointer' : 'cursor-default'}
+                                                transition-all duration-150
                                             `}
                                         >
                                             <td className="px-4 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                                                {!item.is_received ? (
+                                                {isReceived ? (
+                                                    <CheckCircleIcon className="h-5 w-5 text-green-500" />
+                                                ) : isInTransit ? (
+                                                    <svg className="h-5 w-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                ) : (
                                                     <input
                                                         type="checkbox"
                                                         className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                                         checked={selectedCodes.includes(item.code_colis)}
                                                         onChange={() => toggleSelect(item.code_colis)}
                                                     />
-                                                ) : (
-                                                    <CheckCircleIcon className="h-5 w-5 text-green-500" />
                                                 )}
                                             </td>
                                             <td className="px-4 py-4">
                                                 <div className="flex items-center">
-                                                    <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-gray-100 rounded-lg">
-                                                        <InboxArrowDownIcon className="h-5 w-5 text-gray-500" />
+                                                    <div className={`flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-lg ${
+                                                        isReceived ? 'bg-green-100' : isInTransit ? 'bg-amber-100' : 'bg-gray-100'
+                                                    }`}>
+                                                        <InboxArrowDownIcon className={`h-5 w-5 ${
+                                                            isReceived ? 'text-green-600' : isInTransit ? 'text-amber-600' : 'text-gray-500'
+                                                        }`} />
                                                     </div>
                                                     <div className="ml-3">
                                                         <div className="text-sm font-medium text-gray-900">
@@ -589,13 +665,17 @@ const ColisAReceptionner = () => {
                                                 <div className="text-sm text-gray-900">{parseFloat(item.poids).toFixed(2)} kg</div>
                                             </td>
                                             <td className="px-4 py-4 whitespace-nowrap">
-                                                {item.is_received ? (
-                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-green-100 text-green-800">
-                                                        Reçu
+                                                {isReceived ? (
+                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                                                        ✓ Réceptionné
+                                                    </span>
+                                                ) : isInTransit ? (
+                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
+                                                        ⏱ En transit
                                                     </span>
                                                 ) : (
-                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-yellow-100 text-yellow-800">
-                                                        En attente
+                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200 animate-pulse">
+                                                        → À réceptionner
                                                     </span>
                                                 )}
                                             </td>
@@ -606,7 +686,8 @@ const ColisAReceptionner = () => {
                                                             Détails
                                                         </button>
                                                     </Link>
-                                                    {!item.is_received && (
+                                                    {/* Afficher le bouton uniquement si le colis est prêt à être réceptionné */}
+                                                    {isReadyToReceive && (
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
@@ -618,10 +699,11 @@ const ColisAReceptionner = () => {
                                                             Réceptionner
                                                         </button>
                                                     )}
+                                                  
                                                 </div>
                                             </td>
                                         </tr>
-                                    ))}
+                                    )})}
                                 </React.Fragment>
                             );
                         })

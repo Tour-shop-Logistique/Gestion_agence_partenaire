@@ -580,7 +580,7 @@ const Comptabilite = () => {
             <MagnifyingGlassIcon className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 w-3.5 sm:w-4 h-3.5 sm:h-4 text-slate-400" />
             <input
               type="text"
-              className="w-full pl-8 sm:pl-9 pr-2.5 sm:pr-3 py-1.5 bg-white border border-slate-200 rounded-md text-xs sm:text-sm placeholder:text-slate-400 focus:outline-none focus:border-slate-300 transition-all font-medium"
+              className="w-full pl-8 sm:pl-9 pr-2.5 sm:pr-3 py-1.5 bg-white border-2 border-slate-400 rounded-md text-xs sm:text-sm placeholder:text-slate-400 focus:outline-none focus:border-slate-300 transition-all font-medium"
               placeholder="Rechercher..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}

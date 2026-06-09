@@ -557,7 +557,7 @@ const Expeditions = () => {
                                     placeholder="Rechercher..."
                                     value={searchQuery}
                                     onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-                                    className="w-full pl-8 pr-3 py-2 bg-white border border-gray-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    className="w-full pl-8 pr-3 py-2 bg-white border-2 border-gray-400 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                 />
                             </div>
                         </div>

@@ -549,7 +549,7 @@ const expeditionSlice = createSlice({
             })
             .addCase(receiveColisDestination.fulfilled, (state, action) => {
                 state.status = "succeeded";
-                state.message = action.payload.message;
+                // Message retiré pour ne pas afficher de notification
                 const { codes } = action.payload;
 
                 // Mise à jour de l'onglet réception

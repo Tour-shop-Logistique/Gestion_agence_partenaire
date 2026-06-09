@@ -59,7 +59,7 @@ const TarifGroupageComponent = () => {
   useEffect(() => {
     fetchTarifsGroupageBase();
     fetchTarifGroupageAgence();
-  }, [fetchTarifsGroupageBase, fetchTarifGroupageAgence]); // Added dependencies
+  }, [fetchTarifsGroupageBase, fetchTarifGroupageAgence]);
 
   // Trigger Toasts for messages and errors
   useEffect(() => {

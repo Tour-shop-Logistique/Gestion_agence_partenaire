@@ -135,102 +135,7 @@ const Dashboard = () => {
     }
 
     return (
-        <div className="relative min-h-screen">
-            {/* ========== MOTIFS DE FOND GÉOMÉTRIQUES ========== */}
-            <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-                {/* Fond de base avec dégradé subtil */}
-                <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-white to-indigo-50/30" />
-                
-                {/* Motifs géométriques marocains - Coin supérieur droit */}
-                <div className="absolute -top-20 -right-20 w-[500px] h-[500px] opacity-[0.15]">
-                    <svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
-                        {/* Étoile à 8 branches centrale */}
-                        <g transform="translate(250, 250)">
-                            <path d="M0,-100 L20,-20 L100,0 L20,20 L0,100 L-20,20 L-100,0 L-20,-20 Z" 
-                                  fill="#4f46e5" stroke="#6366f1" strokeWidth="2"/>
-                            <circle cx="0" cy="0" r="40" fill="#6366f1" opacity="0.5"/>
-                            
-                            {/* Petites étoiles autour */}
-                            {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => {
-                                const rad = (angle * Math.PI) / 180;
-                                const x = Math.cos(rad) * 140;
-                                const y = Math.sin(rad) * 140;
-                                return (
-                                    <g key={i} transform={`translate(${x}, ${y})`}>
-                                        <path d="M0,-15 L5,-5 L15,0 L5,5 L0,15 L-5,5 L-15,0 L-5,-5 Z" 
-                                              fill="#14b8a6" opacity="0.6"/>
-                                    </g>
-                                );
-                            })}
-                        </g>
-                    </svg>
-                </div>
-
-                {/* Motifs géométriques - Coin inférieur gauche */}
-                <div className="absolute -bottom-32 -left-32 w-[600px] h-[600px] opacity-[0.12] rotate-45">
-                    <svg viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
-                        <defs>
-                            <pattern id="moroccan-pattern" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
-                                <circle cx="50" cy="50" r="30" fill="none" stroke="#4f46e5" strokeWidth="2"/>
-                                <path d="M50,20 L65,50 L50,80 L35,50 Z" fill="#6366f1" opacity="0.5"/>
-                                <circle cx="50" cy="50" r="10" fill="#14b8a6"/>
-                            </pattern>
-                        </defs>
-                        <rect width="600" height="600" fill="url(#moroccan-pattern)"/>
-                    </svg>
-                </div>
-
-                {/* Petites étoiles décoratives dispersées */}
-                <div className="absolute top-1/4 left-1/4 w-[200px] h-[200px] opacity-[0.15]">
-                    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-                        {[...Array(6)].map((_, i) => {
-                            const x = (i % 3) * 70 + 30;
-                            const y = Math.floor(i / 3) * 70 + 30;
-                            return (
-                                <g key={i} transform={`translate(${x}, ${y})`}>
-                                    <path d="M0,-12 L4,-4 L12,0 L4,4 L0,12 L-4,4 L-12,0 L-4,-4 Z" 
-                                          fill="#f59e0b" opacity="0.8"/>
-                                </g>
-                            );
-                        })}
-                    </svg>
-                </div>
-
-                {/* Cercles géométriques - Côté droit */}
-                <div className="absolute top-1/2 right-10 w-[300px] h-[300px] opacity-[0.1]">
-                    <svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="150" cy="150" r="140" fill="none" stroke="#4f46e5" strokeWidth="2"/>
-                        <circle cx="150" cy="150" r="100" fill="none" stroke="#6366f1" strokeWidth="2"/>
-                        <circle cx="150" cy="150" r="60" fill="none" stroke="#14b8a6" strokeWidth="3"/>
-                        <circle cx="150" cy="150" r="20" fill="#f59e0b" opacity="0.5"/>
-                    </svg>
-                </div>
-
-                {/* Étoile secondaire - Milieu gauche */}
-                <div className="absolute top-1/3 left-20 w-[150px] h-[150px] opacity-[0.12]">
-                    <svg viewBox="0 0 150 150" xmlns="http://www.w3.org/2000/svg">
-                        <g transform="translate(75, 75)">
-                            <path d="M0,-50 L10,-10 L50,0 L10,10 L0,50 L-10,10 L-50,0 L-10,-10 Z" 
-                                  fill="#14b8a6" stroke="#10b981" strokeWidth="2"/>
-                            <circle cx="0" cy="0" r="15" fill="#f59e0b" opacity="0.6"/>
-                        </g>
-                    </svg>
-                </div>
-
-                {/* Motif grille subtile sur toute la page */}
-                <div className="absolute inset-0 opacity-[0.03]" 
-                     style={{
-                         backgroundImage: `
-                             linear-gradient(to right, #4f46e5 1px, transparent 1px),
-                             linear-gradient(to bottom, #4f46e5 1px, transparent 1px)
-                         `,
-                         backgroundSize: '40px 40px'
-                     }}
-                />
-            </div>
-
-            {/* ========== CONTENU DU DASHBOARD ========== */}
-            <div className="relative z-10 max-w-[1600px] mx-auto space-y-4 sm:space-y-6 pb-8 sm:pb-12 px-3 sm:px-4 lg:px-6">
+        <div className="relative max-w-[1600px] mx-auto space-y-4 sm:space-y-6 pb-8 sm:pb-12 px-3 sm:px-4 lg:px-6">
             
             {/* ========== HEADER COMPACT ========== */}
             <div className="flex items-center justify-between flex-wrap gap-2">
@@ -316,7 +221,6 @@ const Dashboard = () => {
                     logistics={logistics} 
                     operational={operational} 
                 />
-            </div>
             </div>
         </div>
     );

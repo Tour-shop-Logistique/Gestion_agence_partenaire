@@ -257,9 +257,6 @@ const TarifSimpleComponent = () => {
     }
   }, [selectedAgencyTarif, updateSingleTarifZone, fetchAgencyTarifs]);
 
-
-
-
   const currentData = activeTab === "agency" ? flatExistingTarifs : flatTarifs;
 
   return (
@@ -392,7 +389,6 @@ const TarifSimpleComponent = () => {
                             </>
                           )}
 
-
                           {activeTab === "base" && (
                             <button
                               onClick={() => handleInitializeSingle(tarif)}
@@ -401,7 +397,6 @@ const TarifSimpleComponent = () => {
                               Initialiser
                             </button>
                           )}
-
                         </div>
                       </td>
                     </tr>
@@ -442,8 +437,6 @@ const TarifSimpleComponent = () => {
                         </button>
                       </div>
                     ) : (
-
-
                       <button
                         onClick={() => handleInitializeSingle(tarif)}
                         className="px-4 py-2 bg-slate-900 text-white text-[10px] font-bold rounded-lg shadow-sm active:scale-95"
@@ -451,7 +444,6 @@ const TarifSimpleComponent = () => {
                         Initialiser
                       </button>
                     )}
-
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 pt-2">
@@ -500,8 +492,6 @@ const TarifSimpleComponent = () => {
         onIndexSelect={handleIndexSelect}
         onZoneUpdate={handleZoneUpdate}
       />
-
-
 
       <SingleInitializeModal
         isOpen={showSingleModal}

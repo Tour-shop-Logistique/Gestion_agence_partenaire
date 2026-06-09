@@ -33,17 +33,16 @@ const Demandes = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [activeTab, setActiveTab] = useState('demandes'); // 'demandes' or 'en-agence'
 
+    // Charger les demandes lorsque la page change
     useEffect(() => {
         loadDemandes({ page: currentPage });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentPage]);
+    }, [currentPage]); // Ne pas inclure loadDemandes dans les dépendances
 
+    // Charger les données initiales une seule fois au montage
     useEffect(() => {
         fetchAgencyData();
-        // Charger les expéditions pour l'onglet "À envoyer"
         loadExpeditions({ page: 1 });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, []); // Tableau vide = exécution uniquement au montage
 
     useEffect(() => {
         if (message) {
@@ -232,7 +231,7 @@ const Demandes = () => {
                         }
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                        className="w-full pl-10 pr-4 py-3 border-2 border-slate-400 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                     />
                     {searchQuery && (
                         <button

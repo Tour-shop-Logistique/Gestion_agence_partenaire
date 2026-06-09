@@ -8,6 +8,8 @@ import {
   selectTransactionsSummary, 
   selectTransactionsStatus 
 } from '../store/slices/agencySlice';
+import { useExpedition } from '../hooks/useExpedition';
+import { toast } from '../utils/toast';
 import { 
   ArrowPathIcon,
   MagnifyingGlassIcon,
@@ -25,6 +27,7 @@ import { RecordTransactionModal } from '../components/transaction';
 const Transactions = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { recordTransaction } = useExpedition();
   
   const transactions = useSelector(selectTransactions);
   const summary = useSelector(selectTransactionsSummary);
@@ -52,9 +55,29 @@ const Transactions = () => {
   };
 
   const handleNewTransactionSubmit = async (transactionData) => {
-    // La soumission est gérée par le composant modal via useExpedition
-    // Après succès, on rafraîchit la liste
-    handleRefresh();
+    try {
+      const resultAction = await recordTransaction(transactionData);
+      
+      // Vérifier si l'action a réussi
+      if (resultAction.type && resultAction.type.endsWith('/fulfilled')) {
+        toast.success('Transaction enregistrée avec succès');
+        setIsNewTransactionModalOpen(false);
+        // Rafraîchir la liste après un court délai
+        setTimeout(() => {
+          handleRefresh();
+        }, 500);
+      } else {
+        // L'action a été rejetée
+        const errorMessage = resultAction.payload || resultAction.error?.message || 'Erreur lors de l\'enregistrement';
+        toast.error(errorMessage);
+        throw new Error(errorMessage);
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'enregistrement:', error);
+      const errorMessage = error.message || 'Erreur lors de l\'enregistrement de la transaction';
+      toast.error(errorMessage);
+      throw error; // Re-throw pour que le modal puisse gérer l'erreur
+    }
   };
 
   const formatCurrency = (amount) => {

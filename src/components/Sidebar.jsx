@@ -210,11 +210,102 @@ const Sidebar = ({ onClose }) => {
 
   return (
     <div 
-      className="flex flex-col h-full w-60 lg:mt-0 mt-0"
+      className="flex flex-col h-full w-60 lg:mt-0 mt-0 relative overflow-hidden"
       style={{
         background: "#1e293b",
       }}
     >
+      {/* ========== MOTIFS DE FOND ORNEMENTAUX RÉPÉTITIFS ========== */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Fond avec dégradé subtil */}
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-800/30 via-transparent to-slate-900/30" />
+        
+        {/* Pattern ornamental répétitif vertical */}
+        <div className="absolute inset-0 opacity-[0.08]">
+          <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              {/* Pattern de base - motif ornemental adapté à la sidebar */}
+              <pattern id="sidebar-ornamental" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
+                {/* Forme centrale en losange */}
+                <path d="M30,12 L36,30 L30,48 L24,30 Z" fill="#60a5fa" opacity="0.4"/>
+                
+                {/* Courbes ornementales autour */}
+                <path d="M30,12 Q24,18 30,24 Q36,18 30,12" fill="none" stroke="#14b8a6" strokeWidth="1" opacity="0.6"/>
+                <path d="M30,36 Q24,42 30,48 Q36,42 30,36" fill="none" stroke="#14b8a6" strokeWidth="1" opacity="0.6"/>
+                <path d="M12,30 Q18,24 24,30 Q18,36 12,30" fill="none" stroke="#818cf8" strokeWidth="1" opacity="0.6"/>
+                <path d="M36,30 Q42,24 48,30 Q42,36 36,30" fill="none" stroke="#818cf8" strokeWidth="1" opacity="0.6"/>
+                
+                {/* Cercles décoratifs */}
+                <circle cx="30" cy="30" r="4" fill="none" stroke="#fbbf24" strokeWidth="0.8" opacity="0.5"/>
+                <circle cx="30" cy="12" r="2" fill="#14b8a6" opacity="0.7"/>
+                <circle cx="30" cy="48" r="2" fill="#14b8a6" opacity="0.7"/>
+                <circle cx="12" cy="30" r="2" fill="#818cf8" opacity="0.7"/>
+                <circle cx="48" cy="30" r="2" fill="#818cf8" opacity="0.7"/>
+                
+                {/* Mini étoiles dans les coins */}
+                <path d="M15,15 L17,17 L15,19 L13,17 Z" fill="#fbbf24" opacity="0.4"/>
+                <path d="M45,15 L47,17 L45,19 L43,17 Z" fill="#fbbf24" opacity="0.4"/>
+                <path d="M15,45 L17,47 L15,49 L13,47 Z" fill="#fbbf24" opacity="0.4"/>
+                <path d="M45,45 L47,47 L45,49 L43,47 Z" fill="#fbbf24" opacity="0.4"/>
+                
+                {/* Lignes décoratives subtiles */}
+                <line x1="30" y1="24" x2="30" y2="36" stroke="#60a5fa" strokeWidth="0.5" opacity="0.3"/>
+                <line x1="24" y1="30" x2="36" y2="30" stroke="#60a5fa" strokeWidth="0.5" opacity="0.3"/>
+              </pattern>
+
+              {/* Pattern secondaire pour variation */}
+              <pattern id="sidebar-ornamental-2" x="30" y="30" width="60" height="60" patternUnits="userSpaceOnUse">
+                {/* Étoile à 8 branches */}
+                <g transform="translate(30, 30)">
+                  <path d="M0,-12 L3,-3 L12,0 L3,3 L0,12 L-3,3 L-12,0 L-3,-3 Z" fill="#14b8a6" opacity="0.3"/>
+                  <circle cx="0" cy="0" r="3" fill="#fbbf24" opacity="0.4"/>
+                </g>
+                
+                {/* Spirales décoratives */}
+                <path d="M30,18 Q27,21 30,24" fill="none" stroke="#818cf8" strokeWidth="0.6" opacity="0.4"/>
+                <path d="M30,36 Q33,39 30,42" fill="none" stroke="#818cf8" strokeWidth="0.6" opacity="0.4"/>
+                
+                {/* Points lumineux */}
+                <circle cx="20" cy="20" r="1.5" fill="#60a5fa" opacity="0.6"/>
+                <circle cx="40" cy="20" r="1.5" fill="#60a5fa" opacity="0.6"/>
+                <circle cx="20" cy="40" r="1.5" fill="#60a5fa" opacity="0.6"/>
+                <circle cx="40" cy="40" r="1.5" fill="#60a5fa" opacity="0.6"/>
+              </pattern>
+            </defs>
+            
+            {/* Application des patterns */}
+            <rect width="100%" height="100%" fill="url(#sidebar-ornamental)"/>
+          </svg>
+        </div>
+
+        {/* Overlay avec le pattern secondaire */}
+        <div className="absolute inset-0 opacity-[0.06]">
+          <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+            <rect width="100%" height="100%" fill="url(#sidebar-ornamental-2)"/>
+          </svg>
+        </div>
+
+        {/* Bordure ornementale gauche (plus prononcée) */}
+        <div className="absolute left-0 top-0 bottom-0 w-1 opacity-15">
+          <svg width="4" height="100%" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+            <defs>
+              <pattern id="sidebar-border" x="0" y="0" width="4" height="20" patternUnits="userSpaceOnUse">
+                <circle cx="2" cy="10" r="1.5" fill="#14b8a6" opacity="0.7"/>
+                <circle cx="2" cy="5" r="0.8" fill="#60a5fa" opacity="0.5"/>
+                <circle cx="2" cy="15" r="0.8" fill="#fbbf24" opacity="0.5"/>
+              </pattern>
+            </defs>
+            <rect width="4" height="100%" fill="url(#sidebar-border)"/>
+          </svg>
+        </div>
+
+        {/* Gradient de lumière subtil du haut */}
+        <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-slate-700/10 to-transparent pointer-events-none" />
+        
+        {/* Gradient de lumière subtil du bas */}
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-slate-900/20 to-transparent pointer-events-none" />
+      </div>
+
       {/* ── Branding Header ─────────────────────────────────────────────────── */}
       <div className="relative z-10 h-16 flex items-center px-4 shrink-0 border-b border-white/10">
         <div className="flex items-center space-x-3 min-w-0 flex-1">
