@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Réinitialiser l'application</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #1a202c;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        p {
+            color: #718096;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        
+        .warning {
+            background: #fef3c7;
+            border: 2px solid #f59e0b;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: #92400e;
+            font-size: 14px;
+        }
+        
+        button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 10px;
+        }
+        
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(239,68,68,0.3);
+        }
+        
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+        
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+        
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .status.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 2px solid #10b981;
+        }
+        
+        .status.info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 2px solid #3b82f6;
+        }
+        
+        .actions {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #e5e7eb;
+        }
+        
+        .actions h3 {
+            color: #374151;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        
+        .action-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background: #f9fafb;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .action-item span {
+            margin-left: 10px;
+            color: #6b7280;
+            font-size: 14px;
+        }
+        
+        .icon {
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Réinitialiser l'application</h1>
+        <p>Cet outil permet de nettoyer complètement le cache et les données locales pour résoudre les problèmes comme les boucles infinies d'API ou les erreurs 429.</p>
+        
+        <div class="warning">
+            ⚠️ <strong>Attention :</strong> Vous serez déconnecté et devrez vous reconnecter après la réinitialisation.
+        </div>
+        
+        <button class="btn-danger" onclick="resetApp()">
+            🗑️ Réinitialiser maintenant
+        </button>
+        
+        <button class="btn-secondary" onclick="goBack()">
+            ← Retour à l'application
+        </button>
+        
+        <div id="status" class="status"></div>
+        
+        <div class="actions">
+            <h3>Ce qui sera nettoyé :</h3>
+            <div class="action-item">
+                <span class="icon">🗄️</span>
+                <span>Cache du navigateur</span>
+            </div>
+            <div class="action-item">
+                <span class="icon">💾</span>
+                <span>localStorage (données locales)</span>
+            </div>
+            <div class="action-item">
+                <span class="icon">🍪</span>
+                <span>sessionStorage (données de session)</span>
+            </div>
+            <div class="action-item">
+                <span class="icon">🔄</span>
+                <span>Cache des Service Workers</span>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        async function resetApp() {
+            const statusEl = document.getElementById('status');
+            statusEl.style.display = 'block';
+            statusEl.className = 'status info';
+            statusEl.innerHTML = '⏳ Nettoyage en cours...';
+            
+            try {
+                // 1. Nettoyer localStorage
+                localStorage.clear();
+                console.log('✅ localStorage nettoyé');
+                
+                // 2. Nettoyer sessionStorage
+                sessionStorage.clear();
+                console.log('✅ sessionStorage nettoyé');
+                
+                // 3. Nettoyer le cache des Service Workers
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(
+                        cacheNames.map(cacheName => caches.delete(cacheName))
+                    );
+                    console.log('✅ Cache Service Workers nettoyé');
+                }
+                
+                // 4. Désinscrire les Service Workers
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(
+                        registrations.map(registration => registration.unregister())
+                    );
+                    console.log('✅ Service Workers désinscrit');
+                }
+                
+                // 5. Succès
+                statusEl.className = 'status success';
+                statusEl.innerHTML = '✅ Nettoyage terminé ! Redirection dans 2 secondes...';
+                
+                // 6. Rediriger vers l'accueil
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 2000);
+                
+            } catch (error) {
+                statusEl.className = 'status danger';
+                statusEl.innerHTML = '❌ Erreur lors du nettoyage : ' + error.message;
+                console.error('Erreur:', error);
+            }
+        }
+        
+        function goBack() {
+            window.location.href = '/';
+        }
+        
+        // Afficher les stats actuelles
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('📊 État actuel du cache :');
+            console.log('- localStorage items:', Object.keys(localStorage).length);
+            console.log('- sessionStorage items:', Object.keys(sessionStorage).length);
+            
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    console.log('- Caches actifs:', names.length);
+                });
+            }
+        });
+    </script>
+</body>
+</html>

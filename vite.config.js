@@ -38,6 +38,10 @@ export default defineConfig(({ mode }) => {
       minify: 'terser',
       rollupOptions: {
         output: {
+          // Ajout de hash dans les noms de fichiers pour forcer le rafraîchissement du cache
+          entryFileNames: 'assets/[name].[hash].js',
+          chunkFileNames: 'assets/[name].[hash].js',
+          assetFileNames: 'assets/[name].[hash].[ext]',
           manualChunks: {
             vendor: ['react', 'react-dom'],
             router: ['react-router-dom'],

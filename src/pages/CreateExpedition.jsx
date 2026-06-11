@@ -40,6 +40,7 @@ const CreateExpedition = () => {
     const [step, setStep] = useState(1);
     const [paymentMethod, setPaymentMethod] = useState("cash");
     const [paymentReference, setPaymentReference] = useState("");
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
 
     const [formData, setFormData] = useState({
         type_expedition: "SIMPLE",
@@ -80,13 +81,27 @@ const CreateExpedition = () => {
         ]
     });
 
+    // Nettoyage immédiat au montage du composant
     useEffect(() => {
+        // Nettoyage synchrone dès le montage
         resetStatus();
         clearCurrentExpedition();
+        cleanSimulation();
+        
+        // Chargement des données
         loadProducts();
         loadCategories();
         fetchTarifGroupageAgence();
         fetchAgencyData();
+    }, []);
+
+    // Nettoyage au démontage
+    useEffect(() => {
+        return () => {
+            resetStatus();
+            clearCurrentExpedition();
+            cleanSimulation();
+        };
     }, []);
 
     // Gestion des pays par défaut selon le type
@@ -186,6 +201,37 @@ const CreateExpedition = () => {
         const currentType = formData.type_expedition.toLowerCase();
         return existingGroupageTarifs.filter(t => t.type_expedition === currentType);
     }, [existingGroupageTarifs, formData.type_expedition]);
+
+    // Filtrage des catégories en fonction du type d'expédition
+    const filteredCategories = useMemo(() => {
+        if (!categories || !Array.isArray(categories)) return [];
+        
+        // Si le type est SIMPLE, afficher toutes les catégories
+        if (formData.type_expedition === 'SIMPLE') {
+            return categories;
+        }
+        
+        // Pour les autres types, filtrer par les category_id présents dans les tarifs groupage
+        if (!existingGroupageTarifs || !Array.isArray(existingGroupageTarifs)) return categories;
+        
+        const currentType = formData.type_expedition.toLowerCase();
+        
+        // Récupérer tous les category_id des tarifs correspondant au type sélectionné
+        const categoryIds = existingGroupageTarifs
+            .filter(tarif => tarif.type_expedition === currentType && tarif.category_id)
+            .map(tarif => tarif.category_id);
+        
+        // Éliminer les doublons
+        const uniqueCategoryIds = [...new Set(categoryIds)];
+        
+        // Si aucune catégorie trouvée, retourner toutes les catégories
+        if (uniqueCategoryIds.length === 0) {
+            return categories;
+        }
+        
+        // Filtrer les catégories pour ne garder que celles qui ont un tarif pour ce type
+        return categories.filter(cat => uniqueCategoryIds.includes(cat.id));
+    }, [categories, existingGroupageTarifs, formData.type_expedition]);
 
     // Sélection automatique des infos depuis un trajet configuré
     const handleRouteSelect = (e) => {
@@ -341,6 +387,11 @@ const CreateExpedition = () => {
         const result = await createExpedition(payload);
 
         console.log("Result from createExpedition:", result);
+
+        // Si la création a réussi, activer le modal
+        if (result?.payload) {
+            setShowSuccessModal(true);
+        }
 
         // Vérifier si la création a réussi et enregistrer la transaction si ce n'est pas un crédit
         if (result?.payload && !formData.is_paiement_credit) {
@@ -714,13 +765,13 @@ const CreateExpedition = () => {
                                                             <div>
                                                                 <label className="block text-xs font-semibold text-slate-500 mb-1.5">Catégorie</label>
                                                                 <SearchableDropdown
-                                                                    options={Array.isArray(categories) ? categories.map(cat => ({
+                                                                    options={Array.isArray(filteredCategories) ? filteredCategories.map(cat => ({
                                                                         id: String(cat.id),
                                                                         label: cat.nom
                                                                     })) : []}
                                                                     onSelect={(option) => handleColisChange(index, 'category_id', option.id)}
                                                                     placeholder={c.category_id 
-                                                                        ? categories.find(cat => String(cat.id) === String(c.category_id))?.nom || "-- Choisir --"
+                                                                        ? filteredCategories.find(cat => String(cat.id) === String(c.category_id))?.nom || "-- Choisir --"
                                                                         : "-- Choisir --"
                                                                     }
                                                                 />
@@ -1161,7 +1212,7 @@ const CreateExpedition = () => {
             </div>
 
             {/* Print Modal on Success */}
-            {status === 'succeeded' && currentExpedition && (
+            {showSuccessModal && currentExpedition && (
                 <PrintSuccessModal
                     expedition={currentExpedition}
                     agency={{
@@ -1169,8 +1220,10 @@ const CreateExpedition = () => {
                         logo: getLogoUrl(agencyData?.agence?.logo || agencyData?.logo)
                     }}
                     onClose={() => {
+                        setShowSuccessModal(false);
                         resetStatus();
                         cleanSimulation();
+                        clearCurrentExpedition();
                         // Recharger silencieusement le dashboard si on y retourne
                         navigate("/dashboard", { state: { silentRefresh: true } });
                     }}

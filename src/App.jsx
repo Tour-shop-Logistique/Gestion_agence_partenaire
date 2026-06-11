@@ -14,6 +14,7 @@ import { useTarifs } from "./hooks/useTarifs";
 import { useDashboard } from "./hooks/useDashboard";
 import { getLogoUrl } from "./utils/apiConfig";
 import { selectAgencyConfigured } from "./store/slices/agencySlice";
+import { autoCheckAndUpdate, handleChunkLoadError } from "./utils/versionChecker";
 
 // Import des pages
 import Home from "./pages/Home";
@@ -172,6 +173,35 @@ function AppContent() {
 }
 
 function App() {
+  // Vérifier les mises à jour au démarrage
+  useEffect(() => {
+    autoCheckAndUpdate();
+  }, []);
+
+  // Gestion des erreurs de chargement de chunks (page blanche en production)
+  useEffect(() => {
+    const handleError = (event) => {
+      // Utiliser notre gestionnaire d'erreurs personnalisé
+      if (handleChunkLoadError(event.error || event.reason)) {
+        event.preventDefault(); // Empêcher l'affichage de l'erreur par défaut
+      }
+    };
+
+    const handleUnhandledRejection = (event) => {
+      if (handleChunkLoadError(event.reason)) {
+        event.preventDefault();
+      }
+    };
+
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
+  }, []);
+
   return (
     <Router>
       <AppContent />

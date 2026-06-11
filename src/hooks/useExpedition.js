@@ -143,17 +143,28 @@ export const useExpedition = () => {
         loadProducts,
         loadCategories,
         loadDemandes: useCallback((params = { page: 1 }, forceRefresh = false) => {
-            if (!forceRefresh && status === 'loading') {
-                return;
+            // Vérifier si un chargement de demandes est déjà en cours
+            // On utilise demandesMeta pour vérifier l'état spécifique aux demandes
+            const isLoadingDemandes = status === 'loading' && lastDemandesFilters !== null;
+            
+            if (!forceRefresh && isLoadingDemandes) {
+                console.log('⏭️ Demandes déjà en cours de chargement, skip');
+                return Promise.resolve();
             }
+            
             const isSameParams = lastDemandesFilters &&
                 String(params.page) === String(lastDemandesFilters.page);
 
+            // ❌ SUPPRESSION de la vérification sur demandes.length qui cause la boucle
+            // Car demandes change à chaque fois, ce qui recréé le callback
             if (!forceRefresh && lastDemandesFilters && isSameParams && status === 'succeeded') {
+                console.log('✅ Demandes déjà chargées avec les mêmes paramètres, skip');
                 return Promise.resolve();
             }
+            
+            console.log('📞 Appel API fetchDemandesClients avec params:', params);
             return dispatch(fetchDemandesClients(params));
-        }, [dispatch, lastDemandesFilters, status]),
+        }, [dispatch, lastDemandesFilters, status]), // ❌ RETRAIT de 'demandes' des dépendances
         acceptDemande: useCallback((id) => dispatch(acceptDemandeClient(id)), [dispatch]),
         refuseDemande: useCallback((id, data) => dispatch(refuseDemandeClient({ id, data })), [dispatch]),
         confirmReception: useCallback((id) => dispatch(confirmExpeditionReception(id)), [dispatch]),

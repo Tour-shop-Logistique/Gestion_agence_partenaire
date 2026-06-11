@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useExpedition } from "../hooks/useExpedition";
 import { useAgency } from "../hooks/useAgency";
 import { formatPriceDual } from "../utils/format";
@@ -33,13 +33,24 @@ const Demandes = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [activeTab, setActiveTab] = useState('demandes'); // 'demandes' or 'en-agence'
 
+    // Utiliser un ref pour éviter les appels multiples au montage
+    const hasLoadedInitialDataRef = useRef(false);
+    
     // Charger les demandes lorsque la page change
     useEffect(() => {
+        console.log('📄 Demandes page: Chargement page', currentPage);
         loadDemandes({ page: currentPage });
     }, [currentPage]); // Ne pas inclure loadDemandes dans les dépendances
 
     // Charger les données initiales une seule fois au montage
     useEffect(() => {
+        if (hasLoadedInitialDataRef.current) {
+            console.log('⏭️ Demandes page: Données initiales déjà chargées, skip');
+            return;
+        }
+        
+        console.log('🔄 Demandes page: Chargement initial');
+        hasLoadedInitialDataRef.current = true;
         fetchAgencyData();
         loadExpeditions({ page: 1 });
     }, []); // Tableau vide = exécution uniquement au montage

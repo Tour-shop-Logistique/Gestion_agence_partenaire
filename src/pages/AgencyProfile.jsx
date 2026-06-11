@@ -23,6 +23,38 @@ import {
 } from "@heroicons/react/24/outline";
 
 /* ─────────────────────────────────────────────
+   Liste des pays
+───────────────────────────────────────────── */
+const PAYS_LISTE = [
+  "Afghanistan", "Afrique du Sud", "Albanie", "Algérie", "Allemagne", "Andorre", "Angola",
+  "Antigua-et-Barbuda", "Arabie Saoudite", "Argentine", "Arménie", "Australie", "Autriche",
+  "Azerbaïdjan", "Bahamas", "Bahreïn", "Bangladesh", "Barbade", "Belgique", "Belize", "Bénin",
+  "Bhoutan", "Biélorussie", "Birmanie", "Bolivie", "Bosnie-Herzégovine", "Botswana", "Brésil",
+  "Brunei", "Bulgarie", "Burkina Faso", "Burundi", "Cambodge", "Cameroun", "Canada", "Cap-Vert",
+  "Centrafrique", "Chili", "Chine", "Chypre", "Colombie", "Comores", "Congo", "Congo (RDC)",
+  "Corée du Nord", "Corée du Sud", "Costa Rica", "Côte d'Ivoire", "Croatie", "Cuba", "Danemark",
+  "Djibouti", "Dominique", "Égypte", "Émirats arabes unis", "Équateur", "Érythrée", "Espagne",
+  "Estonie", "Eswatini", "États-Unis", "Éthiopie", "Fidji", "Finlande", "France", "Gabon",
+  "Gambie", "Géorgie", "Ghana", "Grèce", "Grenade", "Guatemala", "Guinée", "Guinée équatoriale",
+  "Guinée-Bissau", "Guyana", "Haïti", "Honduras", "Hongrie", "Inde", "Indonésie", "Irak", "Iran",
+  "Irlande", "Islande", "Israël", "Italie", "Jamaïque", "Japon", "Jordanie", "Kazakhstan", "Kenya",
+  "Kirghizistan", "Kiribati", "Kosovo", "Koweït", "Laos", "Lesotho", "Lettonie", "Liban", "Liberia",
+  "Libye", "Liechtenstein", "Lituanie", "Luxembourg", "Macédoine du Nord", "Madagascar", "Malaisie",
+  "Malawi", "Maldives", "Mali", "Malte", "Maroc", "Marshall", "Maurice", "Mauritanie", "Mexique",
+  "Micronésie", "Moldavie", "Monaco", "Mongolie", "Monténégro", "Mozambique", "Namibie", "Nauru",
+  "Népal", "Nicaragua", "Niger", "Nigeria", "Norvège", "Nouvelle-Zélande", "Oman", "Ouganda",
+  "Ouzbékistan", "Pakistan", "Palaos", "Palestine", "Panama", "Papouasie-Nouvelle-Guinée", "Paraguay",
+  "Pays-Bas", "Pérou", "Philippines", "Pologne", "Portugal", "Qatar", "République dominicaine",
+  "République tchèque", "Roumanie", "Royaume-Uni", "Russie", "Rwanda", "Saint-Christophe-et-Niévès",
+  "Sainte-Lucie", "Saint-Marin", "Saint-Vincent-et-les-Grenadines", "Salomon", "Salvador", "Samoa",
+  "São Tomé-et-Príncipe", "Sénégal", "Serbie", "Seychelles", "Sierra Leone", "Singapour", "Slovaquie",
+  "Slovénie", "Somalie", "Soudan", "Soudan du Sud", "Sri Lanka", "Suède", "Suisse", "Suriname",
+  "Syrie", "Tadjikistan", "Tanzanie", "Tchad", "Thaïlande", "Timor oriental", "Togo", "Tonga",
+  "Trinité-et-Tobago", "Tunisie", "Turkménistan", "Turquie", "Tuvalu", "Ukraine", "Uruguay",
+  "Vanuatu", "Vatican", "Venezuela", "Viêt Nam", "Yémen", "Zambie", "Zimbabwe"
+];
+
+/* ─────────────────────────────────────────────
    Composants utilitaires
 ───────────────────────────────────────────── */
 
@@ -372,7 +404,32 @@ const AgencyProfile = () => {
                 </div>
                 <div>
                   <FieldLabel>Pays</FieldLabel>
-                  <Field icon={GlobeAltIcon} name="pays" value={formData.pays} onChange={handleChange} disabled={!isEditing} placeholder="Côte d'Ivoire" />
+                  <div className="relative">
+                    <GlobeAltIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none z-10" />
+                    <select
+                      name="pays"
+                      value={formData.pays}
+                      onChange={handleChange}
+                      disabled={!isEditing}
+                      className="w-full pl-9 pr-3 py-2.5 text-sm text-slate-800 bg-white border border-slate-200 rounded-lg
+                        focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400
+                        disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-default
+                        transition-colors appearance-none cursor-pointer"
+                    >
+                      <option value="">Sélectionnez un pays</option>
+                      {PAYS_LISTE.map((pays) => (
+                        <option key={pays} value={pays}>
+                          {pays}
+                        </option>
+                      ))}
+                    </select>
+                    {/* Flèche dropdown personnalisée */}
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                      <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
                 </div>
               </div>
             </Card>

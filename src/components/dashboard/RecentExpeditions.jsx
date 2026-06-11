@@ -131,7 +131,7 @@ const RecentExpeditions = ({ expeditions = [] }) => {
                         const colisList = Array.isArray(exp.colis) ? exp.colis : [];
                         
                         return (
-                            <React.Fragment key={exp.id}>
+                            <React.Fragment key={exp.id || `exp-${expIndex}`}>
                                 {/* ══ SÉPARATEUR ENTRE EXPÉDITIONS ══ */}
                                 {expIndex > 0 && (
                                     <div className="h-3 bg-gradient-to-r from-slate-100 via-slate-50 to-slate-100 border-t-4 border-slate-200"></div>
@@ -206,7 +206,7 @@ const RecentExpeditions = ({ expeditions = [] }) => {
                                         
                                         return (
                                             <div
-                                                key={colis.id}
+                                                key={colis.id || `${exp.id}-colis-${colisIndex}`}
                                                 className={`flex items-center gap-3 px-4 py-2.5 bg-white hover:bg-slate-50 transition-colors ${
                                                     isLastColis 
                                                         ? 'border-b-2 border-slate-200' 

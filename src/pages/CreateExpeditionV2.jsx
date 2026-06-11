@@ -40,6 +40,7 @@ const CreateExpeditionV2 = () => {
     const [step, setStep] = useState(1);
     const [paymentMethod, setPaymentMethod] = useState("cash");
     const [paymentReference, setPaymentReference] = useState("");
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
 
     const [formData, setFormData] = useState({
         type_expedition: "SIMPLE",
@@ -80,13 +81,27 @@ const CreateExpeditionV2 = () => {
         ]
     });
 
+    // Nettoyage immédiat au montage du composant
     useEffect(() => {
+        // Nettoyage synchrone dès le montage
         resetStatus();
         clearCurrentExpedition();
+        cleanSimulation();
+        
+        // Chargement des données
         loadProducts();
         loadCategories();
         fetchTarifGroupageAgence();
         fetchAgencyData();
+    }, []);
+
+    // Nettoyage au démontage
+    useEffect(() => {
+        return () => {
+            resetStatus();
+            clearCurrentExpedition();
+            cleanSimulation();
+        };
     }, []);
 
     // Gestion des pays par défaut selon le type
@@ -178,6 +193,37 @@ const CreateExpeditionV2 = () => {
         const currentType = formData.type_expedition.toLowerCase();
         return existingGroupageTarifs.filter(t => t.type_expedition === currentType);
     }, [existingGroupageTarifs, formData.type_expedition]);
+
+    // Filtrage des catégories en fonction du type d'expédition
+    const filteredCategories = useMemo(() => {
+        if (!categories || !Array.isArray(categories)) return [];
+        
+        // Si le type est SIMPLE, afficher toutes les catégories
+        if (formData.type_expedition === 'SIMPLE') {
+            return categories;
+        }
+        
+        // Pour les autres types, filtrer par les category_id présents dans les tarifs groupage
+        if (!existingGroupageTarifs || !Array.isArray(existingGroupageTarifs)) return categories;
+        
+        const currentType = formData.type_expedition.toLowerCase();
+        
+        // Récupérer tous les category_id des tarifs correspondant au type sélectionné
+        const categoryIds = existingGroupageTarifs
+            .filter(tarif => tarif.type_expedition === currentType && tarif.category_id)
+            .map(tarif => tarif.category_id);
+        
+        // Éliminer les doublons
+        const uniqueCategoryIds = [...new Set(categoryIds)];
+        
+        // Si aucune catégorie trouvée, retourner toutes les catégories
+        if (uniqueCategoryIds.length === 0) {
+            return categories;
+        }
+        
+        // Filtrer les catégories pour ne garder que celles qui ont un tarif pour ce type
+        return categories.filter(cat => uniqueCategoryIds.includes(cat.id));
+    }, [categories, existingGroupageTarifs, formData.type_expedition]);
 
     // Sélection automatique des infos depuis un trajet configuré
     const handleRouteSelect = (e) => {
@@ -360,6 +406,11 @@ const CreateExpeditionV2 = () => {
         const result = await createExpedition(payload);
 
         console.log("Result from createExpedition:", result);
+
+        // Si la création a réussi, activer le modal
+        if (result?.payload && !result?.type?.includes('rejected')) {
+            setShowSuccessModal(true);
+        }
 
         // result est l'action Redux : { type, payload } en fulfilled, ou { type, error } en rejected
         if (result?.type?.includes('rejected')) {
@@ -768,7 +819,7 @@ const CreateExpeditionV2 = () => {
                                                                 className={`w-full rounded-lg text-sm font-medium h-11 px-3 ${getInputBorderClass(colis.category_id, false)}`}
                                                             >
                                                                 <option value="">Sélectionner…</option>
-                                                                {categories?.map(cat => (
+                                                                {filteredCategories?.map(cat => (
                                                                     <option key={cat.id} value={cat.id}>{cat.nom}</option>
                                                                 ))}
                                                             </select>
@@ -1476,11 +1527,14 @@ const CreateExpeditionV2 = () => {
             </div>
 
             {/* Modal de succès */}
-            {status === 'succeeded' && currentExpedition && (
+            {showSuccessModal && currentExpedition && (
                 <PrintSuccessModal
                     expedition={currentExpedition}
                     onClose={() => {
+                        setShowSuccessModal(false);
                         resetStatus();
+                        cleanSimulation();
+                        clearCurrentExpedition();
                         navigate('/expeditions');
                     }}
                     agencyData={agencyData}

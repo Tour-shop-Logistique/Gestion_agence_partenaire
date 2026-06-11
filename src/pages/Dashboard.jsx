@@ -48,8 +48,11 @@ const Dashboard = () => {
         const loadData = async () => {
             // Éviter les appels multiples pour le chargement initial
             if (hasFetchedRef.current) {
+                console.log('⏭️ Dashboard: Données déjà chargées, skip');
                 return;
             }
+            
+            console.log('🔄 Dashboard: Début du chargement initial');
             hasFetchedRef.current = true;
 
             // ✅ Si on a déjà des données en cache (préchargées par App.jsx)
@@ -58,11 +61,14 @@ const Dashboard = () => {
                 const now = new Date();
                 const diffSeconds = (now - lastUpdate) / 1000;
                 
+                console.log(`⏰ Dashboard: Données en cache (${diffSeconds.toFixed(0)}s)`);
+                
                 // Pas de loader, on affiche directement les données
                 setIsInitialLoad(false);
                 
                 // Si les données ont plus de 30 secondes, on fait un refresh silencieux
                 if (diffSeconds > 30) {
+                    console.log('🔄 Dashboard: Refresh silencieux (> 30s)');
                     fetchDashboard(true, true); // Rechargement silencieux en arrière-plan
                     loadDemandes({ page: 1 }, true);
                 }
@@ -70,6 +76,7 @@ const Dashboard = () => {
             }
 
             // ✅ Chargement initial sans loader si possible
+            console.log('📊 Dashboard: Chargement initial des données');
             setIsInitialLoad(false);
             
             // Charger les données en arrière-plan
@@ -89,6 +96,7 @@ const Dashboard = () => {
     // Détecter si on revient avec un état de rechargement silencieux
     useEffect(() => {
         if (location.state?.silentRefresh && status === 'succeeded') {
+            console.log('🔄 Dashboard: Silent refresh demandé via navigation state');
             // Recharger silencieusement les données
             fetchDashboard(true, true);
             loadDemandes({ page: 1 }, true);
@@ -96,7 +104,9 @@ const Dashboard = () => {
             // Nettoyer le state pour éviter les rechargements répétés
             navigate(location.pathname, { replace: true, state: {} });
         }
-    }, [location.state, status, fetchDashboard, loadDemandes, navigate, location.pathname]);
+    // Ajout de dépendances pour éviter les boucles : on ne se déclenche que si location.state change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [location.state?.silentRefresh]);
 
     // Réinitialiser le flag quand on quitte la page
     useEffect(() => {
@@ -105,6 +115,15 @@ const Dashboard = () => {
         };
     }, []);
 
+    // Debug logs (seulement quand les demandes changent réellement)
+    useEffect(() => {
+        if (demandes && demandes.length > 0) {
+            console.log("📊 Dashboard - demandes:", demandes);
+            console.log("📊 Dashboard - demandesMeta:", demandesMeta);
+            console.log("📊 Dashboard - pendingDemandesCount:", demandesMeta?.total || demandes?.length);
+        }
+    }, [demandesMeta?.total]); // Ne se déclenche que si le total change
+
     const displayName = currentUser?.name || 
                        [currentUser?.nom, currentUser?.prenoms].filter(Boolean).join(" ") || 
                        "Agent";
@@ -112,11 +131,6 @@ const Dashboard = () => {
     // Récupérer le nombre de demandes depuis l'API des demandes
     // L'API ne retourne pas toujours meta, donc on utilise la longueur du tableau
     const pendingDemandesCount = demandesMeta?.total || demandes?.length || 0;
-    
-    // Debug: afficher demandesMeta dans la console
-    console.log("📊 Dashboard - demandes:", demandes);
-    console.log("📊 Dashboard - demandesMeta:", demandesMeta);
-    console.log("📊 Dashboard - pendingDemandesCount:", pendingDemandesCount);
 
     // Loading state - Ne JAMAIS afficher le loader si on a déjà des données en cache
     // Même si c'est un "chargement initial", on affiche les données existantes

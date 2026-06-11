@@ -1,0 +1,22 @@
+# Headers pour Netlify/Vercel pour gérer le cache
+/*
+  # Désactiver le cache pour le HTML
+  Cache-Control: no-cache, no-store, must-revalidate
+
+# Cache pour les assets avec hash (1 an)
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Cache pour les images (1 semaine)
+/*.jpg
+  Cache-Control: public, max-age=604800
+/*.jpeg
+  Cache-Control: public, max-age=604800
+/*.png
+  Cache-Control: public, max-age=604800
+/*.gif
+  Cache-Control: public, max-age=604800
+/*.svg
+  Cache-Control: public, max-age=604800
+/*.webp
+  Cache-Control: public, max-age=604800

@@ -45,13 +45,31 @@ const Header = ({ onToggleSidebar }) => {
   }, [agencyData]);
 
   // Charger les demandes au montage pour avoir le compteur
+  // Utiliser un ref pour éviter les appels multiples
+  const hasLoadedDemandesRef = React.useRef(false);
+  
   useEffect(() => {
     const fetchDemandes = async () => {
+      // Éviter les appels multiples
+      if (hasLoadedDemandesRef.current) {
+        console.log('⏭️ Header: Demandes déjà chargées, skip');
+        return;
+      }
+      
+      hasLoadedDemandesRef.current = true;
+      console.log('📞 Header: Chargement des demandes pour le compteur');
       const result = await loadDemandes({ page: 1 });
-      console.log("Demandes loaded in Header:", result);
+      console.log("✅ Header: Demandes chargées:", result);
     };
     fetchDemandes();
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Nettoyer le ref quand le composant est démonté
+  useEffect(() => {
+    return () => {
+      hasLoadedDemandesRef.current = false;
+    };
   }, []);
 
   useEffect(() => {

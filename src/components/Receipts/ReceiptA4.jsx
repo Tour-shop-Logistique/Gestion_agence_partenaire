@@ -6,16 +6,6 @@ import CompanyLogo from '../../assets/logo_transparent.png';
 const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
     if (!expedition) return null;
 
-    // Debug: Afficher la structure de l'objet agency
-    console.log('=== DEBUG AGENCY DATA ===');
-    console.log('agency:', agency);
-    console.log('agency.telephone:', agency?.telephone);
-    console.log('agency.telephone_agence:', agency?.telephone_agence);
-    console.log('agency.phone:', agency?.phone);
-    console.log('agency.agence:', agency?.agence);
-    console.log('agency.agence?.telephone:', agency?.agence?.telephone);
-    console.log('========================');
-
     const totalColis = expedition.colis?.length || 0;
     const totalWeight = expedition.colis?.reduce((sum, c) => sum + (parseFloat(c.poids) || 0), 0) || 0;
     
