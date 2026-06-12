@@ -404,7 +404,7 @@ const TarifGroupageComponent = () => {
                             </span>
                             {tarif.mode && (
                               <p className="text-xs font-medium text-slate-600">
-                                {tarif.mode} {tarif.ligne ? `→ ${tarif.ligne}` : ''}
+                                {tarif.mode?.toUpperCase()} {tarif.ligne ? `→ ${tarif.ligne.toUpperCase()}` : ''}
                               </p>
                             )}
                           </div>
@@ -525,7 +525,7 @@ const TarifGroupageComponent = () => {
                     {/* Mode info */}
                     {tarif.mode && (
                       <div className="text-xs font-medium text-slate-600 pb-2 border-b border-slate-100">
-                        {tarif.mode} {tarif.ligne ? `→ ${tarif.ligne}` : ''}
+                        {tarif.mode?.toUpperCase()} {tarif.ligne ? `→ ${tarif.ligne.toUpperCase()}` : ''}
                       </div>
                     )}
 

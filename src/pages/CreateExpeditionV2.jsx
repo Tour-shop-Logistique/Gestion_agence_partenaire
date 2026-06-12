@@ -10,6 +10,8 @@ import { getLogoUrl } from "../utils/apiConfig";
 import { toast } from "../utils/toast";
 
 const CreateExpeditionV2 = () => {
+    console.log("🚀 CreateExpeditionV2.jsx chargé - Version avec déduplication et filtrage");
+    
     const navigate = useNavigate();
     const {
         createExpedition,
@@ -41,6 +43,8 @@ const CreateExpeditionV2 = () => {
     const [paymentMethod, setPaymentMethod] = useState("cash");
     const [paymentReference, setPaymentReference] = useState("");
     const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [selectedRouteId, setSelectedRouteId] = useState("");
+    const [selectedRoute, setSelectedRoute] = useState(null);
 
     const [formData, setFormData] = useState({
         type_expedition: "SIMPLE",
@@ -124,6 +128,9 @@ const CreateExpeditionV2 = () => {
                 expediteur_ville: "Abidjan"
             }));
         }
+        // Réinitialiser la route sélectionnée lorsque le type change
+        setSelectedRoute(null);
+        setSelectedRouteId(""); // Réinitialiser aussi l'ID pour le select
         cleanSimulation();
     }, [formData.type_expedition]);
 
@@ -187,15 +194,205 @@ const CreateExpeditionV2 = () => {
         return () => window.removeEventListener('keydown', handleKeyPress);
     }, [step, simulationResult, simulating, status]);
 
+    console.log("📍 Avant calcul availableRoutes - existingGroupageTarifs:", existingGroupageTarifs?.length, "tarifs");
+
     // Liste des trajets configurés par l'agence pour le type sélectionné
     const availableRoutes = useMemo(() => {
         if (!existingGroupageTarifs || !Array.isArray(existingGroupageTarifs)) return [];
         const currentType = formData.type_expedition.toLowerCase();
-        return existingGroupageTarifs.filter(t => t.type_expedition === currentType);
+        
+        // Filtrer par type
+        const tarifsByType = existingGroupageTarifs.filter(t => t.type_expedition === currentType);
+        
+        console.log("🛣️ DEBUG DEDUPLICATION - Début");
+        console.log("Type actuel:", currentType);
+        console.log("Tarifs par type:", tarifsByType);
+        
+        // Dédupliquer les trajets
+        const uniqueRoutes = [];
+        const seenKeys = new Set();
+        const duplicatesInfo = {}; // Pour tracer les doublons
+        
+        for (const tarif of tarifsByType) {
+            let key;
+            let displayValue; // Pour le debug
+            
+            // Créer une clé unique selon le type
+            if (currentType.includes('dhd')) {
+                // Pour DHD, la clé est la ligne (ex: "abidjan-marseille")
+                const rawLigne = tarif.ligne || "";
+                key = rawLigne.toLowerCase().trim();
+                displayValue = rawLigne;
+                
+                console.log(`📍 Tarif ID ${tarif.id}: ligne="${rawLigne}" → clé="${key}"`);
+            } else if (currentType === 'groupage_afrique') {
+                // Pour AFRIQUE, la clé est le pays (ex: "GABON LIBREVILLE")
+                const rawPays = tarif.pays || "";
+                key = rawPays.toLowerCase().trim();
+                displayValue = rawPays;
+                
+                console.log(`📍 Tarif ID ${tarif.id}: pays="${rawPays}" → clé="${key}"`);
+            } else if (currentType === 'groupage_ca') {
+                // Pour CA, la clé est ligne + pays
+                const rawLigne = tarif.ligne || "";
+                const rawPays = tarif.pays || "";
+                key = `${rawLigne.toLowerCase().trim()}|${rawPays.toLowerCase().trim()}`;
+                displayValue = `${rawLigne} (${rawPays})`;
+                
+                console.log(`📍 Tarif ID ${tarif.id}: "${rawLigne}|${rawPays}" → clé="${key}"`);
+            } else {
+                // Fallback: utiliser l'ID
+                key = String(tarif.id);
+                displayValue = tarif.id;
+            }
+            
+            // Si cette clé n'a pas encore été vue, ajouter le tarif
+            if (key && !seenKeys.has(key)) {
+                console.log(`  ✅ Nouveau trajet ajouté: "${displayValue}"`);
+                seenKeys.add(key);
+                uniqueRoutes.push(tarif);
+            } else {
+                console.log(`  ⚠️ Doublon ignoré: "${displayValue}" (déjà vu comme "${key}")`);
+                
+                // Tracer les doublons pour statistiques
+                if (!duplicatesInfo[key]) {
+                    duplicatesInfo[key] = [];
+                }
+                duplicatesInfo[key].push(tarif.id);
+            }
+        }
+        
+        console.log("🛣️ Trajets disponibles:", {
+            total: tarifsByType.length,
+            uniques: uniqueRoutes.length,
+            doublons_elimines: tarifsByType.length - uniqueRoutes.length
+        });
+        
+        if (Object.keys(duplicatesInfo).length > 0) {
+            console.log("📊 Détail des doublons éliminés:", duplicatesInfo);
+        }
+        
+        console.log("🛣️ DEBUG DEDUPLICATION - Fin");
+        
+        return uniqueRoutes;
     }, [existingGroupageTarifs, formData.type_expedition]);
 
-    // Filtrage des catégories en fonction du type d'expédition
+    // Debug: Tracer les changements de selectedRoute
+    useEffect(() => {
+        console.log("🎯 selectedRoute a changé:", selectedRoute);
+    }, [selectedRoute]);
+
+    // Filtrage des catégories en fonction du type d'expédition ET de la ligne sélectionnée
     const filteredCategories = useMemo(() => {
+        console.log("🔵 useMemo filteredCategories DÉCLENCHÉ");
+        console.log("🔵 Dépendances:", { 
+            categories: categories?.length, 
+            existingGroupageTarifs: existingGroupageTarifs?.length,
+            type_expedition: formData.type_expedition,
+            selectedRoute: selectedRoute
+        });
+        
+        if (!categories || !Array.isArray(categories)) return [];
+        
+        // Si le type est SIMPLE, afficher toutes les catégories
+        if (formData.type_expedition === 'SIMPLE') {
+            console.log("🔵 Type SIMPLE - Retour de toutes les catégories");
+            return categories;
+        }
+        
+        // Pour les autres types, filtrer par les category_id présents dans les tarifs groupage
+        if (!existingGroupageTarifs || !Array.isArray(existingGroupageTarifs)) {
+            console.log("🔵 Pas de tarifs groupage - Retour de toutes les catégories");
+            return categories;
+        }
+        
+        const currentType = formData.type_expedition.toLowerCase();
+        
+        // Debug: Afficher les informations
+        console.log("=== FILTRAGE CATEGORIES ===");
+        console.log("Type actuel:", currentType);
+        console.log("Route sélectionnée:", selectedRoute);
+        console.log("Tous les tarifs:", existingGroupageTarifs);
+        
+        // Récupérer tous les tarifs correspondant au type sélectionné
+        let filteredTarifs = existingGroupageTarifs
+            .filter(tarif => tarif.type_expedition === currentType);
+        
+        console.log("Tarifs après filtre par type:", filteredTarifs);
+        
+        // Si une ligne est sélectionnée, filtrer aussi par la ligne
+        if (selectedRoute) {
+            const routeLigne = selectedRoute.ligne;
+            const routePays = selectedRoute.pays;
+            
+            console.log("Filtrage par ligne:", routeLigne, "et pays:", routePays);
+            
+            // Filtrer les tarifs qui correspondent à la ligne/pays sélectionné(e)
+            filteredTarifs = filteredTarifs.filter(tarif => {
+                console.log("Tarif examiné:", { ligne: tarif.ligne, pays: tarif.pays, category_id: tarif.category_id });
+                
+                // Pour DHD, on compare la ligne (insensible à la casse)
+                if (currentType.includes('dhd')) {
+                    const tarifLigne = (tarif.ligne || "").toLowerCase().trim();
+                    const selectedLigne = (routeLigne || "").toLowerCase().trim();
+                    const match = tarifLigne === selectedLigne;
+                    console.log(`DHD - Comparaison ligne: "${tarif.ligne}" vs "${routeLigne}" (normalisé: "${tarifLigne}" === "${selectedLigne}") = ${match}`);
+                    return match;
+                }
+                // Pour AFRIQUE, on compare le pays (insensible à la casse)
+                if (currentType === 'groupage_afrique') {
+                    const tarifPays = (tarif.pays || "").toLowerCase().trim();
+                    const selectedPays = (routePays || "").toLowerCase().trim();
+                    const match = tarifPays === selectedPays;
+                    console.log(`AFRIQUE - Comparaison pays: "${tarif.pays}" vs "${routePays}" (normalisé: "${tarifPays}" === "${selectedPays}") = ${match}`);
+                    return match;
+                }
+                // Pour CA, on compare ligne et pays (insensible à la casse)
+                if (currentType === 'groupage_ca') {
+                    const tarifLigne = (tarif.ligne || "").toLowerCase().trim();
+                    const selectedLigne = (routeLigne || "").toLowerCase().trim();
+                    const tarifPays = (tarif.pays || "").toLowerCase().trim();
+                    const selectedPays = (routePays || "").toLowerCase().trim();
+                    const match = tarifLigne === selectedLigne && tarifPays === selectedPays;
+                    console.log(`CA - Comparaison: "${tarif.ligne}" === "${routeLigne}" && "${tarif.pays}" === "${routePays}" (normalisé) = ${match}`);
+                    return match;
+                }
+                return true;
+            });
+            
+            console.log("Tarifs après filtre par ligne:", filteredTarifs);
+        }
+        
+        // Extraire les category_id (en ignorant les null)
+        const categoryIds = filteredTarifs
+            .map(tarif => tarif.category_id)
+            .filter(id => id !== null && id !== undefined);
+        
+        console.log("Category IDs extraits (sans null):", categoryIds);
+        
+        // Éliminer les doublons
+        const uniqueCategoryIds = [...new Set(categoryIds)];
+        
+        console.log("Category IDs uniques:", uniqueCategoryIds);
+        
+        // Si aucune catégorie spécifique trouvée (tous les tarifs ont category_id null)
+        // Cela signifie que le tarif est universel pour toutes les catégories
+        if (uniqueCategoryIds.length === 0) {
+            console.log("⚠️ Aucun category_id dans les tarifs (tarifs universels) - Retour de toutes les catégories");
+            console.log("=========================");
+            return categories;
+        }
+        
+        // Filtrer les catégories pour ne garder que celles qui ont un tarif pour ce type/ligne
+        const result = categories.filter(cat => uniqueCategoryIds.includes(cat.id));
+        console.log("Catégories filtrées finales:", result);
+        console.log("=========================");
+        
+        return result;
+    }, [categories, existingGroupageTarifs, formData.type_expedition, selectedRoute]);
+
+    // Filtrage des catégories en fonction du type d'expédition
+    const filteredCategoriesOLD = useMemo(() => {
         if (!categories || !Array.isArray(categories)) return [];
         
         // Si le type est SIMPLE, afficher toutes les catégories
@@ -226,12 +423,29 @@ const CreateExpeditionV2 = () => {
     }, [categories, existingGroupageTarifs, formData.type_expedition]);
 
     // Sélection automatique des infos depuis un trajet configuré
+    // Sélection automatique des infos depuis un trajet configuré
     const handleRouteSelect = (e) => {
         const routeId = e.target.value;
-        if (!routeId) return;
+        console.log("=== SELECTION ROUTE ===");
+        console.log("Route ID sélectionné:", routeId);
+        
+        // Mettre à jour l'ID de la route sélectionnée
+        setSelectedRouteId(routeId);
+        
+        if (!routeId) {
+            console.log("Pas de route sélectionnée, réinitialisation");
+            setSelectedRoute(null);
+            return;
+        }
 
         const route = availableRoutes.find(r => String(r.id) === String(routeId));
+        console.log("Route trouvée:", route);
+        
         if (route) {
+            // Sauvegarder la route sélectionnée pour le filtrage des catégories
+            setSelectedRoute(route);
+            console.log("Route sauvegardée dans le state:", route);
+            
             const isDHD = formData.type_expedition.toUpperCase().includes('DHD');
 
             let depVille = "Abidjan";
@@ -252,6 +466,7 @@ const CreateExpeditionV2 = () => {
                 destinataire_ville: destVille,
                 expediteur_ville: depVille,
             }));
+            console.log("======================");
         }
     };
 
@@ -676,6 +891,7 @@ const CreateExpeditionV2 = () => {
                                     <div className="space-y-1.5">
                                         <label className="block text-xs font-semibold text-slate-600">Trajet disponible</label>
                                         <select
+                                            value={selectedRouteId}
                                             onChange={handleRouteSelect}
                                             disabled={formData.type_expedition === 'GROUPAGE_CA' || formData.type_expedition === 'SIMPLE'}
                                             className={`w-full rounded-lg text-sm font-semibold h-11 px-3 ${

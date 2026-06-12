@@ -10,6 +10,8 @@ import { getLogoUrl } from "../utils/apiConfig";
 import { toast } from "../utils/toast";
 
 const CreateExpedition = () => {
+    console.log("🚀 CreateExpedition.jsx chargé - Version avec déduplication");
+    
     const navigate = useNavigate();
     const {
         createExpedition,
@@ -200,11 +202,87 @@ const CreateExpedition = () => {
         return () => window.removeEventListener('keydown', handleKeyPress);
     }, [step, simulationResult, simulating, status]);
 
+    console.log("📍 Avant calcul availableRoutes - existingGroupageTarifs:", existingGroupageTarifs?.length, "tarifs");
+
     // Liste des trajets configurés par l'agence pour le type sélectionné
     const availableRoutes = useMemo(() => {
         if (!existingGroupageTarifs || !Array.isArray(existingGroupageTarifs)) return [];
         const currentType = formData.type_expedition.toLowerCase();
-        return existingGroupageTarifs.filter(t => t.type_expedition === currentType);
+        
+        // Filtrer par type
+        const tarifsByType = existingGroupageTarifs.filter(t => t.type_expedition === currentType);
+        
+        console.log("🛣️ DEBUG DEDUPLICATION - Début");
+        console.log("Type actuel:", currentType);
+        console.log("Tarifs par type:", tarifsByType);
+        
+        // Dédupliquer les trajets
+        const uniqueRoutes = [];
+        const seenKeys = new Set();
+        const duplicatesInfo = {}; // Pour tracer les doublons
+        
+        for (const tarif of tarifsByType) {
+            let key;
+            let displayValue; // Pour le debug
+            
+            // Créer une clé unique selon le type
+            if (currentType.includes('dhd')) {
+                // Pour DHD, la clé est la ligne (ex: "abidjan-marseille")
+                const rawLigne = tarif.ligne || "";
+                key = rawLigne.toLowerCase().trim();
+                displayValue = rawLigne;
+                
+                console.log(`📍 Tarif ID ${tarif.id}: ligne="${rawLigne}" → clé="${key}"`);
+            } else if (currentType === 'groupage_afrique') {
+                // Pour AFRIQUE, la clé est le pays (ex: "GABON LIBREVILLE")
+                const rawPays = tarif.pays || "";
+                key = rawPays.toLowerCase().trim();
+                displayValue = rawPays;
+                
+                console.log(`📍 Tarif ID ${tarif.id}: pays="${rawPays}" → clé="${key}"`);
+            } else if (currentType === 'groupage_ca') {
+                // Pour CA, la clé est ligne + pays
+                const rawLigne = tarif.ligne || "";
+                const rawPays = tarif.pays || "";
+                key = `${rawLigne.toLowerCase().trim()}|${rawPays.toLowerCase().trim()}`;
+                displayValue = `${rawLigne} (${rawPays})`;
+                
+                console.log(`📍 Tarif ID ${tarif.id}: "${rawLigne}|${rawPays}" → clé="${key}"`);
+            } else {
+                // Fallback: utiliser l'ID
+                key = String(tarif.id);
+                displayValue = tarif.id;
+            }
+            
+            // Si cette clé n'a pas encore été vue, ajouter le tarif
+            if (key && !seenKeys.has(key)) {
+                console.log(`  ✅ Nouveau trajet ajouté: "${displayValue}"`);
+                seenKeys.add(key);
+                uniqueRoutes.push(tarif);
+            } else {
+                console.log(`  ⚠️ Doublon ignoré: "${displayValue}" (déjà vu comme "${key}")`);
+                
+                // Tracer les doublons pour statistiques
+                if (!duplicatesInfo[key]) {
+                    duplicatesInfo[key] = [];
+                }
+                duplicatesInfo[key].push(tarif.id);
+            }
+        }
+        
+        console.log("🛣️ Trajets disponibles:", {
+            total: tarifsByType.length,
+            uniques: uniqueRoutes.length,
+            doublons_elimines: tarifsByType.length - uniqueRoutes.length
+        });
+        
+        if (Object.keys(duplicatesInfo).length > 0) {
+            console.log("📊 Détail des doublons éliminés:", duplicatesInfo);
+        }
+        
+        console.log("🛣️ DEBUG DEDUPLICATION - Fin");
+        
+        return uniqueRoutes;
     }, [existingGroupageTarifs, formData.type_expedition]);
 
     // Debug: Tracer les changements de selectedRoute
@@ -499,6 +577,18 @@ const CreateExpedition = () => {
     };
 
     const handleSubmit = async () => {
+        // Validation: Vérifier si les catégories sont requises et renseignées
+        const isDHD = formData.type_expedition.includes('DHD');
+        
+        if (isDHD) {
+            const missingCategories = formData.colis.filter(c => !c.category_id || c.category_id === "");
+            if (missingCategories.length > 0) {
+                toast.error(`❌ Veuillez sélectionner une catégorie pour ${missingCategories.length === 1 ? 'le colis' : `les ${missingCategories.length} colis`}`);
+                console.error("❌ Colis sans catégorie:", missingCategories);
+                return;
+            }
+        }
+        
         const payload = {
             ...formData,
             type_expedition: formData.type_expedition.toLowerCase(),
@@ -513,7 +603,10 @@ const CreateExpedition = () => {
                     articles: c.articles || []
                 };
 
-                if (c.category_id) item.category_id = c.category_id;
+                // Pour DHD, category_id est OBLIGATOIRE
+                if (c.category_id) {
+                    item.category_id = c.category_id;
+                }
 
                 // Génération du code_colis comme dans l'exemple
                 const typeCode = formData.type_expedition.replace('GROUPAGE_', '');
@@ -523,7 +616,14 @@ const CreateExpedition = () => {
             })
         };
 
-        console.log("creation Payload (Clean):", payload);
+        console.log("✅ Validation passée - Payload à envoyer:", payload);
+        console.log("📦 Détails colis:", payload.colis.map((c, i) => ({
+            index: i,
+            designation: c.designation,
+            category_id: c.category_id || "❌ MANQUANT",
+            poids: c.poids
+        })));
+        
         const result = await createExpedition(payload);
 
         console.log("Result from createExpedition:", result);
@@ -905,7 +1005,7 @@ const CreateExpedition = () => {
                                                         {formData.type_expedition.includes('DHD') && (
                                                             <div>
                                                                 <label className="block text-xs font-semibold text-slate-500 mb-1.5">
-                                                                    Catégorie
+                                                                    Catégorie <span className="text-amber-600">*</span>
                                                                     <span className="text-xs text-slate-400 ml-2">
                                                                         ({filteredCategories.length} disponible{filteredCategories.length > 1 ? 's' : ''})
                                                                     </span>
@@ -921,6 +1021,9 @@ const CreateExpedition = () => {
                                                                         : "-- Choisir --"
                                                                     }
                                                                 />
+                                                                {!c.category_id && (
+                                                                    <p className="text-xs text-amber-600 mt-1">⚠️ Catégorie obligatoire pour DHD</p>
+                                                                )}
                                                             </div>
                                                         )}
 
