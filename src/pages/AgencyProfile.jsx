@@ -5,6 +5,7 @@ import { selectIsAdmin } from "../store/slices/authSlice";
 import { selectAgencyConfigured } from "../store/slices/agencySlice";
 import { getLogoUrl } from "../utils/apiConfig";
 import { toast } from "../utils/toast";
+import ErrorBoundary from "../components/ErrorBoundary";
 
 import {
   BuildingOffice2Icon,
@@ -269,6 +270,7 @@ const AgencyProfile = () => {
 
   /* ── Render ── */
   return (
+    <ErrorBoundary>
     <div className="max-w-5xl mx-auto px-4 sm:px-6 pb-24 space-y-5">
 
       {/* ── Bannière setup requis ── */}
@@ -491,7 +493,7 @@ const AgencyProfile = () => {
               <div className="space-y-2">
                 {formData.horaires.map((h, i) => (
                   <div
-                    key={i}
+                    key={`horaire-${h.jour}-${i}`}
                     className={`rounded-lg border px-3 py-2.5 transition-colors ${
                       h.ferme ? "bg-slate-50 border-slate-100" : "bg-white border-slate-200"
                     }`}
@@ -582,6 +584,7 @@ const AgencyProfile = () => {
         )}
       </form>
     </div>
+    </ErrorBoundary>
   );
 };
 

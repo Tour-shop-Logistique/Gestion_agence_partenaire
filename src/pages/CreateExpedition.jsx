@@ -41,6 +41,8 @@ const CreateExpedition = () => {
     const [paymentMethod, setPaymentMethod] = useState("cash");
     const [paymentReference, setPaymentReference] = useState("");
     const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [selectedRouteId, setSelectedRouteId] = useState("");
+    const [selectedRoute, setSelectedRoute] = useState(null);
 
     const [formData, setFormData] = useState({
         type_expedition: "SIMPLE",
@@ -124,6 +126,9 @@ const CreateExpedition = () => {
                 expediteur_ville: "Abidjan"
             }));
         }
+        // Réinitialiser la route sélectionnée lorsque le type change
+        setSelectedRoute(null);
+        setSelectedRouteId(""); // Réinitialiser aussi l'ID pour le select
         cleanSimulation();
     }, [formData.type_expedition]);
 
@@ -202,44 +207,143 @@ const CreateExpedition = () => {
         return existingGroupageTarifs.filter(t => t.type_expedition === currentType);
     }, [existingGroupageTarifs, formData.type_expedition]);
 
-    // Filtrage des catégories en fonction du type d'expédition
+    // Debug: Tracer les changements de selectedRoute
+    useEffect(() => {
+        console.log("🎯 selectedRoute a changé:", selectedRoute);
+    }, [selectedRoute]);
+
+    // Filtrage des catégories en fonction du type d'expédition ET de la ligne sélectionnée
     const filteredCategories = useMemo(() => {
+        console.log("🔵 useMemo filteredCategories DÉCLENCHÉ");
+        console.log("🔵 Dépendances:", { 
+            categories: categories?.length, 
+            existingGroupageTarifs: existingGroupageTarifs?.length,
+            type_expedition: formData.type_expedition,
+            selectedRoute: selectedRoute
+        });
+        
         if (!categories || !Array.isArray(categories)) return [];
         
         // Si le type est SIMPLE, afficher toutes les catégories
         if (formData.type_expedition === 'SIMPLE') {
+            console.log("🔵 Type SIMPLE - Retour de toutes les catégories");
             return categories;
         }
         
         // Pour les autres types, filtrer par les category_id présents dans les tarifs groupage
-        if (!existingGroupageTarifs || !Array.isArray(existingGroupageTarifs)) return categories;
+        if (!existingGroupageTarifs || !Array.isArray(existingGroupageTarifs)) {
+            console.log("🔵 Pas de tarifs groupage - Retour de toutes les catégories");
+            return categories;
+        }
         
         const currentType = formData.type_expedition.toLowerCase();
         
-        // Récupérer tous les category_id des tarifs correspondant au type sélectionné
-        const categoryIds = existingGroupageTarifs
-            .filter(tarif => tarif.type_expedition === currentType && tarif.category_id)
-            .map(tarif => tarif.category_id);
+        // Debug: Afficher les informations
+        console.log("=== FILTRAGE CATEGORIES ===");
+        console.log("Type actuel:", currentType);
+        console.log("Route sélectionnée:", selectedRoute);
+        console.log("Tous les tarifs:", existingGroupageTarifs);
+        
+        // Récupérer tous les tarifs correspondant au type sélectionné
+        let filteredTarifs = existingGroupageTarifs
+            .filter(tarif => tarif.type_expedition === currentType);
+        
+        console.log("Tarifs après filtre par type:", filteredTarifs);
+        
+        // Si une ligne est sélectionnée, filtrer aussi par la ligne
+        if (selectedRoute) {
+            const routeLigne = selectedRoute.ligne;
+            const routePays = selectedRoute.pays;
+            
+            console.log("Filtrage par ligne:", routeLigne, "et pays:", routePays);
+            
+            // Filtrer les tarifs qui correspondent à la ligne/pays sélectionné(e)
+            filteredTarifs = filteredTarifs.filter(tarif => {
+                console.log("Tarif examiné:", { ligne: tarif.ligne, pays: tarif.pays, category_id: tarif.category_id });
+                
+                // Pour DHD, on compare la ligne (insensible à la casse)
+                if (currentType.includes('dhd')) {
+                    const tarifLigne = (tarif.ligne || "").toLowerCase().trim();
+                    const selectedLigne = (routeLigne || "").toLowerCase().trim();
+                    const match = tarifLigne === selectedLigne;
+                    console.log(`DHD - Comparaison ligne: "${tarif.ligne}" vs "${routeLigne}" (normalisé: "${tarifLigne}" === "${selectedLigne}") = ${match}`);
+                    return match;
+                }
+                // Pour AFRIQUE, on compare le pays (insensible à la casse)
+                if (currentType === 'groupage_afrique') {
+                    const tarifPays = (tarif.pays || "").toLowerCase().trim();
+                    const selectedPays = (routePays || "").toLowerCase().trim();
+                    const match = tarifPays === selectedPays;
+                    console.log(`AFRIQUE - Comparaison pays: "${tarif.pays}" vs "${routePays}" (normalisé: "${tarifPays}" === "${selectedPays}") = ${match}`);
+                    return match;
+                }
+                // Pour CA, on compare ligne et pays (insensible à la casse)
+                if (currentType === 'groupage_ca') {
+                    const tarifLigne = (tarif.ligne || "").toLowerCase().trim();
+                    const selectedLigne = (routeLigne || "").toLowerCase().trim();
+                    const tarifPays = (tarif.pays || "").toLowerCase().trim();
+                    const selectedPays = (routePays || "").toLowerCase().trim();
+                    const match = tarifLigne === selectedLigne && tarifPays === selectedPays;
+                    console.log(`CA - Comparaison: "${tarif.ligne}" === "${routeLigne}" && "${tarif.pays}" === "${routePays}" (normalisé) = ${match}`);
+                    return match;
+                }
+                return true;
+            });
+            
+            console.log("Tarifs après filtre par ligne:", filteredTarifs);
+        }
+        
+        // Extraire les category_id (en ignorant les null)
+        const categoryIds = filteredTarifs
+            .map(tarif => tarif.category_id)
+            .filter(id => id !== null && id !== undefined);
+        
+        console.log("Category IDs extraits (sans null):", categoryIds);
         
         // Éliminer les doublons
         const uniqueCategoryIds = [...new Set(categoryIds)];
         
-        // Si aucune catégorie trouvée, retourner toutes les catégories
+        console.log("Category IDs uniques:", uniqueCategoryIds);
+        
+        // Si aucune catégorie spécifique trouvée (tous les tarifs ont category_id null)
+        // Cela signifie que le tarif est universel pour toutes les catégories
         if (uniqueCategoryIds.length === 0) {
+            console.log("⚠️ Aucun category_id dans les tarifs (tarifs universels) - Retour de toutes les catégories");
+            console.log("=========================");
             return categories;
         }
         
-        // Filtrer les catégories pour ne garder que celles qui ont un tarif pour ce type
-        return categories.filter(cat => uniqueCategoryIds.includes(cat.id));
-    }, [categories, existingGroupageTarifs, formData.type_expedition]);
+        // Filtrer les catégories pour ne garder que celles qui ont un tarif pour ce type/ligne
+        const result = categories.filter(cat => uniqueCategoryIds.includes(cat.id));
+        console.log("Catégories filtrées finales:", result);
+        console.log("=========================");
+        
+        return result;
+    }, [categories, existingGroupageTarifs, formData.type_expedition, selectedRoute]);
 
     // Sélection automatique des infos depuis un trajet configuré
     const handleRouteSelect = (e) => {
         const routeId = e.target.value;
-        if (!routeId) return;
+        console.log("=== SELECTION ROUTE ===");
+        console.log("Route ID sélectionné:", routeId);
+        
+        // Mettre à jour l'ID de la route sélectionnée
+        setSelectedRouteId(routeId);
+        
+        if (!routeId) {
+            console.log("Pas de route sélectionnée, réinitialisation");
+            setSelectedRoute(null);
+            return;
+        }
 
         const route = availableRoutes.find(r => String(r.id) === String(routeId));
+        console.log("Route trouvée:", route);
+        
         if (route) {
+            // Sauvegarder la route sélectionnée pour le filtrage des catégories
+            setSelectedRoute(route);
+            console.log("Route sauvegardée dans le state:", route);
+            
             const isDHD = formData.type_expedition.toUpperCase().includes('DHD');
 
             let depVille = "Abidjan";
@@ -262,8 +366,44 @@ const CreateExpedition = () => {
                 destinataire_ville: destVille,
                 expediteur_ville: depVille,
             }));
+            console.log("======================");
         }
     };
+
+    // Réinitialiser les catégories des colis lorsque la route change
+    useEffect(() => {
+        console.log("🔄 useEffect déclenché - selectedRoute a changé:", selectedRoute);
+        console.log("🔄 Catégories disponibles:", filteredCategories?.length);
+        
+        if (selectedRoute !== null && filteredCategories.length > 0) {
+            // Vérifier si les catégories actuellement sélectionnées sont toujours valides
+            const validCategoryIds = filteredCategories.map(cat => String(cat.id));
+            
+            console.log("🔄 IDs de catégories valides:", validCategoryIds);
+            
+            // Vérifier si au moins un colis a une catégorie invalide
+            const hasInvalidCategory = formData.colis.some(c => 
+                c.category_id && !validCategoryIds.includes(String(c.category_id))
+            );
+            
+            if (hasInvalidCategory) {
+                console.log("🔄 Au moins une catégorie invalide détectée, réinitialisation...");
+                setFormData(prev => ({
+                    ...prev,
+                    colis: prev.colis.map(c => {
+                        // Si la catégorie actuelle n'est plus dans les catégories filtrées, la réinitialiser
+                        if (c.category_id && !validCategoryIds.includes(String(c.category_id))) {
+                            console.log(`🔄 Réinitialisation catégorie ${c.category_id} du colis`);
+                            return { ...c, category_id: "" };
+                        }
+                        return c;
+                    })
+                }));
+            } else {
+                console.log("🔄 Toutes les catégories sont valides");
+            }
+        }
+    }, [selectedRoute]); // Retirer filteredCategories des dépendances pour éviter les boucles
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -535,6 +675,7 @@ const CreateExpedition = () => {
                                                         Trajet disponible
                                                     </label>
                                                     <select
+                                                        value={selectedRouteId}
                                                         onChange={handleRouteSelect}
                                                         disabled={formData.type_expedition === 'GROUPAGE_CA' || formData.type_expedition === 'SIMPLE'}
                                                         className={`w-full border-slate-300 rounded-lg text-sm font-semibold focus:ring-slate-500 h-10 ${formData.type_expedition === 'GROUPAGE_CA' || formData.type_expedition === 'SIMPLE' ? 'bg-slate-100 text-slate-400' : 'bg-white'}`}
@@ -763,7 +904,12 @@ const CreateExpedition = () => {
 
                                                         {formData.type_expedition.includes('DHD') && (
                                                             <div>
-                                                                <label className="block text-xs font-semibold text-slate-500 mb-1.5">Catégorie</label>
+                                                                <label className="block text-xs font-semibold text-slate-500 mb-1.5">
+                                                                    Catégorie
+                                                                    <span className="text-xs text-slate-400 ml-2">
+                                                                        ({filteredCategories.length} disponible{filteredCategories.length > 1 ? 's' : ''})
+                                                                    </span>
+                                                                </label>
                                                                 <SearchableDropdown
                                                                     options={Array.isArray(filteredCategories) ? filteredCategories.map(cat => ({
                                                                         id: String(cat.id),

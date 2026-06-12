@@ -181,15 +181,52 @@ function App() {
   // Gestion des erreurs de chargement de chunks (page blanche en production)
   useEffect(() => {
     const handleError = (event) => {
-      // Utiliser notre gestionnaire d'erreurs personnalisé
-      if (handleChunkLoadError(event.error || event.reason)) {
-        event.preventDefault(); // Empêcher l'affichage de l'erreur par défaut
+      const error = event.error || event.reason;
+      
+      // Gestion des erreurs de chunk loading
+      if (handleChunkLoadError(error)) {
+        event.preventDefault();
+        return;
+      }
+
+      // Gestion des erreurs DOM de React (insertBefore, removeChild, etc.)
+      if (
+        error?.message?.includes('insertBefore') ||
+        error?.message?.includes('removeChild') ||
+        error?.message?.includes('Failed to execute') ||
+        error?.message?.includes('Node')
+      ) {
+        console.error('DOM manipulation error detected:', error);
+        event.preventDefault();
+        
+        // Recharger la page après un court délai pour permettre à React de se stabiliser
+        setTimeout(() => {
+          console.warn('Reloading page due to DOM error...');
+          window.location.reload();
+        }, 500);
       }
     };
 
     const handleUnhandledRejection = (event) => {
-      if (handleChunkLoadError(event.reason)) {
+      const error = event.reason;
+      
+      if (handleChunkLoadError(error)) {
         event.preventDefault();
+        return;
+      }
+
+      // Gestion des erreurs DOM dans les promesses
+      if (
+        error?.message?.includes('insertBefore') ||
+        error?.message?.includes('removeChild') ||
+        error?.message?.includes('Failed to execute')
+      ) {
+        console.error('DOM manipulation error in promise:', error);
+        event.preventDefault();
+        
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
       }
     };
 

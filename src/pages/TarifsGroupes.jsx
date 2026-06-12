@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import TarifGroupageComponent from "../components/tarifGroupage";
 import { useTarifs } from "../hooks/useTarifs";
+import ErrorBoundary from "../components/ErrorBoundary";
 import {
     TableCellsIcon,
     AdjustmentsHorizontalIcon
@@ -46,7 +47,9 @@ const TarifsGroupes = () => {
 
             {/* --- DYNAMIC CONTENT --- */}
             <main className="relative animate-in slide-in-from-bottom-4 duration-500 mt-2">
-                <TarifGroupageComponent />
+                <ErrorBoundary>
+                    <TarifGroupageComponent />
+                </ErrorBoundary>
             </main>
 
         </div>

@@ -379,14 +379,14 @@ const TarifGroupageComponent = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filteredTarifs.map((tarif) => {
+                  {filteredTarifs.map((tarif, index) => {
                     const montantBase = mainTab === "agency" ? (tarif.montant_expedition || 0) : (tarif.montant_base || 0);
                     const pourcentage = tarif.pourcentage_prestation || 0;
                     const montantPrestation = Math.round(montantBase * pourcentage / 100);
                     const total = montantBase + montantPrestation;
 
                     return (
-                      <tr key={tarif.id} className="hover:bg-slate-50/50 transition-colors">
+                      <tr key={`${mainTab}-tarif-${tarif.id || index}`} className="hover:bg-slate-50/50 transition-colors">
                         <td className="px-6 py-4">
                           <div className="space-y-1">
                             <span className={`inline-flex px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-tight ${
@@ -485,14 +485,14 @@ const TarifGroupageComponent = () => {
 
             {/* Mobile Cards */}
             <div className="lg:hidden space-y-3 p-4">
-              {filteredTarifs.map((tarif) => {
+              {filteredTarifs.map((tarif, index) => {
                 const montantBase = mainTab === "agency" ? (tarif.montant_expedition || 0) : (tarif.montant_base || 0);
                 const pourcentage = tarif.pourcentage_prestation || 0;
                 const montantPrestation = Math.round(montantBase * pourcentage / 100);
                 const total = montantBase + montantPrestation;
 
                 return (
-                  <div key={tarif.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                  <div key={`${mainTab}-mobile-${tarif.id || index}`} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
                     {/* Header */}
                     <div className="flex items-start justify-between">
                       <div className="space-y-1">

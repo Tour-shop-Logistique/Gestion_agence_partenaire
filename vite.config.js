@@ -36,6 +36,12 @@ export default defineConfig(({ mode }) => {
       outDir: 'dist',
       sourcemap: false,
       minify: 'terser',
+      terserOptions: {
+        compress: {
+          drop_console: true, // Retirer les console.log en production
+          drop_debugger: true
+        }
+      },
       rollupOptions: {
         output: {
           // Ajout de hash dans les noms de fichiers pour forcer le rafraîchissement du cache
@@ -45,9 +51,13 @@ export default defineConfig(({ mode }) => {
           manualChunks: {
             vendor: ['react', 'react-dom'],
             router: ['react-router-dom'],
+            redux: ['@reduxjs/toolkit', 'react-redux', 'redux', 'redux-thunk'],
+            icons: ['@heroicons/react'],
           },
         },
       },
+      // Augmenter la taille limite des chunks pour éviter les avertissements
+      chunkSizeWarningLimit: 1000,
     },
     optimizeDeps: {
       include: ['react', 'react-dom', 'react-router-dom'],
