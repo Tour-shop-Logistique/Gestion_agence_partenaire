@@ -52,7 +52,7 @@ const CreateExpedition = () => {
         pays_destination: "",
         is_paiement_credit: false,
         is_livraison_domicile: true,
-        statut_paiement: "en_attente",
+        statut_paiement: "paye",
 
         // Expéditeur
         expediteur_nom_prenom: "",
@@ -97,7 +97,16 @@ const CreateExpedition = () => {
         loadCategories();
         fetchTarifGroupageAgence();
         fetchAgencyData();
+        
+        console.log("🔄 CreateExpedition - Initialisation, agencyData:", agencyData);
     }, []);
+
+    // Surveiller le chargement des données d'agence
+    useEffect(() => {
+        if (agencyData) {
+            console.log("✅ CreateExpedition - AgencyData chargé:", agencyData);
+        }
+    }, [agencyData]);
 
     // Nettoyage au démontage
     useEffect(() => {
@@ -872,7 +881,11 @@ const CreateExpedition = () => {
                                                     <div className="inline-flex items-center gap-1 bg-slate-100 p-1 rounded-lg w-full">
                                                         <button
                                                             type="button"
-                                                            onClick={() => setFormData(prev => ({ ...prev, is_paiement_credit: false }))}
+                                                            onClick={() => setFormData(prev => ({ 
+                                                                ...prev, 
+                                                                is_paiement_credit: false,
+                                                                statut_paiement: 'paye'
+                                                            }))}
                                                             className={`flex-1 px-4 py-2.5 rounded-md text-sm font-semibold transition-all ${
                                                                 !formData.is_paiement_credit
                                                                     ? 'bg-emerald-500 text-white shadow-sm'
@@ -883,7 +896,11 @@ const CreateExpedition = () => {
                                                         </button>
                                                         <button
                                                             type="button"
-                                                            onClick={() => setFormData(prev => ({ ...prev, is_paiement_credit: true }))}
+                                                            onClick={() => setFormData(prev => ({ 
+                                                                ...prev, 
+                                                                is_paiement_credit: true,
+                                                                statut_paiement: 'en_attente'
+                                                            }))}
                                                             className={`flex-1 px-4 py-2.5 rounded-md text-sm font-semibold transition-all ${
                                                                 formData.is_paiement_credit
                                                                     ? 'bg-amber-500 text-white shadow-sm'
@@ -1465,10 +1482,11 @@ const CreateExpedition = () => {
                 <PrintSuccessModal
                     expedition={currentExpedition}
                     agency={{
-                        ...(agencyData?.agence || agencyData),
+                        ...(agencyData?.agence || agencyData || {}),
                         logo: getLogoUrl(agencyData?.agence?.logo || agencyData?.logo)
                     }}
                     onClose={() => {
+                        console.log("📊 DEBUG - Agency Data au moment du modal:", agencyData);
                         setShowSuccessModal(false);
                         resetStatus();
                         cleanSimulation();

@@ -193,7 +193,7 @@ const PrintSuccessModal = ({ expedition, agency, onClose }) => {
                                             : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200'
                                     }`}
                                 >
-                                    Thermique 58mm
+                                    Thermique 88mm
                                 </button>
                                 <button
                                     onClick={() => setLabelFormat('a4')}

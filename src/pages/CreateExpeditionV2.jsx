@@ -9,9 +9,7 @@ import SearchableDropdown from "../components/common/SearchableDropdown";
 import { getLogoUrl } from "../utils/apiConfig";
 import { toast } from "../utils/toast";
 
-const CreateExpeditionV2 = () => {
-    console.log("🚀 CreateExpeditionV2.jsx chargé - Version avec déduplication et filtrage");
-    
+const CreateExpeditionV2 = () => {    
     const navigate = useNavigate();
     const {
         createExpedition,
@@ -52,7 +50,7 @@ const CreateExpeditionV2 = () => {
         pays_destination: "",
         is_paiement_credit: false,
         is_livraison_domicile: true,
-        statut_paiement: "en_attente",
+        statut_paiement: "paye",
 
         // Expéditeur
         expediteur_nom_prenom: "",
@@ -97,7 +95,7 @@ const CreateExpeditionV2 = () => {
         loadCategories();
         fetchTarifGroupageAgence();
         fetchAgencyData();
-    }, []);
+            }, []);
 
     // Nettoyage au démontage
     useEffect(() => {
@@ -194,7 +192,6 @@ const CreateExpeditionV2 = () => {
         return () => window.removeEventListener('keydown', handleKeyPress);
     }, [step, simulationResult, simulating, status]);
 
-    console.log("📍 Avant calcul availableRoutes - existingGroupageTarifs:", existingGroupageTarifs?.length, "tarifs");
 
     // Liste des trajets configurés par l'agence pour le type sélectionné
     const availableRoutes = useMemo(() => {
@@ -203,10 +200,6 @@ const CreateExpeditionV2 = () => {
         
         // Filtrer par type
         const tarifsByType = existingGroupageTarifs.filter(t => t.type_expedition === currentType);
-        
-        console.log("🛣️ DEBUG DEDUPLICATION - Début");
-        console.log("Type actuel:", currentType);
-        console.log("Tarifs par type:", tarifsByType);
         
         // Dédupliquer les trajets
         const uniqueRoutes = [];
@@ -224,14 +217,12 @@ const CreateExpeditionV2 = () => {
                 key = rawLigne.toLowerCase().trim();
                 displayValue = rawLigne;
                 
-                console.log(`📍 Tarif ID ${tarif.id}: ligne="${rawLigne}" → clé="${key}"`);
             } else if (currentType === 'groupage_afrique') {
                 // Pour AFRIQUE, la clé est le pays (ex: "GABON LIBREVILLE")
                 const rawPays = tarif.pays || "";
                 key = rawPays.toLowerCase().trim();
                 displayValue = rawPays;
                 
-                console.log(`📍 Tarif ID ${tarif.id}: pays="${rawPays}" → clé="${key}"`);
             } else if (currentType === 'groupage_ca') {
                 // Pour CA, la clé est ligne + pays
                 const rawLigne = tarif.ligne || "";
@@ -239,7 +230,6 @@ const CreateExpeditionV2 = () => {
                 key = `${rawLigne.toLowerCase().trim()}|${rawPays.toLowerCase().trim()}`;
                 displayValue = `${rawLigne} (${rawPays})`;
                 
-                console.log(`📍 Tarif ID ${tarif.id}: "${rawLigne}|${rawPays}" → clé="${key}"`);
             } else {
                 // Fallback: utiliser l'ID
                 key = String(tarif.id);
@@ -248,11 +238,9 @@ const CreateExpeditionV2 = () => {
             
             // Si cette clé n'a pas encore été vue, ajouter le tarif
             if (key && !seenKeys.has(key)) {
-                console.log(`  ✅ Nouveau trajet ajouté: "${displayValue}"`);
                 seenKeys.add(key);
                 uniqueRoutes.push(tarif);
             } else {
-                console.log(`  ⚠️ Doublon ignoré: "${displayValue}" (déjà vu comme "${key}")`);
                 
                 // Tracer les doublons pour statistiques
                 if (!duplicatesInfo[key]) {
@@ -294,11 +282,16 @@ const CreateExpeditionV2 = () => {
         
         if (!categories || !Array.isArray(categories)) return [];
         
-        // Si le type est SIMPLE, afficher toutes les catégories
-        if (formData.type_expedition === 'SIMPLE') {
-            console.log("🔵 Type SIMPLE - Retour de toutes les catégories");
+        const currentType = formData.type_expedition.toLowerCase();
+        const isDHD = currentType.includes('dhd');
+        
+        // Pour les types NON-DHD (SIMPLE, AFRIQUE, CA), retourner toutes les catégories SANS filtrage
+        if (!isDHD) {
+            console.log("🔵 Type NON-DHD - Retour de toutes les catégories SANS filtrage");
             return categories;
         }
+        
+        // === À partir d'ici, uniquement pour DHD (AERIEN et MARITIME) ===
         
         // Pour les autres types, filtrer par les category_id présents dans les tarifs groupage
         if (!existingGroupageTarifs || !Array.isArray(existingGroupageTarifs)) {
@@ -306,61 +299,28 @@ const CreateExpeditionV2 = () => {
             return categories;
         }
         
-        const currentType = formData.type_expedition.toLowerCase();
-        
-        // Debug: Afficher les informations
-        console.log("=== FILTRAGE CATEGORIES ===");
-        console.log("Type actuel:", currentType);
-        console.log("Route sélectionnée:", selectedRoute);
-        console.log("Tous les tarifs:", existingGroupageTarifs);
+
         
         // Récupérer tous les tarifs correspondant au type sélectionné
         let filteredTarifs = existingGroupageTarifs
             .filter(tarif => tarif.type_expedition === currentType);
         
-        console.log("Tarifs après filtre par type:", filteredTarifs);
         
         // Si une ligne est sélectionnée, filtrer aussi par la ligne
         if (selectedRoute) {
             const routeLigne = selectedRoute.ligne;
             const routePays = selectedRoute.pays;
             
-            console.log("Filtrage par ligne:", routeLigne, "et pays:", routePays);
             
-            // Filtrer les tarifs qui correspondent à la ligne/pays sélectionné(e)
+            // Filtrer les tarifs qui correspondent à la ligne sélectionnée
             filteredTarifs = filteredTarifs.filter(tarif => {
-                console.log("Tarif examiné:", { ligne: tarif.ligne, pays: tarif.pays, category_id: tarif.category_id });
                 
-                // Pour DHD, on compare la ligne (insensible à la casse)
-                if (currentType.includes('dhd')) {
-                    const tarifLigne = (tarif.ligne || "").toLowerCase().trim();
-                    const selectedLigne = (routeLigne || "").toLowerCase().trim();
-                    const match = tarifLigne === selectedLigne;
-                    console.log(`DHD - Comparaison ligne: "${tarif.ligne}" vs "${routeLigne}" (normalisé: "${tarifLigne}" === "${selectedLigne}") = ${match}`);
-                    return match;
-                }
-                // Pour AFRIQUE, on compare le pays (insensible à la casse)
-                if (currentType === 'groupage_afrique') {
-                    const tarifPays = (tarif.pays || "").toLowerCase().trim();
-                    const selectedPays = (routePays || "").toLowerCase().trim();
-                    const match = tarifPays === selectedPays;
-                    console.log(`AFRIQUE - Comparaison pays: "${tarif.pays}" vs "${routePays}" (normalisé: "${tarifPays}" === "${selectedPays}") = ${match}`);
-                    return match;
-                }
-                // Pour CA, on compare ligne et pays (insensible à la casse)
-                if (currentType === 'groupage_ca') {
-                    const tarifLigne = (tarif.ligne || "").toLowerCase().trim();
-                    const selectedLigne = (routeLigne || "").toLowerCase().trim();
-                    const tarifPays = (tarif.pays || "").toLowerCase().trim();
-                    const selectedPays = (routePays || "").toLowerCase().trim();
-                    const match = tarifLigne === selectedLigne && tarifPays === selectedPays;
-                    console.log(`CA - Comparaison: "${tarif.ligne}" === "${routeLigne}" && "${tarif.pays}" === "${routePays}" (normalisé) = ${match}`);
-                    return match;
-                }
-                return true;
+                const tarifLigne = (tarif.ligne || "").toLowerCase().trim();
+                const selectedLigne = (routeLigne || "").toLowerCase().trim();
+                const match = tarifLigne === selectedLigne;
+                return match;
             });
             
-            console.log("Tarifs après filtre par ligne:", filteredTarifs);
         }
         
         // Extraire les category_id (en ignorant les null)
@@ -368,25 +328,20 @@ const CreateExpeditionV2 = () => {
             .map(tarif => tarif.category_id)
             .filter(id => id !== null && id !== undefined);
         
-        console.log("Category IDs extraits (sans null):", categoryIds);
         
         // Éliminer les doublons
         const uniqueCategoryIds = [...new Set(categoryIds)];
         
-        console.log("Category IDs uniques:", uniqueCategoryIds);
         
         // Si aucune catégorie spécifique trouvée (tous les tarifs ont category_id null)
         // Cela signifie que le tarif est universel pour toutes les catégories
         if (uniqueCategoryIds.length === 0) {
-            console.log("⚠️ Aucun category_id dans les tarifs (tarifs universels) - Retour de toutes les catégories");
-            console.log("=========================");
             return categories;
         }
         
         // Filtrer les catégories pour ne garder que celles qui ont un tarif pour ce type/ligne
         const result = categories.filter(cat => uniqueCategoryIds.includes(cat.id));
-        console.log("Catégories filtrées finales:", result);
-        console.log("=========================");
+     
         
         return result;
     }, [categories, existingGroupageTarifs, formData.type_expedition, selectedRoute]);
@@ -426,25 +381,20 @@ const CreateExpeditionV2 = () => {
     // Sélection automatique des infos depuis un trajet configuré
     const handleRouteSelect = (e) => {
         const routeId = e.target.value;
-        console.log("=== SELECTION ROUTE ===");
-        console.log("Route ID sélectionné:", routeId);
         
         // Mettre à jour l'ID de la route sélectionnée
         setSelectedRouteId(routeId);
         
         if (!routeId) {
-            console.log("Pas de route sélectionnée, réinitialisation");
             setSelectedRoute(null);
             return;
         }
 
         const route = availableRoutes.find(r => String(r.id) === String(routeId));
-        console.log("Route trouvée:", route);
         
         if (route) {
             // Sauvegarder la route sélectionnée pour le filtrage des catégories
             setSelectedRoute(route);
-            console.log("Route sauvegardée dans le state:", route);
             
             const isDHD = formData.type_expedition.toUpperCase().includes('DHD');
 
@@ -1027,51 +977,98 @@ const CreateExpeditionV2 = () => {
                                                                 className={inputCls(colis.designation, true)}
                                                             />
                                                         </div>
-                                                        <div className="space-y-1.5">
-                                                            <label className="block text-xs font-semibold text-slate-600">Catégorie</label>
-                                                            <select
-                                                                value={colis.category_id}
-                                                                onChange={(e) => handleColisChange(index, 'category_id', e.target.value)}
-                                                                className={`w-full rounded-lg text-sm font-medium h-11 px-3 ${getInputBorderClass(colis.category_id, false)}`}
-                                                            >
-                                                                <option value="">Sélectionner…</option>
-                                                                {filteredCategories?.map(cat => (
-                                                                    <option key={cat.id} value={cat.id}>{cat.nom}</option>
-                                                                ))}
-                                                            </select>
-                                                        </div>
+                                                        
+                                                        {/* Catégorie - Uniquement pour DHD (AERIEN et MARITIME) */}
+                                                        {formData.type_expedition.includes('DHD') && (
+                                                            <div className="space-y-1.5">
+                                                                <label className="block text-xs font-semibold text-slate-600">
+                                                                    Catégorie <span className="text-amber-600">*</span>
+                                                                    <span className="text-xs text-slate-400 ml-2">
+                                                                        ({filteredCategories.length} disponible{filteredCategories.length > 1 ? 's' : ''})
+                                                                    </span>
+                                                                </label>
+                                                                <select
+                                                                    value={colis.category_id}
+                                                                    onChange={(e) => handleColisChange(index, 'category_id', e.target.value)}
+                                                                    className={`w-full rounded-lg text-sm font-medium h-11 px-3 ${getInputBorderClass(colis.category_id, false)}`}
+                                                                >
+                                                                    <option value="">Sélectionner…</option>
+                                                                    {filteredCategories?.map(cat => (
+                                                                        <option key={cat.id} value={cat.id}>{cat.nom}</option>
+                                                                    ))}
+                                                                </select>
+                                                                {!colis.category_id && (
+                                                                    <p className="text-xs text-amber-600 mt-1">⚠️ Catégorie obligatoire pour DHD</p>
+                                                                )}
+                                                            </div>
+                                                        )}
                                                     </div>
 
                                                     <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3">
                                                         <div className="space-y-1.5">
                                                             <label className="block text-[11px] font-semibold text-slate-600">Poids (kg) <span className="text-amber-600">*</span></label>
-                                                            <input type="number" step="0.1" inputMode="decimal" value={colis.poids}
+                                                            <input 
+                                                                type="number" 
+                                                                step="0.1" 
+                                                                inputMode="decimal" 
+                                                                value={colis.poids}
                                                                 onChange={(e) => handleColisChange(index, 'poids', e.target.value)}
-                                                                placeholder="0.0" className={inputCls(colis.poids, true)} />
+                                                                onFocus={(e) => e.target.select()}
+                                                                placeholder="0.0" 
+                                                                className={inputCls(colis.poids, true)} 
+                                                            />
                                                         </div>
                                                         <div className="space-y-1.5">
                                                             <label className="block text-[11px] font-semibold text-slate-600">Long. (cm)</label>
-                                                            <input type="number" step="0.1" inputMode="decimal" value={colis.longueur}
+                                                            <input 
+                                                                type="number" 
+                                                                step="0.1" 
+                                                                inputMode="decimal" 
+                                                                value={colis.longueur}
                                                                 onChange={(e) => handleColisChange(index, 'longueur', e.target.value)}
-                                                                placeholder="0" className={inputCls(colis.longueur)} />
+                                                                onFocus={(e) => e.target.select()}
+                                                                placeholder="0" 
+                                                                className={inputCls(colis.longueur)} 
+                                                            />
                                                         </div>
                                                         <div className="space-y-1.5">
                                                             <label className="block text-[11px] font-semibold text-slate-600">Larg. (cm)</label>
-                                                            <input type="number" step="0.1" inputMode="decimal" value={colis.largeur}
+                                                            <input 
+                                                                type="number" 
+                                                                step="0.1" 
+                                                                inputMode="decimal" 
+                                                                value={colis.largeur}
                                                                 onChange={(e) => handleColisChange(index, 'largeur', e.target.value)}
-                                                                placeholder="0" className={inputCls(colis.largeur)} />
+                                                                onFocus={(e) => e.target.select()}
+                                                                placeholder="0" 
+                                                                className={inputCls(colis.largeur)} 
+                                                            />
                                                         </div>
                                                         <div className="space-y-1.5">
                                                             <label className="block text-[11px] font-semibold text-slate-600">Haut. (cm)</label>
-                                                            <input type="number" step="0.1" inputMode="decimal" value={colis.hauteur}
+                                                            <input 
+                                                                type="number" 
+                                                                step="0.1" 
+                                                                inputMode="decimal" 
+                                                                value={colis.hauteur}
                                                                 onChange={(e) => handleColisChange(index, 'hauteur', e.target.value)}
-                                                                placeholder="0" className={inputCls(colis.hauteur)} />
+                                                                onFocus={(e) => e.target.select()}
+                                                                placeholder="0" 
+                                                                className={inputCls(colis.hauteur)} 
+                                                            />
                                                         </div>
                                                         <div className="space-y-1.5 col-span-3 sm:col-span-1">
                                                             <label className="block text-[11px] font-semibold text-slate-600">Emballage (FCFA)</label>
-                                                            <input type="number" inputMode="numeric" value={colis.prix_emballage}
+                                                            <input 
+                                                                type="number" 
+                                                                step="0" 
+                                                                inputMode="numeric" 
+                                                                value={colis.prix_emballage}
                                                                 onChange={(e) => handleColisChange(index, 'prix_emballage', e.target.value)}
-                                                                placeholder="0" className={inputCls(colis.prix_emballage)} />
+                                                                onFocus={(e) => e.target.select()}
+                                                                placeholder="0" 
+                                                                className={inputCls(colis.prix_emballage)} 
+                                                            />
                                                         </div>
                                                     </div>
 
@@ -1517,7 +1514,11 @@ const CreateExpeditionV2 = () => {
                                                     {/* Paiement à crédit */}
                                                     <button
                                                         type="button"
-                                                        onClick={() => setFormData(prev => ({ ...prev, is_paiement_credit: !prev.is_paiement_credit }))}
+                                                        onClick={() => setFormData(prev => ({ 
+                                                            ...prev, 
+                                                            is_paiement_credit: !prev.is_paiement_credit,
+                                                            statut_paiement: !prev.is_paiement_credit ? 'en_attente' : 'paye'
+                                                        }))}
                                                         className={`flex items-center gap-3 p-3.5 rounded-lg border-2 text-left transition-all ${
                                                             formData.is_paiement_credit
                                                                 ? 'border-amber-500 bg-amber-50'
@@ -1746,6 +1747,10 @@ const CreateExpeditionV2 = () => {
             {showSuccessModal && currentExpedition && (
                 <PrintSuccessModal
                     expedition={currentExpedition}
+                    agency={{
+                        ...(agencyData?.agence || agencyData || {}),
+                        logo: getLogoUrl(agencyData?.agence?.logo || agencyData?.logo)
+                    }}
                     onClose={() => {
                         setShowSuccessModal(false);
                         resetStatus();
@@ -1753,7 +1758,6 @@ const CreateExpeditionV2 = () => {
                         clearCurrentExpedition();
                         navigate('/expeditions');
                     }}
-                    agencyData={agencyData}
                 />
             )}
         </>

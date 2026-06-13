@@ -61,11 +61,11 @@ const Expeditions = () => {
             date_fin: dateFin,
             type: type
         });
-    }, [currentPage, dateDebut, dateFin, type, loadExpeditions]);
+    }, [currentPage, dateDebut, dateFin, type]); // ✅ Retrait de loadExpeditions des dépendances
 
     useEffect(() => {
         fetchAgencyData();
-    }, [fetchAgencyData]);
+    }, []); // ✅ Retrait de fetchAgencyData des dépendances (appelé une seule fois au montage)
 
     const handlePageChange = (page) => {
         if (page >= 1 && page <= (meta?.last_page || 1)) {

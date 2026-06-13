@@ -378,11 +378,21 @@ const expeditionSlice = createSlice({
             })
 
             // Fetch Expeditions
-            .addCase(fetchExpeditions.pending, (state) => {
-                // Ne montrer le loading que si on n'a pas encore de données
-                if (!state.expeditions || state.expeditions.length === 0) {
-                    state.status = "loading";
+            .addCase(fetchExpeditions.pending, (state, action) => {
+                const newFilters = action.meta.arg;
+                
+                // Vérifier si c'est un changement de filtres (dates, type) ou juste une pagination
+                const isFilterChange = !state.lastFilters || 
+                    String(newFilters.date_debut) !== String(state.lastFilters.date_debut) ||
+                    String(newFilters.date_fin) !== String(state.lastFilters.date_fin) ||
+                    String(newFilters.type) !== String(state.lastFilters.type);
+                
+                // Si les filtres principaux ont changé, vider les données pour éviter l'affichage de données obsolètes
+                if (isFilterChange) {
+                    state.expeditions = [];
                 }
+                
+                state.status = "loading";
                 state.error = null;
             })
             .addCase(fetchExpeditions.fulfilled, (state, action) => {

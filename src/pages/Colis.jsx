@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+﻿import React, { useEffect, useState, useMemo } from "react";
 import { useExpedition } from "../hooks/useExpedition";
 import { Link } from "react-router-dom";
 import { formatPriceDual } from "../utils/format";
@@ -49,7 +49,8 @@ const Colis = () => {
 
     useEffect(() => {
         fetchColisData();
-    }, [currentPage, loadExpeditions]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentPage]); // ✅ Retrait de loadExpeditions des dépendances
 
     useEffect(() => {
         if (message || error) {
@@ -268,58 +269,6 @@ const Colis = () => {
                 onScan={handleQRScan}
             />
 
-            {/* Info Banner pour clarifier les statuts
-            <div className={`rounded-xl p-4 flex items-start gap-3 border ${
-                activeTab === 'agence' 
-                    ? 'bg-blue-50 border-blue-200' 
-                    : 'bg-purple-50 border-purple-200'
-            }`}>
-                <div className={`p-1 rounded-lg shrink-0 ${
-                    activeTab === 'agence' 
-                        ? 'bg-blue-100' 
-                        : 'bg-purple-100'
-                }`}>
-                    <IdentificationIcon className={`w-5 h-5 ${
-                        activeTab === 'agence' 
-                            ? 'text-blue-600' 
-                            : 'text-purple-600'
-                    }`} />
-                </div>
-                <div className="flex-1">
-                    {activeTab === 'agence' ? (
-                        <>
-                            <div className="flex items-center justify-between mb-1">
-                                <p className="text-sm font-semibold text-blue-900">
-                                    📦 Expéditions acceptées à réceptionner
-                                </p>
-                                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded-full">
-                                    {tabColis.length} colis
-                                </span>
-                            </div>
-                            <p className="text-xs text-blue-700">
-                                Affiche uniquement les colis des expéditions avec le <strong>statut "Acceptée"</strong> qui 
-                                n'ont pas encore été réceptionnés à votre agence. Sélectionnez les colis reçus pour confirmer leur réception.
-                            </p>
-                        </>
-                    ) : (
-                        <>
-                            <div className="flex items-center justify-between mb-1">
-                                <p className="text-sm font-semibold text-purple-900">
-                                    🚚 Colis reçus prêts pour l'expédition
-                                </p>
-                                <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-bold rounded-full">
-                                    {tabColis.length} colis
-                                </span>
-                            </div>
-                            <p className="text-xs text-purple-700">
-                                Affiche les colis avec le <strong>statut "Reçu agence départ"</strong> qui sont prêts à être 
-                                envoyés vers l'entrepôt. Sélectionnez les colis à expédier pour initier leur envoi.
-                            </p>
-                        </>
-                    )}
-                </div>
-            </div> */}
-
             {/* Data Section */}
             <div className="relative">
                 {/* Desktop Table View */}
@@ -533,7 +482,7 @@ const Colis = () => {
                                     <ArrowPathIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:rotate-180 transition-transform duration-500" />
                                 )}
                                 <span className="hidden sm:inline">
-                                    {activeTab === 'agence' ? "Confirmer la réception" : "Envoyer à l'entrepôt"}
+                                    "Envoyer à l'entrepôt"
                                 </span>
                                 <span className="sm:hidden">
                                     Envoyer
@@ -700,7 +649,7 @@ const Colis = () => {
                                     <ArrowPathIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover:rotate-180 transition-transform duration-500" />
                                 )}
                                 <span className="hidden sm:inline">
-                                    {activeTab === 'agence' ? "Confirmer la réception" : "Envoyer à l'entrepôt"}
+                                    "Envoyer à l'entrepôt"
                                 </span>
                                 <span className="sm:hidden">
                                     Envoyer

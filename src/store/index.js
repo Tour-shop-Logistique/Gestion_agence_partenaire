@@ -36,11 +36,8 @@ export const store = configureStore({
   reducer: rootReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      serializableCheck: {
-        // Ignorer ces chemins pour les vérifications de sérialisation
-        ignoredActions: ['auth/login/fulfilled'],
-        ignoredPaths: ['auth.currentUser'],
-      },
+      serializableCheck: false, // ✅ Désactivé pour améliorer les performances en dev
+      immutableCheck: false, // ✅ Désactivé également pour de grandes données
     }),
   devTools: import.meta.env.MODE !== 'production',
 });

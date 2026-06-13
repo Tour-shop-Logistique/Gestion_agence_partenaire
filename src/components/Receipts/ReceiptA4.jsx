@@ -6,6 +6,7 @@ import CompanyLogo from '../../assets/logo_transparent.png';
 const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
     if (!expedition) return null;
 
+
     const totalColis = expedition.colis?.length || 0;
     const totalWeight = expedition.colis?.reduce((sum, c) => sum + (parseFloat(c.poids) || 0), 0) || 0;
     
@@ -20,10 +21,30 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
     // Calculer le total
     const totalAPayer = montantExpedition + fraisAnnexes + fraisEmballage + fraisEnlevement + fraisLivraison + fraisRetard;
 
+    // Vérifier si la destination est la France
+    const paysDestination = expedition.destinataire?.pays || expedition.destinataire_pays || expedition.pays_destination || '';
+    const isFrance = paysDestination.toLowerCase().includes('france');
+    
+    // Taux de conversion CFA vers EUR (1 EUR = 655.957 CFA)
+    const tauxConversion = 655.957;
+    const totalEnEuros = totalAPayer / tauxConversion;
+
     const date = expedition.created_at ? new Date(expedition.created_at) : new Date();
     const referenceSuffix = expedition.reference ? expedition.reference.slice(-3) : String(expedition.id || '000').slice(-3).padStart(3, '0');
     const invoiceNumber = `FACT-${date.getFullYear()}-${referenceSuffix}`;
+    
+    // Extraction intelligente du logo et des informations de l'agence
     const logoSrc = agency?.logo || CompanyLogo;
+    
+    // Extraction des informations d'agence avec plusieurs fallbacks
+    const agencyName = agency?.nom_agence || agency?.name || agency?.nom || 'VOTRE AGENCE';
+    const agencyAddress = agency?.adresse || agency?.address || '';
+    const agencyCity = agency?.ville || agency?.city || '';
+    const agencyCountry = agency?.pays || agency?.country || '';
+    const agencyPhone = agency?.telephone || agency?.telephone_agence || agency?.phone || agency?.agence?.telephone || 'Non renseigné';
+    const agencyEmail = agency?.email || '';
+    
+    
     const isPaid = expedition.statut_paiement === 'paye';
 
     return (
@@ -34,19 +55,29 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
                 <div className="flex justify-between items-start border-b-2 border-slate-900 pb-4 mb-6">
                     <div>
                         <div className="flex items-center gap-4 mb-3">
-                            <img src={logoSrc} alt="Logo" className="h-14 object-contain" />
+                            <img src={logoSrc} alt="Logo" className="h-16 object-contain" />
                         </div>
-                        <h1 className="text-xl font-bold uppercase tracking-tighter">
-                            {agency?.nom_agence || agency?.name || agency?.nom || 'VOTRE AGENCE'}
+                        <h1 className="text-2xl font-bold uppercase tracking-tight mb-2">
+                            {agencyName}
                         </h1>
-                        {agency?.adresse && <p className="text-xs font-bold text-slate-500 uppercase">{agency.adresse}</p>}
-                        <p className="text-xs font-bold text-slate-500 uppercase">
-                            {agency?.ville || ''}{agency?.ville && agency?.pays ? ', ' : ''}{agency?.pays || ''}
+                        {agencyAddress && (
+                            <p className="text-xs font-bold text-slate-600 uppercase tracking-wide mb-1">
+                                📍 {agencyAddress}
+                            </p>
+                        )}
+                        {(agencyCity || agencyCountry) && (
+                            <p className="text-xs font-bold text-slate-600 uppercase tracking-wide mb-1">
+                                {agencyCity}{agencyCity && agencyCountry ? ', ' : ''}{agencyCountry}
+                            </p>
+                        )}
+                        <p className="text-xs font-bold text-slate-600 uppercase tracking-wide mb-1">
+                            📞 {agencyPhone}
                         </p>
-                        <p className="text-xs font-bold text-slate-500 uppercase">
-                            Tél: {agency?.telephone || agency?.telephone_agence || agency?.phone || agency?.agence?.telephone || 'Non renseigné'}
-                        </p>
-                        {agency?.email && <p className="text-xs font-bold text-slate-500">{agency.email}</p>}
+                        {agencyEmail && (
+                            <p className="text-xs font-bold text-slate-600 tracking-wide">
+                                ✉️ {agencyEmail}
+                            </p>
+                        )}
                     </div>
                     <div className="text-right flex flex-col items-end">
                         <div className="bg-slate-900 text-white px-4 py-2 mb-2 inline-block rounded-tl-xl rounded-br-xl shadow-md">
@@ -99,6 +130,7 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="bg-slate-100/80 text-slate-600 text-[10px] font-semibold uppercase tracking-wide border-b border-slate-200">
+                                    <th className="px-4 py-2.5">Code</th>
                                     <th className="px-4 py-2.5">Désignation</th>
                                     <th className="px-4 py-2.5 text-center">Qté</th>
                                     <th className="px-4 py-2.5 text-center">Poids (kg)</th>
@@ -109,6 +141,11 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
                             <tbody className="text-xs font-bold">
                                 {expedition.colis?.map((c, i) => (
                                     <tr key={i} className={`border-b border-slate-100 ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
+                                        <td className="px-4 py-2.5">
+                                            <div className="font-mono text-[10px] text-slate-900 bg-slate-100 px-2 py-1 rounded border border-slate-200 inline-block">
+                                                {c.code_colis || `C-${i + 1}`}
+                                            </div>
+                                        </td>
                                         <td className="px-4 py-2.5">
                                             <p className="text-slate-900 uppercase tracking-tight">{c.designation || 'Colis'}</p>
                                             {c.category?.nom && <p className="text-[9px] text-indigo-600 uppercase tracking-wide mt-0.5">{c.category.nom}</p>}
@@ -192,8 +229,13 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
                                     <span className="text-xl font-bold font-mono text-indigo-700 leading-none block">
                                         {totalAPayer.toLocaleString()} CFA
                                     </span>
+                                    {isFrance && (
+                                        <span className="text-sm font-bold font-mono text-blue-600 leading-none block mt-1.5">
+                                            ≈ {totalEnEuros.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} EUR
+                                        </span>
+                                    )}
                                     {isPaid && expedition.mode_paiement && (
-                                        <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wide mb-1 block mt-1">
+                                        <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wide block mt-1">
                                             Réglé par {expedition.mode_paiement}
                                         </span>
                                     )}
