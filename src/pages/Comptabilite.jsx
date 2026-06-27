@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -23,8 +23,16 @@ import {
   ArrowDownLeftIcon,
   ChevronDownIcon,
   DocumentArrowDownIcon,
-  TableCellsIcon
+  TableCellsIcon,
+  ExclamationTriangleIcon,
+  CreditCardIcon,
+  ClockIcon,
+  CalendarIcon,
+  ArrowTrendingUpIcon,
+  ChartBarIcon,
+  BellAlertIcon
 } from "@heroicons/react/24/outline";
+import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const Comptabilite = () => {
   const navigate = useNavigate();
@@ -53,6 +61,8 @@ const Comptabilite = () => {
   const [selectedExpedition, setSelectedExpedition] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isExportDropdownOpen, setIsExportDropdownOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, journal, reversements, creances
+  const [dateRange, setDateRange] = useState('jour'); // jour, semaine, mois, annee
   const dropdownRef = useRef(null);
 
   // Close dropdown when clicking outside
@@ -129,6 +139,226 @@ const Comptabilite = () => {
     
     return result;
   }, [data, searchQuery, statusFilter]);
+
+  // Calcul des nouveaux KPI financiers
+  const financialKPIs = useMemo(() => {
+    // Montant à reverser au HUB (Part Backoffice + Part Livreurs)
+    const montantAReverserHUB = (summary.potential?.total_backoffice || 0) + (summary.potential?.total_livreur || 0);
+    
+    // Créances Clients (expéditions non réglées)
+    const creancesClients = filteredData
+      .filter(exp => exp.statut_paiement === 'en_attente')
+      .reduce((sum, exp) => sum + (exp.accounting_details?.total_client_due || 0), 0);
+    
+    // Solde de trésorerie (Encaissements - Décaissements)
+    const encaissements = summary.real?.total_cash_received || 0;
+    const decaissements = montantAReverserHUB; // Simplifié pour l'exemple
+    const soldeTresorerie = encaissements - decaissements;
+    
+    // Marge nette agence (Commission Agence - Charges Agence)
+    // Pour l'instant, charges = 0 (à ajuster selon vos besoins)
+    const margeNetteAgence = summary.potential?.total_agence || 0;
+    
+    return {
+      montantAReverserHUB,
+      creancesClients,
+      soldeTresorerie,
+      margeNetteAgence,
+      encaissements,
+      decaissements
+    };
+  }, [summary, filteredData]);
+
+  // Répartition des moyens de paiement (données mockées - à adapter selon vos données réelles)
+  const paymentMethods = useMemo(() => {
+    const total = summary.real?.total_cash_received || 1;
+    return [
+      { name: 'Espèces', montant: total * 0.35, color: '#f97316' },
+      { name: 'Orange Money', montant: total * 0.25, color: '#fb923c' },
+      { name: 'MTN Money', montant: total * 0.20, color: '#fdba74' },
+      { name: 'Wave', montant: total * 0.15, color: '#fed7aa' },
+      { name: 'Carte Bancaire', montant: total * 0.05, color: '#ffedd5' }
+    ];
+  }, [summary]);
+
+  // Analyse des impayés par ancienneté
+  const unpaidAnalysis = useMemo(() => {
+    const today = new Date();
+    const unpaid = filteredData.filter(exp => exp.statut_paiement === 'en_attente');
+    
+    const categories = {
+      '0-7 jours': 0,
+      '8-30 jours': 0,
+      '31-60 jours': 0,
+      '+60 jours': 0
+    };
+    
+    unpaid.forEach(exp => {
+      const createdDate = new Date(exp.created_at);
+      const daysDiff = Math.floor((today - createdDate) / (1000 * 60 * 60 * 24));
+      const montant = exp.accounting_details?.total_client_due || 0;
+      
+      if (daysDiff <= 7) categories['0-7 jours'] += montant;
+      else if (daysDiff <= 30) categories['8-30 jours'] += montant;
+      else if (daysDiff <= 60) categories['31-60 jours'] += montant;
+      else categories['+60 jours'] += montant;
+    });
+    
+    return {
+      totalCount: unpaid.length,
+      totalAmount: unpaid.reduce((sum, exp) => sum + (exp.accounting_details?.total_client_due || 0), 0),
+      categories
+    };
+  }, [filteredData]);
+
+  // Données pour le graphique d'évolution du CA (basé sur les vraies données)
+  const revenueEvolution = useMemo(() => {
+    if (!filteredData || filteredData.length === 0) return [];
+
+    // Grouper les expéditions par période
+    const grouped = {};
+
+    filteredData.forEach(exp => {
+      if (!exp.created_at) return;
+      
+      const date = new Date(exp.created_at);
+      let key = '';
+
+      if (dateRange === 'jour') {
+        // Grouper par jour de la semaine
+        const days = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+        key = days[date.getDay()];
+      } else if (dateRange === 'semaine') {
+        // Grouper par semaine du mois
+        const weekOfMonth = Math.ceil(date.getDate() / 7);
+        key = `S${weekOfMonth}`;
+      } else if (dateRange === 'mois') {
+        // Grouper par mois
+        const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+        key = months[date.getMonth()];
+      } else if (dateRange === 'annee') {
+        // Grouper par année
+        key = date.getFullYear().toString();
+      }
+
+      if (!grouped[key]) {
+        grouped[key] = {
+          ca: 0,
+          commission: 0,
+          count: 0
+        };
+      }
+
+      grouped[key].ca += exp.accounting_details?.total_client_due || 0;
+      grouped[key].commission += (
+        (parseFloat(exp.accounting_details?.agence_depart || 0)) + 
+        (parseFloat(exp.accounting_details?.agence_arrivee || 0))
+      );
+      grouped[key].count += 1;
+    });
+
+    // Créer le tableau de données pour le graphique
+    // Trier selon la période
+    let sortedKeys = Object.keys(grouped);
+
+    if (dateRange === 'jour') {
+      const dayOrder = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+      sortedKeys = sortedKeys.sort((a, b) => dayOrder.indexOf(a) - dayOrder.indexOf(b));
+    } else if (dateRange === 'semaine') {
+      sortedKeys = sortedKeys.sort((a, b) => {
+        const numA = parseInt(a.replace('S', ''));
+        const numB = parseInt(b.replace('S', ''));
+        return numA - numB;
+      });
+    } else if (dateRange === 'mois') {
+      const monthOrder = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+      sortedKeys = sortedKeys.sort((a, b) => monthOrder.indexOf(a) - monthOrder.indexOf(b));
+    } else if (dateRange === 'annee') {
+      sortedKeys = sortedKeys.sort();
+    }
+
+    return sortedKeys.map(key => ({
+      periode: key,
+      ca: Math.round(grouped[key].ca),
+      commission: Math.round(grouped[key].commission),
+      count: grouped[key].count
+    }));
+  }, [dateRange, filteredData]);
+
+  // Statistiques des destinations
+  const destinationStats = useMemo(() => {
+    const stats = {};
+    filteredData.forEach(exp => {
+      const dest = exp.pays_destination || 'Inconnu';
+      if (!stats[dest]) {
+        stats[dest] = {
+          destination: dest,
+          expeditions: 0,
+          ca: 0
+        };
+      }
+      stats[dest].expeditions += 1;
+      stats[dest].ca += exp.accounting_details?.total_client_due || 0;
+    });
+    
+    return Object.values(stats)
+      .sort((a, b) => b.ca - a.ca)
+      .slice(0, 10);
+  }, [filteredData]);
+
+  // Répartition financière pour graphique circulaire
+  const financialDistribution = useMemo(() => {
+    const total = summary.potential?.total_client_due || 1;
+    return [
+      { name: 'CA Client', value: total, color: '#0f172a' },
+      { name: 'Part Agence', value: summary.potential?.total_agence || 0, color: '#3b82f6' },
+      { name: 'Part HUB', value: summary.potential?.total_backoffice || 0, color: '#64748b' },
+      { name: 'Part Livreurs', value: summary.potential?.total_livreur || 0, color: '#10b981' }
+    ];
+  }, [summary]);
+
+  // Alertes comptables
+  const alerts = useMemo(() => {
+    const alertList = [];
+    
+    if (unpaidAnalysis.totalCount > 5) {
+      alertList.push({
+        type: 'danger',
+        icon: ExclamationTriangleIcon,
+        message: `${unpaidAnalysis.totalCount} factures impayées`,
+        value: formatCurrency(unpaidAnalysis.totalAmount) + ' CFA'
+      });
+    }
+    
+    if (financialKPIs.montantAReverserHUB > 1000000) {
+      alertList.push({
+        type: 'warning',
+        icon: BanknotesIcon,
+        message: 'Montant à reverser au HUB',
+        value: formatCurrency(financialKPIs.montantAReverserHUB) + ' CFA'
+      });
+    }
+    
+    if (financialKPIs.soldeTresorerie < 0) {
+      alertList.push({
+        type: 'danger',
+        icon: ExclamationTriangleIcon,
+        message: 'Trésorerie négative',
+        value: formatCurrency(financialKPIs.soldeTresorerie) + ' CFA'
+      });
+    }
+    
+    if (filteredData.filter(exp => exp.statut_paiement === 'en_attente').length > 10) {
+      alertList.push({
+        type: 'warning',
+        icon: ClockIcon,
+        message: 'Expéditions en attente de règlement',
+        value: filteredData.filter(exp => exp.statut_paiement === 'en_attente').length + ' exp.'
+      });
+    }
+    
+    return alertList;
+  }, [unpaidAnalysis, financialKPIs, filteredData]);
 
   const handleRowClick = (expedition) => {
     setSelectedExpedition(expedition);
@@ -431,7 +661,7 @@ const Comptabilite = () => {
       <div className="flex flex-col gap-3 sm:gap-4 border-b border-slate-200 pb-4 sm:pb-6">
         <div>
           <h1 className="text-lg sm:text-xl font-semibold text-slate-900 tracking-tight">Comptabilité & Flux</h1>
-          <p className="text-xs text-slate-500 mt-1 font-medium">Analyse des revenus agence et répartition des commissions par période.</p>
+          <p className="text-xs text-slate-500 mt-1 font-medium">Tableau de bord financier professionnel - Analyse des revenus et répartition des commissions</p>
         </div>
         
         <div className="flex items-center gap-2 flex-wrap">
@@ -514,12 +744,91 @@ const Comptabilite = () => {
         </div>
       </div>
 
+      {/* NOUVEAUX KPI FINANCIERS */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {/* Montant à reverser au HUB - Orange */}
+        <div className="p-3 sm:p-4 rounded-lg border border-orange-200 bg-gradient-to-br from-orange-50 to-white shadow-sm hover:shadow-md transition-all animate-in fade-in duration-300">
+          <div className="flex justify-between items-start mb-2">
+            <p className="text-[10px] sm:text-[11px] font-semibold text-orange-600 uppercase tracking-tight">Montant à reverser au HUB</p>
+            <BanknotesIcon className="w-4 h-4 text-orange-500 opacity-50" />
+          </div>
+          <div className="flex items-baseline gap-1">
+            <span className="text-base sm:text-xl font-bold tabular-nums text-orange-600">
+              {formatCurrency(financialKPIs.montantAReverserHUB)}
+            </span>
+            <span className="text-[9px] sm:text-[10px] font-semibold text-orange-400">CFA</span>
+          </div>
+          <p className="text-[9px] sm:text-[10px] text-orange-500 mt-1 font-medium">Part Backoffice + Part Livreurs</p>
+        </div>
+
+        {/* Créances Clients - Rouge */}
+        <div className="p-3 sm:p-4 rounded-lg border border-red-200 bg-gradient-to-br from-red-50 to-white shadow-sm hover:shadow-md transition-all animate-in fade-in duration-300 delay-75">
+          <div className="flex justify-between items-start mb-2">
+            <p className="text-[10px] sm:text-[11px] font-semibold text-red-600 uppercase tracking-tight">Créances Clients</p>
+            <ExclamationTriangleIcon className="w-4 h-4 text-red-500 opacity-50" />
+          </div>
+          <div className="flex items-baseline gap-1">
+            <span className="text-base sm:text-xl font-bold tabular-nums text-red-600">
+              {formatCurrency(financialKPIs.creancesClients)}
+            </span>
+            <span className="text-[9px] sm:text-[10px] font-semibold text-red-400">CFA</span>
+          </div>
+          <p className="text-[9px] sm:text-[10px] text-red-500 mt-1 font-medium">
+            {filteredData.filter(exp => exp.statut_paiement === 'en_attente').length} expéditions non réglées
+          </p>
+        </div>
+
+        {/* Solde de trésorerie - Vert/Rouge selon valeur */}
+        <div className={`p-3 sm:p-4 rounded-lg border shadow-sm hover:shadow-md transition-all animate-in fade-in duration-300 delay-150 ${
+          financialKPIs.soldeTresorerie >= 0 
+            ? 'border-emerald-200 bg-gradient-to-br from-emerald-50 to-white' 
+            : 'border-red-200 bg-gradient-to-br from-red-50 to-white'
+        }`}>
+          <div className="flex justify-between items-start mb-2">
+            <p className={`text-[10px] sm:text-[11px] font-semibold uppercase tracking-tight ${
+              financialKPIs.soldeTresorerie >= 0 ? 'text-emerald-600' : 'text-red-600'
+            }`}>Solde de Trésorerie</p>
+            <BanknotesIcon className={`w-4 h-4 opacity-50 ${
+              financialKPIs.soldeTresorerie >= 0 ? 'text-emerald-500' : 'text-red-500'
+            }`} />
+          </div>
+          <div className="flex items-baseline gap-1">
+            <span className={`text-base sm:text-xl font-bold tabular-nums ${
+              financialKPIs.soldeTresorerie >= 0 ? 'text-emerald-600' : 'text-red-600'
+            }`}>
+              {formatCurrency(financialKPIs.soldeTresorerie)}
+            </span>
+            <span className={`text-[9px] sm:text-[10px] font-semibold ${
+              financialKPIs.soldeTresorerie >= 0 ? 'text-emerald-400' : 'text-red-400'
+            }`}>CFA</span>
+          </div>
+          <p className={`text-[9px] sm:text-[10px] mt-1 font-medium ${
+            financialKPIs.soldeTresorerie >= 0 ? 'text-emerald-500' : 'text-red-500'
+          }`}>Encaissements - Décaissements</p>
+        </div>
+
+        {/* Marge nette agence - Bleu */}
+        <div className="p-3 sm:p-4 rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 to-white shadow-sm hover:shadow-md transition-all animate-in fade-in duration-300 delay-200">
+          <div className="flex justify-between items-start mb-2">
+            <p className="text-[10px] sm:text-[11px] font-semibold text-blue-600 uppercase tracking-tight">Marge Nette Agence</p>
+            <BuildingOfficeIcon className="w-4 h-4 text-blue-500 opacity-50" />
+          </div>
+          <div className="flex items-baseline gap-1">
+            <span className="text-base sm:text-xl font-bold tabular-nums text-blue-600">
+              {formatCurrency(financialKPIs.margeNetteAgence)}
+            </span>
+            <span className="text-[9px] sm:text-[10px] font-semibold text-blue-400">CFA</span>
+          </div>
+          <p className="text-[9px] sm:text-[10px] text-blue-500 mt-1 font-medium">Commission Agence - Charges</p>
+        </div>
+      </div>
+
       {/* KPI Section - Responsive Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Potentiel Stats */}
         {[
           { label: "Commission Agence (Total)", value: summary.potential?.total_agence, sub: "Déjà perçu + Attendue", color: "text-blue-600", bg: "bg-blue-50/50", icon: BuildingOfficeIcon, isMain: true },
-          { label: "CA Client Global", value: summary.potential?.total_client_due, sub: "Montant total facturé", color: "text-slate-900", bg: "bg-slate-50", icon: ShoppingBagIcon },
+          { label: "Montant Global", value: summary.potential?.total_client_due, sub: "Montant total facturé", color: "text-slate-900", bg: "bg-slate-50", icon: ShoppingBagIcon },
           { label: "Réel Encaissé en Agence", value: summary.real?.total_cash_received, sub: "Physiquement perçu", color: "text-emerald-600", bg: "bg-emerald-50/50", icon: CheckCircleIcon, indicator: "bg-emerald-500" },
           { label: "Part Backoffice / HUB", value: summary.potential?.total_backoffice, sub: "Frais de service système", color: "text-slate-600", bg: "bg-slate-50", icon: BanknotesIcon }
         ].map((kpi, idx) => (
@@ -570,6 +879,188 @@ const Comptabilite = () => {
           </div>
         </div>
       )}
+
+      {/* SECTION TRÉSORERIE */}
+      <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-sm animate-in fade-in duration-500">
+        <div className="flex items-center gap-2 mb-4">
+          <BanknotesIcon className="w-5 h-5 text-slate-700" />
+          <h2 className="text-xs sm:text-sm font-bold text-slate-900 uppercase tracking-tight">Trésorerie</h2>
+        </div>
+        <div className="grid grid-cols-3 gap-4">
+          <div className="text-center p-3 bg-emerald-50 rounded-lg border border-emerald-100">
+            <p className="text-[10px] font-semibold text-emerald-600 uppercase mb-2">Encaissements</p>
+            <p className="text-lg sm:text-2xl font-bold text-emerald-700 tabular-nums">
+              {formatCurrency(financialKPIs.encaissements)}
+            </p>
+            <p className="text-[9px] text-emerald-500 mt-1 font-semibold">CFA</p>
+          </div>
+          <div className="text-center p-3 bg-red-50 rounded-lg border border-red-100">
+            <p className="text-[10px] font-semibold text-red-600 uppercase mb-2">Décaissements</p>
+            <p className="text-lg sm:text-2xl font-bold text-red-700 tabular-nums">
+              {formatCurrency(financialKPIs.decaissements)}
+            </p>
+            <p className="text-[9px] text-red-500 mt-1 font-semibold">CFA</p>
+          </div>
+          <div className={`text-center p-3 rounded-lg border ${
+            financialKPIs.soldeTresorerie >= 0 
+              ? 'bg-emerald-100 border-emerald-200' 
+              : 'bg-red-100 border-red-200'
+          }`}>
+            <p className={`text-[10px] font-semibold uppercase mb-2 ${
+              financialKPIs.soldeTresorerie >= 0 ? 'text-emerald-700' : 'text-red-700'
+            }`}>Solde Actuel</p>
+            <p className={`text-lg sm:text-2xl font-bold tabular-nums ${
+              financialKPIs.soldeTresorerie >= 0 ? 'text-emerald-800' : 'text-red-800'
+            }`}>
+              {formatCurrency(financialKPIs.soldeTresorerie)}
+            </p>
+            <p className={`text-[9px] mt-1 font-semibold ${
+              financialKPIs.soldeTresorerie >= 0 ? 'text-emerald-600' : 'text-red-600'
+            }`}>CFA</p>
+          </div>
+        </div>
+      </div>
+
+      {/* CENTRE D'ALERTES */}
+      {alerts.length > 0 && (
+        <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-sm animate-in fade-in duration-500">
+          <div className="flex items-center gap-2 mb-4">
+            <BellAlertIcon className="w-5 h-5 text-red-600" />
+            <h2 className="text-xs sm:text-sm font-bold text-slate-900 uppercase tracking-tight">Alertes Comptables</h2>
+            <span className="ml-auto px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-[10px] font-bold">
+              {alerts.length}
+            </span>
+          </div>
+          <div className="space-y-2">
+            {alerts.map((alert, idx) => {
+              const AlertIcon = alert.icon;
+              const bgColor = alert.type === 'danger' ? 'bg-red-50' : 'bg-orange-50';
+              const borderColor = alert.type === 'danger' ? 'border-red-200' : 'border-orange-200';
+              const textColor = alert.type === 'danger' ? 'text-red-700' : 'text-orange-700';
+              const iconColor = alert.type === 'danger' ? 'text-red-600' : 'text-orange-600';
+
+              return (
+                <div key={idx} className={`${bgColor} ${borderColor} border rounded-lg p-3 flex items-center gap-3 transition-all hover:shadow-sm`}>
+                  <AlertIcon className={`w-5 h-5 ${iconColor} flex-shrink-0`} />
+                  <div className="flex-1">
+                    <p className={`text-xs font-semibold ${textColor}`}>{alert.message}</p>
+                  </div>
+                  <p className={`text-xs font-bold ${textColor} whitespace-nowrap`}>{alert.value}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* GRAPHIQUE ÉVOLUTION DU CA */}
+      <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-sm animate-in fade-in duration-500">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-2">
+            <ArrowTrendingUpIcon className="w-5 h-5 text-blue-600" />
+            <h2 className="text-xs sm:text-sm font-bold text-slate-900 uppercase tracking-tight">Évolution du Chiffre d'Affaires</h2>
+          </div>
+          <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-md">
+            {['jour', 'semaine', 'mois', 'annee'].map(range => (
+              <button
+                key={range}
+                onClick={() => setDateRange(range)}
+                className={`px-2 sm:px-3 py-1 rounded text-[10px] font-semibold transition-all ${
+                  dateRange === range 
+                    ? 'bg-white text-slate-900 shadow-sm' 
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                {range.charAt(0).toUpperCase() + range.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+        <ResponsiveContainer width="100%" height={280}>
+          <LineChart data={revenueEvolution}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+            <XAxis dataKey="periode" tick={{ fontSize: 11, fill: '#64748b' }} stroke="#cbd5e1" />
+            <YAxis tick={{ fontSize: 11, fill: '#64748b' }} stroke="#cbd5e1" />
+            <Tooltip 
+              contentStyle={{ 
+                backgroundColor: '#fff', 
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                fontSize: '12px',
+                boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+              }}
+              formatter={(value, name) => {
+                if (name === 'CA') return [formatCurrency(value) + ' CFA', 'Chiffre d\'Affaires'];
+                if (name === 'Commission') return [formatCurrency(value) + ' CFA', 'Commission Agence'];
+                return [value, name];
+              }}
+              labelFormatter={(label) => {
+                const item = revenueEvolution.find(d => d.periode === label);
+                return `${label}${item ? ` (${item.count} exp.)` : ''}`;
+              }}
+            />
+            <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+            <Line type="monotone" dataKey="ca" stroke="#3b82f6" strokeWidth={3} name="CA" dot={{ fill: '#3b82f6', r: 4 }} activeDot={{ r: 6 }} />
+            <Line type="monotone" dataKey="commission" stroke="#10b981" strokeWidth={3} name="Commission" dot={{ fill: '#10b981', r: 4 }} activeDot={{ r: 6 }} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* GRAPHIQUE RÉPARTITION FINANCIÈRE */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-sm animate-in fade-in duration-500">
+          <div className="flex items-center gap-2 mb-4">
+            <ChartBarIcon className="w-5 h-5 text-slate-700" />
+            <h2 className="text-xs sm:text-sm font-bold text-slate-900 uppercase tracking-tight">Répartition Financière</h2>
+          </div>
+          <ResponsiveContainer width="100%" height={250}>
+            <PieChart>
+              <Pie
+                data={financialDistribution}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                outerRadius={80}
+                fill="#8884d8"
+                dataKey="value"
+              >
+                {financialDistribution.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip formatter={(value) => formatCurrency(value) + ' CFA'} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* ANALYSE DES IMPAYÉS */}
+        <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-sm animate-in fade-in duration-500">
+          <div className="flex items-center gap-2 mb-4">
+            <ClockIcon className="w-5 h-5 text-red-600" />
+            <h2 className="text-xs sm:text-sm font-bold text-slate-900 uppercase tracking-tight">Analyse des Impayés</h2>
+          </div>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+              <span className="text-xs font-semibold text-slate-600">Total Impayés</span>
+              <span className="text-sm font-bold text-red-600">{unpaidAnalysis.totalCount} factures</span>
+            </div>
+            <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+              <span className="text-xs font-semibold text-slate-600">Montant Total</span>
+              <span className="text-sm font-bold text-red-600">{formatCurrency(unpaidAnalysis.totalAmount)} CFA</span>
+            </div>
+            <div className="pt-2">
+              <p className="text-[10px] font-bold text-slate-500 uppercase mb-2">Ancienneté</p>
+              {Object.entries(unpaidAnalysis.categories).map(([category, amount]) => (
+                <div key={category} className="flex justify-between items-center py-2">
+                  <span className="text-xs text-slate-600">{category}</span>
+                  <span className="text-xs font-bold text-slate-900 tabular-nums">{formatCurrency(amount)} CFA</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Combined Table Area */}
       <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">

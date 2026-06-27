@@ -62,9 +62,9 @@ export const checkAuthState = createAsyncThunk(
 // Connexion
 export const login = createAsyncThunk(
   "auth/login",
-  async ({ telephone, password, type }, { rejectWithValue }) => {
+  async (credentials, { rejectWithValue }) => {
     try {
-      const result = await authApi.login(telephone, password, type);
+      const result = await authApi.login(credentials);
       if (!result.success) {
         return rejectWithValue(result.message);
       }
@@ -219,17 +219,14 @@ const authSlice = createSlice({
       })
       .addCase(register.fulfilled, (state, action) => {
         state.status = "succeeded";
-        state.isAuthenticated = true;
-        const user = action.payload.user || action.payload;
-        state.currentUser = user;
-        state.message = "Inscription réussie";
+        // NE PAS connecter automatiquement après inscription
+        // L'utilisateur doit d'abord vérifier son email
+        state.isAuthenticated = false;
+        state.currentUser = null;
+        state.message = "Inscription réussie. Vérifiez votre email.";
 
-        // Sauvegarder le token et l'utilisateur
-        if (action.payload.token) {
-          apiService.setAuthToken(action.payload.token);
-          localStorage.setItem("auth_token", action.payload.token);
-          localStorage.setItem("auth_user", JSON.stringify(user));
-        }
+        // NE PAS sauvegarder le token - l'utilisateur doit vérifier son email d'abord
+        // Le token sera sauvegardé uniquement après connexion avec email vérifié
       })
       .addCase(register.rejected, (state, action) => {
         state.status = "failed";

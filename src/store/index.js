@@ -6,6 +6,7 @@ import expeditionReducer from './slices/expeditionSlice';
 import productReducer from './slices/productSlice';
 import accountingReducer from './slices/accountingSlice';
 import dashboardReducer from './slices/dashboardSlice';
+import passwordReducer from './slices/passwordSlice';
 
 /**
  * Root Reducer avec logique de reset
@@ -18,6 +19,7 @@ const appReducer = combineReducers({
   products: productReducer,
   accounting: accountingReducer,
   dashboard: dashboardReducer,
+  password: passwordReducer,
 });
 
 const rootReducer = (state, action) => {

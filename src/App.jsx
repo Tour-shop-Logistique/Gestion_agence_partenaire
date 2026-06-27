@@ -21,6 +21,7 @@ import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import AgencyProfile from "./pages/AgencyProfile";
 import Agents from "./pages/Agents";
+import AgentProfile from "./pages/AgentProfile";
 import CreateExpeditionV2 from "./pages/CreateExpeditionV2";
 import TarifsSimples from "./pages/TarifsSimples";
 import TarifsGroupes from "./pages/TarifsGroupes";
@@ -35,6 +36,7 @@ import ReceptionColis from "./pages/ReceptionColis";
 import ColisAReceptionner from "./pages/ColisAReceptionner";
 import RetraitColis from "./pages/RetraitColis";
 import Transactions from "./pages/Transactions";
+import TransactionsPro from "./pages/TransactionsPro";
 import ToastManager from "./components/ToastManager";
 import DashboardLayout from "./components/DashboardLayout";
 
@@ -114,24 +116,68 @@ function AppContent() {
 
   // Charger les données de l'agence quand l'utilisateur est authentifié
   const { fetchAgencyTarifs, fetchTarifs, fetchTarifsGroupageBase, fetchTarifGroupageAgence } = useTarifs();
+  const dispatch = useDispatch();
+  const agencyConfigured = useSelector(selectAgencyConfigured);
+  const agencyStatus = useSelector((state) => state.agency.status);
 
   useEffect(() => {
     if (isAuthenticated && status === "succeeded" && !hasLoadedDataRef.current) {
       hasLoadedDataRef.current = true;
-      // Charger les données en arrière-plan de manière asynchrone
-      // Sans bloquer l'affichage de l'interface
-      // ✅ Précharger aussi les données du Dashboard pour éviter le loader
-      Promise.all([
-        fetchAgencyData(),
-        fetchUsers(),
-        fetchTarifs(),
-        fetchAgencyTarifs(),
-        fetchTarifsGroupageBase(),
-        fetchTarifGroupageAgence(),
-        fetchDashboard(false, true) // Préchargement silencieux du Dashboard
-      ]).catch(err => console.error("Erreur lors du chargement des données:", err));
+      
+      // 1. Charger d'abord UNIQUEMENT le profil d'agence pour vérifier la configuration
+      const agencyPromise = fetchAgencyData(true); // forceRefresh = true pour s'assurer d'avoir une Promise
+      
+      // Gérer le cas où fetchAgencyData retourne undefined (déjà chargé)
+      if (!agencyPromise) {
+        // Les données sont déjà chargées, vérifier directement la configuration
+        const state = dispatch((dispatch, getState) => getState());
+        const isAgencyConfigured = selectAgencyConfigured(state);
+        
+        if (isAgencyConfigured) {
+          console.log("✅ Agence déjà configurée - Chargement de toutes les données");
+          Promise.all([
+            fetchUsers(),
+            fetchTarifs(),
+            fetchAgencyTarifs(),
+            fetchTarifsGroupageBase(),
+            fetchTarifGroupageAgence(),
+            fetchDashboard(false, true)
+          ]).catch(err => console.error("Erreur lors du chargement des données:", err));
+        } else {
+          console.log("⚠️ Agence non configurée - Redirection vers la page de configuration");
+        }
+        return;
+      }
+      
+      // Si on a une Promise, attendre sa résolution
+      agencyPromise
+        .then(() => {
+          // 2. Récupérer l'état de configuration depuis Redux
+          const state = dispatch((dispatch, getState) => getState());
+          const isAgencyConfigured = selectAgencyConfigured(state);
+          
+          // 3. Ne charger les autres APIs QUE si l'agence est configurée
+          if (isAgencyConfigured) {
+            console.log("✅ Agence configurée - Chargement de toutes les données");
+            Promise.all([
+              fetchUsers(),
+              fetchTarifs(),
+              fetchAgencyTarifs(),
+              fetchTarifsGroupageBase(),
+              fetchTarifGroupageAgence(),
+              fetchDashboard(false, true) // Préchargement silencieux du Dashboard
+            ]).catch(err => console.error("Erreur lors du chargement des données:", err));
+          } else {
+            console.log("⚠️ Agence non configurée - Redirection vers la page de configuration");
+            // Les autres APIs ne seront pas lancées
+            // La redirection sera gérée par AgencySetupGuard
+          }
+        })
+        .catch(err => {
+          console.error("❌ Erreur lors du chargement du profil d'agence:", err);
+        });
     }
-  }, [isAuthenticated, status, fetchAgencyData, fetchUsers, fetchTarifs, fetchAgencyTarifs, fetchTarifsGroupageBase, fetchTarifGroupageAgence, fetchDashboard]);
+  }, [isAuthenticated, status, fetchAgencyData, fetchUsers, fetchTarifs, fetchAgencyTarifs, fetchTarifsGroupageBase, fetchTarifGroupageAgence, fetchDashboard, dispatch, agencyStatus]);
 
   return (
     <AutoRedirect>
@@ -153,6 +199,7 @@ function AppContent() {
           <Route path="/tarifs-simples" element={<AgencySetupGuard><TarifsSimples /></AgencySetupGuard>} />
           <Route path="/tarifs-groupage" element={<AgencySetupGuard><TarifsGroupes /></AgencySetupGuard>} />
           <Route path="/agency-profile" element={<AgencyProfile />} />
+          <Route path="/agent-profile" element={<AgentProfile />} />
           <Route path="/comptabilite" element={<AgencySetupGuard><Comptabilite /></AgencySetupGuard>} />
           <Route path="/agents" element={<AgencySetupGuard><Agents /></AgencySetupGuard>} />
           <Route path="/expeditions" element={<AgencySetupGuard><Expeditions /></AgencySetupGuard>} />
@@ -163,7 +210,8 @@ function AppContent() {
           <Route path="/expeditions/:id" element={<AgencySetupGuard><ExpeditionDetails /></AgencySetupGuard>} />
           <Route path="/create-expedition" element={<AgencySetupGuard><CreateExpeditionV2 /></AgencySetupGuard>} />
           <Route path="/retrait-colis" element={<AgencySetupGuard><RetraitColis /></AgencySetupGuard>} />
-          <Route path="/transactions" element={<AgencySetupGuard><Transactions /></AgencySetupGuard>} />
+          <Route path="/transactions" element={<AgencySetupGuard><TransactionsPro /></AgencySetupGuard>} />
+          <Route path="/transactions-legacy" element={<AgencySetupGuard><Transactions /></AgencySetupGuard>} />
         </Route>
         {/* Route par défaut */}
         <Route path="*" element={<Navigate to="/" replace />} />

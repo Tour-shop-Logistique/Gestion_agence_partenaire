@@ -206,7 +206,13 @@ const Header = ({ onToggleSidebar }) => {
                   </div>
 
                   {/* Actions */}
-                  <button className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 text-sm flex items-center gap-2 text-slate-700 transition-colors">
+                  <button 
+                    onClick={() => {
+                      navigate('/agent-profile');
+                      setShowDropdown(false);
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 text-sm flex items-center gap-2 text-slate-700 transition-colors"
+                  >
                     <span className="w-7 h-7 flex items-center justify-center bg-slate-100 rounded-lg">👤</span>
                     Mon profil
                   </button>

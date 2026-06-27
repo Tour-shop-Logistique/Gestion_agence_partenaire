@@ -803,11 +803,11 @@ const CreateExpeditionV2 = () => {
                                         </label>
                                         <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3">
                                             {[
-                                                { value: 'SIMPLE',                label: 'LD',           icon: '📦', color: 'blue' },
-                                                { value: 'GROUPAGE_DHD_AERIEN',   label: 'DHD Aérien',   icon: '✈️', color: 'sky' },
-                                                { value: 'GROUPAGE_DHD_MARITIME', label: 'DHD Maritime', icon: '🚢', color: 'cyan' },
-                                                { value: 'GROUPAGE_AFRIQUE',      label: 'Afrique',      icon: '🌍', color: 'emerald' },
-                                                { value: 'GROUPAGE_CA',           label: 'CA',           icon: '📮', color: 'purple' },
+                                                { value: 'SIMPLE',                label: 'LD',           icon: '📦' },
+                                                { value: 'GROUPAGE_DHD_AERIEN',   label: 'DHD Aérien',   icon: '✈️' },
+                                                { value: 'GROUPAGE_DHD_MARITIME', label: 'DHD Maritime', icon: '🚢' },
+                                                { value: 'GROUPAGE_AFRIQUE',      label: 'Afrique',      icon: '🌍' },
+                                                { value: 'GROUPAGE_CA',           label: 'CA',           icon: '📮' },
                                             ].map(type => (
                                                 <button
                                                     key={type.value}
@@ -815,12 +815,12 @@ const CreateExpeditionV2 = () => {
                                                     onClick={() => setFormData(prev => ({ ...prev, type_expedition: type.value }))}
                                                     className={`relative p-2.5 sm:p-3 rounded-lg border-2 transition-all active:scale-95 ${
                                                         formData.type_expedition === type.value
-                                                            ? `border-${type.color}-500 bg-${type.color}-50 shadow-sm`
+                                                            ? 'border-indigo-500 bg-indigo-50 shadow-sm'
                                                             : 'border-slate-200 bg-white hover:border-slate-300'
                                                     }`}
                                                 >
                                                     {formData.type_expedition === type.value && (
-                                                        <div className={`absolute -top-1.5 -right-1.5 w-4 h-4 bg-${type.color}-500 rounded-full flex items-center justify-center`}>
+                                                        <div className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-indigo-500 rounded-full flex items-center justify-center">
                                                             <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                                                             </svg>
@@ -829,7 +829,7 @@ const CreateExpeditionV2 = () => {
                                                     <div className="flex flex-col items-center gap-1">
                                                         <span className="text-lg sm:text-xl">{type.icon}</span>
                                                         <span className={`text-[10px] sm:text-xs font-bold leading-tight text-center ${
-                                                            formData.type_expedition === type.value ? `text-${type.color}-700` : 'text-slate-600'
+                                                            formData.type_expedition === type.value ? 'text-indigo-700' : 'text-slate-600'
                                                         }`}>{type.label}</span>
                                                     </div>
                                                 </button>
@@ -844,10 +844,10 @@ const CreateExpeditionV2 = () => {
                                             value={selectedRouteId}
                                             onChange={handleRouteSelect}
                                             disabled={formData.type_expedition === 'GROUPAGE_CA' || formData.type_expedition === 'SIMPLE'}
-                                            className={`w-full rounded-lg text-sm font-semibold h-11 px-3 ${
+                                            className={`w-full rounded-lg text-sm font-medium h-11 px-3 outline-none transition-colors ${
                                                 formData.type_expedition === 'GROUPAGE_CA' || formData.type_expedition === 'SIMPLE'
-                                                    ? 'bg-slate-100 text-slate-400 border border-slate-200'
-                                                    : getInputBorderClass('', false)
+                                                    ? 'bg-slate-100 text-slate-400 border-2 border-slate-200 cursor-not-allowed'
+                                                    : getInputBorderClass(selectedRouteId, false)
                                             }`}
                                         >
                                             <option value="">Sélectionner un trajet</option>
@@ -865,9 +865,9 @@ const CreateExpeditionV2 = () => {
                                     </div>
 
                                     {/* Destination + Départ — 2 colonnes sur mobile */}
-                                    <div className="grid grid-cols-2 gap-3 p-3 sm:p-4 bg-slate-50 rounded-lg border border-slate-200">
+                                    <div className="grid grid-cols-2 gap-3 p-4 bg-slate-50/80 rounded-lg border border-slate-200">
                                         <div className="space-y-1.5">
-                                            <label className="block text-xs font-semibold text-slate-500">
+                                            <label className="block text-xs font-semibold text-slate-600">
                                                 Pays destination <span className="text-amber-600">*</span>
                                             </label>
                                             <input
@@ -878,7 +878,7 @@ const CreateExpeditionV2 = () => {
                                             />
                                         </div>
                                         <div className="space-y-1.5">
-                                            <label className="block text-xs font-semibold text-slate-500">
+                                            <label className="block text-xs font-semibold text-slate-600">
                                                 Ville destination <span className="text-amber-600">*</span>
                                             </label>
                                             <input
@@ -889,7 +889,7 @@ const CreateExpeditionV2 = () => {
                                             />
                                         </div>
                                         <div className="space-y-1.5">
-                                            <label className="block text-xs font-semibold text-slate-500">Pays départ</label>
+                                            <label className="block text-xs font-semibold text-slate-600">Pays départ</label>
                                             <input
                                                 type="text" name="pays_depart"
                                                 value={formData.pays_depart} onChange={handleInputChange}
@@ -898,7 +898,7 @@ const CreateExpeditionV2 = () => {
                                             />
                                         </div>
                                         <div className="space-y-1.5">
-                                            <label className="block text-xs font-semibold text-slate-500">Ville départ</label>
+                                            <label className="block text-xs font-semibold text-slate-600">Ville départ</label>
                                             <input
                                                 type="text" name="expediteur_ville"
                                                 value={formData.expediteur_ville} onChange={handleInputChange}
@@ -936,7 +936,7 @@ const CreateExpeditionV2 = () => {
                                 <div className={simulationResult ? "lg:col-span-2 space-y-4 sm:space-y-6" : "space-y-4 sm:space-y-6"}>
                                     <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                                         <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 flex items-center gap-3">
-                                            <div className="w-7 h-7 rounded-lg bg-emerald-600 flex items-center justify-center flex-shrink-0">
+                                            <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
                                                 <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                                                 </svg>
@@ -1125,7 +1125,7 @@ const CreateExpeditionV2 = () => {
 
                                             <button
                                                 onClick={addColis}
-                                                className="w-full py-2.5 border-2 border-dashed border-slate-300 rounded-lg text-sm font-semibold text-slate-600 hover:border-emerald-400 hover:text-emerald-600 hover:bg-emerald-50 transition-all flex items-center justify-center gap-2"
+                                                className="w-full py-2.5 border-2 border-dashed border-slate-300 rounded-lg text-sm font-semibold text-slate-600 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all flex items-center justify-center gap-2"
                                             >
                                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -1134,14 +1134,14 @@ const CreateExpeditionV2 = () => {
                                             </button>
 
                                             {/* Résumé */}
-                                            <div className="p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+                                            <div className="p-4 bg-indigo-50/50 rounded-lg border border-indigo-200">
                                                 <div className="flex items-center justify-between text-sm">
                                                     <span className="font-semibold text-slate-700">Poids total :</span>
-                                                    <span className="font-bold text-emerald-700">{totalWeight.toFixed(2)} kg</span>
+                                                    <span className="font-bold text-indigo-700">{totalWeight.toFixed(2)} kg</span>
                                                 </div>
                                                 <div className="flex items-center justify-between text-sm mt-1">
                                                     <span className="font-semibold text-slate-700">Frais d'emballage :</span>
-                                                    <span className="font-bold text-emerald-700">{totalEmballage.toLocaleString()} FCFA</span>
+                                                    <span className="font-bold text-indigo-700">{totalEmballage.toLocaleString()} FCFA</span>
                                                 </div>
                                             </div>
 
@@ -1159,10 +1159,10 @@ const CreateExpeditionV2 = () => {
                                                 <button
                                                     onClick={handleSimulate}
                                                     disabled={simulating || !formData.colis.every(c => c.poids && c.designation && c.articles && c.articles.length > 0)}
-                                                    className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${
+                                                    className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 active:scale-95 ${
                                                         simulating || !formData.colis.every(c => c.poids && c.designation)
                                                             ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                                                            : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm'
+                                                            : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm'
                                                     }`}
                                                 >
                                                     {simulating ? (
@@ -1232,32 +1232,32 @@ const CreateExpeditionV2 = () => {
                         )}
 
 
-                        {/* ÉTAPE 3: IDENTIFIER LES CLIENTS */}
+                        {/* Étape 3: Identifier les clients avec inputs uniformisés */}
                         {step === 3 && (
                             <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                                <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
-                                    <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
+                                <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 flex items-center gap-3">
+                                    <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
                                         <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                                         </svg>
                                     </div>
                                     <div>
-                                        <h2 className="text-sm font-bold text-slate-800">Étape 3 : Identifier les clients</h2>
+                                        <h2 className="text-sm font-bold text-slate-800">Étape 3 — Clients</h2>
                                         <p className="text-xs text-slate-400">Expéditeur et destinataire</p>
                                     </div>
                                 </div>
-                                <div className="p-6 space-y-6">
+                                <div className="p-4 sm:p-6 space-y-6">
                                     {/* Expéditeur */}
                                     <div className="space-y-4">
                                         <div className="flex items-center gap-2">
-                                            <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
-                                                <svg className="w-3.5 h-3.5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center">
+                                                <svg className="w-3.5 h-3.5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                                 </svg>
                                             </div>
                                             <h3 className="text-sm font-bold text-slate-700">Expéditeur</h3>
                                         </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-8">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pl-0 sm:pl-8">
                                             <div className="space-y-1.5">
                                                 <label className="block text-xs font-semibold text-slate-600">
                                                     Nom complet <span className="text-amber-600">*</span>
@@ -1268,7 +1268,7 @@ const CreateExpeditionV2 = () => {
                                                     value={formData.expediteur_nom_prenom}
                                                     onChange={handleInputChange}
                                                     placeholder="Ex: Jean Kouassi..."
-                                                    className={`w-full rounded-md text-sm font-semibold h-9 px-3 ${getInputBorderClass(formData.expediteur_nom_prenom, true)}`}
+                                                    className={inputCls(formData.expediteur_nom_prenom, true)}
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
@@ -1281,7 +1281,7 @@ const CreateExpeditionV2 = () => {
                                                     value={formData.expediteur_telephone}
                                                     onChange={handleInputChange}
                                                     placeholder="Ex: +225 07 XX XX XX XX..."
-                                                    className={`w-full rounded-md text-sm font-semibold h-9 px-3 ${getInputBorderClass(formData.expediteur_telephone, true)}`}
+                                                    className={inputCls(formData.expediteur_telephone, true)}
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
@@ -1292,7 +1292,7 @@ const CreateExpeditionV2 = () => {
                                                     value={formData.expediteur_email}
                                                     onChange={handleInputChange}
                                                     placeholder="Ex: jean@example.com..."
-                                                    className={`w-full rounded-md text-sm font-semibold h-9 px-3 ${getInputBorderClass(formData.expediteur_email, false)}`}
+                                                    className={inputCls(formData.expediteur_email, false)}
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
@@ -1303,7 +1303,7 @@ const CreateExpeditionV2 = () => {
                                                     value={formData.expediteur_adresse}
                                                     onChange={handleInputChange}
                                                     placeholder="Ex: Cocody, Angré..."
-                                                    className={`w-full rounded-md text-sm font-semibold h-9 px-3 ${getInputBorderClass(formData.expediteur_adresse, false)}`}
+                                                    className={inputCls(formData.expediteur_adresse, false)}
                                                 />
                                             </div>
                                         </div>
@@ -1312,14 +1312,14 @@ const CreateExpeditionV2 = () => {
                                     {/* Destinataire */}
                                     <div className="space-y-4 pt-4 border-t border-slate-200">
                                         <div className="flex items-center gap-2">
-                                            <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center">
-                                                <svg className="w-3.5 h-3.5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center">
+                                                <svg className="w-3.5 h-3.5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                                 </svg>
                                             </div>
                                             <h3 className="text-sm font-bold text-slate-700">Destinataire</h3>
                                         </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-8">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pl-0 sm:pl-8">
                                             <div className="space-y-1.5">
                                                 <label className="block text-xs font-semibold text-slate-600">
                                                     Nom complet <span className="text-amber-600">*</span>
@@ -1330,7 +1330,7 @@ const CreateExpeditionV2 = () => {
                                                     value={formData.destinataire_nom_prenom}
                                                     onChange={handleInputChange}
                                                     placeholder="Ex: Marie Dupont..."
-                                                    className={`w-full rounded-md text-sm font-semibold h-9 px-3 ${getInputBorderClass(formData.destinataire_nom_prenom, true)}`}
+                                                    className={inputCls(formData.destinataire_nom_prenom, true)}
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
@@ -1343,7 +1343,7 @@ const CreateExpeditionV2 = () => {
                                                     value={formData.destinataire_telephone}
                                                     onChange={handleInputChange}
                                                     placeholder="Ex: +33 6 XX XX XX XX..."
-                                                    className={`w-full rounded-md text-sm font-semibold h-9 px-3 ${getInputBorderClass(formData.destinataire_telephone, true)}`}
+                                                    className={inputCls(formData.destinataire_telephone, true)}
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
@@ -1354,7 +1354,7 @@ const CreateExpeditionV2 = () => {
                                                     value={formData.destinataire_email}
                                                     onChange={handleInputChange}
                                                     placeholder="Ex: marie@example.com..."
-                                                    className={`w-full rounded-md text-sm font-semibold h-9 px-3 ${getInputBorderClass(formData.destinataire_email, false)}`}
+                                                    className={inputCls(formData.destinataire_email, false)}
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
@@ -1365,7 +1365,7 @@ const CreateExpeditionV2 = () => {
                                                     value={formData.destinataire_adresse}
                                                     onChange={handleInputChange}
                                                     placeholder="Ex: 12 rue de la Paix..."
-                                                    className={`w-full rounded-md text-sm font-semibold h-9 px-3 ${getInputBorderClass(formData.destinataire_adresse, false)}`}
+                                                    className={inputCls(formData.destinataire_adresse, false)}
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
@@ -1376,7 +1376,7 @@ const CreateExpeditionV2 = () => {
                                                     value={formData.destinataire_code_postal}
                                                     onChange={handleInputChange}
                                                     placeholder="Ex: 75001..."
-                                                    className={`w-full rounded-md text-sm font-semibold h-9 px-3 ${getInputBorderClass(formData.destinataire_code_postal, false)}`}
+                                                    className={inputCls(formData.destinataire_code_postal, false)}
                                                 />
                                             </div>
                                         </div>
@@ -1396,9 +1396,9 @@ const CreateExpeditionV2 = () => {
                                         <button
                                             onClick={handleNextStep}
                                             disabled={!canProceedToStep4()}
-                                            className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${
+                                            className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 active:scale-95 ${
                                                 canProceedToStep4()
-                                                    ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
+                                                    ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm'
                                                     : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                                             }`}
                                         >
@@ -1415,21 +1415,21 @@ const CreateExpeditionV2 = () => {
 
                         {/* ÉTAPE 4: ENCAISSER ET VALIDER */}
                         {step === 4 && (
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                                 <div className="lg:col-span-2">
                                     <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                                        <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
-                                            <div className="w-7 h-7 rounded-lg bg-amber-600 flex items-center justify-center flex-shrink-0">
+                                        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 flex items-center gap-3">
+                                            <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
                                                 <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                                                 </svg>
                                             </div>
                                             <div>
-                                                <h2 className="text-sm font-bold text-slate-800">Étape 4 : Encaisser et valider</h2>
+                                                <h2 className="text-sm font-bold text-slate-800">Étape 4 — Paiement</h2>
                                                 <p className="text-xs text-slate-400">Mode de paiement et finalisation</p>
                                             </div>
                                         </div>
-                                        <div className="p-6 space-y-6">
+                                        <div className="p-4 sm:p-6 space-y-6">
                                             {/* Récapitulatif de l'expédition */}
                                             <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
                                                 <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wide">Récapitulatif</h3>
@@ -1583,42 +1583,42 @@ const CreateExpeditionV2 = () => {
                                                         </button>
                                                         <button
                                                             onClick={() => setPaymentMethod('mobile_money')}
-                                                            className={`p-4 rounded-lg border-2 transition-all ${
+                                                            className={`p-4 rounded-lg border-2 transition-all active:scale-95 ${
                                                                 paymentMethod === 'mobile_money'
-                                                                    ? 'border-amber-500 bg-amber-50'
+                                                                    ? 'border-indigo-500 bg-indigo-50'
                                                                     : 'border-slate-200 hover:border-slate-300'
                                                             }`}
                                                         >
                                                             <div className="flex flex-col items-center gap-2">
                                                                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                                                                    paymentMethod === 'mobile_money' ? 'bg-amber-100' : 'bg-slate-100'
+                                                                    paymentMethod === 'mobile_money' ? 'bg-indigo-100' : 'bg-slate-100'
                                                                 }`}>
-                                                                    <svg className={`w-5 h-5 ${paymentMethod === 'mobile_money' ? 'text-amber-600' : 'text-slate-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <svg className={`w-5 h-5 ${paymentMethod === 'mobile_money' ? 'text-indigo-600' : 'text-slate-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
                                                                     </svg>
                                                                 </div>
-                                                                <span className={`text-xs font-semibold ${paymentMethod === 'mobile_money' ? 'text-amber-700' : 'text-slate-600'}`}>
+                                                                <span className={`text-xs font-semibold ${paymentMethod === 'mobile_money' ? 'text-indigo-700' : 'text-slate-600'}`}>
                                                                     Mobile Money
                                                                 </span>
                                                             </div>
                                                         </button>
                                                         <button
                                                             onClick={() => setPaymentMethod('bank_transfer')}
-                                                            className={`p-4 rounded-lg border-2 transition-all ${
+                                                            className={`p-4 rounded-lg border-2 transition-all active:scale-95 ${
                                                                 paymentMethod === 'bank_transfer'
-                                                                    ? 'border-blue-500 bg-blue-50'
+                                                                    ? 'border-indigo-500 bg-indigo-50'
                                                                     : 'border-slate-200 hover:border-slate-300'
                                                             }`}
                                                         >
                                                             <div className="flex flex-col items-center gap-2">
                                                                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                                                                    paymentMethod === 'bank_transfer' ? 'bg-blue-100' : 'bg-slate-100'
+                                                                    paymentMethod === 'bank_transfer' ? 'bg-indigo-100' : 'bg-slate-100'
                                                                 }`}>
-                                                                    <svg className={`w-5 h-5 ${paymentMethod === 'bank_transfer' ? 'text-blue-600' : 'text-slate-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <svg className={`w-5 h-5 ${paymentMethod === 'bank_transfer' ? 'text-indigo-600' : 'text-slate-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                                                                     </svg>
                                                                 </div>
-                                                                <span className={`text-xs font-semibold ${paymentMethod === 'bank_transfer' ? 'text-blue-700' : 'text-slate-600'}`}>
+                                                                <span className={`text-xs font-semibold ${paymentMethod === 'bank_transfer' ? 'text-indigo-700' : 'text-slate-600'}`}>
                                                                     Virement
                                                                 </span>
                                                             </div>
@@ -1636,7 +1636,7 @@ const CreateExpeditionV2 = () => {
                                                                 value={paymentReference}
                                                                 onChange={(e) => setPaymentReference(e.target.value)}
                                                                 placeholder="Ex: MM123456789..."
-                                                                className={`w-full rounded-md text-sm font-semibold h-9 px-3 ${getInputBorderClass(paymentReference, false)}`}
+                                                                className={inputCls(paymentReference, false)}
                                                             />
                                                         </div>
                                                     )}

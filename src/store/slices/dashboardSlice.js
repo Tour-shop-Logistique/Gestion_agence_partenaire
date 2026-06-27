@@ -69,9 +69,9 @@ const dashboardSlice = createSlice({
             .addCase(loadDashboardData.fulfilled, (state, action) => {
                 state.status = 'succeeded';
                 state.isRefreshing = false;
-                state.operational = action.payload.data.operational || initialState.operational;
-                state.financial = action.payload.data.financial || initialState.financial;
-                state.logistics = action.payload.data.logistics || initialState.logistics;
+                state.operational = action.payload?.data?.operational || initialState.operational;
+                state.financial = action.payload?.data?.financial || initialState.financial;
+                state.logistics = action.payload?.data?.logistics || initialState.logistics;
                 state.lastUpdated = new Date().toISOString();
                 state.error = null;
             })

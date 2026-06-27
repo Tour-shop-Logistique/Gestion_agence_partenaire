@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import VerifyEmailModal from "./VerifyEmailModal";
 
 const RegisterModal = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
@@ -16,6 +17,9 @@ const RegisterModal = ({ isOpen, onClose }) => {
     type: "agence",
   });
   const [localError, setLocalError] = useState("");
+  const [showVerifyEmail, setShowVerifyEmail] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -28,6 +32,7 @@ const RegisterModal = ({ isOpen, onClose }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLocalError("");
+    setSuccessMessage("");
 
     if (formData.password !== formData.confirmPassword) {
       setLocalError("Les mots de passe ne correspondent pas");
@@ -53,21 +58,30 @@ const RegisterModal = ({ isOpen, onClose }) => {
       const result = await register(userData);
 
       if (result.success) {
-        const user = result.data?.user || {};
-        const isAdminLike = user.is_agence_admin || user.role === "admin" || user.role === "is_agence_admin";
-        const hasAgencyLinked = !!user.agence_id;
-
-        if (isAdminLike && !hasAgencyLinked) {
-          navigate("/agency-profile");
-        } else {
-          navigate("/dashboard");
-        }
+        // Ne pas connecter automatiquement, ouvrir la modale de vérification d'email
+        setRegisteredEmail(formData.email);
+        setShowVerifyEmail(true);
+        setSuccessMessage("Compte créé ! Vérifiez votre email pour continuer.");
       } else {
         setLocalError(result.error || "Échec de l'inscription");
       }
     } catch (err) {
       setLocalError("Une erreur est survenue lors de la création du compte");
     }
+  };
+
+  const handleVerifyEmailSuccess = () => {
+    // Fermer la modale de vérification
+    setShowVerifyEmail(false);
+    // Fermer la modale d'inscription
+    onClose();
+    // Afficher un message de succès (optionnel, peut être géré par LoginModal)
+    // L'utilisateur peut maintenant se connecter
+  };
+
+  const handleCloseVerifyEmail = () => {
+    setShowVerifyEmail(false);
+    // Garder la modale d'inscription ouverte si l'utilisateur ferme la vérification
   };
 
   if (!isOpen) return null;
@@ -97,6 +111,12 @@ const RegisterModal = ({ isOpen, onClose }) => {
             {localError && (
               <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg">
                 {localError}
+              </div>
+            )}
+
+            {successMessage && (
+              <div className="bg-green-500/10 border border-green-500/20 text-green-400 px-4 py-3 rounded-lg">
+                {successMessage}
               </div>
             )}
 
@@ -228,6 +248,14 @@ const RegisterModal = ({ isOpen, onClose }) => {
           </form>
         </div>
       </div>
+
+      {/* Modale de vérification d'email */}
+      <VerifyEmailModal
+        isOpen={showVerifyEmail}
+        onClose={handleCloseVerifyEmail}
+        email={registeredEmail}
+        onSuccess={handleVerifyEmailSuccess}
+      />
     </div>
   );
 };

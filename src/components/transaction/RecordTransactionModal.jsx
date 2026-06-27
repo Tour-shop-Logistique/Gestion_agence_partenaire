@@ -104,9 +104,10 @@ const RecordTransactionModal = ({
     { value: 'montant_expedition', label: 'Montant expédition', description: 'Frais de transport principal' },
     { value: 'frais_annexes', label: 'Frais annexes', description: 'Assurance, emballage, etc.' },
     { value: 'frais_enlevement', label: 'Frais d\'enlèvement', description: 'Collecte à domicile' },
+    // { value: 'tout_compris', label: 'Frais d\'enlèvement', description: 'Collecte à domicile' },
     { value: 'frais_livraison', label: 'Frais de livraison', description: 'Livraison à domicile' },
     { value: 'remboursement', label: 'Remboursement', description: 'Retour de fonds' },
-    { value: 'autre', label: 'Autre', description: 'Autre type de transaction' }
+    { value: ' ', label: 'Autre', description: 'Autre type de transaction' }
   ];
 
   // Validation du formulaire
@@ -127,6 +128,12 @@ const RecordTransactionModal = ({
 
     if (!formData.payment_object) {
       newErrors.payment_object = 'Sélectionnez l\'objet du paiement';
+    }
+
+    // Validation de la description si l'objet est "autre" ou vide
+    if ((formData.payment_object === ' ' || formData.payment_object === 'autre' || !formData.payment_object) && 
+        (!formData.description || formData.description.trim() === '')) {
+      newErrors.description = 'La description est obligatoire pour l\'objet "Autre"';
     }
 
     // Validation du format UUID si un ID d'expédition est saisi
@@ -671,10 +678,14 @@ const RecordTransactionModal = ({
               </p>
             </div>
 
-            {/* Description (optionnel) */}
+            {/* Description (obligatoire si objet = "autre") */}
             <div>
               <label className="block text-xs sm:text-sm font-semibold text-slate-700 mb-1.5">
-                Description <span className="text-xs text-slate-500 font-normal">(optionnel)</span>
+                Description {(formData.payment_object === ' ' || formData.payment_object === 'autre' || !formData.payment_object) ? (
+                  <span className="text-rose-500">*</span>
+                ) : (
+                  <span className="text-xs text-slate-500 font-normal">(optionnel)</span>
+                )}
               </label>
               <div className="relative">
                 <DocumentTextIcon className="absolute left-2.5 top-2.5 w-4 h-4 sm:w-5 sm:h-5 text-slate-400" />
@@ -682,11 +693,31 @@ const RecordTransactionModal = ({
                   value={formData.description}
                   onChange={(e) => handleChange('description', e.target.value)}
                   rows={2}
-                  className="w-full pl-9 pr-3 py-2 border-2 border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-500 transition-colors resize-none"
-                  placeholder="Commentaire libre sur cette transaction..."
+                  className={`w-full pl-9 pr-3 py-2 border-2 rounded-lg text-sm focus:outline-none transition-colors resize-none ${
+                    errors.description
+                      ? 'border-rose-300 bg-rose-50 focus:border-rose-500'
+                      : 'border-slate-200 focus:border-blue-500'
+                  }`}
+                  placeholder={
+                    (formData.payment_object === ' ' || formData.payment_object === 'autre' || !formData.payment_object)
+                      ? "Précisez l'objet de cette transaction..."
+                      : "Commentaire libre sur cette transaction..."
+                  }
                   disabled={isSubmitting}
                 />
               </div>
+              {errors.description && (
+                <div className="flex items-center gap-1 mt-1 text-[10px] sm:text-xs text-rose-600">
+                  <ExclamationTriangleIcon className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                  <span>{errors.description}</span>
+                </div>
+              )}
+              {(formData.payment_object === ' ' || formData.payment_object === 'autre' || !formData.payment_object) && (
+                <p className="text-[10px] sm:text-xs text-blue-600 mt-1 flex items-start gap-1">
+                  <InformationCircleIcon className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0 mt-0.5" />
+                  <span>La description est obligatoire pour l'objet "Autre"</span>
+                </p>
+              )}
             </div>
 
             {/* Erreur de soumission */}

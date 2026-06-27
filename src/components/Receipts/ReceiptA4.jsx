@@ -2,6 +2,7 @@ import React from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import CompanyLogo from '../../assets/logo_transparent.png';
+import { formatColisCodeDisplay } from '../../utils/codeGenerator';
 
 const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
     if (!expedition) return null;
@@ -30,8 +31,8 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
     const totalEnEuros = totalAPayer / tauxConversion;
 
     const date = expedition.created_at ? new Date(expedition.created_at) : new Date();
-    const referenceSuffix = expedition.reference ? expedition.reference.slice(-3) : String(expedition.id || '000').slice(-3).padStart(3, '0');
-    const invoiceNumber = `FACT-${date.getFullYear()}-${referenceSuffix}`;
+    // Utiliser la référence existante comme numéro de facture
+    const invoiceNumber = expedition.reference || `REF-${expedition.id || '0000'}`;
     
     // Extraction intelligente du logo et des informations de l'agence
     const logoSrc = agency?.logo || CompanyLogo;
@@ -143,7 +144,7 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
                                     <tr key={i} className={`border-b border-slate-100 ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
                                         <td className="px-4 py-2.5">
                                             <div className="font-mono text-[10px] text-slate-900 bg-slate-100 px-2 py-1 rounded border border-slate-200 inline-block">
-                                                {c.code_colis || `C-${i + 1}`}
+                                                {c.code_colis ? formatColisCodeDisplay(c.code_colis) : `C-${i + 1}`}
                                             </div>
                                         </td>
                                         <td className="px-4 py-2.5">
