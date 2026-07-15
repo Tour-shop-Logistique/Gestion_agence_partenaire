@@ -98,17 +98,32 @@ export const expeditionsApi = {
     async getExpedition(id) {
         try {
             const url = API_ENDPOINTS.EXPEDITIONS.SHOW.replace(':id', id);
+            console.log(`🔍 Chargement des détails de l'expédition ${id}...`);
             const response = await apiService.get(url);
 
+            console.log(`✅ Détails de l'expédition ${id} chargés avec succès`);
+            // L'API retourne {success, message, expedition}
             return {
                 success: response.success !== false,
-                data: response.data || response,
+                data: response.expedition || response.data || response,
                 message: response.message
             };
         } catch (error) {
+            console.error(`❌ Erreur lors du chargement de l'expédition ${id}:`, error);
+            
+            // Gestion spécifique des erreurs 520 (Cloudflare/Render)
+            if (error.status === 520) {
+                return {
+                    success: false,
+                    message: "Le serveur est temporairement indisponible. Veuillez réessayer dans quelques instants.",
+                    error: error
+                };
+            }
+            
             return {
                 success: false,
                 message: error.message || "Erreur lors de la récupération des détails",
+                error: error
             };
         }
     },

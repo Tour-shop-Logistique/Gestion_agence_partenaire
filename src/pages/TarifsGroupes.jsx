@@ -1,6 +1,9 @@
 import { useEffect } from "react";
 import TarifGroupageComponent from "../components/tarifGroupage";
 import { useTarifs } from "../hooks/useTarifs";
+import { useAuth } from "../hooks/useAuth";
+import { useWebSocket } from "../hooks/useWebSocket";
+import { showToast } from "../utils/toast";
 import ErrorBoundary from "../components/ErrorBoundary";
 import {
     TableCellsIcon,
@@ -8,7 +11,24 @@ import {
 } from "@heroicons/react/24/outline";
 
 const TarifsGroupes = () => {
+    const { currentUser } = useAuth();
     const { fetchTarifGroupageAgence } = useTarifs();
+
+    // ========== WEBSOCKET INTEGRATION ==========
+    useWebSocket(
+        currentUser?.agence_id,
+        {
+            onTarifsUpdated: (data, meta) => {
+                console.log('💲 [TarifsGroupage] Tarifs mis à jour:', meta.model);
+                if (meta.model === 'TarifGroupage') {
+                    showToast('⚠️ Les tarifs groupage ont été mis à jour par le backoffice', 'warning');
+                    // Recharger les tarifs de l'agence
+                    fetchTarifGroupageAgence();
+                }
+            }
+        },
+        !!currentUser?.agence_id
+    );
 
     useEffect(() => {
         fetchTarifGroupageAgence();

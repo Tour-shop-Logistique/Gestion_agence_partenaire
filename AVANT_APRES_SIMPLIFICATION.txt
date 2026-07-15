@@ -1,0 +1,393 @@
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                    AVANT / APRÈS - SIMPLIFICATION INTERFACE                   ║
+║                           Page Expéditions Premium                            ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+📅 Date: 15 juillet 2026
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                            1. SÉLECTION MULTIPLE
+═══════════════════════════════════════════════════════════════════════════════
+
+AVANT ❌
+┌──────────────────────────────────────────────────────────────────────────┐
+│ Table Header                                                             │
+├───┬──────────┬────────────┬─────────┬─────────┬────────┬─────────┬──────┤
+│[✓]│Référence │Expéditeur  │Trajet   │Montant  │Statut  │Paiement │Action│
+├───┼──────────┼────────────┼─────────┼─────────┼────────┼─────────┼──────┤
+│[ ]│EXP-001   │John Doe    │FR → SN  │1k CFA   │Transit │Payé     │ ••• │
+│[ ]│EXP-002   │Jane Smith  │FR → CI  │2.5k CFA │Livré   │Impayé   │ ••• │
+│[✓]│EXP-003   │Bob Martin  │FR → BF  │500 CFA  │Attente │Partiel  │ ••• │
+└───┴──────────┴────────────┴─────────┴─────────┴────────┴─────────┴──────┘
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│ 2 expéditions sélectionnées                                              │
+│ [Exporter] [Imprimer] [Changer statut] [Marquer payé] [Supprimer]       │
+└──────────────────────────────────────────────────────────────────────────┘
+
+APRÈS ✅
+┌──────────────────────────────────────────────────────────────────────────┐
+│ Table Header                                                             │
+├──────────┬────────────┬─────────┬─────────┬────────┬─────────┬──────────┤
+│Référence │Expéditeur  │Trajet   │Montant  │Statut  │Paiement │Actions   │
+├──────────┼────────────┼─────────┼─────────┼────────┼─────────┼──────────┤
+│EXP-001   │John Doe    │FR → SN  │1 000 CFA│Transit │Payé     │👁 🖨 ✏   │
+│EXP-002   │Jane Smith  │FR → CI  │2 500 CFA│Livré   │Impayé   │👁 🖨 ✏   │
+│EXP-003   │Bob Martin  │FR → BF  │500 CFA  │Attente │Partiel  │👁 🖨 ✏   │
+└──────────┴────────────┴─────────┴─────────┴────────┴─────────┴──────────┘
+
+⚠️ PAS de SelectionToolbar
+⚠️ PAS de checkboxes
+✅ Interface épurée
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                      2. BARRE DE RECHERCHE AU-DESSUS
+═══════════════════════════════════════════════════════════════════════════════
+
+AVANT ❌
+┌──────────────────────────────────────────────────────────────────────────┐
+│ KPI Cards: Total | Attente | Transit | Livrées | CA | Commission         │
+└──────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│ 🔍 Recherche intelligente...                                     [Effacer]│
+└──────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│ [ Toutes ] [ Aujourd'hui ] [ Hier ] [ Cette semaine ] [ Impayée ]        │
+└──────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│ Table des expéditions                                                    │
+└──────────────────────────────────────────────────────────────────────────┘
+
+
+APRÈS ✅
+┌──────────────────────────────────────────────────────────────────────────┐
+│ KPI Cards: Total | Attente | Transit | Livrées | CA | Commission         │
+└──────────────────────────────────────────────────────────────────────────┘
+
+┌───────────┬──────────────────────────────────────────────────────────────┐
+│ FILTRES   │ Table des expéditions                                        │
+│           │                                                              │
+│ 🔍        │ ┌──────────┬────────────┬─────────┬─────────────┬──────┐    │
+│ Recherche │ │Référence │Expéditeur  │Trajet   │Montant      │...   │    │
+│           │ ├──────────┼────────────┼─────────┼─────────────┼──────┤    │
+│ 📦 Type   │ │EXP-001   │John Doe    │FR → SN  │1 000 CFA    │...   │    │
+│           │ │EXP-002   │Jane Smith  │FR → CI  │2 500 CFA    │...   │    │
+│ 📊 Statuts│ └──────────┴────────────┴─────────┴─────────────┴──────┘    │
+└───────────┴──────────────────────────────────────────────────────────────┘
+
+⚠️ PAS de barre de recherche au-dessus
+✅ Recherche dans le panneau filtres (gauche)
+⚠️ PAS de chips de filtres rapides
+✅ Filtres organisés dans panneau dédié
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                         3. FORMAT DES MONTANTS
+═══════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────┬────────────────┬──────────────────────────────┐
+│ Composant           │ AVANT ❌       │ APRÈS ✅                     │
+├─────────────────────┼────────────────┼──────────────────────────────┤
+│ KPI Total CA        │ 1.5M CFA       │ 1 500 000 CFA                │
+│ KPI Commission      │ 250k CFA       │ 250 000 CFA                  │
+│ Stats filtrées      │ 2.3M CFA       │ 2 300 000 CFA                │
+│ Ligne tableau       │ 1.2k CFA       │ 1 200 CFA                    │
+│ Badge commission    │ Com. 500       │ Com. 500 CFA                 │
+│ Carte mobile        │ 1.5k           │ 1 500                        │
+└─────────────────────┴────────────────┴──────────────────────────────┘
+
+EXEMPLES CONCRETS
+─────────────────
+
+Montant 1 000 000 CFA:
+  AVANT: 1M CFA       → Nécessite conversion mentale
+  APRÈS: 1 000 000 CFA → Lecture directe
+
+Montant 1 234 567 CFA:
+  AVANT: 1.2M CFA     → Perte de précision visuelle
+  APRÈS: 1 234 567 CFA → Précision totale
+
+Montant 999 CFA:
+  AVANT: 999 CFA      → OK (pas assez grand pour compact)
+  APRÈS: 999 CFA      → OK (identique)
+
+Montant 1 500 CFA:
+  AVANT: 1.5k CFA     → Conversion nécessaire
+  APRÈS: 1 500 CFA    → Lecture directe
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                            4. STRUCTURE DU CODE
+═══════════════════════════════════════════════════════════════════════════════
+
+IMPORTS (ExpeditionsPremium.jsx)
+─────────────────────────────────
+
+AVANT ❌
+import {
+    ExpeditionHeader,
+    StatsCards,
+    SmartSearchBar,          ← RETIRÉ
+    ExpeditionRow,
+    ExpeditionMobileCard,
+    SelectionToolbar,        ← RETIRÉ
+    FilteredStats,
+    SortableHeader,
+    FiltersPanel
+} from '../components/expeditions';
+
+APRÈS ✅
+import {
+    ExpeditionHeader,
+    StatsCards,
+    ExpeditionRow,
+    ExpeditionMobileCard,
+    FilteredStats,
+    SortableHeader,
+    FiltersPanel
+} from '../components/expeditions';
+
+
+STATES (ExpeditionsPremium.jsx)
+────────────────────────────────
+
+AVANT ❌
+const [selectedExpeditions, setSelectedExpeditions] = useState([]);  ← RETIRÉ
+
+APRÈS ✅
+// State supprimé (plus de sélection multiple)
+
+
+HANDLERS (ExpeditionsPremium.jsx)
+──────────────────────────────────
+
+AVANT ❌
+const handleClearSelection = () => setSelectedExpeditions([]);
+const handleExportSelected = () => console.log('Export', selectedExpeditions);
+const handlePrintSelected = () => console.log('Print', selectedExpeditions);
+const handleChangeStatusSelected = () => console.log('Change', selectedExpeditions);
+const handleMarkAsPaidSelected = () => console.log('Mark', selectedExpeditions);
+const handleDeleteSelected = () => console.log('Delete', selectedExpeditions);
+
+APRÈS ✅
+// Tous les handlers supprimés
+
+
+FORMAT CURRENCY (StatsCards.jsx & FilteredStats.jsx)
+─────────────────────────────────────────────────────
+
+AVANT ❌
+const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('fr-FR', { 
+        notation: 'compact',           ← RETIRÉ
+        compactDisplay: 'short',       ← RETIRÉ
+        maximumFractionDigits: 1       ← RETIRÉ
+    }).format(amount);
+};
+
+APRÈS ✅
+const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('fr-FR').format(amount);
+};
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                       5. TABLEAU DESKTOP (COLONNES)
+═══════════════════════════════════════════════════════════════════════════════
+
+AVANT ❌ (8 colonnes)
+┌───┬──────────┬────────────┬─────────┬─────────┬────────┬─────────┬────────┐
+│[✓]│Référence │Expéditeur  │Trajet   │Montant  │Statut  │Paiement │Actions │
+└───┴──────────┴────────────┴─────────┴─────────┴────────┴─────────┴────────┘
+ ↑
+ Checkbox sélection
+
+
+APRÈS ✅ (7 colonnes)
+┌──────────┬────────────┬─────────┬─────────┬────────┬─────────┬────────────┐
+│Référence │Expéditeur  │Trajet   │Montant  │Statut  │Paiement │Actions     │
+└──────────┴────────────┴─────────┴─────────┴────────┴─────────┴────────────┘
+
+✅ Colonne checkbox supprimée
+✅ Layout plus épuré
+✅ Plus d'espace pour le contenu
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                        6. FONCTIONNALITÉS PRÉSERVÉES
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ WebSocket temps réel
+   → Notifications automatiques des nouvelles expéditions
+   → Mise à jour en direct des statuts
+   → Synchronisation automatique
+
+✅ Filtres avancés (panneau gauche)
+   → Recherche intelligente
+   → Filtres par type (Simple, Aérien, Maritime, Afrique, CA)
+   → Filtres par statut (multi-sélection)
+   → Filtres par dates
+
+✅ KPI Dashboard cliquable
+   → 7 cartes statistiques interactives
+   → Filtrage instantané au clic
+   → Indicateur de filtre actif
+
+✅ Tri des colonnes
+   → Tri par référence
+   → Tri par montant
+   → Tri par statut
+   → Tri par date
+   → Tri par commission
+
+✅ Actions individuelles
+   → Voir les détails (navigation vers page détail)
+   → Imprimer le reçu
+   → Modifier l'expédition
+   → Menu contextuel (aperçu au survol)
+
+✅ Export & Impression
+   → Export PDF de toutes les expéditions filtrées
+   → Impression individuelle avec choix format (A4/Thermal)
+   → Logo et informations agence
+
+✅ Responsive
+   → Desktop : Tableau complet avec filtres à gauche
+   → Mobile : Cartes compactes premium
+   → Adaptabilité parfaite
+
+✅ Timeline de statut
+   → Visualisation progressive de l'expédition
+   → Design inspiré de Linear
+   → États passés, actuel, futurs
+
+✅ Badges de paiement
+   → Statut principal (Payé/Impayé/Partiel)
+   → Statut frais annexes
+   → Design moderne avec couleurs
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                          7. IMPACT UTILISATEUR
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ AVANTAGES
+──────────────
+• Interface plus simple et épurée
+• Montants lisibles sans conversion mentale (1 000 au lieu de 1k)
+• Moins de distractions visuelles (pas de checkbox partout)
+• Focus sur les actions essentielles
+• Lecture plus rapide des montants
+• Meilleure compréhension des chiffres réels
+
+ℹ️ CHANGEMENTS COMPORTEMENTAUX
+────────────────────────────────
+• Impossible de sélectionner plusieurs expéditions simultanément
+• Actions uniquement ligne par ligne (impression, modification, etc.)
+• Export PDF global toujours disponible (toutes les expéditions filtrées)
+• Recherche uniquement dans le panneau de filtres (pas au-dessus de la liste)
+• Filtres rapides (chips) remplacés par panneau de filtres structuré
+
+❌ FONCTIONNALITÉS RETIRÉES
+─────────────────────────────
+• Sélection multiple d'expéditions
+• Toolbar d'actions groupées (exporter sélection, changer statut, etc.)
+• Barre de recherche au-dessus de la liste (déplacée dans panneau filtres)
+• Chips de filtres rapides (remplacés par panneau structuré)
+• Notation compacte des montants (1k → 1 000)
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                        8. FICHIERS MODIFIÉS (5)
+═══════════════════════════════════════════════════════════════════════════════
+
+1️⃣ src/pages/ExpeditionsPremium.jsx
+   • Retiré imports: SmartSearchBar, SelectionToolbar
+   • Supprimé state: selectedExpeditions
+   • Supprimé handlers de sélection (6 fonctions)
+   • Retiré checkbox header tableau
+   • Mis à jour colspan: 8 → 7
+
+2️⃣ src/components/expeditions/ExpeditionRow.jsx
+   • Supprimé colonne <td> checkbox
+   • Format commission: notation compact → format complet
+   • Simplifié structure de la ligne
+
+3️⃣ src/components/expeditions/ExpeditionMobileCard.jsx
+   • Format commission: notation compact → format complet
+   • Pas de checkbox à retirer (déjà sans sélection)
+
+4️⃣ src/components/expeditions/StatsCards.jsx
+   • formatCurrency: retiré notation compact
+   • Affichage montants complets dans KPI
+
+5️⃣ src/components/expeditions/FilteredStats.jsx
+   • formatCurrency: retiré notation compact
+   • Affichage stats complètes
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                           9. DIAGNOSTICS
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ ExpeditionsPremium.jsx      → Aucune erreur
+✅ ExpeditionRow.jsx           → Aucune erreur
+✅ ExpeditionMobileCard.jsx    → Aucune erreur
+✅ StatsCards.jsx              → Aucune erreur
+✅ FilteredStats.jsx           → Aucune erreur
+
+🎉 TOUS LES FICHIERS SONT VALIDES
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                          10. RÉSUMÉ VISUEL
+═══════════════════════════════════════════════════════════════════════════════
+
+                            INTERFACE FINALE
+
+    ╔═══════════════════════════════════════════════════════════╗
+    ║  Header Premium (Dates, Refresh, Export, Nouvelle Exp.)   ║
+    ╠═══════════════════════════════════════════════════════════╣
+    ║  KPI Cards: 📦 Total | ⏰ Attente | 🚚 Transit | ✅ Livrées║
+    ║             ❌ Refusées | 💰 CA Total | 🏦 Commission       ║
+    ╠═════════════════╦═════════════════════════════════════════╣
+    ║ FILTRES (gauche)║ TABLE EXPÉDITIONS (7 colonnes)          ║
+    ║                 ║                                         ║
+    ║ 🔍 Recherche    ║ Référence | Exp/Dest | Trajet | Montant║
+    ║                 ║ ────────────────────────────────────────║
+    ║ 📦 Type         ║ EXP-001   | John D.  | FR→SN  | 1 000  ║
+    ║ □ Simple        ║ EXP-002   | Jane S.  | FR→CI  | 2 500  ║
+    ║ □ Aérien        ║ EXP-003   | Bob M.   | FR→BF  | 500    ║
+    ║ □ Maritime      ║                                         ║
+    ║ □ Afrique       ║ ⚠️ PAS de checkbox                      ║
+    ║ □ CA            ║ 💰 Montants complets (pas 1k, 2.5k)    ║
+    ║                 ║ 👁 🖨 ✏ Actions individuelles           ║
+    ║ 📊 Statuts      ║                                         ║
+    ║ □ En attente    ║                                         ║
+    ║ □ Transit       ║                                         ║
+    ║ □ Livré         ║                                         ║
+    ║ ...             ║                                         ║
+    ╚═════════════════╩═════════════════════════════════════════╝
+
+    ✅ Interface épurée et moderne
+    ✅ Montants lisibles en format complet
+    ✅ Toutes fonctionnalités métier préservées
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                            🎉 SUCCÈS TOTAL
+═══════════════════════════════════════════════════════════════════════════════
+
+📅 Date: 15 juillet 2026
+✅ Toutes les modifications demandées sont appliquées
+✅ Aucune erreur de diagnostic
+✅ Interface simplifiée et épurée
+✅ Montants lisibles en format complet
+✅ Fonctionnalités métier 100% préservées
+
+═══════════════════════════════════════════════════════════════════════════════

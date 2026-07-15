@@ -317,31 +317,6 @@ const AgentProfile = () => {
         {/* Card principale */}
         <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
           
-          {/* Debug Panel - À retirer en production */}
-          {!profile && !loading && (
-            <div className="px-8 py-6 bg-amber-50 border-b border-amber-200">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="w-6 h-6 text-amber-600 flex-shrink-0 mt-1" />
-                <div className="flex-1">
-                  <p className="font-bold text-amber-900 mb-2">⚠️ Aucune donnée de profil chargée</p>
-                  <p className="text-sm text-amber-800 mb-3">
-                    Les données ont été reçues de l'API mais ne sont pas affichées. Vérifiez la console pour les logs détaillés.
-                  </p>
-                  <button
-                    onClick={() => {
-                      console.log("🐛 État actuel:");
-                      console.log("  - profile:", profile);
-                      console.log("  - formData:", formData);
-                      console.log("  - loading:", loading);
-                    }}
-                    className="px-3 py-1.5 bg-amber-600 text-white text-sm rounded-lg hover:bg-amber-700 transition"
-                  >
-                    Afficher l'état dans la console
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Avatar et infos de base */}
           <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 px-8 py-6">

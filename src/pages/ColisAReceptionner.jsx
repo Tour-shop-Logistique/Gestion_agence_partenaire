@@ -1,7 +1,10 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { useExpedition } from "../hooks/useExpedition";
+import { useAuth } from "../hooks/useAuth";
+import { useWebSocket } from "../hooks/useWebSocket";
 import { Link } from "react-router-dom";
-import { toast } from "../utils/toast";
+import { toast, showToast } from "../utils/toast";
+import soundNotification from "../utils/soundNotification";
 import {
     InboxArrowDownIcon,
     ArrowPathIcon,
@@ -14,6 +17,7 @@ import {
 import QRScanner from "../components/QRScanner";
 
 const ColisAReceptionner = () => {
+    const { currentUser } = useAuth();
     const {
         reception = [],
         receptionMeta = { current_page: 1, last_page: 1 },
@@ -30,6 +34,42 @@ const ColisAReceptionner = () => {
     const [processing, setProcessing] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [scannerOpen, setScannerOpen] = useState(false);
+    
+    // Suivre les colis déjà scannés pour éviter les messages en double
+    const scannedCodesRef = useRef(new Set());
+
+    // ========== WEBSOCKET INTEGRATION ==========
+    useWebSocket(
+        currentUser?.agence_id,
+        {
+            onColisAssigned: (data, meta) => {
+                console.log('📍 [Réception] Nouveau(x) colis à réceptionner:', meta.count);
+                showToast(`🎉 ${meta.count} nouveau(x) colis à réceptionner`, 'success');
+                soundNotification.playSuccess();
+                fetchReceptionData(true);
+            },
+            
+            onColisReceivedByBackoffice: (data, meta) => {
+                console.log('📥 [Réception] Colis arrivé(s) au backoffice:', meta.references);
+                showToast(`Colis en transit: ${meta.references.join(', ')}`, 'info');
+                fetchReceptionData(true);
+            },
+            
+            onColisBlocked: (data, meta) => {
+                console.log('🚫 [Réception] Colis bloqué(s):', meta.references);
+                showToast(`⚠️ Colis bloqué(s): ${meta.references.join(', ')}`, 'warning');
+                soundNotification.playAlert();
+                fetchReceptionData(true);
+            },
+            
+            onColisUnblocked: (data, meta) => {
+                console.log('✅ [Réception] Colis débloqué(s):', meta.references);
+                showToast(`Colis débloqué(s): ${meta.references.join(', ')}`, 'success');
+                fetchReceptionData(true);
+            }
+        },
+        !!currentUser?.agence_id
+    );
 
     const fetchReceptionData = (force = false) => {
         loadReception({
@@ -180,12 +220,24 @@ const ColisAReceptionner = () => {
         if (selectedCodes.length === 0) return;
         setProcessing(true);
         await receiveColisDestination(selectedCodes);
+        // Jouer un son de succès après la validation multiple
+        if (!error) {
+            soundNotification.playScanSound();
+        }
+        // Réinitialiser le set des colis scannés après réception
+        scannedCodesRef.current.clear();
         setProcessing(false);
     };
 
     const handleReceiveSingle = async (code) => {
         setProcessing(true);
         await receiveColisDestination([code]);
+        // Jouer un son de succès après la validation
+        if (!error) {
+            soundNotification.playScanSound();
+        }
+        // Retirer le code du set des colis scannés
+        scannedCodesRef.current.delete(code);
         setProcessing(false);
     };
 
@@ -210,21 +262,45 @@ const ColisAReceptionner = () => {
         }
         
         if (foundColis) {
+            const wasAlreadyScanned = scannedCodesRef.current.has(foundColis.code_colis);
+            
             // Vérifier d'abord si le colis a déjà été réceptionné
             if (foundColis.is_received) {
-                toast.info(`Le colis ${foundColis.code_colis} a déjà été réceptionné.`);
+                // N'afficher le message qu'une seule fois
+                if (!wasAlreadyScanned) {
+                    soundNotification.playWarningSound();
+                    toast.info(`Le colis ${foundColis.code_colis} a déjà été réceptionné.`);
+                    scannedCodesRef.current.add(foundColis.code_colis);
+                }
             }
             // Vérifier si le colis est arrivé au backoffice
             else if (!foundColis.is_received_by_backoffice) {
-                toast.warning(`Le colis ${foundColis.code_colis} est toujours en transit vers le backoffice.`);
+                // N'afficher le message qu'une seule fois
+                if (!wasAlreadyScanned) {
+                    soundNotification.playWarningSound();
+                    toast.warning(`Le colis ${foundColis.code_colis} est toujours en transit vers le backoffice.`);
+                    scannedCodesRef.current.add(foundColis.code_colis);
+                }
             }
             // Le colis peut être sélectionné
             else {
+                // Vérifier si le colis n'est pas déjà sélectionné
                 if (!selectedCodes.includes(foundColis.code_colis)) {
                     setSelectedCodes(prev => [...prev, foundColis.code_colis]);
+                    // Jouer le son de succès pour le scan
+                    soundNotification.playScanSound();
+                    toast.success(`Colis ${foundColis.code_colis} sélectionné !`);
+                    
+                    // Marquer comme scanné
+                    scannedCodesRef.current.add(foundColis.code_colis);
+                } else {
+                    // Colis déjà sélectionné - afficher le message une seule fois
+                    if (!wasAlreadyScanned) {
+                        soundNotification.playWarningSound();
+                        toast.info(`Le colis ${foundColis.code_colis} est déjà sélectionné.`);
+                        scannedCodesRef.current.add(foundColis.code_colis);
+                    }
                 }
-                
-                toast.success(`Colis ${foundColis.code_colis} sélectionné !`);
                 
                 // Scroll vers le colis dans la liste
                 setTimeout(() => {
@@ -235,6 +311,8 @@ const ColisAReceptionner = () => {
                 }, 100);
             }
         } else {
+            // Colis non trouvé - toujours afficher l'erreur
+            soundNotification.playErrorSound();
             toast.error(`Aucun colis trouvé avec le code scanné : ${scannedData}`);
         }
     };

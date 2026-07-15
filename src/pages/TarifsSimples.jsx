@@ -1,13 +1,33 @@
 import { useEffect } from "react";
 import TarifSimpleComponent from "../components/tarifSimple";
 import { useTarifs } from "../hooks/useTarifs";
+import { useAuth } from "../hooks/useAuth";
+import { useWebSocket } from "../hooks/useWebSocket";
+import { showToast } from "../utils/toast";
 import {
     Squares2X2Icon,
     AdjustmentsHorizontalIcon
 } from "@heroicons/react/24/outline";
 
 const TarifsSimples = () => {
+    const { currentUser } = useAuth();
     const { fetchAgencyTarifs } = useTarifs();
+
+    // ========== WEBSOCKET INTEGRATION ==========
+    useWebSocket(
+        currentUser?.agence_id,
+        {
+            onTarifsUpdated: (data, meta) => {
+                console.log('💲 [TarifsSimples] Tarifs mis à jour:', meta.model);
+                if (meta.model === 'TarifSimple') {
+                    showToast('⚠️ Les tarifs simples ont été mis à jour par le backoffice', 'warning');
+                    // Recharger les tarifs de l'agence
+                    fetchAgencyTarifs();
+                }
+            }
+        },
+        !!currentUser?.agence_id
+    );
 
     useEffect(() => {
         fetchAgencyTarifs();

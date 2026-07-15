@@ -8,6 +8,7 @@ import PrintSuccessModal from "../components/Receipts/PrintSuccessModal";
 import SearchableDropdown from "../components/common/SearchableDropdown";
 import { getLogoUrl } from "../utils/apiConfig";
 import { toast } from "../utils/toast";
+import { markAsRecentlyCreated } from "../hooks/useWebSocket";
 
 const CreateExpedition = () => {
     console.log("🚀 CreateExpedition.jsx chargé - Version avec déduplication");
@@ -648,6 +649,12 @@ const CreateExpedition = () => {
             const expeditionData = result.payload?.expedition || result.payload?.data || result.payload;
             
             console.log("Expedition data extracted:", expeditionData);
+            
+            // ✅ Marquer la référence comme récemment créée pour éviter notification auto-générée
+            if (expeditionData?.reference) {
+                markAsRecentlyCreated(expeditionData.reference);
+                console.log("🔇 Référence marquée pour ignorer notification:", expeditionData.reference);
+            }
             
             // Vérifier que nous avons bien un ID
             if (!expeditionData?.id) {

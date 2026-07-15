@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { expeditionsApi } from "../../utils/api/expeditions";
+import { expeditionsCache } from "../../utils/expeditionsCache";
 import { agenciesApi } from "../../utils/api/agencies";
 
 /**
@@ -357,6 +358,9 @@ const expeditionSlice = createSlice({
                 console.log("Expedition data in fulfilled:", expeditionData);
                 state.currentExpedition = expeditionData;
                 state.simulationResult = null; // Clear simulation on success
+                
+                // Vider le cache des expéditions du dashboard car une nouvelle expédition a été créée
+                expeditionsCache.clear();
             })
             .addCase(createExpedition.rejected, (state, action) => {
                 state.status = "failed";

@@ -6,7 +6,10 @@ const QRScanner = ({ isOpen, onClose, onScan }) => {
     const [scanning, setScanning] = useState(false);
     const [error, setError] = useState(null);
     const [manualCode, setManualCode] = useState('');
+    const [lastScanned, setLastScanned] = useState(null);
     const html5QrCodeRef = useRef(null);
+    const lastScannedRef = useRef(null);
+    const scanCooldownRef = useRef(null);
 
     useEffect(() => {
         if (isOpen && !scanning) {
@@ -67,16 +70,31 @@ const QRScanner = ({ isOpen, onClose, onScan }) => {
     };
 
     const handleScanSuccess = (decodedText) => {
-        // Extraire le code colis du QR code
+        // Empêcher les scans multiples du même code
+        const now = Date.now();
+        
+        // Si c'est le même code que le dernier scan et moins de 2 secondes se sont écoulées, ignorer
+        if (lastScannedRef.current?.code === decodedText && 
+            lastScannedRef.current?.timestamp && 
+            (now - lastScannedRef.current.timestamp) < 2000) {
+            return; // Ignorer ce scan (cooldown de 2 secondes)
+        }
+        
+        // Enregistrer ce scan
+        lastScannedRef.current = {
+            code: decodedText,
+            timestamp: now
+        };
+        
+        // Afficher le code scanné temporairement
+        setLastScanned(decodedText);
+        setTimeout(() => setLastScanned(null), 2000);
+        
+        // Extraire le code colis du QR code et notifier
         onScan(decodedText);
         
-        // Arrêter le scanner après un scan réussi
-        stopScanner();
-        
-        // Fermer le modal après un court délai
-        setTimeout(() => {
-            onClose();
-        }, 500);
+        // Ne PAS arrêter le scanner pour permettre les scans multiples
+        // Le scanner continue de fonctionner après le cooldown
     };
 
     const handleManualSubmit = (e) => {
@@ -92,6 +110,13 @@ const QRScanner = ({ isOpen, onClose, onScan }) => {
         stopScanner();
         setManualCode('');
         setError(null);
+        setLastScanned(null);
+        // Réinitialiser les références de scan
+        lastScannedRef.current = null;
+        if (scanCooldownRef.current) {
+            clearTimeout(scanCooldownRef.current);
+            scanCooldownRef.current = null;
+        }
         onClose();
     };
 
@@ -151,8 +176,24 @@ const QRScanner = ({ isOpen, onClose, onScan }) => {
                             <p className="text-xs text-blue-800">
                                 <strong>Instructions :</strong> Placez le QR code du reçu devant la caméra. 
                                 Le code sera automatiquement détecté et le colis sera sélectionné dans la liste.
+                                <br />
+                                <strong className="mt-1 inline-block">Scanner multiple :</strong> Vous pouvez scanner plusieurs colis sans fermer cette fenêtre.
+                                <br />
+                                <strong className="mt-1 inline-block text-amber-700">⏱️ Cooldown :</strong> Attendez 2 secondes entre chaque scan du même colis.
                             </p>
                         </div>
+
+                        {/* Indicateur de dernier scan */}
+                        {lastScanned && (
+                            <div className="bg-green-50 border-2 border-green-500 rounded-lg p-3 animate-pulse">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-2 h-2 bg-green-500 rounded-full animate-ping"></div>
+                                    <p className="text-sm font-bold text-green-800">
+                                        ✓ Code scanné : <span className="font-mono">{lastScanned}</span>
+                                    </p>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Manual Input */}
                         <div className="border-t border-gray-200 pt-4">

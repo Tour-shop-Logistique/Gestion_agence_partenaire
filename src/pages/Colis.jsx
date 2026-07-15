@@ -1,8 +1,11 @@
-﻿import React, { useEffect, useState, useMemo } from "react";
+﻿import React, { useEffect, useState, useMemo, useRef } from "react";
 import { useExpedition } from "../hooks/useExpedition";
+import { useAuth } from "../hooks/useAuth";
+import { useWebSocket } from "../hooks/useWebSocket";
 import { Link } from "react-router-dom";
 import { formatPriceDual } from "../utils/format";
-import { toast } from "../utils/toast";
+import { toast, showToast } from "../utils/toast";
+import soundNotification from "../utils/soundNotification";
 import {
     CubeIcon,
     ArrowPathIcon,
@@ -15,6 +18,7 @@ import {
 import QRScanner from "../components/QRScanner";
 
 const Colis = () => {
+    const { currentUser } = useAuth();
     const {
         expeditions, meta, loadExpeditions, status, lastFilters,
         receiveColisDepart, sendColisToEntrepot, resetStatus, message, error
@@ -24,6 +28,48 @@ const Colis = () => {
     const [selectedCodes, setSelectedCodes] = useState([]);
     const [processing, setProcessing] = useState(false);
     const [scannerOpen, setScannerOpen] = useState(false);
+    
+    // Suivre les colis déjà scannés pour éviter les messages en double
+    const scannedCodesRef = useRef(new Set());
+
+    // ========== WEBSOCKET INTEGRATION ==========
+    useWebSocket(
+        currentUser?.agence_id,
+        {
+            onColisControlled: (data, meta) => {
+                console.log('✅ [Colis] Colis contrôlé(s):', meta.count);
+                showToast(`${meta.count} colis contrôlé(s)`, 'success');
+                fetchColisData(true);
+            },
+            
+            onColisBlocked: (data, meta) => {
+                console.log('🚫 [Colis] Colis bloqué(s):', meta.references);
+                showToast(`⚠️ Colis bloqué(s): ${meta.references.join(', ')}`, 'warning');
+                soundNotification.playAlert(); // Son d'alerte
+                fetchColisData(true);
+            },
+            
+            onColisUnblocked: (data, meta) => {
+                console.log('✅ [Colis] Colis débloqué(s):', meta.references);
+                showToast(`Colis débloqué(s): ${meta.references.join(', ')}`, 'success');
+                fetchColisData(true);
+            },
+            
+            onColisAssigned: (data, meta) => {
+                console.log('📍 [Colis] Nouveau(x) colis assigné(s):', meta.count);
+                showToast(`🎉 ${meta.count} nouveau(x) colis pour votre agence`, 'success');
+                soundNotification.playSuccess(); // Son de succès
+                fetchColisData(true);
+            },
+            
+            onColisReceivedByBackoffice: (data, meta) => {
+                console.log('📥 [Colis] Colis reçu(s) par le backoffice:', meta.references);
+                showToast(`Backoffice a reçu: ${meta.references.join(', ')}`, 'info');
+                fetchColisData(true);
+            }
+        },
+        !!currentUser?.agence_id
+    );
 
     // Helper to get today's date in YYYY-MM-DD
     const getTodayDate = () => {
@@ -58,6 +104,8 @@ const Colis = () => {
                 // On ne rafraîchit plus systématiquement si le state Redux est déjà à jour
                 // fetchColisData(true); 
                 setSelectedCodes([]);
+                // Réinitialiser le set des colis scannés après succès
+                scannedCodesRef.current.clear();
             }
             const timer = setTimeout(() => resetStatus(), 3000);
             return () => clearTimeout(timer);
@@ -169,6 +217,12 @@ const Colis = () => {
         if (selectedCodes.length === 0) return;
         setProcessing(true);
         await sendColisToEntrepot(selectedCodes);
+        // Jouer un son de succès après l'envoi
+        if (!error) {
+            soundNotification.playScanSound();
+        }
+        // Réinitialiser le set des colis scannés après envoi
+        scannedCodesRef.current.clear();
         setProcessing(false);
     };
 
@@ -189,28 +243,49 @@ const Colis = () => {
             );
         }
         
-        // Vérifier si le colis peut être sélectionné
-        const isProcessed = foundColis?.is_sent;
-        
-        if (foundColis && !isProcessed) {
-            // Sélectionner le colis trouvé
-            if (!selectedCodes.includes(foundColis.code_colis)) {
-                setSelectedCodes(prev => [...prev, foundColis.code_colis]);
-            }
+        if (foundColis) {
+            const wasAlreadyScanned = scannedCodesRef.current.has(foundColis.code_colis);
             
-            // Afficher un message de succès
-            toast.success(`Colis ${foundColis.code_colis} sélectionné !`);
-            
-            // Scroll vers le colis dans la liste
-            setTimeout(() => {
-                const element = document.getElementById(`colis-${foundColis.code_colis}`);
-                if (element) {
-                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Vérifier si le colis a déjà été expédié
+            if (foundColis.is_sent) {
+                // N'afficher le message qu'une seule fois
+                if (!wasAlreadyScanned) {
+                    soundNotification.playWarningSound();
+                    toast.info(`Le colis ${foundColis.code_colis} a déjà été expédié vers l'entrepôt.`);
+                    scannedCodesRef.current.add(foundColis.code_colis);
                 }
-            }, 100);
-        } else if (foundColis && isProcessed) {
-            toast.info(`Le colis ${foundColis.code_colis} a déjà été expédié.`);
+            }
+            // Le colis peut être sélectionné
+            else {
+                // Vérifier si le colis n'est pas déjà sélectionné
+                if (!selectedCodes.includes(foundColis.code_colis)) {
+                    setSelectedCodes(prev => [...prev, foundColis.code_colis]);
+                    // Jouer le son de succès pour le scan
+                    soundNotification.playScanSound();
+                    toast.success(`Colis ${foundColis.code_colis} sélectionné !`);
+                    
+                    // Marquer comme scanné
+                    scannedCodesRef.current.add(foundColis.code_colis);
+                } else {
+                    // Colis déjà sélectionné - afficher le message une seule fois
+                    if (!wasAlreadyScanned) {
+                        soundNotification.playWarningSound();
+                        toast.info(`Le colis ${foundColis.code_colis} est déjà sélectionné.`);
+                        scannedCodesRef.current.add(foundColis.code_colis);
+                    }
+                }
+                
+                // Scroll vers le colis dans la liste
+                setTimeout(() => {
+                    const element = document.getElementById(`colis-${foundColis.code_colis}`);
+                    if (element) {
+                        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }, 100);
+            }
         } else {
+            // Colis non trouvé - toujours afficher l'erreur
+            soundNotification.playErrorSound();
             toast.error(`Aucun colis trouvé avec le code scanné : ${scannedData}`);
         }
     };

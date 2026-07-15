@@ -3,6 +3,7 @@ import SaveTarifModal from "../components/SaveTarifModal";
 
 import { formatPrice } from "../utils/format";
 import { useTarifs } from "../hooks/useTarifs";
+import { useAuth } from "../hooks/useAuth";
 import {
   PlusIcon,
   CircleStackIcon,
@@ -55,6 +56,7 @@ const StatusToggle = ({ active, onClick, disabled }) => (
 
 
 const TarifSimpleComponent = () => {
+  const { isAgent } = useAuth();
   const {
     loading,
     error,
@@ -289,13 +291,15 @@ const TarifSimpleComponent = () => {
           </button>
         </div>
 
-        <button
-          onClick={handleNewTarif}
-          className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-2.5 bg-slate-950 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition-all shadow-sm group active:scale-95"
-        >
-          <PlusIcon className="w-4 h-4 mr-2 transition-transform group-hover:rotate-90" />
-          Nouveau Tarif par Indice
-        </button>
+        {!isAgent && (
+          <button
+            onClick={handleNewTarif}
+            className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-2.5 bg-slate-950 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition-all shadow-sm group active:scale-95"
+          >
+            <PlusIcon className="w-4 h-4 mr-2 transition-transform group-hover:rotate-90" />
+            Nouveau Tarif par Indice
+          </button>
+        )}
       </div>
 
 
@@ -363,14 +367,14 @@ const TarifSimpleComponent = () => {
                       <td className="px-6 py-4 border-r border-slate-100/30 text-center">
                         <StatusToggle
                           active={tarif.actif}
-                          onClick={() => activeTab === "agency" && handleStatus(tarif)}
-                          disabled={activeTab === "base"}
+                          onClick={() => !isAgent && activeTab === "agency" && handleStatus(tarif)}
+                          disabled={activeTab === "base" || isAgent}
                         />
                       </td>
 
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                          {activeTab === "agency" && (
+                          {activeTab === "agency" && !isAgent && (
                             <>
                               <button
                                 onClick={() => handleEditSingle(tarif)}
@@ -389,7 +393,7 @@ const TarifSimpleComponent = () => {
                             </>
                           )}
 
-                          {activeTab === "base" && (
+                          {activeTab === "base" && !isAgent && (
                             <button
                               onClick={() => handleInitializeSingle(tarif)}
                               className="px-3 py-1.5 bg-slate-900 text-white text-[10px] font-bold rounded hover:bg-indigo-600 transition-all shadow-sm active:scale-95"
@@ -419,15 +423,15 @@ const TarifSimpleComponent = () => {
                           <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide leading-none">Indice</span>
                           <StatusToggle
                             active={tarif.actif}
-                            onClick={() => activeTab === "agency" && handleStatus(tarif)}
-                            disabled={activeTab === "base"}
+                            onClick={() => !isAgent && activeTab === "agency" && handleStatus(tarif)}
+                            disabled={activeTab === "base" || isAgent}
                           />
                         </div>
 
                         <p className="text-[13px] font-bold text-slate-900">{tarif.zone?.nom || tarif.nom_zone}</p>
                       </div>
                     </div>
-                    {activeTab === "agency" ? (
+                    {activeTab === "agency" && !isAgent ? (
                       <div className="flex items-center gap-1.5">
                         <button onClick={() => handleEditSingle(tarif)} className="p-2 bg-white text-indigo-600 rounded-lg border border-slate-200 active:scale-95 shadow-sm">
                           <PencilSquareIcon className="w-5 h-5" />
@@ -436,14 +440,14 @@ const TarifSimpleComponent = () => {
                           <TrashIcon className="w-5 h-5" />
                         </button>
                       </div>
-                    ) : (
+                    ) : activeTab === "base" && !isAgent ? (
                       <button
                         onClick={() => handleInitializeSingle(tarif)}
                         className="px-4 py-2 bg-slate-900 text-white text-[10px] font-bold rounded-lg shadow-sm active:scale-95"
                       >
                         Initialiser
                       </button>
-                    )}
+                    ) : null}
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 pt-2">
@@ -470,13 +474,19 @@ const TarifSimpleComponent = () => {
                   <DocumentDuplicateIcon className="w-10 h-10" />
                 </div>
                 <h3 className="text-base font-bold text-slate-900 mb-2">Aucun tarif trouvé</h3>
-                <p className="text-sm text-slate-500 mb-8 max-w-xs mx-auto">Vous n'avez pas encore configuré de tarifs pour cette catégorie.</p>
-                <button
-                  onClick={handleNewTarif}
-                  className="inline-flex items-center px-8 py-3 bg-slate-950 text-white rounded-xl text-xs font-bold shadow-lg hover:shadow-indigo-200 transition-all hover:-translate-y-1 active:translate-y-0"
-                >
-                  Démarrer la configuration
-                </button>
+                <p className="text-sm text-slate-500 mb-8 max-w-xs mx-auto">
+                  {isAgent 
+                    ? "Aucun tarif n'est configuré pour le moment." 
+                    : "Vous n'avez pas encore configuré de tarifs pour cette catégorie."}
+                </p>
+                {!isAgent && (
+                  <button
+                    onClick={handleNewTarif}
+                    className="inline-flex items-center px-8 py-3 bg-slate-950 text-white rounded-xl text-xs font-bold shadow-lg hover:shadow-indigo-200 transition-all hover:-translate-y-1 active:translate-y-0"
+                  >
+                    Démarrer la configuration
+                  </button>
+                )}
               </div>
             )}
           </>

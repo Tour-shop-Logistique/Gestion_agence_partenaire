@@ -1,0 +1,205 @@
+════════════════════════════════════════════════════════════════════════════════
+   AMÉLIORATIONS DU SCANNER DE COLIS - NOTIFICATIONS SONORES ET ANTI-DOUBLONS
+════════════════════════════════════════════════════════════════════════════════
+
+📅 DATE : 11 juillet 2026
+🎯 OBJECTIF : Améliorer l'expérience utilisateur lors du scan de colis
+
+════════════════════════════════════════════════════════════════════════════════
+   ✨ NOUVELLES FONCTIONNALITÉS
+════════════════════════════════════════════════════════════════════════════════
+
+1. 🔊 NOTIFICATIONS SONORES
+   ─────────────────────────
+   ✓ Bip de confirmation lors d'un scan réussi
+   ✓ Son d'avertissement pour les colis déjà scannés
+   ✓ Son d'erreur pour les colis non trouvés
+   ✓ Son de succès après validation de réception
+
+2. 🚫 ANTI-DOUBLONS
+   ─────────────────────────
+   ✓ Les messages de toast ne s'affichent qu'une seule fois par colis
+   ✓ Système de tracking des colis déjà scannés
+   ✓ Réinitialisation automatique après validation
+
+3. 📱 SCAN MULTIPLE
+   ─────────────────────────
+   ✓ Le scanner reste actif après un scan
+   ✓ Possibilité de scanner plusieurs colis d'affilée
+   ✓ Fermeture manuelle du scanner par l'utilisateur
+
+════════════════════════════════════════════════════════════════════════════════
+   📁 FICHIERS MODIFIÉS
+════════════════════════════════════════════════════════════════════════════════
+
+1. NOUVEAU : src/utils/soundNotification.js
+   ───────────────────────────────────────────
+   • Classe SoundNotification pour gérer les sons
+   • Utilise Web Audio API pour générer des sons synthétiques
+   • 4 types de sons : success, error, warning, info
+   • Son de scan personnalisé (double note pour succès)
+
+2. MODIFIÉ : src/pages/ColisAReceptionner.jsx
+   ────────────────────────────────────────────
+   • Ajout de l'import soundNotification et useRef
+   • Ajout du state scannedCodesRef pour suivre les scans
+   • Modification de handleQRScan pour :
+     - Jouer des sons selon le résultat
+     - N'afficher les messages qu'une seule fois
+     - Gérer les colis déjà scannés
+   • Ajout de sons dans handleReceiveSelected et handleReceiveSingle
+   • Réinitialisation du tracking après validation
+
+3. MODIFIÉ : src/pages/ReceptionColis.jsx
+   ────────────────────────────────────────────
+   • Ajout de l'import soundNotification, useRef et QRScanner
+   • Ajout du bouton Scanner QR dans l'interface
+   • Ajout de la modal QRScanner
+   • Ajout du state scannerOpen et scannedCodesRef
+   • Nouvelle fonction handleQRScan avec :
+     - Son de confirmation pour scan réussi
+     - Son d'avertissement pour colis déjà scanné
+     - Messages anti-doublons
+     - Scroll automatique vers le colis
+   • Ajout de l'attribut id sur les lignes du tableau
+   • Sons lors des validations manuelles
+
+4. MODIFIÉ : src/components/QRScanner.jsx
+   ────────────────────────────────────────────
+   • Le scanner ne se ferme plus automatiquement après un scan
+   • Ajout d'instructions pour le scan multiple
+   • Permet de scanner plusieurs colis consécutifs
+
+════════════════════════════════════════════════════════════════════════════════
+   🎵 TYPES DE SONS
+════════════════════════════════════════════════════════════════════════════════
+
+✅ SUCCESS (playScanSound)
+   • Fréquence : 600 Hz + 800 Hz (double note)
+   • Durée : 0.15s + 0.15s
+   • Usage : Scan réussi, validation réussie
+
+⚠️ WARNING (playWarningSound)
+   • Fréquence : 400 Hz
+   • Durée : 0.2s
+   • Usage : Colis déjà scanné, colis en transit
+
+❌ ERROR (playErrorSound)
+   • Fréquence : 200 Hz (grave)
+   • Durée : 0.3s
+   • Usage : Colis non trouvé
+
+ℹ️ INFO
+   • Fréquence : 500 Hz
+   • Durée : 0.1s
+   • Usage : Information générale
+
+════════════════════════════════════════════════════════════════════════════════
+   🔄 FLUX D'UTILISATION
+════════════════════════════════════════════════════════════════════════════════
+
+1. SCAN D'UN NOUVEAU COLIS
+   ────────────────────────
+   [Scan QR] → [Son succès 🔊] → [Toast "Colis sélectionné"] → [Ajout au tracking]
+
+2. RE-SCAN DU MÊME COLIS
+   ────────────────────────
+   [Scan QR] → [Son avertissement 🔊] → [PAS de toast] → [Déjà dans le tracking]
+
+3. SCAN D'UN COLIS DÉJÀ RÉCEPTIONNÉ
+   ────────────────────────────────────
+   [Scan QR] → [Son avertissement 🔊] → [Toast "Déjà réceptionné" UNE FOIS] → [Ajout au tracking]
+
+4. SCAN D'UN COLIS EN TRANSIT
+   ────────────────────────────
+   [Scan QR] → [Son avertissement 🔊] → [Toast "En transit" UNE FOIS] → [Ajout au tracking]
+
+5. SCAN D'UN COLIS INEXISTANT
+   ────────────────────────────
+   [Scan QR] → [Son erreur 🔊] → [Toast "Non trouvé" TOUJOURS] → [Pas de tracking]
+
+6. VALIDATION DE RÉCEPTION
+   ────────────────────────────
+   [Clic Valider] → [Réception] → [Son succès 🔊] → [Réinitialisation tracking]
+
+════════════════════════════════════════════════════════════════════════════════
+   ✅ AVANTAGES
+════════════════════════════════════════════════════════════════════════════════
+
+✨ EXPÉRIENCE UTILISATEUR
+   • Retour immédiat à chaque scan (son + visuel)
+   • Pas de pollution de notifications répétées
+   • Interface plus professionnelle
+
+⚡ EFFICACITÉ
+   • Scan multiple sans fermer la fenêtre
+   • Moins de clics nécessaires
+   • Feedback instantané
+
+🎯 FIABILITÉ
+   • Suivi précis des colis scannés
+   • Évite les confusions
+   • Gestion cohérente des états
+
+════════════════════════════════════════════════════════════════════════════════
+   🧪 TESTS RECOMMANDÉS
+════════════════════════════════════════════════════════════════════════════════
+
+□ Scanner un colis valide → Vérifier son + toast + sélection
+□ Re-scanner le même colis → Vérifier son d'avertissement sans toast
+□ Scanner un colis déjà réceptionné → Vérifier message unique
+□ Scanner un colis en transit → Vérifier message unique
+□ Scanner un code inexistant → Vérifier son d'erreur + toast
+□ Scanner plusieurs colis d'affilée → Vérifier scan continu
+□ Valider une réception → Vérifier son de succès + reset tracking
+□ Tester sur différents navigateurs (Chrome, Firefox, Safari, Edge)
+□ Tester sur mobile et tablette
+
+════════════════════════════════════════════════════════════════════════════════
+   📱 COMPATIBILITÉ
+════════════════════════════════════════════════════════════════════════════════
+
+✅ Web Audio API supportée par :
+   • Chrome 35+
+   • Firefox 25+
+   • Safari 14.1+
+   • Edge 79+
+   • Opera 22+
+   • Chrome Android 35+
+   • Safari iOS 14.5+
+
+⚠️ Fallback : Si Web Audio API non disponible, l'application continue
+              de fonctionner sans les sons (graceful degradation)
+
+════════════════════════════════════════════════════════════════════════════════
+   🎓 NOTES TECHNIQUES
+════════════════════════════════════════════════════════════════════════════════
+
+1. POURQUOI WEB AUDIO API ?
+   • Pas besoin de fichiers audio externes
+   • Sons générés synthétiquement
+   • Faible latence
+   • Personnalisable
+
+2. GESTION DU TRACKING
+   • Utilisation de useRef pour persister entre rendus
+   • Set() pour éviter les doublons
+   • Réinitialisation après validation réussie
+
+3. PERFORMANCE
+   • AudioContext créé une seule fois
+   • Réutilisation du contexte pour tous les sons
+   • Nettoyage automatique des oscillateurs
+
+════════════════════════════════════════════════════════════════════════════════
+   ✅ RÉSULTAT FINAL
+════════════════════════════════════════════════════════════════════════════════
+
+Les deux pages (ColisAReceptionner et ReceptionColis) bénéficient maintenant de :
+
+📍 Feedback sonore immédiat lors des scans
+📍 Messages anti-doublons intelligents
+📍 Scan multiple sans fermeture du scanner
+📍 Expérience utilisateur professionnelle et fluide
+
+════════════════════════════════════════════════════════════════════════════════

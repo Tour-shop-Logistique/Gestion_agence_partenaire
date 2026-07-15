@@ -4,22 +4,22 @@ import {
     PlusIcon,
     ArrowPathIcon,
     BellAlertIcon,
-    XMarkIcon,
-    ArrowRightIcon
+    XMarkIcon
 } from "@heroicons/react/24/outline";
 
 import { useAuth } from "../hooks/useAuth";
 import { useAgency } from "../hooks/useAgency";
 import { useExpedition } from "../hooks/useExpedition";
 import { useDashboard } from "../hooks/useDashboard";
-import { getLogoUrl } from "../utils/apiConfig";
+import { useWebSocket } from "../hooks/useWebSocket";
+import { showToast } from "../utils/toast";
 
 // Composants modulaires
 import PriorityActions from "../components/dashboard/PriorityActions";
 import KPISection from "../components/dashboard/KPISection";
 import RecentExpeditions from "../components/dashboard/RecentExpeditions";
 import StatsCards from "../components/dashboard/StatsCards";
-import LoadingSpinner, { DashboardSkeleton } from "../components/common/LoadingSpinner";
+import LoadingSpinner from "../components/common/LoadingSpinner";
 
 /**
  * Dashboard Refactorisé - Version Professionnelle
@@ -42,6 +42,103 @@ const Dashboard = () => {
     const [showDemandesAlert, setShowDemandesAlert] = useState(true);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
     const hasFetchedRef = useRef(false);
+
+    // ========== WEBSOCKET INTEGRATION ==========
+    useWebSocket(
+        currentUser?.agence_id,
+        {
+            // Nouvelle expédition créée
+            onExpeditionCreated: (data, meta) => {
+                if (meta.silent) {
+                    // Refresh silencieux sans notification (créé par un collègue)
+                    console.log('🔄 [Dashboard] Expédition créée par un collègue (refresh silencieux)');
+                    fetchDashboard(true, true); // Refresh silencieux
+                } else {
+                    // Ne devrait jamais arriver ici (les créations auto sont ignorées)
+                    console.log('🎉 [Dashboard] Nouvelle(s) expédition(s) créée(s):', meta.count);
+                    showToast(`${meta.count} nouvelle(s) expédition(s) créée(s)`, 'success');
+                    fetchDashboard(true, true);
+                }
+            },
+            
+            // Mise à jour en temps réel du dashboard
+            onExpeditionStatusChanged: (data, meta) => {
+                console.log('📦 [Dashboard] Expédition(s) mise(s) à jour:', meta.count);
+                showToast(`${meta.count} expédition(s) mise(s) à jour`, 'info');
+                fetchDashboard(true, true); // Refresh silencieux
+            },
+            
+            onExpeditionPaymentConfirmed: (data, meta) => {
+                console.log('💰 [Dashboard] Paiement(s) confirmé(s):', meta.count);
+                showToast(`Paiement confirmé pour ${meta.references.join(', ')}`, 'success');
+                fetchDashboard(true, true);
+            },
+            
+            onExpeditionFraisUpdated: (data, meta) => {
+                console.log('💵 [Dashboard] Frais annexes mis à jour:', meta.count);
+                showToast(`Frais annexes mis à jour pour ${meta.references.join(', ')}`, 'info');
+                fetchDashboard(true, true);
+            },
+            
+            onColisControlled: (data, meta) => {
+                console.log('✅ [Dashboard] Colis contrôlé(s):', meta.count);
+                if (meta.count > 1) {
+                    showToast(`${meta.count} colis contrôlés`, 'success');
+                } else {
+                    showToast(`Colis ${meta.references[0]} contrôlé`, 'success');
+                }
+                fetchDashboard(true, true);
+            },
+            
+            onColisBlocked: (data, meta) => {
+                console.log('🚫 [Dashboard] Colis bloqué(s):', meta.count);
+                showToast(`⚠️ ${meta.count} colis bloqué(s)`, 'warning');
+                fetchDashboard(true, true);
+            },
+            
+            onColisUnblocked: (data, meta) => {
+                console.log('✅ [Dashboard] Colis débloqué(s):', meta.count);
+                showToast(`${meta.count} colis débloqué(s)`, 'success');
+                fetchDashboard(true, true);
+            },
+            
+            onColisAssigned: (data, meta) => {
+                console.log('📍 [Dashboard] Colis assigné(s):', meta.count);
+                showToast(`${meta.count} nouveau(x) colis assigné(s) à votre agence`, 'info');
+                fetchDashboard(true, true);
+            },
+            
+            onColisReceivedByBackoffice: (data, meta) => {
+                console.log('📥 [Dashboard] Colis reçu(s) par le backoffice:', meta.count);
+                showToast(`${meta.count} colis reçu(s) par le backoffice`, 'info');
+                fetchDashboard(true, true);
+            },
+            
+            onAgenceStatusChanged: (data, meta) => {
+                console.log('⚠️ [Dashboard] Statut agence changé:', data);
+                const agence = data[0];
+                if (!agence.actif) {
+                    showToast('⛔ Votre agence a été désactivée', 'error');
+                    // Déconnexion forcée après 3 secondes
+                    setTimeout(() => {
+                        localStorage.clear();
+                        navigate('/login');
+                    }, 3000);
+                } else {
+                    showToast('✅ Votre agence a été réactivée', 'success');
+                    fetchDashboard(true, true);
+                }
+            },
+            
+            onTarifsUpdated: (data, meta) => {
+                console.log('💲 [Dashboard] Tarifs mis à jour:', meta.model);
+                showToast('Les tarifs ont été mis à jour', 'info');
+                // On pourrait recharger les tarifs ici si nécessaire
+            }
+        },
+        // Activer WebSocket uniquement si l'utilisateur est connecté et a une agence
+        !!currentUser?.agence_id
+    );
 
     useEffect(() => {
         // Charger les données au montage initial

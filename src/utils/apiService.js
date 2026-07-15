@@ -65,7 +65,19 @@ class ApiService {
 
     // Si la réponse n'est pas OK (status 4xx ou 5xx)
     if (!response.ok) {
-      console.error(`Erreur API ${response.status}:`, data);
+      console.error(`❌ Erreur API ${response.status}:`, data);
+      
+      // Gestion spécifique des erreurs 520 (problème de serveur backend)
+      if (response.status === 520) {
+        const error = new Error(
+          "Le serveur est temporairement indisponible. Il est peut-être en train de démarrer. Veuillez réessayer dans quelques instants."
+        );
+        error.status = 520;
+        error.data = data;
+        error.success = false;
+        throw error;
+      }
+      
       const error = new Error(
         data?.message || data?.error || `Erreur HTTP: ${response.status}`
       );

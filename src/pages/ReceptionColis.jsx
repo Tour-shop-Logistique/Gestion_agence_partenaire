@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import {
     InboxArrowDownIcon,
     CheckCircleIcon,
@@ -8,16 +8,23 @@ import {
     CalendarIcon,
     CubeIcon,
     InformationCircleIcon,
-    CheckIcon
+    CheckIcon,
+    QrCodeIcon
 } from "@heroicons/react/24/outline";
 import { useExpedition } from "../hooks/useExpedition";
 import { toast } from "../utils/toast";
+import soundNotification from "../utils/soundNotification";
+import QRScanner from "../components/QRScanner";
 
 const ReceptionColis = () => {
     // Version: 2.0 - Tableau avec tri automatique
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedColis, setSelectedColis] = useState([]);
     const [localLoading, setLocalLoading] = useState(false);
+    const [scannerOpen, setScannerOpen] = useState(false);
+    
+    // Suivre les colis déjà scannés pour éviter les messages en double
+    const scannedCodesRef = useRef(new Set());
 
     const {
         reception,
@@ -39,6 +46,8 @@ const ReceptionColis = () => {
         if (message) {
             toast.success(message);
             setSelectedColis([]);
+            // Réinitialiser le set des colis scannés après succès
+            scannedCodesRef.current.clear();
             resetStatus();
         }
         if (error) {
@@ -84,14 +93,22 @@ const ReceptionColis = () => {
 
     const handleValidateReception = async (code_colis) => {
         setLocalLoading(true);
-        await receiveColisDestination([code_colis]);
+        const result = await receiveColisDestination([code_colis]);
+        // Jouer un son de succès après la validation
+        if (!error) {
+            soundNotification.playScanSound();
+        }
         setLocalLoading(false);
     };
 
     const handleValidateMultiple = async () => {
         if (selectedColis.length === 0) return;
         setLocalLoading(true);
-        await receiveColisDestination(selectedColis);
+        const result = await receiveColisDestination(selectedColis);
+        // Jouer un son de succès après la validation multiple
+        if (!error) {
+            soundNotification.playScanSound();
+        }
         setLocalLoading(false);
     };
 
@@ -131,6 +148,70 @@ const ReceptionColis = () => {
     const statsTotal = colisList.length;
 
     const completableList = filteredColis.filter(c => !c.is_received_by_agence_destination);
+
+    const handleQRScan = (scannedData) => {
+        // Chercher par code_colis exact
+        let foundColis = filteredColis.find(c => c.code_colis === scannedData);
+        
+        // Si pas trouvé, chercher par code_colis partiel
+        if (!foundColis) {
+            foundColis = filteredColis.find(c => scannedData.includes(c.code_colis));
+        }
+        
+        // Si pas trouvé, chercher par ID d'expédition
+        if (!foundColis) {
+            foundColis = filteredColis.find(c => 
+                c.expedition_id === parseInt(scannedData) || 
+                c.expedition?.id === parseInt(scannedData)
+            );
+        }
+        
+        if (foundColis) {
+            const wasAlreadyScanned = scannedCodesRef.current.has(foundColis.code_colis);
+            
+            // Vérifier si le colis a déjà été réceptionné
+            if (foundColis.is_received_by_agence_destination) {
+                // N'afficher le message qu'une seule fois
+                if (!wasAlreadyScanned) {
+                    soundNotification.playWarningSound();
+                    toast.info(`Le colis ${foundColis.code_colis} a déjà été réceptionné.`);
+                    scannedCodesRef.current.add(foundColis.code_colis);
+                }
+            }
+            // Le colis peut être sélectionné
+            else {
+                // Vérifier si le colis n'est pas déjà sélectionné
+                if (!selectedColis.includes(foundColis.code_colis)) {
+                    setSelectedColis(prev => [...prev, foundColis.code_colis]);
+                    // Jouer le son de succès pour le scan
+                    soundNotification.playScanSound();
+                    toast.success(`Colis ${foundColis.code_colis} sélectionné !`);
+                    
+                    // Marquer comme scanné
+                    scannedCodesRef.current.add(foundColis.code_colis);
+                } else {
+                    // Colis déjà sélectionné - afficher le message une seule fois
+                    if (!wasAlreadyScanned) {
+                        soundNotification.playWarningSound();
+                        toast.info(`Le colis ${foundColis.code_colis} est déjà sélectionné.`);
+                        scannedCodesRef.current.add(foundColis.code_colis);
+                    }
+                }
+                
+                // Scroll vers le colis dans la liste
+                setTimeout(() => {
+                    const element = document.getElementById(`colis-${foundColis.code_colis}`);
+                    if (element) {
+                        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }, 100);
+            }
+        } else {
+            // Colis non trouvé - toujours afficher l'erreur
+            soundNotification.playErrorSound();
+            toast.error(`Aucun colis trouvé avec le code scanné : ${scannedData}`);
+        }
+    };
 
     return (
         <div className="space-y-6 sm:space-y-8 max-w-[1800px] mx-auto px-4 sm:px-6">
@@ -172,8 +253,22 @@ const ReceptionColis = () => {
                     >
                         <ArrowPathIcon className={`w-5 h-5 ${isRefreshing ? 'animate-spin text-indigo-600' : ''}`} />
                     </button>
+                    
+                    <button 
+                        onClick={() => setScannerOpen(true)}
+                        className="p-3.5 bg-indigo-600 border-2 border-indigo-600 rounded-2xl text-white hover:bg-indigo-700 hover:border-indigo-700 hover:shadow-lg transition-all active:scale-95"
+                    >
+                        <QrCodeIcon className="w-5 h-5" />
+                    </button>
                 </div>
             </div>
+
+            {/* QR Scanner Modal */}
+            <QRScanner 
+                isOpen={scannerOpen}
+                onClose={() => setScannerOpen(false)}
+                onScan={handleQRScan}
+            />
 
             {/* Stats Summary */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
@@ -264,6 +359,7 @@ const ReceptionColis = () => {
                                     return (
                                         <tr
                                             key={item.id || item.code_colis}
+                                            id={`colis-${item.code_colis}`}
                                             className={`transition-all duration-200 ${isReceived 
                                                     ? 'bg-green-50/30 hover:bg-green-50/50' 
                                                     : isSelected 

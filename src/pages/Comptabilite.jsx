@@ -5,6 +5,9 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useAccounting } from "../hooks/useAccounting";
 import { useAgency } from "../hooks/useAgency";
+import { useAuth } from "../hooks/useAuth";
+import { useWebSocket } from "../hooks/useWebSocket";
+import { showToast } from "../utils/toast";
 import { 
   ArrowPathIcon, 
   MagnifyingGlassIcon, 
@@ -36,8 +39,42 @@ import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Cart
 
 const Comptabilite = () => {
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
   const { data, summary, status, loadAccounting, lastFilters } = useAccounting();
   const { fetchAgencyData, data: agencyData } = useAgency();
+
+  // ========== WEBSOCKET INTEGRATION ==========
+  useWebSocket(
+    currentUser?.agence_id,
+    {
+      onExpeditionPaymentConfirmed: (data, meta) => {
+        console.log('💰 [Comptabilité] Paiement(s) confirmé(s):', meta.count);
+        showToast(`💰 ${meta.count} nouveau(x) paiement(s) enregistré(s)`, 'success');
+        // Recharger les données comptables
+        loadAccounting({
+          date_debut: dateDebut,
+          date_fin: dateFin
+        });
+      },
+      
+      onExpeditionFraisUpdated: (data, meta) => {
+        console.log('💵 [Comptabilité] Frais annexes mis à jour:', meta.count);
+        showToast(`Frais annexes mis à jour pour ${meta.count} expédition(s)`, 'info');
+        loadAccounting({
+          date_debut: dateDebut,
+          date_fin: dateFin
+        });
+      },
+      
+      onTarifsUpdated: (data, meta) => {
+        console.log('💲 [Comptabilité] Tarifs mis à jour:', meta.model);
+        showToast('⚠️ Les tarifs ont été mis à jour. Certains montants pourraient être recalculés.', 'warning');
+        // Note: Pour la comptabilité, les tarifs déjà appliqués ne changent pas
+        // mais on informe l'utilisateur pour transparence
+      }
+    },
+    !!currentUser?.agence_id
+  );
 
   // Helper to get today's date in YYYY-MM-DD
   const getTodayDate = () => new Date().toISOString().split('T')[0];

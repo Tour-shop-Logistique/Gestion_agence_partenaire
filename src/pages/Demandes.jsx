@@ -1,14 +1,18 @@
 import { useEffect, useState, useRef } from "react";
 import { useExpedition } from "../hooks/useExpedition";
 import { useAgency } from "../hooks/useAgency";
+import { useAuth } from "../hooks/useAuth";
+import { useWebSocket } from "../hooks/useWebSocket";
 import { formatPriceDual } from "../utils/format";
 import { Link, useNavigate } from "react-router-dom";
-import { toast } from "../utils/toast";
+import { toast, showToast } from "../utils/toast";
+import soundNotification from "../utils/soundNotification";
 import { Check, X, Eye, Package, Calendar, MapPin, User, ArrowRight, Loader2, RefreshCw, Search } from "lucide-react";
 import ConfirmationModal from "../components/ConfirmationModal";
 
 const Demandes = () => {
     const navigate = useNavigate();
+    const { currentUser } = useAuth();
     const {
         demandes,
         demandesMeta,
@@ -35,6 +39,54 @@ const Demandes = () => {
 
     // Utiliser un ref pour éviter les appels multiples au montage
     const hasLoadedInitialDataRef = useRef(false);
+    
+    // ========== WEBSOCKET INTEGRATION ==========
+    useWebSocket(
+        currentUser?.agence_id,
+        {
+            onExpeditionCreated: (data, meta) => {
+                if (meta.silent) {
+                    // Refresh silencieux sans notification (créé par un collègue)
+                    // Vérifier si c'est une demande
+                    const hasNewDemande = data.some(exp => exp.statut_expedition === 'en_attente');
+                    if (hasNewDemande) {
+                        console.log('🔄 [Demandes] Nouvelle demande créée par un collègue (refresh silencieux)');
+                        loadDemandes({ page: currentPage }, true);
+                    }
+                } else {
+                    // Ne devrait jamais arriver ici (les créations auto sont ignorées)
+                    const hasNewDemande = data.some(exp => exp.statut_expedition === 'en_attente');
+                    if (hasNewDemande) {
+                        console.log('🎉 [Demandes] Nouvelle(s) demande(s) créée(s):', meta.count);
+                        showToast(`📋 ${meta.count} nouvelle(s) demande(s) d'expédition`, 'info');
+                        soundNotification.playSuccess();
+                        loadDemandes({ page: currentPage }, true);
+                    }
+                }
+            },
+            
+            onExpeditionStatusChanged: (data, meta) => {
+                // Recharger si le statut change vers "en_attente" (nouvelle demande)
+                const hasNewDemande = data.some(exp => exp.statut_expedition === 'en_attente');
+                if (hasNewDemande) {
+                    console.log('📋 [Demandes] Nouvelle(s) demande(s) reçue(s)');
+                    showToast(`📋 Nouvelle(s) demande(s) d'expédition`, 'info');
+                    soundNotification.playSuccess();
+                    loadDemandes({ page: currentPage }, true);
+                } else {
+                    // Refresh pour mettre à jour les demandes acceptées/refusées
+                    loadDemandes({ page: currentPage }, true);
+                }
+            },
+            
+            onExpeditionPaymentConfirmed: (data, meta) => {
+                console.log('💰 [Demandes] Paiement confirmé:', meta.references);
+                showToast(`Paiement confirmé: ${meta.references.join(', ')}`, 'success');
+                loadExpeditions({ page: 1 }, true);
+            }
+        },
+        !!currentUser?.agence_id
+    );
     
     // Charger les demandes lorsque la page change
     useEffect(() => {

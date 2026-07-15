@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { fetchDashboardData } from '../../utils/api/dashboard';
+import { expeditionsCache } from '../../utils/expeditionsCache';
 
 // Thunk pour récupérer les données du dashboard
 export const loadDashboardData = createAsyncThunk(
@@ -74,6 +75,9 @@ const dashboardSlice = createSlice({
                 state.logistics = action.payload?.data?.logistics || initialState.logistics;
                 state.lastUpdated = new Date().toISOString();
                 state.error = null;
+                
+                // Vider le cache des expéditions car les données du dashboard ont été rafraîchies
+                expeditionsCache.clear();
             })
             .addCase(loadDashboardData.rejected, (state, action) => {
                 state.status = 'failed';

@@ -8,6 +8,7 @@ import PrintSuccessModal from "../components/Receipts/PrintSuccessModal";
 import SearchableDropdown from "../components/common/SearchableDropdown";
 import { getLogoUrl } from "../utils/apiConfig";
 import { toast } from "../utils/toast";
+import { markAsRecentlyCreated } from "../hooks/useWebSocket";
 
 const CreateExpeditionV2 = () => {    
     const navigate = useNavigate();
@@ -33,7 +34,7 @@ const CreateExpeditionV2 = () => {
         recordTransaction
     } = useExpedition();
 
-    const { existingGroupageTarifs, fetchTarifGroupageAgence } = useTarifs();
+    const { existingGroupageTarifs, fetchTarifGroupageAgence, existingTarifs, flatExistingTarifs, fetchAgencyTarifs } = useTarifs();
     const { data: agencyData, fetchAgencyData } = useAgency();
 
     // État pour la navigation interne (4 étapes)
@@ -94,6 +95,7 @@ const CreateExpeditionV2 = () => {
         loadProducts();
         loadCategories();
         fetchTarifGroupageAgence();
+        fetchAgencyTarifs(); // Charger aussi les tarifs simples
         fetchAgencyData();
             }, []);
 
@@ -250,36 +252,71 @@ const CreateExpeditionV2 = () => {
             }
         }
         
-        console.log("🛣️ Trajets disponibles:", {
-            total: tarifsByType.length,
-            uniques: uniqueRoutes.length,
-            doublons_elimines: tarifsByType.length - uniqueRoutes.length
-        });
-        
-        if (Object.keys(duplicatesInfo).length > 0) {
-            console.log("📊 Détail des doublons éliminés:", duplicatesInfo);
-        }
-        
-        console.log("🛣️ DEBUG DEDUPLICATION - Fin");
         
         return uniqueRoutes;
     }, [existingGroupageTarifs, formData.type_expedition]);
 
+    // Pays disponibles pour les tarifs simples (LD)
+    const availableCountriesForLD = useMemo(() => {
+        if (formData.type_expedition !== 'SIMPLE') {
+            return [];
+        }
+        
+        // Utiliser existingTarifs (groupés) car flatExistingTarifs peut être vide
+        const tarifsToUse = existingTarifs || [];
+        
+        if (!tarifsToUse || !Array.isArray(tarifsToUse) || tarifsToUse.length === 0) {
+            return [];
+        }
+        
+        // Extraire tous les pays depuis toutes les zones
+        const allCountries = new Set();
+        const countryToZoneMap = {}; // Map pour retrouver la zone depuis le pays
+        
+        tarifsToUse.forEach((tarif) => {
+            // Les tarifs groupés ont un tableau prix_zones
+            const prixZones = tarif.prix_zones;
+            
+            if (prixZones && Array.isArray(prixZones)) {
+                prixZones.forEach((prixZone) => {
+                    const zone = prixZone.zone;
+                    const paysZone = zone?.pays;
+                    
+                    if (paysZone && Array.isArray(paysZone) && paysZone.length > 0) {
+                        paysZone.forEach(pays => {
+                            if (pays) {
+                                allCountries.add(pays);
+                                // Stocker la relation pays -> zone/tarif
+                                if (!countryToZoneMap[pays]) {
+                                    countryToZoneMap[pays] = {
+                                        zone: zone,
+                                        tarif: prixZone, // Le tarif complet avec montants
+                                        tarifGroup: tarif // Le groupe de tarifs
+                                    };
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+        });
+        
+        // Convertir en tableau d'objets pour le SearchableDropdown
+        const countriesList = Array.from(allCountries).map(pays => ({
+            id: pays,
+            label: pays,
+            ...countryToZoneMap[pays]
+        })).sort((a, b) => a.label.localeCompare(b.label));
+        
+        return countriesList;
+    }, [existingTarifs, flatExistingTarifs, formData.type_expedition]);
+
     // Debug: Tracer les changements de selectedRoute
     useEffect(() => {
-        console.log("🎯 selectedRoute a changé:", selectedRoute);
     }, [selectedRoute]);
 
     // Filtrage des catégories en fonction du type d'expédition ET de la ligne sélectionnée
     const filteredCategories = useMemo(() => {
-        console.log("🔵 useMemo filteredCategories DÉCLENCHÉ");
-        console.log("🔵 Dépendances:", { 
-            categories: categories?.length, 
-            existingGroupageTarifs: existingGroupageTarifs?.length,
-            type_expedition: formData.type_expedition,
-            selectedRoute: selectedRoute
-        });
-        
         if (!categories || !Array.isArray(categories)) return [];
         
         const currentType = formData.type_expedition.toLowerCase();
@@ -287,7 +324,6 @@ const CreateExpeditionV2 = () => {
         
         // Pour les types NON-DHD (SIMPLE, AFRIQUE, CA), retourner toutes les catégories SANS filtrage
         if (!isDHD) {
-            console.log("🔵 Type NON-DHD - Retour de toutes les catégories SANS filtrage");
             return categories;
         }
         
@@ -295,32 +331,24 @@ const CreateExpeditionV2 = () => {
         
         // Pour les autres types, filtrer par les category_id présents dans les tarifs groupage
         if (!existingGroupageTarifs || !Array.isArray(existingGroupageTarifs)) {
-            console.log("🔵 Pas de tarifs groupage - Retour de toutes les catégories");
             return categories;
         }
-        
-
         
         // Récupérer tous les tarifs correspondant au type sélectionné
         let filteredTarifs = existingGroupageTarifs
             .filter(tarif => tarif.type_expedition === currentType);
         
-        
         // Si une ligne est sélectionnée, filtrer aussi par la ligne
         if (selectedRoute) {
             const routeLigne = selectedRoute.ligne;
-            const routePays = selectedRoute.pays;
-            
             
             // Filtrer les tarifs qui correspondent à la ligne sélectionnée
             filteredTarifs = filteredTarifs.filter(tarif => {
-                
                 const tarifLigne = (tarif.ligne || "").toLowerCase().trim();
                 const selectedLigne = (routeLigne || "").toLowerCase().trim();
                 const match = tarifLigne === selectedLigne;
                 return match;
             });
-            
         }
         
         // Extraire les category_id (en ignorant les null)
@@ -328,10 +356,8 @@ const CreateExpeditionV2 = () => {
             .map(tarif => tarif.category_id)
             .filter(id => id !== null && id !== undefined);
         
-        
         // Éliminer les doublons
         const uniqueCategoryIds = [...new Set(categoryIds)];
-        
         
         // Si aucune catégorie spécifique trouvée (tous les tarifs ont category_id null)
         // Cela signifie que le tarif est universel pour toutes les catégories
@@ -341,7 +367,6 @@ const CreateExpeditionV2 = () => {
         
         // Filtrer les catégories pour ne garder que celles qui ont un tarif pour ce type/ligne
         const result = categories.filter(cat => uniqueCategoryIds.includes(cat.id));
-     
         
         return result;
     }, [categories, existingGroupageTarifs, formData.type_expedition, selectedRoute]);
@@ -593,6 +618,12 @@ const CreateExpeditionV2 = () => {
 
         console.log("Expedition data extracted:", expeditionData);
 
+        // ✅ Marquer la référence comme récemment créée pour éviter notification auto-générée
+        if (expeditionData?.reference) {
+            markAsRecentlyCreated(expeditionData.reference);
+            console.log("🔇 Référence marquée pour ignorer notification:", expeditionData.reference);
+        }
+
         if (!formData.is_paiement_credit) {
             if (!expeditionData?.id) {
                 console.error("Pas d'ID d'expédition trouvé dans:", rawPayload);
@@ -803,7 +834,7 @@ const CreateExpeditionV2 = () => {
                                         </label>
                                         <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3">
                                             {[
-                                                { value: 'SIMPLE',                label: 'LD',           icon: '📦' },
+                                                { value: 'SIMPLE',                label: 'Livraison à domicile',           icon: '📦' },
                                                 { value: 'GROUPAGE_DHD_AERIEN',   label: 'DHD Aérien',   icon: '✈️' },
                                                 { value: 'GROUPAGE_DHD_MARITIME', label: 'DHD Maritime', icon: '🚢' },
                                                 { value: 'GROUPAGE_AFRIQUE',      label: 'Afrique',      icon: '🌍' },
@@ -837,31 +868,79 @@ const CreateExpeditionV2 = () => {
                                         </div>
                                     </div>
 
-                                    {/* Trajet disponible */}
+                                    {/* Trajet/Pays disponible */}
                                     <div className="space-y-1.5">
-                                        <label className="block text-xs font-semibold text-slate-600">Trajet disponible</label>
-                                        <select
-                                            value={selectedRouteId}
-                                            onChange={handleRouteSelect}
-                                            disabled={formData.type_expedition === 'GROUPAGE_CA' || formData.type_expedition === 'SIMPLE'}
-                                            className={`w-full rounded-lg text-sm font-medium h-11 px-3 outline-none transition-colors ${
-                                                formData.type_expedition === 'GROUPAGE_CA' || formData.type_expedition === 'SIMPLE'
-                                                    ? 'bg-slate-100 text-slate-400 border-2 border-slate-200 cursor-not-allowed'
-                                                    : getInputBorderClass(selectedRouteId, false)
-                                            }`}
-                                        >
-                                            <option value="">Sélectionner un trajet</option>
-                                            {availableRoutes.map(r => (
-                                                <option key={r.id} value={r.id}>
-                                                    {(formData.type_expedition === 'GROUPAGE_DHD_AERIEN' || formData.type_expedition === 'GROUPAGE_DHD_MARITIME')
-                                                        ? r.ligne
-                                                        : formData.type_expedition === 'GROUPAGE_AFRIQUE'
-                                                            ? r.pays
-                                                            : `${r.ligne} (${r.pays}) - ${r.mode}`
-                                                    }
-                                                </option>
-                                            ))}
-                                        </select>
+                                        <label className="block text-xs font-semibold text-slate-600">
+                                            {formData.type_expedition === 'SIMPLE' ? 'Pays de destination' : 'Trajet disponible'}
+                                        </label>
+                                        
+                                        {formData.type_expedition === 'SIMPLE' ? (
+                                            <>
+                                                {/* Sélecteur de pays pour LD avec recherche */}
+                                                <SearchableDropdown
+                                                    options={availableCountriesForLD}
+                                                    onSelect={(country) => {
+                                                        setSelectedRouteId(country.id);
+                                                        
+                                                        if (country.zone && country.tarif) {
+                                                            setSelectedRoute(country.tarif);
+                                                            
+                                                            // Extraire le nom du pays (retirer le code entre parenthèses)
+                                                            const paysName = country.label.replace(/\([^)]+\)$/, '').trim();
+                                                            
+                                                            setFormData(prev => ({
+                                                                ...prev,
+                                                                pays_destination: paysName,
+                                                                destinataire_pays: paysName,
+                                                                destinataire_ville: "",
+                                                            }));
+                                                        }
+                                                    }}
+                                                    placeholder={selectedRouteId ? 
+                                                        availableCountriesForLD.find(c => c.id === selectedRouteId)?.label || "Rechercher un pays..." 
+                                                        : "Rechercher un pays..."}
+                                                    className="w-full"
+                                                />
+                                                
+                                                {availableCountriesForLD.length === 0 && (
+                                                    <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
+                                                        Aucun pays configuré. Configurez vos tarifs simples (LD) dans les paramètres.
+                                                    </p>
+                                                )}
+                                                {availableCountriesForLD.length > 0 && (
+                                                    <p className="text-xs text-emerald-600 mt-1">
+                                                        {availableCountriesForLD.length} pays disponible{availableCountriesForLD.length > 1 ? 's' : ''}
+                                                    </p>
+                                                )}
+                                            </>
+                                        ) : (
+                                            // Sélecteur de trajets pour les autres types (DHD, AFRIQUE, CA)
+                                            <select
+                                                value={selectedRouteId}
+                                                onChange={handleRouteSelect}
+                                                disabled={formData.type_expedition === 'GROUPAGE_CA'}
+                                                className={`w-full rounded-lg text-sm font-medium h-11 px-3 outline-none transition-colors ${
+                                                    formData.type_expedition === 'GROUPAGE_CA'
+                                                        ? 'bg-slate-100 text-slate-400 border-2 border-slate-200 cursor-not-allowed'
+                                                        : getInputBorderClass(selectedRouteId, false)
+                                                }`}
+                                            >
+                                                <option value="">Sélectionner un trajet</option>
+                                                {availableRoutes.map(r => (
+                                                    <option key={r.id} value={r.id}>
+                                                        {(formData.type_expedition === 'GROUPAGE_DHD_AERIEN' || formData.type_expedition === 'GROUPAGE_DHD_MARITIME')
+                                                            ? r.ligne
+                                                            : formData.type_expedition === 'GROUPAGE_AFRIQUE'
+                                                                ? r.pays
+                                                                : `${r.ligne} (${r.pays}) - ${r.mode}`
+                                                        }
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        )}
                                     </div>
 
                                     {/* Destination + Départ — 2 colonnes sur mobile */}

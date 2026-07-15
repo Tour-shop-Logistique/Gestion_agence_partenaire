@@ -17,7 +17,7 @@ const ReceiptThermal = React.forwardRef(({ expedition, colis, agency }, ref) => 
         <div ref={ref} className="bg-white text-black font-mono p-3" style={{ width: '88mm', fontSize: '12px', lineHeight: '1.4' }}>
             {/* Header with Agency Info */}
             <div className="text-center border-b-2 border-black pb-3 mb-3 flex flex-col items-center">
-                <img src={logoSrc} alt="Logo" className="h-12 mb-2 object-contain brightness-0" />
+              { /* <img src={logoSrc} alt="Logo" className="h-12 mb-2 object-contain brightness-0" /> */}
                 <h1 className="font-bold text-xl leading-tight uppercase">
                     {agencyName}
                 </h1>
@@ -31,12 +31,12 @@ const ReceiptThermal = React.forwardRef(({ expedition, colis, agency }, ref) => 
             {/* Expedition ID and Package Code */}
             <div className="mb-3 bg-black text-white p-2 rounded">
                 <div className="flex justify-between items-center">
-                    <span className="font-bold text-sm">EXPÉDITION #{expedition.id}</span>
+                    <span className="font-bold text-sm"> {expedition.reference}</span>
                     <span className="text-xs font-bold bg-white text-black px-2 py-0.5 rounded">
                         {colis.code_colis ? formatColisCodeDisplay(colis.code_colis) : 'P-1'}
                     </span>
                 </div>
-                <p className="text-[10px] mt-1">Date: {new Date(expedition.created_at || Date.now()).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })} à {new Date(expedition.created_at || Date.now()).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
+                <p className="text-[10px] mt-1 text-white">Date: {new Date(expedition.created_at || Date.now()).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })} à {new Date(expedition.created_at || Date.now()).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
             </div>
 
             {/* Destination Info Only (Sans infos personnelles) */}
@@ -47,7 +47,13 @@ const ReceiptThermal = React.forwardRef(({ expedition, colis, agency }, ref) => 
                 </div>
                 <div className="bg-green-50 p-2 rounded">
                     <p className="text-[10px] uppercase font-bold text-green-900 mb-1">📥 DESTINATION</p>
-                    <p className="font-bold text-xs uppercase">📍 {expedition.destinataire?.ville || expedition.destinataire_ville}, {expedition.destinataire?.pays || expedition.destinataire_pays || expedition.pays_destination}</p>
+                    <p className="font-bold text-xs uppercase">
+                        📍 {expedition.destinataire?.ville || expedition.destinataire_ville}
+                        {(expedition.destinataire?.code_postal || expedition.destinataire_code_postal) && 
+                            <span className="ml-1">({expedition.destinataire?.code_postal || expedition.destinataire_code_postal})</span>
+                        }
+                        , {expedition.destinataire?.pays || expedition.destinataire_pays || expedition.pays_destination}
+                    </p>
                 </div>
             </div>
 

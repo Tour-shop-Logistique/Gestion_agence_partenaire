@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useTarifs } from "../hooks/useTarifs";
+import { useAuth } from "../hooks/useAuth";
 import AddAgencyTarifModal from "../components/groupageForm";
 import {
   PlusIcon,
@@ -36,6 +37,7 @@ const StatusToggle = ({ active, onClick, disabled }) => (
 );
 
 const TarifGroupageComponent = () => {
+  const { isAgent } = useAuth();
   const [showTarifGroupage, setShowTarifGroupage] = useState(false);
   const [mainTab, setMainTab] = useState("agency"); // "agency" or "base"
   const [activeTab, setActiveTab] = useState("tous");
@@ -300,13 +302,15 @@ const TarifGroupageComponent = () => {
               <ArrowPathIcon className={`w-5 h-5 ${loading ? 'animate-spin text-blue-600' : ''}`} />
             </button>
 
-            <button
-              onClick={() => handleNewTarif()}
-              className="inline-flex items-center justify-center px-4 py-2.5 bg-slate-950 hover:bg-slate-800 text-white rounded-lg text-sm font-semibold transition-all shadow-sm"
-            >
-              <PlusIcon className="w-4 h-4 mr-2" />
-              {mainTab === "agency" ? "Ajouter" : "Nouveau depuis Base"}
-            </button>
+            {!isAgent && (
+              <button
+                onClick={() => handleNewTarif()}
+                className="inline-flex items-center justify-center px-4 py-2.5 bg-slate-950 hover:bg-slate-800 text-white rounded-lg text-sm font-semibold transition-all shadow-sm"
+              >
+                <PlusIcon className="w-4 h-4 mr-2" />
+                {mainTab === "agency" ? "Ajouter" : "Nouveau depuis Base"}
+              </button>
+            )}
           </div>
         </div>
 
@@ -449,30 +453,37 @@ const TarifGroupageComponent = () => {
                               <>
                                 <StatusToggle
                                   active={tarif.actif}
-                                  onClick={() => handleToggleStatus(tarif)}
+                                  onClick={() => !isAgent && handleToggleStatus(tarif)}
+                                  disabled={isAgent}
                                 />
-                                <button
-                                  onClick={() => handleEditTarif(tarif)}
-                                  className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                                  title="Modifier"
-                                >
-                                  <PencilSquareIcon className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteTarif(tarif)}
-                                  className="p-2 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
-                                  title="Supprimer"
-                                >
-                                  <TrashIcon className="w-4 h-4" />
-                                </button>
+                                {!isAgent && (
+                                  <>
+                                    <button
+                                      onClick={() => handleEditTarif(tarif)}
+                                      className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                      title="Modifier"
+                                    >
+                                      <PencilSquareIcon className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteTarif(tarif)}
+                                      className="p-2 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                                      title="Supprimer"
+                                    >
+                                      <TrashIcon className="w-4 h-4" />
+                                    </button>
+                                  </>
+                                )}
                               </>
                             ) : (
-                              <button
-                                onClick={() => handleNewTarif(tarif)}
-                                className="px-4 py-2 bg-slate-950 hover:bg-slate-800 text-white text-xs font-bold rounded-lg transition-all"
-                              >
-                                Configurer
-                              </button>
+                              !isAgent && (
+                                <button
+                                  onClick={() => handleNewTarif(tarif)}
+                                  className="px-4 py-2 bg-slate-950 hover:bg-slate-800 text-white text-xs font-bold rounded-lg transition-all"
+                                >
+                                  Configurer
+                                </button>
+                              )
                             )}
                           </div>
                         </td>
@@ -562,29 +573,43 @@ const TarifGroupageComponent = () => {
 
                     {/* Actions */}
                     {mainTab === "agency" ? (
-                      <div className="flex gap-2 pt-2">
-                        <button
-                          onClick={() => handleEditTarif(tarif)}
-                          className="flex-1 py-2 px-3 bg-blue-50 text-blue-700 text-xs font-semibold rounded-lg border border-blue-100 hover:bg-blue-100 transition-all"
-                        >
-                          <PencilSquareIcon className="w-4 h-4 inline mr-1" />
-                          Modifier
-                        </button>
-                        <button
-                          onClick={() => handleDeleteTarif(tarif)}
-                          className="flex-1 py-2 px-3 bg-rose-50 text-rose-700 text-xs font-semibold rounded-lg border border-rose-100 hover:bg-rose-100 transition-all"
-                        >
-                          <TrashIcon className="w-4 h-4 inline mr-1" />
-                          Supprimer
-                        </button>
+                      <div className="flex flex-col gap-2 pt-2">
+                        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                          <span className="text-xs text-slate-500 font-medium">Statut</span>
+                          <StatusToggle
+                            active={tarif.actif}
+                            onClick={() => !isAgent && handleToggleStatus(tarif)}
+                            disabled={isAgent}
+                          />
+                        </div>
+                        {!isAgent && (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleEditTarif(tarif)}
+                              className="flex-1 py-2 px-3 bg-blue-50 text-blue-700 text-xs font-semibold rounded-lg border border-blue-100 hover:bg-blue-100 transition-all"
+                            >
+                              <PencilSquareIcon className="w-4 h-4 inline mr-1" />
+                              Modifier
+                            </button>
+                            <button
+                              onClick={() => handleDeleteTarif(tarif)}
+                              className="flex-1 py-2 px-3 bg-rose-50 text-rose-700 text-xs font-semibold rounded-lg border border-rose-100 hover:bg-rose-100 transition-all"
+                            >
+                              <TrashIcon className="w-4 h-4 inline mr-1" />
+                              Supprimer
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ) : (
-                      <button
-                        onClick={() => handleNewTarif(tarif)}
-                        className="w-full py-2.5 px-4 bg-slate-950 hover:bg-slate-800 text-white text-sm font-bold rounded-lg transition-all"
-                      >
-                        Configurer ce tarif
-                      </button>
+                      !isAgent && (
+                        <button
+                          onClick={() => handleNewTarif(tarif)}
+                          className="w-full py-2.5 px-4 bg-slate-950 hover:bg-slate-800 text-white text-sm font-bold rounded-lg transition-all"
+                        >
+                          Configurer ce tarif
+                        </button>
+                      )
                     )}
                   </div>
                 );
@@ -592,7 +617,7 @@ const TarifGroupageComponent = () => {
             </div>
           </>
         ) : (
-          <EmptyState onAction={() => handleNewTarif()} />
+          <EmptyState onAction={() => handleNewTarif()} isAgent={isAgent} />
         )}
       </div>
 
@@ -613,23 +638,26 @@ const TarifGroupageComponent = () => {
   );
 };
 
-const EmptyState = ({ onAction }) => (
+const EmptyState = ({ onAction, isAgent }) => (
   <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
     <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mb-4 border border-slate-100">
       <ArchiveBoxIcon className="w-8 h-8 text-slate-300" />
     </div>
     <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-2">Aucun tarif groupage</h3>
     <p className="text-xs font-medium text-slate-500 mb-8 max-w-xs mx-auto leading-relaxed">
-      Vous n'avez pas encore configuré de tarifs pour les expéditions en groupage.
-      Commencez par ajouter un nouveau tarif.
+      {isAgent 
+        ? "Aucun tarif groupage n'est configuré pour le moment."
+        : "Vous n'avez pas encore configuré de tarifs pour les expéditions en groupage. Commencez par ajouter un nouveau tarif."}
     </p>
-    <button
-      onClick={onAction}
-      className="inline-flex items-center px-6 py-2 bg-slate-950 text-white text-xs font-bold rounded-lg hover:bg-slate-800 transition-all shadow-sm"
-    >
-      <PlusIcon className="w-4 h-4 mr-2" />
-      AJOUTER UN TARIF
-    </button>
+    {!isAgent && (
+      <button
+        onClick={onAction}
+        className="inline-flex items-center px-6 py-2 bg-slate-950 text-white text-xs font-bold rounded-lg hover:bg-slate-800 transition-all shadow-sm"
+      >
+        <PlusIcon className="w-4 h-4 mr-2" />
+        AJOUTER UN TARIF
+      </button>
+    )}
   </div>
 );
 

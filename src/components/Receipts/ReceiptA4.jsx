@@ -2,6 +2,7 @@ import React from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import CompanyLogo from '../../assets/logo_transparent.png';
+import AppLogo from '../../assets/logo_blanc_shop.jpg';
 import { formatColisCodeDisplay } from '../../utils/codeGenerator';
 
 const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
@@ -81,17 +82,22 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
                         )}
                     </div>
                     <div className="text-right flex flex-col items-end">
-                        <div className="bg-slate-900 text-white px-4 py-2 mb-2 inline-block rounded-tl-xl rounded-br-xl shadow-md">
-                            <h2 className="text-lg font-bold uppercase tracking-wide">FACTURE</h2>
+                        {/* Logo de l'application */}
+                        <div className="mb-3">
+                            <img src={AppLogo} alt="Tour Shop" className="h-16 w-auto object-contain rounded-lg shadow-sm" />
                         </div>
+                        
+                        {/* <div className="bg-slate-900 text-white px-4 py-2 mb-2 inline-block rounded-tl-xl rounded-br-xl shadow-md">
+                            <h2 className="text-lg font-bold uppercase tracking-wide">FACTURE</h2>
+                        </div> */}
                         <p className="text-sm font-bold uppercase tracking-wide">N° {invoiceNumber}</p>
                         <p className="text-xs font-bold text-slate-500 mt-1">Éditée le {format(date, 'dd MMMM yyyy à HH:mm', { locale: fr })}</p>
                         {expedition.reference && <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wide">Réf: {expedition.reference}</p>}
 
                         {/* Payment Status Stamp */}
-                        <div className={`mt-3 px-3 py-1 border-2 inline-block transform -rotate-6 ${isPaid ? 'border-emerald-600 text-emerald-600' : 'border-rose-600 text-rose-600'}`}>
+                        <div className={`mt-3 px-3 py-1 border-2 inline-block transform -rotate-6 ${isPaid ? 'border-emerald-600 text-emerald-600' : 'border-amber-600 text-amber-600'}`}>
                             <span className="text-base font-bold uppercase tracking-wide leading-none">
-                                {isPaid ? 'PAYÉ' : 'EN ATTENTE'}
+                                {isPaid ? 'PAYÉ' : 'PAIEMENT À L\'ARRIVÉE'}
                             </span>
                         </div>
                     </div>
@@ -117,7 +123,13 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
                         <p className="text-sm font-bold uppercase tracking-tight text-slate-800">{expedition.destinataire?.nom_prenom || expedition.destinataire_nom_prenom}</p>
                         <p className="text-xs font-bold text-slate-600 mt-1">{expedition.destinataire?.telephone || expedition.destinataire_telephone}</p>
                         <p className="text-xs font-medium text-slate-500 mt-2">{expedition.destinataire?.adresse || expedition.destinataire_adresse}</p>
-                        <p className="text-xs font-bold text-slate-500 mt-1 uppercase tracking-wider">{expedition.destinataire?.ville || expedition.destinataire_ville}, {expedition.destinataire?.pays || expedition.destinataire_pays || expedition.pays_destination}</p>
+                        <p className="text-xs font-bold text-slate-500 mt-1 uppercase tracking-wider">
+                            {expedition.destinataire?.ville || expedition.destinataire_ville}
+                            {(expedition.destinataire?.code_postal || expedition.destinataire_code_postal) && 
+                                <span className="ml-1 text-indigo-600">({expedition.destinataire?.code_postal || expedition.destinataire_code_postal})</span>
+                            }
+                            , {expedition.destinataire?.pays || expedition.destinataire_pays || expedition.pays_destination}
+                        </p>
                     </div>
                 </div>
 

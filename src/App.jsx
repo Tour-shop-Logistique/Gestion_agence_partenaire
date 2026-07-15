@@ -15,6 +15,7 @@ import { useDashboard } from "./hooks/useDashboard";
 import { getLogoUrl } from "./utils/apiConfig";
 import { selectAgencyConfigured } from "./store/slices/agencySlice";
 import { autoCheckAndUpdate, handleChunkLoadError } from "./utils/versionChecker";
+import { getEcho, disconnectEcho } from "./services/echo";
 
 // Import des pages
 import Home from "./pages/Home";
@@ -39,6 +40,7 @@ import Transactions from "./pages/Transactions";
 import TransactionsPro from "./pages/TransactionsPro";
 import ToastManager from "./components/ToastManager";
 import DashboardLayout from "./components/DashboardLayout";
+import WebSocketDebugPanel from "./components/WebSocketDebugPanel";
 
 // Composant pour gérer la redirection automatique
 const AutoRedirect = ({ children }) => {
@@ -104,6 +106,33 @@ function AppContent() {
   const { isAuthenticated, status } = useSelector((state) => state.auth);
   const { fetchDashboard } = useDashboard();
   const hasLoadedDataRef = useRef(false);
+
+  // ========== INITIALISATION WEBSOCKET ==========
+  useEffect(() => {
+    // ⚠️ TEMPORAIRE : Désactivé car backend non accessible
+    // TODO: Réactiver une fois que le serveur WebSocket est démarré
+    // ET que l'URL ngrok est correcte et accessible
+    /*
+    if (isAuthenticated && status === "succeeded") {
+      // Initialiser Echo quand l'utilisateur est authentifié
+      console.log('🔌 [App] Initialisation de la connexion WebSocket');
+      const echo = getEcho();
+      
+      if (!echo) {
+        console.warn('⚠️ [App] Impossible d\'initialiser WebSocket');
+      }
+      
+      // Nettoyer la connexion à la déconnexion
+      return () => {
+        console.log('🔌 [App] Nettoyage de la connexion WebSocket');
+        disconnectEcho();
+      };
+    }
+    */
+    if (isAuthenticated && status === "succeeded") {
+      console.warn('⚠️ [App] WebSocket désactivé - Backend non accessible (ngrok offline)');
+    }
+  }, [isAuthenticated, status]);
 
   useEffect(() => {
     // Vérifier si un token existe au démarrage de l'application
@@ -182,6 +211,9 @@ function AppContent() {
   return (
     <AutoRedirect>
       <ToastManager />
+      {/* Debug Panel WebSocket (DEV ONLY - Ctrl+Shift+D pour ouvrir) */}
+      {/* Désactivé temporairement car backend non accessible */}
+      {/* {import.meta.env.DEV && <WebSocketDebugPanel />} */}
       <Routes>
         {/* Routes publiques */}
         <Route
