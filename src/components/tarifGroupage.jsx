@@ -384,10 +384,10 @@ const TarifGroupageComponent = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {filteredTarifs.map((tarif, index) => {
-                    const montantBase = mainTab === "agency" ? (tarif.montant_expedition || 0) : (tarif.montant_base || 0);
+                    const montantBase = mainTab === "agency" ? (tarif.montant_base || 0) : (tarif.montant_base || 0);
                     const pourcentage = tarif.pourcentage_prestation || 0;
                     const montantPrestation = Math.round(montantBase * pourcentage / 100);
-                    const total = montantBase + montantPrestation;
+                    const total = mainTab === "agency" ? (tarif.montant_expedition || 0) : (montantBase + montantPrestation);
 
                     return (
                       <tr key={`${mainTab}-tarif-${tarif.id || index}`} className="hover:bg-slate-50/50 transition-colors">
@@ -497,10 +497,10 @@ const TarifGroupageComponent = () => {
             {/* Mobile Cards */}
             <div className="lg:hidden space-y-3 p-4">
               {filteredTarifs.map((tarif, index) => {
-                const montantBase = mainTab === "agency" ? (tarif.montant_expedition || 0) : (tarif.montant_base || 0);
+                const montantBase = mainTab === "agency" ? (tarif.montant_base || 0) : (tarif.montant_base || 0);
                 const pourcentage = tarif.pourcentage_prestation || 0;
                 const montantPrestation = Math.round(montantBase * pourcentage / 100);
-                const total = montantBase + montantPrestation;
+                const total = mainTab === "agency" ? (tarif.montant_expedition || 0) : (montantBase + montantPrestation);
 
                 return (
                   <div key={`${mainTab}-mobile-${tarif.id || index}`} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">

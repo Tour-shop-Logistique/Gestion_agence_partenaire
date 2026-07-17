@@ -180,7 +180,7 @@ const RecentExpeditions = ({ expeditions = [] }) => {
 
                                 {/* 📦 EXPEDITION HEADER - Design Card-like avec ombre - CLIQUABLE */}
                                 <div 
-                                    className="bg-gradient-to-r from-indigo-500 to-indigo-600 shadow-lg px-3 sm:px-4 py-2.5 sm:py-3 cursor-pointer hover:from-indigo-600 hover:to-indigo-700 transition-all"
+                                   className="bg-gradient-to-r from-cyan-700 via-sky-600 to-blue-600 shadow-md hover:from-cyan-800 hover:via-sky-700 hover:to-blue-700 transition-all duration-300 px-3 sm:px-4 py-2.5 sm:py-3 "
                                     onClick={() => toggleExpedition(exp.id)}
                                 >
                                     <div className="flex items-center justify-between gap-2">

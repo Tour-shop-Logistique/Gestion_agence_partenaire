@@ -22,88 +22,6 @@ import {
 } from "@heroicons/react/24/outline";
 import { getLogoUrl } from "../utils/apiConfig";
 
-/* ─── Palette par section ───────────────────────────────────────────────────
-   Chaque section a :
-   - labelColor  : couleur du titre de section
-   - dot         : couleur du petit rond
-   - activeBg    : fond de l'onglet actif
-   - activeText  : texte de l'onglet actif
-   - activeBorder: bordure gauche de l'onglet actif
-   - activeIcon  : couleur de l'icône active
-   - hoverBg     : fond au survol
-   - hoverText   : texte au survol
-   - hoverIcon   : icône au survol
-────────────────────────────────────────────────────────────────────────────── */
-const SECTION_COLORS = {
-  Principal: {
-    labelColor: "text-sky-400",
-    dot: "bg-sky-400",
-    activeBg: "bg-sky-500/20",
-    activeText: "text-sky-300",
-    activeBorder: "border-l-[3px] border-sky-400",
-    activeIcon: "text-sky-400",
-    hoverBg: "hover:bg-white/5",
-    hoverText: "hover:text-sky-200",
-    hoverIcon: "group-hover:text-sky-400",
-  },
-  Colis: {
-    labelColor: "text-violet-400",
-    dot: "bg-violet-400",
-    activeBg: "bg-violet-500/20",
-    activeText: "text-violet-300",
-    activeBorder: "border-l-[3px] border-violet-400",
-    activeIcon: "text-violet-400",
-    hoverBg: "hover:bg-white/5",
-    hoverText: "hover:text-violet-200",
-    hoverIcon: "group-hover:text-violet-400",
-  },
-  Finance: {
-    labelColor: "text-emerald-400",
-    dot: "bg-emerald-400",
-    activeBg: "bg-emerald-500/20",
-    activeText: "text-emerald-300",
-    activeBorder: "border-l-[3px] border-emerald-400",
-    activeIcon: "text-emerald-400",
-    hoverBg: "hover:bg-white/5",
-    hoverText: "hover:text-emerald-200",
-    hoverIcon: "group-hover:text-emerald-400",
-  },
-  Tarifs: {
-    labelColor: "text-amber-400",
-    dot: "bg-amber-400",
-    activeBg: "bg-amber-500/20",
-    activeText: "text-amber-300",
-    activeBorder: "border-l-[3px] border-amber-400",
-    activeIcon: "text-amber-400",
-    hoverBg: "hover:bg-white/5",
-    hoverText: "hover:text-amber-200",
-    hoverIcon: "group-hover:text-amber-400",
-  },
-  Configuration: {
-    labelColor: "text-rose-400",
-    dot: "bg-rose-400",
-    activeBg: "bg-rose-500/20",
-    activeText: "text-rose-300",
-    activeBorder: "border-l-[3px] border-rose-400",
-    activeIcon: "text-rose-400",
-    hoverBg: "hover:bg-white/5",
-    hoverText: "hover:text-rose-200",
-    hoverIcon: "group-hover:text-rose-400",
-  },
-};
-
-const DEFAULT_COLOR = {
-  labelColor: "text-slate-400",
-  dot: "bg-slate-400",
-  activeBg: "bg-slate-100",
-  activeText: "text-slate-800",
-  activeBorder: "border-l-[3px] border-slate-500",
-  activeIcon: "text-slate-700",
-  hoverBg: "hover:bg-slate-50",
-  hoverText: "hover:text-slate-700",
-  hoverIcon: "group-hover:text-slate-500",
-};
-
 const Sidebar = ({ onClose }) => {
   const currentUser = useSelector(selectCurrentUser);
   const isAdmin = useSelector(selectIsAdmin);
@@ -210,108 +128,112 @@ const Sidebar = ({ onClose }) => {
 
   return (
     <div 
-      className="flex flex-col h-full w-60 lg:mt-0 mt-0 relative overflow-hidden"
+      className="flex flex-col h-full w-64 lg:mt-0 mt-0 relative overflow-hidden"
       style={{
-        background: "#1e293b",
+        background: "linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)",
       }}
     >
-      {/* ========== MOTIFS DE FOND ORNEMENTAUX RÉPÉTITIFS ========== */}
+      {/* ========== FOND MODERNE AVEC MOTIFS PLUS VISIBLES ========== */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {/* Fond avec dégradé subtil */}
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-800/30 via-transparent to-slate-900/30" />
+        {/* Dégradé subtil de profondeur */}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-800/30 via-slate-900/20 to-slate-800/30" />
         
-        {/* Pattern ornamental répétitif vertical */}
+        {/* Motifs géométriques modernes (opacité augmentée) */}
         <div className="absolute inset-0 opacity-[0.08]">
           <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
             <defs>
-              {/* Pattern de base - motif ornemental adapté à la sidebar */}
-              <pattern id="sidebar-ornamental" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
-                {/* Forme centrale en losange */}
-                <path d="M30,12 L36,30 L30,48 L24,30 Z" fill="#60a5fa" opacity="0.4"/>
+              {/* Motif de grille minimaliste */}
+              <pattern id="modern-grid" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
+                {/* Cercles concentriques */}
+                <circle cx="40" cy="40" r="20" fill="none" stroke="#06b6d4" strokeWidth="0.8" opacity="0.7"/>
+                <circle cx="40" cy="40" r="12" fill="none" stroke="#6366f1" strokeWidth="0.8" opacity="0.6"/>
+                <circle cx="40" cy="40" r="6" fill="#14b8a6" opacity="0.5"/>
                 
-                {/* Courbes ornementales autour */}
-                <path d="M30,12 Q24,18 30,24 Q36,18 30,12" fill="none" stroke="#14b8a6" strokeWidth="1" opacity="0.6"/>
-                <path d="M30,36 Q24,42 30,48 Q36,42 30,36" fill="none" stroke="#14b8a6" strokeWidth="1" opacity="0.6"/>
-                <path d="M12,30 Q18,24 24,30 Q18,36 12,30" fill="none" stroke="#818cf8" strokeWidth="1" opacity="0.6"/>
-                <path d="M36,30 Q42,24 48,30 Q42,36 36,30" fill="none" stroke="#818cf8" strokeWidth="1" opacity="0.6"/>
+                {/* Lignes diagonales douces */}
+                <line x1="0" y1="40" x2="80" y2="40" stroke="#06b6d4" strokeWidth="0.5" opacity="0.4"/>
+                <line x1="40" y1="0" x2="40" y2="80" stroke="#6366f1" strokeWidth="0.5" opacity="0.4"/>
                 
-                {/* Cercles décoratifs */}
-                <circle cx="30" cy="30" r="4" fill="none" stroke="#fbbf24" strokeWidth="0.8" opacity="0.5"/>
-                <circle cx="30" cy="12" r="2" fill="#14b8a6" opacity="0.7"/>
-                <circle cx="30" cy="48" r="2" fill="#14b8a6" opacity="0.7"/>
-                <circle cx="12" cy="30" r="2" fill="#818cf8" opacity="0.7"/>
-                <circle cx="48" cy="30" r="2" fill="#818cf8" opacity="0.7"/>
-                
-                {/* Mini étoiles dans les coins */}
-                <path d="M15,15 L17,17 L15,19 L13,17 Z" fill="#fbbf24" opacity="0.4"/>
-                <path d="M45,15 L47,17 L45,19 L43,17 Z" fill="#fbbf24" opacity="0.4"/>
-                <path d="M15,45 L17,47 L15,49 L13,47 Z" fill="#fbbf24" opacity="0.4"/>
-                <path d="M45,45 L47,47 L45,49 L43,47 Z" fill="#fbbf24" opacity="0.4"/>
-                
-                {/* Lignes décoratives subtiles */}
-                <line x1="30" y1="24" x2="30" y2="36" stroke="#60a5fa" strokeWidth="0.5" opacity="0.3"/>
-                <line x1="24" y1="30" x2="36" y2="30" stroke="#60a5fa" strokeWidth="0.5" opacity="0.3"/>
+                {/* Points lumineux aux coins */}
+                <circle cx="0" cy="0" r="2.5" fill="#14b8a6" opacity="0.6"/>
+                <circle cx="80" cy="0" r="2.5" fill="#06b6d4" opacity="0.6"/>
+                <circle cx="0" cy="80" r="2.5" fill="#6366f1" opacity="0.6"/>
+                <circle cx="80" cy="80" r="2.5" fill="#14b8a6" opacity="0.6"/>
               </pattern>
 
-              {/* Pattern secondaire pour variation */}
-              <pattern id="sidebar-ornamental-2" x="30" y="30" width="60" height="60" patternUnits="userSpaceOnUse">
-                {/* Étoile à 8 branches */}
-                <g transform="translate(30, 30)">
-                  <path d="M0,-12 L3,-3 L12,0 L3,3 L0,12 L-3,3 L-12,0 L-3,-3 Z" fill="#14b8a6" opacity="0.3"/>
-                  <circle cx="0" cy="0" r="3" fill="#fbbf24" opacity="0.4"/>
-                </g>
+              {/* Motif de connexions (type tech/network) */}
+              <pattern id="network-pattern" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
+                {/* Nœuds */}
+                <circle cx="20" cy="20" r="3" fill="#06b6d4" opacity="0.7"/>
+                <circle cx="80" cy="30" r="3" fill="#6366f1" opacity="0.7"/>
+                <circle cx="50" cy="70" r="3" fill="#14b8a6" opacity="0.7"/>
+                <circle cx="30" cy="90" r="3" fill="#06b6d4" opacity="0.7"/>
                 
-                {/* Spirales décoratives */}
-                <path d="M30,18 Q27,21 30,24" fill="none" stroke="#818cf8" strokeWidth="0.6" opacity="0.4"/>
-                <path d="M30,36 Q33,39 30,42" fill="none" stroke="#818cf8" strokeWidth="0.6" opacity="0.4"/>
-                
-                {/* Points lumineux */}
-                <circle cx="20" cy="20" r="1.5" fill="#60a5fa" opacity="0.6"/>
-                <circle cx="40" cy="20" r="1.5" fill="#60a5fa" opacity="0.6"/>
-                <circle cx="20" cy="40" r="1.5" fill="#60a5fa" opacity="0.6"/>
-                <circle cx="40" cy="40" r="1.5" fill="#60a5fa" opacity="0.6"/>
+                {/* Lignes de connexion */}
+                <line x1="20" y1="20" x2="80" y2="30" stroke="#06b6d4" strokeWidth="0.8" opacity="0.4" strokeDasharray="3,3"/>
+                <line x1="80" y1="30" x2="50" y2="70" stroke="#6366f1" strokeWidth="0.8" opacity="0.4" strokeDasharray="3,3"/>
+                <line x1="50" y1="70" x2="30" y2="90" stroke="#14b8a6" strokeWidth="0.8" opacity="0.4" strokeDasharray="3,3"/>
+              </pattern>
+
+              {/* Motif de vagues subtiles */}
+              <pattern id="wave-pattern" x="0" y="0" width="100" height="40" patternUnits="userSpaceOnUse">
+                <path d="M0,20 Q25,10 50,20 T100,20" fill="none" stroke="#06b6d4" strokeWidth="0.8" opacity="0.5"/>
+                <path d="M0,25 Q25,15 50,25 T100,25" fill="none" stroke="#6366f1" strokeWidth="0.8" opacity="0.4"/>
+                <circle cx="50" cy="20" r="2" fill="#14b8a6" opacity="0.6"/>
               </pattern>
             </defs>
             
             {/* Application des patterns */}
-            <rect width="100%" height="100%" fill="url(#sidebar-ornamental)"/>
+            <rect width="100%" height="100%" fill="url(#modern-grid)"/>
           </svg>
         </div>
 
-        {/* Overlay avec le pattern secondaire */}
+        {/* Overlay avec pattern secondaire (plus visible) */}
         <div className="absolute inset-0 opacity-[0.06]">
           <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-            <rect width="100%" height="100%" fill="url(#sidebar-ornamental-2)"/>
+            <rect width="100%" height="100%" fill="url(#network-pattern)"/>
           </svg>
         </div>
 
-        {/* Bordure ornementale gauche (plus prononcée) */}
-        <div className="absolute left-0 top-0 bottom-0 w-1 opacity-15">
-          <svg width="4" height="100%" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+        {/* Pattern de vagues en bas (plus visible) */}
+        <div className="absolute bottom-0 left-0 right-0 h-48 opacity-[0.08]">
+          <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+            <rect width="100%" height="100%" fill="url(#wave-pattern)"/>
+          </svg>
+        </div>
+
+        {/* Lueur douce en haut (plus prononcée) */}
+        <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-cyan-500/8 via-transparent to-transparent" />
+        
+        {/* Lueur douce en bas (plus prononcée) */}
+        <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-indigo-500/8 via-transparent to-transparent" />
+        
+        {/* Bordure gauche accent avec pattern (plus visible) */}
+        <div className="absolute left-0 top-0 bottom-0 w-px">
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cyan-500/30 to-transparent" />
+          <svg width="1" height="100%" xmlns="http://www.w3.org/2000/svg" className="absolute inset-0">
             <defs>
-              <pattern id="sidebar-border" x="0" y="0" width="4" height="20" patternUnits="userSpaceOnUse">
-                <circle cx="2" cy="10" r="1.5" fill="#14b8a6" opacity="0.7"/>
-                <circle cx="2" cy="5" r="0.8" fill="#60a5fa" opacity="0.5"/>
-                <circle cx="2" cy="15" r="0.8" fill="#fbbf24" opacity="0.5"/>
+              <pattern id="border-dots" x="0" y="0" width="1" height="30" patternUnits="userSpaceOnUse">
+                <circle cx="0.5" cy="15" r="0.6" fill="#06b6d4" opacity="0.6"/>
               </pattern>
             </defs>
-            <rect width="4" height="100%" fill="url(#sidebar-border)"/>
+            <rect width="1" height="100%" fill="url(#border-dots)"/>
           </svg>
         </div>
 
-        {/* Gradient de lumière subtil du haut */}
-        <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-slate-700/10 to-transparent pointer-events-none" />
-        
-        {/* Gradient de lumière subtil du bas */}
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-slate-900/20 to-transparent pointer-events-none" />
+        {/* Éclats lumineux (style particules - plus visibles) */}
+        <div className="absolute inset-0 opacity-[0.04]">
+          <div className="absolute top-1/4 left-1/3 w-40 h-40 bg-cyan-400 rounded-full blur-3xl" />
+          <div className="absolute top-2/3 right-1/4 w-40 h-40 bg-indigo-400 rounded-full blur-3xl" />
+          <div className="absolute bottom-1/4 left-1/2 w-32 h-32 bg-teal-400 rounded-full blur-3xl" />
+        </div>
       </div>
 
-      {/* ── Branding Header ─────────────────────────────────────────────────── */}
-      <div className="relative z-10 h-16 flex items-center px-4 shrink-0 border-b border-white/10">
-        <div className="flex items-center space-x-3 min-w-0 flex-1">
-          {/* Logo container */}
+      {/* ── Branding Header Premium ─────────────────────────────────────────────────── */}
+      <div className="relative z-10 h-20 flex items-center px-5 shrink-0 border-b border-white/5">
+        <div className="flex items-center space-x-3.5 min-w-0 flex-1">
+          {/* Logo container premium avec ombre et dégradé */}
           <div
-            className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center p-1.5 bg-white"
+            className="w-11 h-11 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center p-2 bg-gradient-to-br from-white to-slate-50 shadow-lg ring-1 ring-white/20"
           >
             {agencyData?.agence?.logo ? (
               <img
@@ -320,28 +242,29 @@ const Sidebar = ({ onClose }) => {
                 className="w-full h-full object-contain"
               />
             ) : (
-              <TruckIcon className="w-5 h-5 text-slate-700" />
+              <TruckIcon className="w-6 h-6 text-slate-700" />
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <span className="font-bold text-white tracking-tight text-sm truncate block">
+            <span className="font-bold text-white tracking-tight text-base truncate block leading-tight">
               {agencyData?.agence?.nom_agence || "Tous Shop"}
             </span>
+            <span className="text-xs text-slate-400 font-medium">Gestion d'expéditions</span>
           </div>
         </div>
 
         {onClose && (
           <button
             onClick={onClose}
-            className="lg:hidden ml-auto p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+            className="lg:hidden ml-auto p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all duration-200"
           >
             <XMarkIcon className="w-5 h-5" />
           </button>
         )}
       </div>
 
-      {/* ── Navigation ──────────────────────────────────────────────────────── */}
-      <nav className="relative z-10 flex-1 overflow-y-auto py-4 px-3 space-y-1 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+      {/* ── Navigation Moderne avec Transitions Fluides ──────────────────────────────────────────────────────── */}
+      <nav className="relative z-10 flex-1 overflow-y-auto py-6 px-4 space-y-1.5 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
         {menuItems.map((section, sectionIdx) => (
           <div key={sectionIdx}>
             {section.items.map((item) => {
@@ -354,29 +277,59 @@ const Sidebar = ({ onClose }) => {
                   to={item.path}
                   onClick={onClose}
                   className={`
-                    group flex items-center px-3 py-2.5 rounded-lg text-sm font-medium mb-1
-                    transition-all duration-150 relative
+                    group flex items-center px-3.5 py-3 rounded-lg text-sm font-medium mb-1
+                    transition-all duration-200 ease-out relative overflow-hidden
                     ${active
-                      ? "bg-slate-700/60 text-white"
-                      : "text-slate-300 hover:bg-slate-700/40 hover:text-white"
+                      ? "bg-gradient-to-r from-cyan-500/10 to-indigo-500/10 text-white shadow-lg shadow-cyan-500/5 border-l-2 border-cyan-400"
+                      : "text-slate-300 hover:bg-slate-800/60 hover:text-white hover:shadow-md hover:scale-[1.02] hover:-translate-y-0.5"
                     }
                   `}
+                  style={{
+                    transitionProperty: 'all',
+                    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+                  }}
                 >
+                  {/* Effet de lueur subtil sur l'élément actif avec transition */}
+                  {active && (
+                    <div 
+                      className="absolute inset-0 bg-gradient-to-r from-cyan-400/5 to-indigo-400/5 pointer-events-none transition-opacity duration-200"
+                      style={{
+                        animation: 'fadeIn 0.2s ease-out',
+                      }}
+                    />
+                  )}
+                  
                   <item.icon
-                    className={`w-5 h-5 mr-3 shrink-0 transition-colors ${
-                      active ? "text-white" : "text-slate-400 group-hover:text-slate-200"
+                    className={`w-5 h-5 mr-3.5 shrink-0 transition-all duration-200 ease-out ${
+                      active 
+                        ? "text-cyan-400 scale-110" 
+                        : "text-slate-400 group-hover:text-slate-200 group-hover:scale-105 group-hover:rotate-3"
                     }`}
                   />
-                  <span className="flex-1 truncate">{item.name}</span>
+                  <span 
+                    className="flex-1 truncate relative z-10 transition-all duration-200"
+                    style={{
+                      transform: active ? 'translateX(0)' : 'translateX(0)',
+                    }}
+                  >
+                    {item.name}
+                  </span>
 
                   {showBadge && (
-                    <span className="flex items-center justify-center min-w-[18px] h-5 px-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full">
+                    <span 
+                      className="flex items-center justify-center min-w-[20px] h-5 px-2 bg-gradient-to-r from-red-500 to-red-600 text-white text-[10px] font-bold rounded-full shadow-lg shadow-red-500/30 ring-2 ring-red-400/20 transition-all duration-200 hover:scale-110"
+                    >
                       {pendingDemandesCount > 99 ? "99+" : pendingDemandesCount}
                     </span>
                   )}
 
                   {active && !showBadge && (
-                    <ChevronRightIcon className="w-4 h-4 text-slate-400 opacity-60" />
+                    <ChevronRightIcon 
+                      className="w-4 h-4 text-cyan-400/60 transition-all duration-200"
+                      style={{
+                        animation: 'slideInRight 0.2s ease-out',
+                      }}
+                    />
                   )}
                 </Link>
               );
@@ -385,41 +338,63 @@ const Sidebar = ({ onClose }) => {
         ))}
       </nav>
 
-      {/* ── User Footer ─────────────────────────────────────────────────────── */}
-      <div className="relative z-10 p-3 shrink-0 border-t border-white/10">
+      {/* Styles d'animation pour les transitions fluides */}
+      <style jsx>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+        
+        @keyframes slideInRight {
+          from {
+            opacity: 0;
+            transform: translateX(-8px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+      `}</style>
+
+      {/* ── User Footer Premium ─────────────────────────────────────────────────────── */}
+      <div className="relative z-10 p-4 shrink-0 border-t border-white/5">
         <div
-          className="flex items-center p-2.5 rounded-lg"
-          style={{
-            background: "rgba(0,0,0,0.2)",
-          }}
+          className="flex items-center p-3 rounded-xl bg-gradient-to-r from-slate-800/80 to-slate-800/60 backdrop-blur-sm shadow-lg ring-1 ring-white/5 transition-all duration-300 hover:shadow-xl hover:ring-white/10"
         >
-          {/* Avatar */}
+          {/* Avatar Premium */}
           <div
-            className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-lg ring-2 ring-white/10 transition-transform duration-300 hover:scale-105"
             style={{
-              background: isAdminLike ? "#dc2626" : "#3b82f6",
+              background: isAdminLike 
+                ? "linear-gradient(135deg, #dc2626 0%, #ef4444 100%)" 
+                : "linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)",
             }}
           >
-            <span className="text-white font-bold text-xs">
+            <span className="text-white font-bold text-sm">
               {(currentUser?.name || currentUser?.nom || "U")[0].toUpperCase()}
             </span>
           </div>
 
-          <div className="ml-2.5 min-w-0 flex-1">
-            <p className="text-xs font-semibold text-white truncate leading-tight">
+          <div className="ml-3 min-w-0 flex-1">
+            <p className="text-sm font-semibold text-white truncate leading-tight">
               {currentUser?.name ||
                 `${currentUser?.prenoms || ""} ${currentUser?.nom || ""}`.trim()}
             </p>
-            <span className="text-[10px] text-slate-400">
+            <span className="text-xs text-slate-400 font-medium">
               {isAdminLike ? "Administrateur" : "Agent"}
             </span>
           </div>
 
-          {/* Status dot */}
-          <div className="flex-shrink-0 ml-1">
-            <span className="relative flex h-2 w-2">
+          {/* Status dot Premium */}
+          <div className="flex-shrink-0 ml-2">
+            <span className="relative flex h-2.5 w-2.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400 shadow-lg shadow-emerald-400/50" />
             </span>
           </div>
         </div>

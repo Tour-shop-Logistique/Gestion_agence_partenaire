@@ -1,4 +1,4 @@
-# Guide WebSocket — Appli Agence
+ # Guide WebSocket — Appli Agence
 
 Ce document explique comment te connecter au serveur temps réel du backend pour
 recevoir les mises à jour en direct (colis, expéditions, tarifs...) sans avoir à
