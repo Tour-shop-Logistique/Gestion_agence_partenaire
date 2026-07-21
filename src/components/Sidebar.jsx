@@ -127,114 +127,74 @@ const Sidebar = ({ onClose }) => {
   const menuItems = isAdminLike ? adminMenuItems : agentMenuItems;
 
   return (
-    <div 
+    <div
       className="flex flex-col h-full w-64 lg:mt-0 mt-0 relative overflow-hidden"
       style={{
-        background: "linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)",
+        background: "linear-gradient(180deg, #182642 0%, #223a63 50%, #182642 100%)",
       }}
     >
-      {/* ========== FOND MODERNE AVEC MOTIFS PLUS VISIBLES ========== */}
+      {/* ========== FOND — THÈME "ROUTES D'EXPÉDITION" ========== */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {/* Dégradé subtil de profondeur */}
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-800/30 via-slate-900/20 to-slate-800/30" />
-        
-        {/* Motifs géométriques modernes (opacité augmentée) */}
-        <div className="absolute inset-0 opacity-[0.08]">
-          <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              {/* Motif de grille minimaliste */}
-              <pattern id="modern-grid" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
-                {/* Cercles concentriques */}
-                <circle cx="40" cy="40" r="20" fill="none" stroke="#06b6d4" strokeWidth="0.8" opacity="0.7"/>
-                <circle cx="40" cy="40" r="12" fill="none" stroke="#6366f1" strokeWidth="0.8" opacity="0.6"/>
-                <circle cx="40" cy="40" r="6" fill="#14b8a6" opacity="0.5"/>
-                
-                {/* Lignes diagonales douces */}
-                <line x1="0" y1="40" x2="80" y2="40" stroke="#06b6d4" strokeWidth="0.5" opacity="0.4"/>
-                <line x1="40" y1="0" x2="40" y2="80" stroke="#6366f1" strokeWidth="0.5" opacity="0.4"/>
-                
-                {/* Points lumineux aux coins */}
-                <circle cx="0" cy="0" r="2.5" fill="#14b8a6" opacity="0.6"/>
-                <circle cx="80" cy="0" r="2.5" fill="#06b6d4" opacity="0.6"/>
-                <circle cx="0" cy="80" r="2.5" fill="#6366f1" opacity="0.6"/>
-                <circle cx="80" cy="80" r="2.5" fill="#14b8a6" opacity="0.6"/>
-              </pattern>
+        <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" className="absolute inset-0">
+          <defs>
+            {/* Grille de repère fine, façon carte de navigation */}
+            <pattern id="nav-grid" x="0" y="0" width="30" height="30" patternUnits="userSpaceOnUse">
+              <circle cx="1" cy="1" r="1.2" fill="#a5f3fc" />
+            </pattern>
 
-              {/* Motif de connexions (type tech/network) */}
-              <pattern id="network-pattern" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
-                {/* Nœuds */}
-                <circle cx="20" cy="20" r="3" fill="#06b6d4" opacity="0.7"/>
-                <circle cx="80" cy="30" r="3" fill="#6366f1" opacity="0.7"/>
-                <circle cx="50" cy="70" r="3" fill="#14b8a6" opacity="0.7"/>
-                <circle cx="30" cy="90" r="3" fill="#06b6d4" opacity="0.7"/>
-                
-                {/* Lignes de connexion */}
-                <line x1="20" y1="20" x2="80" y2="30" stroke="#06b6d4" strokeWidth="0.8" opacity="0.4" strokeDasharray="3,3"/>
-                <line x1="80" y1="30" x2="50" y2="70" stroke="#6366f1" strokeWidth="0.8" opacity="0.4" strokeDasharray="3,3"/>
-                <line x1="50" y1="70" x2="30" y2="90" stroke="#14b8a6" strokeWidth="0.8" opacity="0.4" strokeDasharray="3,3"/>
-              </pattern>
+            {/* Ligne de route maritime/aérienne avec points d'étape */}
+            <pattern id="shipping-lane" x="0" y="0" width="240" height="200" patternUnits="userSpaceOnUse">
+              <path
+                d="M-20,150 C40,90 90,190 150,110 S 250,40 280,60"
+                fill="none"
+                stroke="#67e8f9"
+                strokeWidth="1.4"
+                strokeDasharray="1,6"
+                strokeLinecap="round"
+                opacity="0.95"
+              />
+              <path
+                d="M-30,40 C30,70 70,10 140,45 S 230,90 270,55"
+                fill="none"
+                stroke="#a5b4fc"
+                strokeWidth="1.4"
+                strokeDasharray="1,6"
+                strokeLinecap="round"
+                opacity="0.85"
+              />
+              {/* Points d'étape (waypoints) */}
+              <circle cx="150" cy="110" r="3" fill="#67e8f9" opacity="1" />
+              <circle cx="150" cy="110" r="6.5" fill="none" stroke="#67e8f9" strokeWidth="0.8" opacity="0.5" />
+              <circle cx="140" cy="45" r="3" fill="#a5b4fc" opacity="1" />
+              <circle cx="140" cy="45" r="6.5" fill="none" stroke="#a5b4fc" strokeWidth="0.8" opacity="0.5" />
+              <circle cx="20" cy="105" r="2" fill="#5eead4" opacity="0.9" />
+            </pattern>
+          </defs>
 
-              {/* Motif de vagues subtiles */}
-              <pattern id="wave-pattern" x="0" y="0" width="100" height="40" patternUnits="userSpaceOnUse">
-                <path d="M0,20 Q25,10 50,20 T100,20" fill="none" stroke="#06b6d4" strokeWidth="0.8" opacity="0.5"/>
-                <path d="M0,25 Q25,15 50,25 T100,25" fill="none" stroke="#6366f1" strokeWidth="0.8" opacity="0.4"/>
-                <circle cx="50" cy="20" r="2" fill="#14b8a6" opacity="0.6"/>
-              </pattern>
-            </defs>
-            
-            {/* Application des patterns */}
-            <rect width="100%" height="100%" fill="url(#modern-grid)"/>
-          </svg>
-        </div>
+          <rect width="100%" height="100%" fill="url(#nav-grid)" opacity="0.14" />
+          <rect width="100%" height="100%" fill="url(#shipping-lane)" opacity="0.4" />
+        </svg>
 
-        {/* Overlay avec pattern secondaire (plus visible) */}
-        <div className="absolute inset-0 opacity-[0.06]">
-          <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-            <rect width="100%" height="100%" fill="url(#network-pattern)"/>
-          </svg>
-        </div>
+        {/* Lueurs douces en haut / en bas, ancrées à l'accent de la marque */}
+        <div className="absolute top-0 left-0 right-0 h-36 bg-gradient-to-b from-cyan-400/20 via-transparent to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-44 bg-gradient-to-t from-indigo-400/20 via-transparent to-transparent" />
 
-        {/* Pattern de vagues en bas (plus visible) */}
-        <div className="absolute bottom-0 left-0 right-0 h-48 opacity-[0.08]">
-          <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
-            <rect width="100%" height="100%" fill="url(#wave-pattern)"/>
-          </svg>
-        </div>
+        {/* Halos ambiants */}
+        <div className="absolute -top-10 -left-10 w-56 h-56 bg-cyan-400/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 -right-10 w-56 h-56 bg-indigo-400/10 rounded-full blur-3xl" />
 
-        {/* Lueur douce en haut (plus prononcée) */}
-        <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-cyan-500/8 via-transparent to-transparent" />
-        
-        {/* Lueur douce en bas (plus prononcée) */}
-        <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-indigo-500/8 via-transparent to-transparent" />
-        
-        {/* Bordure gauche accent avec pattern (plus visible) */}
-        <div className="absolute left-0 top-0 bottom-0 w-px">
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cyan-500/30 to-transparent" />
-          <svg width="1" height="100%" xmlns="http://www.w3.org/2000/svg" className="absolute inset-0">
-            <defs>
-              <pattern id="border-dots" x="0" y="0" width="1" height="30" patternUnits="userSpaceOnUse">
-                <circle cx="0.5" cy="15" r="0.6" fill="#06b6d4" opacity="0.6"/>
-              </pattern>
-            </defs>
-            <rect width="1" height="100%" fill="url(#border-dots)"/>
-          </svg>
-        </div>
-
-        {/* Éclats lumineux (style particules - plus visibles) */}
-        <div className="absolute inset-0 opacity-[0.04]">
-          <div className="absolute top-1/4 left-1/3 w-40 h-40 bg-cyan-400 rounded-full blur-3xl" />
-          <div className="absolute top-2/3 right-1/4 w-40 h-40 bg-indigo-400 rounded-full blur-3xl" />
-          <div className="absolute bottom-1/4 left-1/2 w-32 h-32 bg-teal-400 rounded-full blur-3xl" />
-        </div>
+        {/* Liseré d'accent sur le bord gauche */}
+        <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-cyan-400/40 to-transparent" />
       </div>
 
-      {/* ── Branding Header Premium ─────────────────────────────────────────────────── */}
-      <div className="relative z-10 h-20 flex items-center px-5 shrink-0 border-b border-white/5">
-        <div className="flex items-center space-x-3.5 min-w-0 flex-1">
-          {/* Logo container premium avec ombre et dégradé */}
-          <div
-            className="w-11 h-11 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center p-2 bg-gradient-to-br from-white to-slate-50 shadow-lg ring-1 ring-white/20"
-          >
+      {/* Voile de lisibilité : assombrit légèrement les motifs sous le texte sans les effacer */}
+      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-[#0f1c33]/55 via-[#0f1c33]/25 to-[#0f1c33]/55" />
+
+      {/* ── Branding Header ─────────────────────────────────────────────────── */}
+      <div className="relative z-10 h-20 flex items-center px-5 shrink-0 border-b border-white/10">
+        <div className="flex items-center gap-3.5 min-w-0 flex-1">
+          {/* Logo container avec ombre et dégradé */}
+          <div className="w-11 h-11 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center p-2 bg-gradient-to-br from-white to-slate-100 shadow-lg shadow-black/20 ring-1 ring-white/10">
             {agencyData?.agence?.logo ? (
               <img
                 src={getLogoUrl(agencyData.agence.logo)}
@@ -246,157 +206,129 @@ const Sidebar = ({ onClose }) => {
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <span className="font-bold text-white tracking-tight text-base truncate block leading-tight">
+            <span
+              className="font-bold text-white tracking-tight text-[15px] truncate block leading-tight"
+              style={{ textShadow: "0 1px 3px rgba(0,0,0,0.5)" }}
+            >
               {agencyData?.agence?.nom_agence || "Tous Shop"}
             </span>
-            <span className="text-xs text-slate-400 font-medium">Gestion d'expéditions</span>
+            <span className="text-[11px] text-cyan-200 font-medium tracking-wide uppercase">
+              Gestion d'expéditions
+            </span>
           </div>
         </div>
 
         {onClose && (
           <button
             onClick={onClose}
-            className="lg:hidden ml-auto p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all duration-200"
+            className="lg:hidden ml-auto p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors duration-200"
           >
             <XMarkIcon className="w-5 h-5" />
           </button>
         )}
       </div>
 
-      {/* ── Navigation Moderne avec Transitions Fluides ──────────────────────────────────────────────────────── */}
-      <nav className="relative z-10 flex-1 overflow-y-auto py-6 px-4 space-y-1.5 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+      {/* ── Navigation ──────────────────────────────────────────────────────── */}
+      <nav
+        className="relative z-10 flex-1 overflow-y-auto py-5 px-3.5 scrollbar-hide"
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+      >
         {menuItems.map((section, sectionIdx) => (
-          <div key={sectionIdx}>
-            {section.items.map((item) => {
-              const active = isActive(item.path);
-              const showBadge = item.path === "/demandes" && pendingDemandesCount > 0;
+          <div key={sectionIdx} className={sectionIdx > 0 ? "mt-5" : ""}>
+            <p
+              className="px-2.5 mb-2 text-[10.5px] font-semibold tracking-[0.12em] text-slate-300/80 uppercase select-none"
+              style={{ textShadow: "0 1px 2px rgba(0,0,0,0.4)" }}
+            >
+              {section.section}
+            </p>
+            <div className="space-y-0.5">
+              {section.items.map((item) => {
+                const active = isActive(item.path);
+                const showBadge = item.path === "/demandes" && pendingDemandesCount > 0;
 
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  onClick={onClose}
-                  className={`
-                    group flex items-center px-3.5 py-3 rounded-lg text-sm font-medium mb-1
-                    transition-all duration-200 ease-out relative overflow-hidden
-                    ${active
-                      ? "bg-gradient-to-r from-cyan-500/10 to-indigo-500/10 text-white shadow-lg shadow-cyan-500/5 border-l-2 border-cyan-400"
-                      : "text-slate-300 hover:bg-slate-800/60 hover:text-white hover:shadow-md hover:scale-[1.02] hover:-translate-y-0.5"
-                    }
-                  `}
-                  style={{
-                    transitionProperty: 'all',
-                    transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
-                  }}
-                >
-                  {/* Effet de lueur subtil sur l'élément actif avec transition */}
-                  {active && (
-                    <div 
-                      className="absolute inset-0 bg-gradient-to-r from-cyan-400/5 to-indigo-400/5 pointer-events-none transition-opacity duration-200"
-                      style={{
-                        animation: 'fadeIn 0.2s ease-out',
-                      }}
-                    />
-                  )}
-                  
-                  <item.icon
-                    className={`w-5 h-5 mr-3.5 shrink-0 transition-all duration-200 ease-out ${
-                      active 
-                        ? "text-cyan-400 scale-110" 
-                        : "text-slate-400 group-hover:text-slate-200 group-hover:scale-105 group-hover:rotate-3"
-                    }`}
-                  />
-                  <span 
-                    className="flex-1 truncate relative z-10 transition-all duration-200"
-                    style={{
-                      transform: active ? 'translateX(0)' : 'translateX(0)',
-                    }}
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    onClick={onClose}
+                    className={`
+                      group flex items-center px-2.5 py-2.5 rounded-lg text-sm font-medium
+                      transition-colors duration-150 ease-out relative
+                      ${
+                        active
+                          ? "bg-gradient-to-r from-cyan-500/[0.16] to-indigo-500/[0.1] text-white"
+                          : "text-slate-200/90 hover:bg-white/[0.06] hover:text-white"
+                      }
+                    `}
+                    style={{ textShadow: "0 1px 2px rgba(0,0,0,0.45)" }}
                   >
-                    {item.name}
-                  </span>
-
-                  {showBadge && (
-                    <span 
-                      className="flex items-center justify-center min-w-[20px] h-5 px-2 bg-gradient-to-r from-red-500 to-red-600 text-white text-[10px] font-bold rounded-full shadow-lg shadow-red-500/30 ring-2 ring-red-400/20 transition-all duration-200 hover:scale-110"
-                    >
-                      {pendingDemandesCount > 99 ? "99+" : pendingDemandesCount}
-                    </span>
-                  )}
-
-                  {active && !showBadge && (
-                    <ChevronRightIcon 
-                      className="w-4 h-4 text-cyan-400/60 transition-all duration-200"
-                      style={{
-                        animation: 'slideInRight 0.2s ease-out',
-                      }}
+                    {/* Repère vertical d'état actif */}
+                    <span
+                      className={`absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full transition-opacity duration-150 ${
+                        active ? "bg-gradient-to-b from-cyan-400 to-indigo-400 opacity-100" : "opacity-0"
+                      }`}
                     />
-                  )}
-                </Link>
-              );
-            })}
+
+                    <span
+                      className={`flex items-center justify-center w-8 h-8 rounded-md mr-3 shrink-0 transition-colors duration-150 ${
+                        active ? "bg-cyan-400/15 text-cyan-300" : "text-slate-300 group-hover:text-slate-100"
+                      }`}
+                    >
+                      <item.icon className="w-[18px] h-[18px]" />
+                    </span>
+
+                    <span className="flex-1 truncate">{item.name}</span>
+
+                    {showBadge && (
+                      <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-gradient-to-r from-red-500 to-red-600 text-white text-[10px] font-bold rounded-full shadow-sm shadow-red-500/40 ring-1 ring-red-400/20">
+                        {pendingDemandesCount > 99 ? "99+" : pendingDemandesCount}
+                      </span>
+                    )}
+
+                    {active && !showBadge && (
+                      <ChevronRightIcon className="w-4 h-4 text-cyan-400/70" />
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
           </div>
         ))}
       </nav>
 
-      {/* Styles d'animation pour les transitions fluides */}
-      <style jsx>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-        
-        @keyframes slideInRight {
-          from {
-            opacity: 0;
-            transform: translateX(-8px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-      `}</style>
-
-      {/* ── User Footer Premium ─────────────────────────────────────────────────────── */}
-      <div className="relative z-10 p-4 shrink-0 border-t border-white/5">
-        <div
-          className="flex items-center p-3 rounded-xl bg-gradient-to-r from-slate-800/80 to-slate-800/60 backdrop-blur-sm shadow-lg ring-1 ring-white/5 transition-all duration-300 hover:shadow-xl hover:ring-white/10"
-        >
-          {/* Avatar Premium */}
+      {/* ── User Footer ─────────────────────────────────────────────────────── */}
+      <div className="relative z-10 p-3.5 shrink-0 border-t border-white/10">
+        <div className="flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.06] ring-1 ring-white/10 transition-colors duration-200 hover:bg-white/[0.09]">
           <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-lg ring-2 ring-white/10 transition-transform duration-300 hover:scale-105"
+            className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ring-1 ring-white/10"
             style={{
-              background: isAdminLike 
-                ? "linear-gradient(135deg, #dc2626 0%, #ef4444 100%)" 
+              background: isAdminLike
+                ? "linear-gradient(135deg, #dc2626 0%, #ef4444 100%)"
                 : "linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)",
             }}
           >
-            <span className="text-white font-bold text-sm">
+            <span className="text-white font-bold text-xs">
               {(currentUser?.name || currentUser?.nom || "U")[0].toUpperCase()}
             </span>
           </div>
 
-          <div className="ml-3 min-w-0 flex-1">
-            <p className="text-sm font-semibold text-white truncate leading-tight">
+          <div className="min-w-0 flex-1">
+            <p
+              className="text-sm font-semibold text-white truncate leading-tight"
+              style={{ textShadow: "0 1px 2px rgba(0,0,0,0.45)" }}
+            >
               {currentUser?.name ||
                 `${currentUser?.prenoms || ""} ${currentUser?.nom || ""}`.trim()}
             </p>
-            <span className="text-xs text-slate-400 font-medium">
+            <span className="text-[11px] text-slate-300 font-medium">
               {isAdminLike ? "Administrateur" : "Agent"}
             </span>
           </div>
 
-          {/* Status dot Premium */}
-          <div className="flex-shrink-0 ml-2">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400 shadow-lg shadow-emerald-400/50" />
-            </span>
-          </div>
+          <span className="relative flex h-2 w-2 shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
+          </span>
         </div>
       </div>
     </div>

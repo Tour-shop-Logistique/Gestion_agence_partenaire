@@ -12,7 +12,7 @@ export const productsApi = {
     async listProducts() {
         try {
             const response = await apiService.get(API_ENDPOINTS.PRODUCTS.LIST);
-            console.log("Response Products API:", response);
+            console.log("⭕⭕⭕⭕⭕Response Products API:", response);
 
             // Extraction robuste : gère response.data, response.products, response.produits
             // et gère aussi le cas où la réponse est paginée (Laravel) avec data.data

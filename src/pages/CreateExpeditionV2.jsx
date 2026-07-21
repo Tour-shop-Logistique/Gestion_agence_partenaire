@@ -500,11 +500,36 @@ const CreateExpeditionV2 = () => {
         }
     };
 
-    // Fonction pour obtenir les produits filtrés par catégorie
+    // Fonction pour obtenir les produits filtrés par catégorie ET type d'expédition
     const getFilteredProducts = (categoryId) => {
-        if (!categoryId || !products || products.length === 0) {
-            return products || [];
+        if (!products || products.length === 0) {
+            return [];
         }
+        
+        // Pour le type CA, ignorer la catégorie et filtrer directement par "Colis Accompagnés"
+        if (formData.type_expedition === 'GROUPAGE_CA') {
+            console.log("🔍 Filtrage pour GROUPAGE_CA - Tous les produits:", products);
+            
+            const filtered = products.filter(p => {
+                // Vérifier si le produit a une catégorie avec le nom "Colis Accompagnés"
+                const hasCategory = p.category && p.category.nom === 'Colis Accompagnés';
+                console.log(`Produit ${p.designation}:`, {
+                    category: p.category,
+                    categoryNom: p.category?.nom,
+                    match: hasCategory
+                });
+                return hasCategory;
+            });
+            
+            console.log("✅ Produits CA filtrés:", filtered);
+            return filtered;
+        }
+        
+        // Pour les autres types, filtrer par catégorie sélectionnée
+        if (!categoryId) {
+            return [];
+        }
+        
         return products.filter(p => p.category_id === categoryId);
     };
 
@@ -868,56 +893,14 @@ const CreateExpeditionV2 = () => {
                                         </div>
                                     </div>
 
-                                    {/* Trajet/Pays disponible */}
-                                    <div className="space-y-1.5">
-                                        <label className="block text-xs font-semibold text-slate-600">
-                                            {formData.type_expedition === 'SIMPLE' ? 'Pays de destination' : 'Trajet disponible'}
-                                        </label>
-                                        
-                                        {formData.type_expedition === 'SIMPLE' ? (
-                                            <>
-                                                {/* Sélecteur de pays pour LD avec recherche */}
-                                                <SearchableDropdown
-                                                    options={availableCountriesForLD}
-                                                    onSelect={(country) => {
-                                                        setSelectedRouteId(country.id);
-                                                        
-                                                        if (country.zone && country.tarif) {
-                                                            setSelectedRoute(country.tarif);
-                                                            
-                                                            // Extraire le nom du pays (retirer le code entre parenthèses)
-                                                            const paysName = country.label.replace(/\([^)]+\)$/, '').trim();
-                                                            
-                                                            setFormData(prev => ({
-                                                                ...prev,
-                                                                pays_destination: paysName,
-                                                                destinataire_pays: paysName,
-                                                                destinataire_ville: "",
-                                                            }));
-                                                        }
-                                                    }}
-                                                    placeholder={selectedRouteId ? 
-                                                        availableCountriesForLD.find(c => c.id === selectedRouteId)?.label || "Rechercher un pays..." 
-                                                        : "Rechercher un pays..."}
-                                                    className="w-full"
-                                                />
-                                                
-                                                {availableCountriesForLD.length === 0 && (
-                                                    <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
-                                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                        </svg>
-                                                        Aucun pays configuré. Configurez vos tarifs simples (LD) dans les paramètres.
-                                                    </p>
-                                                )}
-                                                {availableCountriesForLD.length > 0 && (
-                                                    <p className="text-xs text-emerald-600 mt-1">
-                                                        {availableCountriesForLD.length} pays disponible{availableCountriesForLD.length > 1 ? 's' : ''}
-                                                    </p>
-                                                )}
-                                            </>
-                                        ) : (
-                                            // Sélecteur de trajets pour les autres types (DHD, AFRIQUE, CA)
+                                    {/* Trajet/Pays disponible - Uniquement pour les types NON-SIMPLE */}
+                                    {formData.type_expedition !== 'SIMPLE' && (
+                                        <div className="space-y-1.5">
+                                            <label className="block text-xs font-semibold text-slate-600">
+                                                Trajet disponible
+                                            </label>
+                                            
+                                            {/* Sélecteur de trajets pour les autres types (DHD, AFRIQUE, CA) */}
                                             <select
                                                 value={selectedRouteId}
                                                 onChange={handleRouteSelect}
@@ -940,8 +923,8 @@ const CreateExpeditionV2 = () => {
                                                     </option>
                                                 ))}
                                             </select>
-                                        )}
-                                    </div>
+                                        </div>
+                                    )}
 
                                     {/* Destination + Départ — 2 colonnes sur mobile */}
                                     <div className="grid grid-cols-2 gap-3 p-4 bg-slate-50/80 rounded-lg border border-slate-200">
@@ -949,12 +932,56 @@ const CreateExpeditionV2 = () => {
                                             <label className="block text-xs font-semibold text-slate-600">
                                                 Pays destination <span className="text-amber-600">*</span>
                                             </label>
-                                            <input
-                                                type="text" name="pays_destination"
-                                                value={formData.pays_destination} onChange={handleInputChange}
-                                                placeholder="France…"
-                                                className={inputCls(formData.pays_destination, true)}
-                                            />
+                                            {formData.type_expedition === 'SIMPLE' ? (
+                                                <>
+                                                    {/* Sélecteur de pays pour LD avec recherche */}
+                                                    <SearchableDropdown
+                                                        options={availableCountriesForLD}
+                                                        onSelect={(country) => {
+                                                            setSelectedRouteId(country.id);
+                                                            
+                                                            if (country.zone && country.tarif) {
+                                                                setSelectedRoute(country.tarif);
+                                                                
+                                                                // Utiliser le label complet avec l'abréviation (ex: "Argentine (AR)")
+                                                                const paysNameComplet = country.label;
+                                                                
+                                                                setFormData(prev => ({
+                                                                    ...prev,
+                                                                    pays_destination: paysNameComplet,
+                                                                    destinataire_pays: paysNameComplet,
+                                                                    destinataire_ville: "",
+                                                                }));
+                                                            }
+                                                        }}
+                                                        placeholder={selectedRouteId ? 
+                                                            availableCountriesForLD.find(c => c.id === selectedRouteId)?.label || "Rechercher un pays..." 
+                                                            : "Rechercher un pays..."}
+                                                        className="w-full"
+                                                    />
+                                                    
+                                                    {availableCountriesForLD.length === 0 && (
+                                                        <p className="text-[10px] text-amber-600 mt-1 flex items-center gap-1">
+                                                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                            </svg>
+                                                            Aucun pays configuré
+                                                        </p>
+                                                    )}
+                                                    {availableCountriesForLD.length > 0 && selectedRouteId && (
+                                                        <p className="text-[10px] text-emerald-600 mt-1">
+                                                            ✓ Pays sélectionné
+                                                        </p>
+                                                    )}
+                                                </>
+                                            ) : (
+                                                <input
+                                                    type="text" name="pays_destination"
+                                                    value={formData.pays_destination} onChange={handleInputChange}
+                                                    placeholder="France…"
+                                                    className={inputCls(formData.pays_destination, true)}
+                                                />
+                                            )}
                                         </div>
                                         <div className="space-y-1.5">
                                             <label className="block text-xs font-semibold text-slate-600">
@@ -1173,7 +1200,11 @@ const CreateExpeditionV2 = () => {
                                                                     label: p.designation 
                                                                 }))}
                                                                 onSelect={(option) => handleAddArticle(index, option)}
-                                                                placeholder={colis.category_id ? "Rechercher un article..." : "Sélectionnez d'abord une catégorie"}
+                                                                placeholder={
+                                                                    formData.type_expedition === 'GROUPAGE_CA' 
+                                                                        ? "Rechercher un article (Colis Accompagnés)..." 
+                                                                        : (colis.category_id ? "Rechercher un article..." : "Sélectionnez d'abord une catégorie")
+                                                                }
                                                                 className="flex-1"
                                                             />
                                                         </div>
