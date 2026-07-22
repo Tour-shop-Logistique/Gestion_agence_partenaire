@@ -2,7 +2,23 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { logout } from "../store/slices/authSlice";
-import { User, Lock, Trash2, Mail, Phone, Shield, AlertCircle, CheckCircle, X } from "lucide-react";
+import {
+  User,
+  Lock,
+  Trash2,
+  Mail,
+  Phone,
+  Shield,
+  AlertCircle,
+  CheckCircle,
+  X,
+  ArrowLeft,
+  RefreshCw,
+  ChevronRight,
+  Calendar,
+  History,
+  BadgeCheck,
+} from "lucide-react";
 import { getProfile, updateProfile, changePassword, deleteAccount, verifyEmailCode } from "../utils/api/profile";
 import { showToast } from "../utils/toast";
 
@@ -275,25 +291,26 @@ const AgentProfile = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin rounded-full h-9 w-9 border-2 border-slate-200 border-t-indigo-600"></div>
+          <p className="text-sm text-slate-500">Chargement du profil…</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-5">
             <button
               onClick={() => navigate(-1)}
-              className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors"
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
+              <ArrowLeft className="w-4 h-4" />
               Retour
             </button>
             <button
@@ -302,43 +319,55 @@ const AgentProfile = () => {
                 loadProfile();
               }}
               disabled={loading}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-semibold disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-3.5 py-2 bg-white text-slate-600 border border-slate-200 rounded-lg hover:border-slate-300 hover:text-slate-900 transition text-sm font-medium disabled:opacity-50 shadow-sm"
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              {loading ? "Chargement..." : "Actualiser"}
+              <RefreshCw className="w-4 h-4" />
+              Actualiser
             </button>
           </div>
-          <h1 className="text-3xl font-bold text-slate-900">Mon Profil</h1>
-          <p className="text-slate-600 mt-2">Gérez vos informations personnelles et paramètres de compte</p>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Mon profil</h1>
+          <p className="text-sm text-slate-500 mt-1">Gérez vos informations personnelles et les paramètres de votre compte</p>
         </div>
 
         {/* Card principale */}
-        <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
-          
+        <div className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 overflow-hidden">
 
           {/* Avatar et infos de base */}
-          <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 px-8 py-6">
-            <div className="flex items-center gap-6">
-              <div className="w-24 h-24 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-3xl font-bold border-4 border-white/30">
+          <div className="px-8 py-7 border-b border-slate-100">
+            <div className="flex items-center gap-5">
+              <div className="w-[72px] h-[72px] rounded-full bg-indigo-600 flex items-center justify-center text-white text-xl font-semibold ring-4 ring-indigo-50 shrink-0">
                 {profile?.nom?.charAt(0)}{profile?.prenoms?.charAt(0)}
               </div>
-              <div className="flex-1">
-                <h2 className="text-2xl font-bold text-white">
-                  {profile?.nom} {profile?.prenoms}
-                </h2>
-                <p className="text-indigo-100 mt-1">{profile?.email}</p>
-                <div className="flex items-center gap-4 mt-3">
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                    profile?.disponible 
-                      ? "bg-green-400/30 text-white border border-green-400/50" 
-                      : "bg-red-400/30 text-white border border-red-400/50"
-                  }`}>
-                    {profile?.disponible ? "Disponible" : "Indisponible"}
-                  </span>
-                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white/20 text-white border border-white/30">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center flex-wrap gap-x-2.5 gap-y-1">
+                  <h2 className="text-xl font-bold text-slate-900 truncate">
+                    {profile?.nom} {profile?.prenoms}
+                  </h2>
+                  <span
+                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                      profile?.role === "is_agence_admin"
+                        ? "bg-indigo-600 text-white"
+                        : "bg-slate-100 text-slate-600 ring-1 ring-slate-200"
+                    }`}
+                  >
+                    {profile?.role === "is_agence_admin" && <Shield className="w-3 h-3" />}
                     {profile?.role === "is_agence_admin" ? "Administrateur" : "Agent"}
+                  </span>
+                </div>
+                <p className="text-sm text-slate-500 mt-1 flex items-center gap-1.5 truncate">
+                  <Mail className="w-3.5 h-3.5 shrink-0" />
+                  {profile?.email}
+                </p>
+                <div className="mt-3">
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ring-1 ${
+                      profile?.disponible
+                        ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
+                        : "bg-slate-50 text-slate-500 ring-slate-200"
+                    }`}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${profile?.disponible ? "bg-emerald-500" : "bg-slate-400"}`} />
+                    {profile?.disponible ? "Disponible" : "Indisponible"}
                   </span>
                 </div>
               </div>
@@ -346,29 +375,31 @@ const AgentProfile = () => {
           </div>
 
           {/* Formulaire d'édition */}
-          <div className="px-8 py-6">
+          <div className="px-8 py-7">
             <form onSubmit={handleUpdateProfile}>
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                  <User className="w-5 h-5 text-indigo-600" />
-                  Informations Personnelles
+                <h3 className="text-[15px] font-semibold text-slate-900 flex items-center gap-2">
+                  <span className="flex items-center justify-center w-7 h-7 rounded-md bg-indigo-50 text-indigo-600">
+                    <User className="w-4 h-4" />
+                  </span>
+                  Informations personnelles
                 </h3>
                 {!editMode && (
                   <button
                     type="button"
                     onClick={() => setEditMode(true)}
-                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm font-semibold"
+                    className="px-3.5 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm font-medium shadow-sm"
                   >
                     Modifier
                   </button>
                 )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
                 {/* Nom */}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    Nom <span className="text-red-500">*</span>
+                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
+                    Nom <span className="text-red-500 normal-case">*</span>
                   </label>
                   <input
                     type="text"
@@ -376,16 +407,18 @@ const AgentProfile = () => {
                     value={formData.nom}
                     onChange={handleInputChange}
                     disabled={!editMode}
-                    className={`w-full px-4 py-3 rounded-lg border ${
-                      errors.nom ? "border-red-500" : "border-slate-300"
-                    } ${editMode ? "bg-white" : "bg-slate-50"} focus:outline-none focus:border-indigo-500 transition`}
+                    className={`w-full px-3.5 py-2.5 rounded-lg border text-sm text-slate-900 transition focus:outline-none focus:ring-4 ${
+                      errors.nom
+                        ? "border-red-300 focus:border-red-500 focus:ring-red-500/10"
+                        : "border-slate-300 focus:border-indigo-500 focus:ring-indigo-500/10"
+                    } ${editMode ? "bg-white" : "bg-slate-50 text-slate-500 cursor-not-allowed"}`}
                   />
-                  {errors.nom && <p className="text-red-500 text-xs mt-1">{errors.nom}</p>}
+                  {errors.nom && <p className="text-red-500 text-xs mt-1.5">{errors.nom}</p>}
                 </div>
 
                 {/* Prénoms */}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
                     Prénoms
                   </label>
                   <input
@@ -394,16 +427,16 @@ const AgentProfile = () => {
                     value={formData.prenoms}
                     onChange={handleInputChange}
                     disabled={!editMode}
-                    className={`w-full px-4 py-3 rounded-lg border border-slate-300 ${
-                      editMode ? "bg-white" : "bg-slate-50"
-                    } focus:outline-none focus:border-indigo-500 transition`}
+                    className={`w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm text-slate-900 transition focus:outline-none focus:ring-4 focus:border-indigo-500 focus:ring-indigo-500/10 ${
+                      editMode ? "bg-white" : "bg-slate-50 text-slate-500 cursor-not-allowed"
+                    }`}
                   />
                 </div>
 
                 {/* Téléphone */}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
-                    <Phone className="w-4 h-4" />
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
+                    <Phone className="w-3.5 h-3.5" />
                     Téléphone
                   </label>
                   <input
@@ -412,17 +445,19 @@ const AgentProfile = () => {
                     value={formData.telephone}
                     onChange={handleInputChange}
                     disabled={!editMode}
-                    className={`w-full px-4 py-3 rounded-lg border ${
-                      errors.telephone ? "border-red-500" : "border-slate-300"
-                    } ${editMode ? "bg-white" : "bg-slate-50"} focus:outline-none focus:border-indigo-500 transition`}
+                    className={`w-full px-3.5 py-2.5 rounded-lg border text-sm text-slate-900 transition focus:outline-none focus:ring-4 ${
+                      errors.telephone
+                        ? "border-red-300 focus:border-red-500 focus:ring-red-500/10"
+                        : "border-slate-300 focus:border-indigo-500 focus:ring-indigo-500/10"
+                    } ${editMode ? "bg-white" : "bg-slate-50 text-slate-500 cursor-not-allowed"}`}
                   />
-                  {errors.telephone && <p className="text-red-500 text-xs mt-1">{errors.telephone}</p>}
+                  {errors.telephone && <p className="text-red-500 text-xs mt-1.5">{errors.telephone}</p>}
                 </div>
 
                 {/* Email */}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
-                    <Mail className="w-4 h-4" />
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
+                    <Mail className="w-3.5 h-3.5" />
                     Email
                   </label>
                   <input
@@ -431,13 +466,15 @@ const AgentProfile = () => {
                     value={formData.email}
                     onChange={handleInputChange}
                     disabled={!editMode}
-                    className={`w-full px-4 py-3 rounded-lg border ${
-                      errors.email ? "border-red-500" : "border-slate-300"
-                    } ${editMode ? "bg-white" : "bg-slate-50"} focus:outline-none focus:border-indigo-500 transition`}
+                    className={`w-full px-3.5 py-2.5 rounded-lg border text-sm text-slate-900 transition focus:outline-none focus:ring-4 ${
+                      errors.email
+                        ? "border-red-300 focus:border-red-500 focus:ring-red-500/10"
+                        : "border-slate-300 focus:border-indigo-500 focus:ring-indigo-500/10"
+                    } ${editMode ? "bg-white" : "bg-slate-50 text-slate-500 cursor-not-allowed"}`}
                   />
-                  {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+                  {errors.email && <p className="text-red-500 text-xs mt-1.5">{errors.email}</p>}
                   {editMode && profile?.email !== formData.email && (
-                    <p className="text-amber-600 text-xs mt-1 flex items-center gap-1">
+                    <p className="text-amber-600 text-xs mt-1.5 flex items-center gap-1">
                       <AlertCircle className="w-3 h-3" />
                       Un code de vérification sera envoyé au nouvel email
                     </p>
@@ -446,17 +483,28 @@ const AgentProfile = () => {
 
                 {/* Disponibilité */}
                 <div className="md:col-span-2">
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      name="disponible"
-                      checked={formData.disponible}
-                      onChange={handleInputChange}
-                      disabled={!editMode}
-                      className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500"
-                    />
-                    <span className="text-sm font-semibold text-slate-700">
-                      Je suis disponible pour prendre en charge des demandes
+                  <label
+                    className={`flex items-center justify-between gap-4 rounded-lg border border-slate-200 px-4 py-3.5 ${
+                      editMode ? "cursor-pointer bg-slate-50/60" : "bg-slate-50/30"
+                    }`}
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-slate-800">Disponibilité</p>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Je suis disponible pour prendre en charge des demandes
+                      </p>
+                    </div>
+                    <span className="relative inline-flex shrink-0">
+                      <input
+                        type="checkbox"
+                        name="disponible"
+                        checked={formData.disponible}
+                        onChange={handleInputChange}
+                        disabled={!editMode}
+                        className="sr-only peer"
+                      />
+                      <span className="w-10 h-[22px] bg-slate-300 peer-checked:bg-emerald-500 rounded-full transition-colors peer-disabled:opacity-60"></span>
+                      <span className="absolute left-[3px] top-[3px] w-4 h-4 bg-white rounded-full shadow-sm transition-transform peer-checked:translate-x-[18px]"></span>
                     </span>
                   </label>
                 </div>
@@ -469,23 +517,23 @@ const AgentProfile = () => {
                     type="button"
                     onClick={handleCancelEdit}
                     disabled={submitting}
-                    className="flex-1 px-6 py-3 border-2 border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition font-semibold disabled:opacity-50"
+                    className="flex-1 px-6 py-2.5 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition text-sm font-medium disabled:opacity-50"
                   >
                     Annuler
                   </button>
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="flex-1 px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm"
                   >
                     {submitting ? (
                       <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/40 border-t-white"></div>
                         Enregistrement...
                       </>
                     ) : (
                       <>
-                        <CheckCircle className="w-5 h-5" />
+                        <CheckCircle className="w-4 h-4" />
                         Enregistrer
                       </>
                     )}
@@ -496,74 +544,86 @@ const AgentProfile = () => {
           </div>
 
           {/* Section Sécurité */}
-          <div className="px-8 py-6 bg-slate-50 border-t border-slate-200">
-            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 mb-6">
-              <Shield className="w-5 h-5 text-indigo-600" />
-              Sécurité et Compte
+          <div className="px-8 py-7 border-t border-slate-100">
+            <h3 className="text-[15px] font-semibold text-slate-900 flex items-center gap-2 mb-5">
+              <span className="flex items-center justify-center w-7 h-7 rounded-md bg-indigo-50 text-indigo-600">
+                <Shield className="w-4 h-4" />
+              </span>
+              Sécurité et compte
             </h3>
 
-            <div className="space-y-4">
+            <div className="space-y-2.5">
               {/* Changer le mot de passe */}
               <button
                 onClick={() => setShowPasswordModal(true)}
-                className="w-full flex items-center justify-between px-6 py-4 bg-white border-2 border-slate-200 rounded-xl hover:border-indigo-300 hover:bg-indigo-50/50 transition group"
+                className="w-full flex items-center justify-between px-5 py-3.5 bg-white border border-slate-200 rounded-xl hover:border-indigo-300 hover:shadow-sm transition group"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center group-hover:bg-indigo-200 transition">
-                    <Lock className="w-5 h-5 text-indigo-600" />
+                  <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center group-hover:bg-indigo-100 transition">
+                    <Lock className="w-4 h-4 text-slate-600 group-hover:text-indigo-600 transition" />
                   </div>
                   <div className="text-left">
-                    <p className="font-semibold text-slate-900">Changer le mot de passe</p>
+                    <p className="text-sm font-medium text-slate-900">Changer le mot de passe</p>
                     <p className="text-xs text-slate-500">Modifier votre mot de passe actuel</p>
                   </div>
                 </div>
-                <svg className="w-5 h-5 text-slate-400 group-hover:text-indigo-600 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+                <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-indigo-500 transition" />
               </button>
 
               {/* Supprimer le compte (seulement pour les agents, pas les admins) */}
               {profile?.role !== "is_agence_admin" && (
                 <button
                   onClick={() => setShowDeleteModal(true)}
-                  className="w-full flex items-center justify-between px-6 py-4 bg-white border-2 border-red-200 rounded-xl hover:border-red-400 hover:bg-red-50 transition group"
+                  className="w-full flex items-center justify-between px-5 py-3.5 bg-white border border-slate-200 rounded-xl hover:border-red-300 hover:shadow-sm transition group"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center group-hover:bg-red-200 transition">
-                      <Trash2 className="w-5 h-5 text-red-600" />
+                    <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center group-hover:bg-red-100 transition">
+                      <Trash2 className="w-4 h-4 text-slate-600 group-hover:text-red-600 transition" />
                     </div>
                     <div className="text-left">
-                      <p className="font-semibold text-red-900">Supprimer mon compte</p>
-                      <p className="text-xs text-red-600">Cette action est irréversible</p>
+                      <p className="text-sm font-medium text-slate-900 group-hover:text-red-700 transition">Supprimer mon compte</p>
+                      <p className="text-xs text-slate-500">Cette action est irréversible</p>
                     </div>
                   </div>
-                  <svg className="w-5 h-5 text-red-400 group-hover:text-red-600 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
+                  <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-red-500 transition" />
                 </button>
               )}
             </div>
           </div>
 
           {/* Informations supplémentaires */}
-          <div className="px-8 py-6 border-t border-slate-200 bg-slate-50">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-slate-600">Compte créé le:</span>
-                <span className="ml-2 font-semibold text-slate-900">
-                  {new Date(profile?.created_at).toLocaleDateString('fr-FR')}
-                </span>
+          <div className="px-8 py-6 border-t border-slate-100 bg-slate-50/60">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-lg px-4 py-3">
+                <div className="w-8 h-8 rounded-md bg-slate-100 flex items-center justify-center text-slate-500 shrink-0">
+                  <Calendar className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs text-slate-500">Compte créé le</p>
+                  <p className="text-sm font-medium text-slate-900">
+                    {new Date(profile?.created_at).toLocaleDateString("fr-FR")}
+                  </p>
+                </div>
               </div>
-              <div>
-                <span className="text-slate-600">Dernière modification:</span>
-                <span className="ml-2 font-semibold text-slate-900">
-                  {new Date(profile?.updated_at).toLocaleDateString('fr-FR')}
-                </span>
+              <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-lg px-4 py-3">
+                <div className="w-8 h-8 rounded-md bg-slate-100 flex items-center justify-center text-slate-500 shrink-0">
+                  <History className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs text-slate-500">Dernière modification</p>
+                  <p className="text-sm font-medium text-slate-900">
+                    {new Date(profile?.updated_at).toLocaleDateString("fr-FR")}
+                  </p>
+                </div>
               </div>
               {profile?.email_verified_at && (
-                <div className="md:col-span-2 flex items-center gap-2 text-green-600">
-                  <CheckCircle className="w-4 h-4" />
-                  <span>Email vérifié le {new Date(profile.email_verified_at).toLocaleDateString('fr-FR')}</span>
+                <div className="sm:col-span-2 flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3">
+                  <div className="w-8 h-8 rounded-md bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
+                    <BadgeCheck className="w-4 h-4" />
+                  </div>
+                  <p className="text-sm text-emerald-800">
+                    Email vérifié le {new Date(profile.email_verified_at).toLocaleDateString("fr-FR")}
+                  </p>
                 </div>
               )}
             </div>
@@ -573,11 +633,13 @@ const AgentProfile = () => {
 
       {/* Modal Changement de mot de passe */}
       {showPasswordModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl animate-in zoom-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl ring-1 ring-slate-200 animate-in zoom-in">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                <Lock className="w-6 h-6 text-indigo-600" />
+              <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2.5">
+                <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600">
+                  <Lock className="w-4 h-4" />
+                </span>
                 Changer le mot de passe
               </h3>
               <button
@@ -586,16 +648,16 @@ const AgentProfile = () => {
                   setPasswordData({ current_password: "", password: "", password_confirmation: "" });
                   setErrors({});
                 }}
-                className="p-2 hover:bg-slate-100 rounded-lg transition"
+                className="p-1.5 hover:bg-slate-100 rounded-lg transition"
               >
-                <X className="w-5 h-5 text-slate-400" />
+                <X className="w-4 h-4 text-slate-400" />
               </button>
             </div>
 
             <form onSubmit={handleChangePassword} className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Mot de passe actuel <span className="text-red-500">*</span>
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
+                  Mot de passe actuel <span className="text-red-500 normal-case">*</span>
                 </label>
                 <input
                   type="password"
@@ -604,16 +666,18 @@ const AgentProfile = () => {
                     setPasswordData(prev => ({ ...prev, current_password: e.target.value }));
                     setErrors(prev => ({ ...prev, current_password: null }));
                   }}
-                  className={`w-full px-4 py-3 rounded-lg border ${
-                    errors.current_password ? "border-red-500" : "border-slate-300"
-                  } focus:outline-none focus:border-indigo-500 transition`}
+                  className={`w-full px-3.5 py-2.5 rounded-lg border text-sm transition focus:outline-none focus:ring-4 ${
+                    errors.current_password
+                      ? "border-red-300 focus:border-red-500 focus:ring-red-500/10"
+                      : "border-slate-300 focus:border-indigo-500 focus:ring-indigo-500/10"
+                  }`}
                 />
-                {errors.current_password && <p className="text-red-500 text-xs mt-1">{errors.current_password}</p>}
+                {errors.current_password && <p className="text-red-500 text-xs mt-1.5">{errors.current_password}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Nouveau mot de passe <span className="text-red-500">*</span>
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
+                  Nouveau mot de passe <span className="text-red-500 normal-case">*</span>
                 </label>
                 <input
                   type="password"
@@ -622,17 +686,19 @@ const AgentProfile = () => {
                     setPasswordData(prev => ({ ...prev, password: e.target.value }));
                     setErrors(prev => ({ ...prev, password: null }));
                   }}
-                  className={`w-full px-4 py-3 rounded-lg border ${
-                    errors.password ? "border-red-500" : "border-slate-300"
-                  } focus:outline-none focus:border-indigo-500 transition`}
+                  className={`w-full px-3.5 py-2.5 rounded-lg border text-sm transition focus:outline-none focus:ring-4 ${
+                    errors.password
+                      ? "border-red-300 focus:border-red-500 focus:ring-red-500/10"
+                      : "border-slate-300 focus:border-indigo-500 focus:ring-indigo-500/10"
+                  }`}
                 />
-                {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
-                <p className="text-xs text-slate-500 mt-1">Minimum 8 caractères</p>
+                {errors.password && <p className="text-red-500 text-xs mt-1.5">{errors.password}</p>}
+                <p className="text-xs text-slate-400 mt-1.5">Minimum 8 caractères</p>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Confirmer le nouveau mot de passe <span className="text-red-500">*</span>
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
+                  Confirmer le nouveau mot de passe <span className="text-red-500 normal-case">*</span>
                 </label>
                 <input
                   type="password"
@@ -641,21 +707,23 @@ const AgentProfile = () => {
                     setPasswordData(prev => ({ ...prev, password_confirmation: e.target.value }));
                     setErrors(prev => ({ ...prev, password_confirmation: null }));
                   }}
-                  className={`w-full px-4 py-3 rounded-lg border ${
-                    errors.password_confirmation ? "border-red-500" : "border-slate-300"
-                  } focus:outline-none focus:border-indigo-500 transition`}
+                  className={`w-full px-3.5 py-2.5 rounded-lg border text-sm transition focus:outline-none focus:ring-4 ${
+                    errors.password_confirmation
+                      ? "border-red-300 focus:border-red-500 focus:ring-red-500/10"
+                      : "border-slate-300 focus:border-indigo-500 focus:ring-indigo-500/10"
+                  }`}
                 />
-                {errors.password_confirmation && <p className="text-red-500 text-xs mt-1">{errors.password_confirmation}</p>}
+                {errors.password_confirmation && <p className="text-red-500 text-xs mt-1.5">{errors.password_confirmation}</p>}
               </div>
 
-              <div className="flex items-start gap-2 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div className="flex items-start gap-2.5 p-3.5 bg-amber-50 border border-amber-200 rounded-lg">
+                <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
                 <p className="text-xs text-amber-800">
                   Après le changement, tous vos tokens seront révoqués et vous devrez vous reconnecter.
                 </p>
               </div>
 
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => {
@@ -664,18 +732,18 @@ const AgentProfile = () => {
                     setErrors({});
                   }}
                   disabled={submitting}
-                  className="flex-1 px-6 py-3 border-2 border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition font-semibold disabled:opacity-50"
+                  className="flex-1 px-6 py-2.5 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition text-sm font-medium disabled:opacity-50"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm"
                 >
                   {submitting ? (
                     <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/40 border-t-white"></div>
                       Modification...
                     </>
                   ) : (
@@ -690,11 +758,13 @@ const AgentProfile = () => {
 
       {/* Modal Suppression du compte */}
       {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl animate-in zoom-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl ring-1 ring-slate-200 animate-in zoom-in">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-red-900 flex items-center gap-2">
-                <Trash2 className="w-6 h-6 text-red-600" />
+              <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2.5">
+                <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-red-50 text-red-600">
+                  <Trash2 className="w-4 h-4" />
+                </span>
                 Supprimer mon compte
               </h3>
               <button
@@ -702,17 +772,17 @@ const AgentProfile = () => {
                   setShowDeleteModal(false);
                   setDeletePassword("");
                 }}
-                className="p-2 hover:bg-slate-100 rounded-lg transition"
+                className="p-1.5 hover:bg-slate-100 rounded-lg transition"
               >
-                <X className="w-5 h-5 text-slate-400" />
+                <X className="w-4 h-4 text-slate-400" />
               </button>
             </div>
 
-            <div className="mb-6 p-4 bg-red-50 border-2 border-red-200 rounded-lg">
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
               <div className="flex gap-3">
-                <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0" />
+                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-bold text-red-900 mb-2">Attention : Cette action est irréversible !</p>
+                  <p className="text-sm font-semibold text-red-900 mb-1">Attention : cette action est irréversible</p>
                   <p className="text-sm text-red-700">
                     La suppression de votre compte entraînera la perte définitive de toutes vos données.
                     Cette action ne peut pas être annulée.
@@ -723,19 +793,19 @@ const AgentProfile = () => {
 
             <form onSubmit={handleDeleteAccount} className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Confirmez avec votre mot de passe <span className="text-red-500">*</span>
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
+                  Confirmez avec votre mot de passe <span className="text-red-500 normal-case">*</span>
                 </label>
                 <input
                   type="password"
                   value={deletePassword}
                   onChange={(e) => setDeletePassword(e.target.value)}
                   placeholder="Entrez votre mot de passe"
-                  className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:outline-none focus:border-red-500 transition"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition"
                 />
               </div>
 
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => {
@@ -743,18 +813,18 @@ const AgentProfile = () => {
                     setDeletePassword("");
                   }}
                   disabled={submitting}
-                  className="flex-1 px-6 py-3 border-2 border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition font-semibold disabled:opacity-50"
+                  className="flex-1 px-6 py-2.5 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition text-sm font-medium disabled:opacity-50"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm"
                 >
                   {submitting ? (
                     <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/40 border-t-white"></div>
                       Suppression...
                     </>
                   ) : (
@@ -769,11 +839,13 @@ const AgentProfile = () => {
 
       {/* Modal Vérification Email */}
       {showEmailVerifyModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl animate-in zoom-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl ring-1 ring-slate-200 animate-in zoom-in">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                <Mail className="w-6 h-6 text-indigo-600" />
+              <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2.5">
+                <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600">
+                  <Mail className="w-4 h-4" />
+                </span>
                 Vérification de l'email
               </h3>
               <button
@@ -783,35 +855,35 @@ const AgentProfile = () => {
                   setPendingEmailChange(false);
                   loadProfile(); // Recharger pour annuler les changements
                 }}
-                className="p-2 hover:bg-slate-100 rounded-lg transition"
+                className="p-1.5 hover:bg-slate-100 rounded-lg transition"
               >
-                <X className="w-5 h-5 text-slate-400" />
+                <X className="w-4 h-4 text-slate-400" />
               </button>
             </div>
 
             <div className="mb-6 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
               <p className="text-sm text-indigo-900">
-                Un code de vérification à 6 chiffres a été envoyé à votre nouvel email : 
-                <span className="font-bold block mt-1">{formData.email}</span>
+                Un code de vérification à 6 chiffres a été envoyé à votre nouvel email :
+                <span className="font-semibold block mt-1">{formData.email}</span>
               </p>
             </div>
 
             <form onSubmit={handleVerifyEmail} className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Code de vérification <span className="text-red-500">*</span>
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">
+                  Code de vérification <span className="text-red-500 normal-case">*</span>
                 </label>
                 <input
                   type="text"
                   value={verificationCode}
                   onChange={(e) => setVerificationCode(e.target.value)}
-                  placeholder="Entrez le code reçu"
+                  placeholder="000000"
                   maxLength={6}
-                  className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:outline-none focus:border-indigo-500 transition text-center text-2xl font-bold tracking-widest"
+                  className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition text-center text-2xl font-semibold tracking-[0.4em]"
                 />
               </div>
 
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => {
@@ -821,18 +893,18 @@ const AgentProfile = () => {
                     loadProfile();
                   }}
                   disabled={submitting}
-                  className="flex-1 px-6 py-3 border-2 border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition font-semibold disabled:opacity-50"
+                  className="flex-1 px-6 py-2.5 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition text-sm font-medium disabled:opacity-50"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm"
                 >
                   {submitting ? (
                     <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/40 border-t-white"></div>
                       Vérification...
                     </>
                   ) : (

@@ -4,7 +4,7 @@ import { selectCurrentUser, logout } from "../store/slices/authSlice";
 import { useAgency } from "../hooks/useAgency";
 import { useExpedition } from "../hooks/useExpedition";
 import { getLogoUrl } from "../utils/apiConfig";
-import { Bell, Menu, Euro } from "lucide-react";
+import { Bell, Menu, Euro, RefreshCcw } from "lucide-react";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
 import WebSocketStatus from "./WebSocketStatus";

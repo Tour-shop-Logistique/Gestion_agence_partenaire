@@ -12,7 +12,6 @@ import {
   UsersIcon,
   BuildingOffice2Icon,
   XMarkIcon,
-  ChevronRightIcon,
   TableCellsIcon,
   TruckIcon,
   InboxArrowDownIcon,
@@ -126,53 +125,74 @@ const Sidebar = ({ onClose }) => {
 
   const menuItems = isAdminLike ? adminMenuItems : agentMenuItems;
 
+  // Palette d'accent par item (purement visuelle, indexée par route) — chaque
+  // rubrique garde sa propre couleur de repère, y compris à l'état actif.
+  const ITEM_ACCENTS = {
+    "/dashboard":              { icon: "#a5b4fc", chip: "rgba(99,102,241,0.16)",  ring: "rgba(99,102,241,0.35)",  accent: "#818cf8" },
+    "/demandes":               { icon: "#7dd3fc", chip: "rgba(14,165,233,0.16)",  ring: "rgba(14,165,233,0.35)",  accent: "#38bdf8" },
+    "/expeditions":            { icon: "#5eead4", chip: "rgba(20,184,166,0.16)",  ring: "rgba(20,184,166,0.35)",  accent: "#2dd4bf" },
+    "/colis":                  { icon: "#93c5fd", chip: "rgba(59,130,246,0.16)",  ring: "rgba(59,130,246,0.35)",  accent: "#60a5fa" },
+    "/colis-a-receptionner":   { icon: "#6ee7b7", chip: "rgba(16,185,129,0.16)",  ring: "rgba(16,185,129,0.35)",  accent: "#34d399" },
+    "/retrait-colis":          { icon: "#e2e8f0", chip: "rgba(148,163,184,0.18)", ring: "rgba(148,163,184,0.35)", accent: "#cbd5e1" },
+    "/comptabilite":           { icon: "#fcd34d", chip: "rgba(245,158,11,0.16)",  ring: "rgba(245,158,11,0.35)",  accent: "#fbbf24" },
+    "/transactions":           { icon: "#c4b5fd", chip: "rgba(139,92,246,0.16)",  ring: "rgba(139,92,246,0.35)",  accent: "#a78bfa" },
+    "/tarifs-simples":         { icon: "#86efac", chip: "rgba(34,197,94,0.16)",   ring: "rgba(34,197,94,0.35)",   accent: "#4ade80" },
+    "/tarifs-groupage":        { icon: "#7dd3fc", chip: "rgba(2,132,199,0.18)",   ring: "rgba(2,132,199,0.35)",   accent: "#38bdf8" },
+    "/agents":                 { icon: "#fda4af", chip: "rgba(244,63,94,0.16)",   ring: "rgba(244,63,94,0.35)",   accent: "#fb7185" },
+    "/agency-profile":         { icon: "#67e8f9", chip: "rgba(6,182,212,0.16)",   ring: "rgba(6,182,212,0.35)",   accent: "#22d3ee" },
+  };
+  const DEFAULT_ACCENT = { icon: "#cbd5e1", chip: "rgba(148,163,184,0.14)", ring: "rgba(148,163,184,0.3)", accent: "#94a3b8" };
+
   return (
     <div
       className="flex flex-col h-full w-64 lg:mt-0 mt-0 relative overflow-hidden"
       style={{
-        background: "linear-gradient(180deg, #182642 0%, #223a63 50%, #182642 100%)",
+        background: "linear-gradient(180deg, #070a14 0%, #10152a 50%, #070a14 100%)",
       }}
     >
-      {/* ========== FOND — THÈME "ROUTES D'EXPÉDITION" ========== */}
+      {/* ========== FOND — MOSAÏQUE GÉOMÉTRIQUE ========== */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" className="absolute inset-0">
           <defs>
-            {/* Grille de repère fine, façon carte de navigation */}
+            {/* Grille de repère fine en fond, façon carte de navigation */}
             <pattern id="nav-grid" x="0" y="0" width="30" height="30" patternUnits="userSpaceOnUse">
               <circle cx="1" cy="1" r="1.2" fill="#a5f3fc" />
             </pattern>
 
-            {/* Ligne de route maritime/aérienne avec points d'étape */}
-            <pattern id="shipping-lane" x="0" y="0" width="240" height="200" patternUnits="userSpaceOnUse">
-              <path
-                d="M-20,150 C40,90 90,190 150,110 S 250,40 280,60"
+            {/* Mosaïque géométrique : tuiles losange en pointe-de-diamant */}
+            <pattern id="mosaic-tiles" x="0" y="0" width="56" height="56" patternUnits="userSpaceOnUse">
+              <polygon points="28,0 56,28 28,28" fill="#67e8f9" opacity="0.55" />
+              <polygon points="56,28 28,56 28,28" fill="#818cf8" opacity="0.5" />
+              <polygon points="28,56 0,28 28,28" fill="#2dd4bf" opacity="0.45" />
+              <polygon points="0,28 28,0 28,28" fill="#a5b4fc" opacity="0.4" />
+              <polygon
+                points="28,0 56,28 28,56 0,28"
                 fill="none"
-                stroke="#67e8f9"
-                strokeWidth="1.4"
-                strokeDasharray="1,6"
-                strokeLinecap="round"
-                opacity="0.95"
+                stroke="#e0f2fe"
+                strokeWidth="0.6"
+                opacity="0.35"
               />
-              <path
-                d="M-30,40 C30,70 70,10 140,45 S 230,90 270,55"
-                fill="none"
-                stroke="#a5b4fc"
-                strokeWidth="1.4"
-                strokeDasharray="1,6"
-                strokeLinecap="round"
-                opacity="0.85"
-              />
-              {/* Points d'étape (waypoints) */}
-              <circle cx="150" cy="110" r="3" fill="#67e8f9" opacity="1" />
-              <circle cx="150" cy="110" r="6.5" fill="none" stroke="#67e8f9" strokeWidth="0.8" opacity="0.5" />
-              <circle cx="140" cy="45" r="3" fill="#a5b4fc" opacity="1" />
-              <circle cx="140" cy="45" r="6.5" fill="none" stroke="#a5b4fc" strokeWidth="0.8" opacity="0.5" />
-              <circle cx="20" cy="105" r="2" fill="#5eead4" opacity="0.9" />
+            </pattern>
+
+            {/* Second calque, décalé et à plus grande échelle, pour la profondeur */}
+            <pattern
+              id="mosaic-tiles-lg"
+              x="28"
+              y="28"
+              width="112"
+              height="112"
+              patternUnits="userSpaceOnUse"
+            >
+              <polygon points="56,0 112,56 56,56" fill="#5eead4" opacity="0.3" />
+              <polygon points="112,56 56,112 56,56" fill="#67e8f9" opacity="0.28" />
+              <polygon points="56,112 0,56 56,56" fill="#818cf8" opacity="0.26" />
+              <polygon points="0,56 56,0 56,56" fill="#a5b4fc" opacity="0.24" />
             </pattern>
           </defs>
 
-          <rect width="100%" height="100%" fill="url(#nav-grid)" opacity="0.14" />
-          <rect width="100%" height="100%" fill="url(#shipping-lane)" opacity="0.4" />
+          <rect width="100%" height="100%" fill="url(#nav-grid)" opacity="0.1" />
+          <rect width="100%" height="100%" fill="url(#mosaic-tiles-lg)" opacity="0.12" />
+          <rect width="100%" height="100%" fill="url(#mosaic-tiles)" opacity="0.16" />
         </svg>
 
         {/* Lueurs douces en haut / en bas, ancrées à l'accent de la marque */}
@@ -188,7 +208,7 @@ const Sidebar = ({ onClose }) => {
       </div>
 
       {/* Voile de lisibilité : assombrit légèrement les motifs sous le texte sans les effacer */}
-      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-[#0f1c33]/55 via-[#0f1c33]/25 to-[#0f1c33]/55" />
+      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-[#060811]/65 via-[#060811]/35 to-[#060811]/65" />
 
       {/* ── Branding Header ─────────────────────────────────────────────────── */}
       <div className="relative z-10 h-20 flex items-center px-5 shrink-0 border-b border-white/10">
@@ -207,12 +227,12 @@ const Sidebar = ({ onClose }) => {
           </div>
           <div className="min-w-0 flex-1">
             <span
-              className="font-bold text-white tracking-tight text-[15px] truncate block leading-tight"
+              className="font-bold text-white tracking-tight text-base truncate block leading-tight"
               style={{ textShadow: "0 1px 3px rgba(0,0,0,0.5)" }}
             >
               {agencyData?.agence?.nom_agence || "Tous Shop"}
             </span>
-            <span className="text-[11px] text-cyan-200 font-medium tracking-wide uppercase">
+            <span className="text-xs text-cyan-100 font-medium tracking-wide uppercase">
               Gestion d'expéditions
             </span>
           </div>
@@ -236,8 +256,8 @@ const Sidebar = ({ onClose }) => {
         {menuItems.map((section, sectionIdx) => (
           <div key={sectionIdx} className={sectionIdx > 0 ? "mt-5" : ""}>
             <p
-              className="px-2.5 mb-2 text-[10.5px] font-semibold tracking-[0.12em] text-slate-300/80 uppercase select-none"
-              style={{ textShadow: "0 1px 2px rgba(0,0,0,0.4)" }}
+              className="px-2.5 mb-2 text-[11.5px] font-semibold tracking-[0.1em] text-slate-200/90 uppercase select-none"
+              style={{ textShadow: "0 1px 2px rgba(0,0,0,0.6)" }}
             >
               {section.section}
             </p>
@@ -245,6 +265,7 @@ const Sidebar = ({ onClose }) => {
               {section.items.map((item) => {
                 const active = isActive(item.path);
                 const showBadge = item.path === "/demandes" && pendingDemandesCount > 0;
+                const c = ITEM_ACCENTS[item.path] || DEFAULT_ACCENT;
 
                 return (
                   <Link
@@ -252,29 +273,26 @@ const Sidebar = ({ onClose }) => {
                     to={item.path}
                     onClick={onClose}
                     className={`
-                      group flex items-center px-2.5 py-2.5 rounded-lg text-sm font-medium
-                      transition-colors duration-150 ease-out relative
-                      ${
-                        active
-                          ? "bg-gradient-to-r from-cyan-500/[0.16] to-indigo-500/[0.1] text-white"
-                          : "text-slate-200/90 hover:bg-white/[0.06] hover:text-white"
-                      }
+                      group flex items-center px-2 py-2.5 rounded-xl text-[15px] font-medium
+                      transition-all duration-150 ease-out relative
+                      ${active ? "text-white" : "text-slate-100 hover:bg-white/[0.06] hover:text-white"}
                     `}
-                    style={{ textShadow: "0 1px 2px rgba(0,0,0,0.45)" }}
+                    style={{
+                      textShadow: "0 1px 3px rgba(0,0,0,0.65)",
+                      background: active
+                        ? `linear-gradient(90deg, ${c.accent}29, ${c.accent}0d)`
+                        : undefined,
+                      boxShadow: active ? `inset 0 0 0 1px ${c.ring}` : undefined,
+                    }}
                   >
-                    {/* Repère vertical d'état actif */}
                     <span
-                      className={`absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full transition-opacity duration-150 ${
-                        active ? "bg-gradient-to-b from-cyan-400 to-indigo-400 opacity-100" : "opacity-0"
-                      }`}
-                    />
-
-                    <span
-                      className={`flex items-center justify-center w-8 h-8 rounded-md mr-3 shrink-0 transition-colors duration-150 ${
-                        active ? "bg-cyan-400/15 text-cyan-300" : "text-slate-300 group-hover:text-slate-100"
-                      }`}
+                      className="flex items-center justify-center w-9 h-9 rounded-lg mr-3 shrink-0 transition-all duration-150"
+                      style={{
+                        background: active ? `${c.accent}33` : c.chip,
+                        boxShadow: `inset 0 0 0 1px ${active ? c.accent + "66" : c.ring}`,
+                      }}
                     >
-                      <item.icon className="w-[18px] h-[18px]" />
+                      <item.icon className="w-5 h-5" style={{ color: active ? "#ffffff" : c.icon }} />
                     </span>
 
                     <span className="flex-1 truncate">{item.name}</span>
@@ -286,7 +304,10 @@ const Sidebar = ({ onClose }) => {
                     )}
 
                     {active && !showBadge && (
-                      <ChevronRightIcon className="w-4 h-4 text-cyan-400/70" />
+                      <span
+                        className="w-1.5 h-1.5 rounded-full shrink-0"
+                        style={{ background: c.accent, boxShadow: `0 0 6px ${c.accent}` }}
+                      />
                     )}
                   </Link>
                 );
@@ -298,7 +319,7 @@ const Sidebar = ({ onClose }) => {
 
       {/* ── User Footer ─────────────────────────────────────────────────────── */}
       <div className="relative z-10 p-3.5 shrink-0 border-t border-white/10">
-        <div className="flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.06] ring-1 ring-white/10 transition-colors duration-200 hover:bg-white/[0.09]">
+        <div className="flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.04] ring-1 ring-white/10 transition-colors duration-200 hover:bg-white/[0.07]">
           <div
             className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ring-1 ring-white/10"
             style={{
@@ -307,20 +328,20 @@ const Sidebar = ({ onClose }) => {
                 : "linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)",
             }}
           >
-            <span className="text-white font-bold text-xs">
+            <span className="text-white font-bold text-sm">
               {(currentUser?.name || currentUser?.nom || "U")[0].toUpperCase()}
             </span>
           </div>
 
           <div className="min-w-0 flex-1">
             <p
-              className="text-sm font-semibold text-white truncate leading-tight"
-              style={{ textShadow: "0 1px 2px rgba(0,0,0,0.45)" }}
+              className="text-[15px] font-semibold text-white truncate leading-tight"
+              style={{ textShadow: "0 1px 3px rgba(0,0,0,0.65)" }}
             >
               {currentUser?.name ||
                 `${currentUser?.prenoms || ""} ${currentUser?.nom || ""}`.trim()}
             </p>
-            <span className="text-[11px] text-slate-300 font-medium">
+            <span className="text-xs text-slate-200 font-medium">
               {isAdminLike ? "Administrateur" : "Agent"}
             </span>
           </div>
