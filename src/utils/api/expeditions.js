@@ -98,17 +98,32 @@ export const expeditionsApi = {
     async getExpedition(id) {
         try {
             const url = API_ENDPOINTS.EXPEDITIONS.SHOW.replace(':id', id);
+            console.log(`🔍 Chargement des détails de l'expédition ${id}...`);
             const response = await apiService.get(url);
 
+            console.log(`✅ Détails de l'expédition ${id} chargés avec succès`);
+            // L'API retourne {success, message, expedition}
             return {
                 success: response.success !== false,
-                data: response.data || response,
+                data: response.expedition || response.data || response,
                 message: response.message
             };
         } catch (error) {
+            console.error(`❌ Erreur lors du chargement de l'expédition ${id}:`, error);
+            
+            // Gestion spécifique des erreurs 520 (Cloudflare/Render)
+            if (error.status === 520) {
+                return {
+                    success: false,
+                    message: "Le serveur est temporairement indisponible. Veuillez réessayer dans quelques instants.",
+                    error: error
+                };
+            }
+            
             return {
                 success: false,
                 message: error.message || "Erreur lors de la récupération des détails",
+                error: error
             };
         }
     },
@@ -162,8 +177,9 @@ export const expeditionsApi = {
             // L'URL LIST_DEMANDES contient déjà les filtres is_demande_client=true&status=en_attente
             const url = `${API_ENDPOINTS.EXPEDITIONS.LIST_DEMANDES}${queryString ? `&${queryString}` : ''}`;
 
+            console.log("🔍 Appel API Demandes - URL:", url);
             const response = await apiService.get(url);
-            // console.log("response Liste Demandes Clients", response);
+            console.log("✅ Réponse API Demandes:", response);
 
             return {
                 success: response.success !== false,
@@ -172,6 +188,7 @@ export const expeditionsApi = {
                 message: response.message
             };
         } catch (error) {
+            console.error("❌ Erreur API Demandes:", error);
             return {
                 success: false,
                 message: error.message || "Erreur lors de la récupération des demandes",

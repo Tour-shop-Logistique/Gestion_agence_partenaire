@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { expeditionsApi } from "../../utils/api/expeditions";
+import { expeditionsCache } from "../../utils/expeditionsCache";
 import { agenciesApi } from "../../utils/api/agencies";
 
 /**
@@ -99,6 +100,8 @@ export const fetchDemandesClients = createAsyncThunk(
     async (params = { page: 1 }, { rejectWithValue }) => {
         try {
             const result = await expeditionsApi.listDemandes(params);
+            console.log("📦 Résultat fetchDemandesClients:", result);
+            
             if (!result.success) {
                 return rejectWithValue(result.message);
             }
@@ -106,7 +109,9 @@ export const fetchDemandesClients = createAsyncThunk(
                 data: result.data,
                 meta: result.meta
             };
+            
         } catch (error) {
+            console.error("❌ Erreur fetchDemandesClients:", error);
             return rejectWithValue(error.message || "Erreur lors du chargement des demandes");
         }
     }
@@ -353,6 +358,9 @@ const expeditionSlice = createSlice({
                 console.log("Expedition data in fulfilled:", expeditionData);
                 state.currentExpedition = expeditionData;
                 state.simulationResult = null; // Clear simulation on success
+                
+                // Vider le cache des expéditions du dashboard car une nouvelle expédition a été créée
+                expeditionsCache.clear();
             })
             .addCase(createExpedition.rejected, (state, action) => {
                 state.status = "failed";
@@ -374,10 +382,21 @@ const expeditionSlice = createSlice({
             })
 
             // Fetch Expeditions
-            .addCase(fetchExpeditions.pending, (state) => {
-                if (!state.expeditions || state.expeditions.length === 0) {
-                    state.status = "loading";
+            .addCase(fetchExpeditions.pending, (state, action) => {
+                const newFilters = action.meta.arg;
+                
+                // Vérifier si c'est un changement de filtres (dates, type) ou juste une pagination
+                const isFilterChange = !state.lastFilters || 
+                    String(newFilters.date_debut) !== String(state.lastFilters.date_debut) ||
+                    String(newFilters.date_fin) !== String(state.lastFilters.date_fin) ||
+                    String(newFilters.type) !== String(state.lastFilters.type);
+                
+                // Si les filtres principaux ont changé, vider les données pour éviter l'affichage de données obsolètes
+                if (isFilterChange) {
+                    state.expeditions = [];
                 }
+                
+                state.status = "loading";
                 state.error = null;
             })
             .addCase(fetchExpeditions.fulfilled, (state, action) => {
@@ -387,6 +406,7 @@ const expeditionSlice = createSlice({
                 state.lastFilters = action.meta.arg; // The params passed to the thunk
             })
             .addCase(fetchExpeditions.rejected, (state, action) => {
+                // Ne pas effacer les données existantes en cas d'erreur
                 state.status = "failed";
                 state.error = action.payload;
             })
@@ -432,6 +452,7 @@ const expeditionSlice = createSlice({
 
             // Fetch Demandes Clients
             .addCase(fetchDemandesClients.pending, (state) => {
+                // Ne montrer le loading que si on n'a pas encore de données
                 if (!state.demandes || state.demandes.length === 0) {
                     state.status = "loading";
                 }
@@ -444,6 +465,7 @@ const expeditionSlice = createSlice({
                 state.lastDemandesFilters = action.meta.arg;
             })
             .addCase(fetchDemandesClients.rejected, (state, action) => {
+                // Ne pas effacer les données existantes en cas d'erreur
                 state.status = "failed";
                 state.error = action.payload;
             })
@@ -541,7 +563,7 @@ const expeditionSlice = createSlice({
             })
             .addCase(receiveColisDestination.fulfilled, (state, action) => {
                 state.status = "succeeded";
-                state.message = action.payload.message;
+                // Message retiré pour ne pas afficher de notification
                 const { codes } = action.payload;
 
                 // Mise à jour de l'onglet réception

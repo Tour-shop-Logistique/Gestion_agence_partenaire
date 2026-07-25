@@ -1,0 +1,199 @@
+═══════════════════════════════════════════════════════════════════════
+  🎨 COMPARAISON AVANT / APRÈS - Design Minimaliste SaaS
+═══════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ HEADER                                                              │
+└─────────────────────────────────────────────────────────────────────┘
+
+AVANT (Coloré et flashy) :
+  ┌───────────────────────────────────────────────────────────────┐
+  │ 🟦 [Icône]  Colis à réceptionner                              │
+  │             Expéditions en transit...                         │
+  │                                    [🔄 Actualiser] [📷 Scan]  │
+  └───────────────────────────────────────────────────────────────┘
+  - Fond dégradé indigo
+  - Bordure épaisse (2px)
+  - Grande icône avec ombre
+  - Titre en 3xl/4xl
+  - Boutons avec dégradés
+
+APRÈS (Minimaliste SaaS) :
+  ┌───────────────────────────────────────────────────────────────┐
+  │ Colis à réceptionner                                          │
+  │ Gérez les colis en transit vers votre agence                 │
+  │                                    [🔄 Actualiser] [📷 Scan]  │
+  └───────────────────────────────────────────────────────────────┘
+  - Fond blanc
+  - Pas de bordure
+  - Pas d'icône décorative
+  - Titre en 2xl
+  - Boutons simples avec bordures
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ BARRE DE RECHERCHE                                                  │
+└─────────────────────────────────────────────────────────────────────┘
+
+AVANT :
+  ┌─────────────────────────────────────────────────────────────┐
+  │ 🔍  Rechercher un colis à réceptionner...                   │
+  └─────────────────────────────────────────────────────────────┘
+  - Bordure épaisse (2px)
+  - Coins très arrondis (rounded-2xl)
+  - Padding généreux (py-3.5)
+  - Focus ring épais (ring-4)
+
+APRÈS :
+  ┌─────────────────────────────────────────────────────────────┐
+  │ 🔍  Rechercher par code, désignation...                     │
+  └─────────────────────────────────────────────────────────────┘
+  - Bordure fine (1px)
+  - Coins modérés (rounded-lg)
+  - Padding standard (py-2.5)
+  - Focus ring subtil (ring-2)
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ TABLEAU                                                             │
+└─────────────────────────────────────────────────────────────────────┘
+
+AVANT :
+  ┌─────────────────────────────────────────────────────────────┐
+  │ ☑ │ COLIS / DÉSIGNATION │ PROVENANCE │ ... │ ACTION        │
+  ├─────────────────────────────────────────────────────────────┤
+  │ ☑ │ 🟦 #COL001          │ 🔵 France  │ ... │ [Réceptionner]│
+  │   │    Description      │            │     │               │
+  └─────────────────────────────────────────────────────────────┘
+  - Bordure épaisse (2px)
+  - Coins très arrondis (rounded-3xl)
+  - Ombre portée
+  - En-têtes avec dégradé
+  - Bordures gauches colorées
+  - Séparations épaisses (2px)
+  - Icônes avec fonds colorés et dégradés
+  - Badges avec bordures et icônes
+  - Padding généreux (px-6 py-5)
+
+APRÈS :
+  ┌─────────────────────────────────────────────────────────────┐
+  │ ☑ │ Colis           │ Provenance │ ... │ Actions          │
+  ├─────────────────────────────────────────────────────────────┤
+  │ ☑ │ 📦 COL001       │ France     │ ... │ Détails Réception│
+  │   │    Description  │            │     │                  │
+  └─────────────────────────────────────────────────────────────┘
+  - Bordure fine (1px)
+  - Coins modérés (rounded-lg)
+  - Pas d'ombre
+  - En-têtes gris simples
+  - Pas de bordures gauches
+  - Séparations fines (1px)
+  - Icônes simples sur fond gris
+  - Badges minimalistes sans bordure
+  - Padding standard (px-4 py-4)
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ BADGES DE STATUT                                                    │
+└─────────────────────────────────────────────────────────────────────┘
+
+AVANT :
+  ┌──────────────────┐  ┌──────────────────┐
+  │ ✓ REÇU           │  │ ⏳ EN ATTENTE    │
+  └──────────────────┘  └──────────────────┘
+  - Fond coloré + bordure
+  - Icônes
+  - Texte en gras uppercase
+  - Padding généreux
+
+APRÈS :
+  ┌──────────┐  ┌──────────────┐
+  │ Reçu     │  │ En attente   │
+  └──────────┘  └──────────────┘
+  - Fond coloré sans bordure
+  - Pas d'icônes
+  - Texte en font-medium
+  - Padding réduit
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ BOUTONS                                                             │
+└─────────────────────────────────────────────────────────────────────┘
+
+AVANT :
+  ┌──────────────────────────┐
+  │ 📥 Réceptionner          │
+  └──────────────────────────┘
+  - Dégradé indigo
+  - Ombre portée
+  - Effet scale au clic
+  - Padding généreux
+
+APRÈS :
+  ┌──────────────────┐
+  │ Réceptionner     │
+  └──────────────────┘
+  - Couleur unie indigo
+  - Pas d'ombre
+  - Pas d'effet scale
+  - Padding standard
+
+┌─────────────────────────────────────────────────────────────────────┐
+│ PAGINATION                                                          │
+└─────────────────────────────────────────────────────────────────────┘
+
+AVANT :
+  ┌─────────────────────────────────────────────────────────────┐
+  │ Page 1 sur 5                                    [◀] [▶]     │
+  └─────────────────────────────────────────────────────────────┘
+  - Bordure épaisse (2px)
+  - Coins très arrondis
+  - Texte en gras
+  - Boutons avec dégradés
+
+APRÈS :
+  ┌─────────────────────────────────────────────────────────────┐
+  │ Page 1 sur 5                                    [◀] [▶]     │
+  └─────────────────────────────────────────────────────────────┘
+  - Bordure fine (1px)
+  - Coins modérés
+  - Texte en font-medium
+  - Boutons simples
+
+═══════════════════════════════════════════════════════════════════════
+  📊 RÉSUMÉ DES CHANGEMENTS
+═══════════════════════════════════════════════════════════════════════
+
+Couleurs :
+  AVANT : Indigo, slate, amber, green avec dégradés
+  APRÈS : Gray, indigo, green, yellow (couleurs unies)
+
+Bordures :
+  AVANT : border-2 (2px)
+  APRÈS : border (1px)
+
+Coins arrondis :
+  AVANT : rounded-2xl, rounded-3xl
+  APRÈS : rounded-lg, rounded-md
+
+Ombres :
+  AVANT : shadow-lg, shadow-xl, shadow-indigo-300/50
+  APRÈS : Pas d'ombres (sauf pagination)
+
+Padding :
+  AVANT : px-6 py-5, px-8 py-3
+  APRÈS : px-4 py-4, px-4 py-2
+
+Typographie :
+  AVANT : font-bold, text-3xl/4xl, uppercase
+  APRÈS : font-medium/semibold, text-2xl, normal case
+
+Effets :
+  AVANT : Dégradés, ombres, scale, animations
+  APRÈS : Couleurs unies, transitions simples
+
+═══════════════════════════════════════════════════════════════════════
+  ✅ TRI AUTOMATIQUE
+═══════════════════════════════════════════════════════════════════════
+
+Les colis sont triés automatiquement :
+  1️⃣  Colis "En attente" (badge jaune) en HAUT
+  2️⃣  Colis "Reçu" (badge vert) en BAS
+
+═══════════════════════════════════════════════════════════════════════

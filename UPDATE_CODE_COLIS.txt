@@ -1,0 +1,123 @@
+✅ MODIFICATION FORMAT CODE COLIS - RÉSUMÉ RAPIDE
+
+═══════════════════════════════════════════════════════════════
+
+📋 CE QUI A CHANGÉ
+═══════════════════════════════════════════════════════════════
+
+ANCIEN FORMAT:
+  AGC001-2501-0001
+  (CODE_AGENCE-JJMM-NUMERO)
+
+NOUVEAU FORMAT:
+  DHD-AR-001-AGC001
+  (PREFIX-NUMERO-CODE_AGENCE)
+
+═══════════════════════════════════════════════════════════════
+
+🏷️ PRÉFIXES PAR TYPE D'EXPÉDITION
+═══════════════════════════════════════════════════════════════
+
+DHD Aérien       → DHD-AR-001-AGC001  ✈️
+DHD Maritime     → DHD-MR-001-AGC001  🚢
+Afrique          → AF-001-AGC001      🌍
+Canada (CA)      → CA-001-AGC001      🇨🇦
+Livraison (LD)   → LD-001-AGC001      🏠
+
+═══════════════════════════════════════════════════════════════
+
+📂 FICHIERS MODIFIÉS
+═══════════════════════════════════════════════════════════════
+
+✅ src/utils/codeGenerator.js
+   → Ajout TYPE_PREFIXES
+   → generateColisCode() accepte typeExpedition
+   → parseColisCode() parse nouveau format
+   → getNextColisNumber() gère séquence par type
+
+✅ src/hooks/useCodeGenerator.js
+   → genererCodeColis() accepte typeExpedition
+   → genererCodesMultiples() accepte typeExpedition
+   → obtenirProchainNumeroColis() accepte typeExpedition
+
+✅ CODE_COLIS_FORMAT.md (nouveau)
+   → Documentation complète du format
+   → Exemples d'utilisation
+   → Guide de migration
+
+✅ CHANGEMENT_CODE_COLIS_SUCCESS.md (nouveau)
+   → Changelog détaillé
+   → Tests à effectuer
+   → Checklist déploiement
+
+═══════════════════════════════════════════════════════════════
+
+💻 UTILISATION
+═══════════════════════════════════════════════════════════════
+
+JavaScript:
+  generateColisCode({ 
+    codeAgence: 'AGC001', 
+    numeroColis: 1,
+    typeExpedition: 'MARITIME' 
+  });
+  // → "DHD-MR-001-AGC001"
+
+React Hook:
+  const { genererCodeColis } = useCodeGenerator();
+  const code = genererCodeColis({ 
+    numeroColis: 5, 
+    typeExpedition: 'AFRIQUE' 
+  });
+  // → "AF-005-AGC001"
+
+═══════════════════════════════════════════════════════════════
+
+⚠️ ACTION REQUISE - BACKEND
+═══════════════════════════════════════════════════════════════
+
+Le BACKEND doit être modifié pour:
+
+1. Accepter le paramètre "type_expedition" lors de la création
+2. Générer les codes avec le nouveau format:
+   
+   switch ($type_expedition) {
+       case 'AERIEN':   $prefix = 'DHD-AR'; break;
+       case 'MARITIME': $prefix = 'DHD-MR'; break;
+       case 'AFRIQUE':  $prefix = 'AF'; break;
+       case 'CA':       $prefix = 'CA'; break;
+       case 'LD':       $prefix = 'LD'; break;
+       default:         $prefix = 'DHD-AR';
+   }
+   
+   $code = "{$prefix}-{$numero}-{$code_agence}";
+
+3. Maintenir une séquence par type d'expédition
+
+═══════════════════════════════════════════════════════════════
+
+✅ AVANTAGES
+═══════════════════════════════════════════════════════════════
+
+✨ Type visible immédiatement dans le code
+✨ Codes plus courts et lisibles
+✨ Numérotation indépendante par type (999 par type)
+✨ Tri et filtrage facilités
+✨ Statistiques par type simplifiées
+✨ Pas de dépendance à la date
+
+═══════════════════════════════════════════════════════════════
+
+📚 DOCUMENTATION
+═══════════════════════════════════════════════════════════════
+
+Voir fichiers:
+- CODE_COLIS_FORMAT.md (guide complet)
+- CHANGEMENT_CODE_COLIS_SUCCESS.md (changelog)
+- src/utils/codeGenerator.js (code source)
+
+═══════════════════════════════════════════════════════════════
+
+Date: 25 juillet 2026
+Version: 2.0
+Status: ✅ Frontend Ready | ⏳ Backend Pending

@@ -1,17 +1,33 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import ForgotPasswordModal from "./ForgotPasswordModal";
+import VerifyResetCodeModal from "./VerifyResetCodeModal";
+import ResetPasswordModal from "./ResetPasswordModal";
+import VerifyEmailModal from "./VerifyEmailModal";
 
 const LoginModal = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const { login, isLoading } = useAuth();
 
   const [formData, setFormData] = useState({
-    telephone: "",
+    identifier: "", // Peut être téléphone ou email
     password: "",
     type: "agence",
   });
   const [localError, setLocalError] = useState("");
+  
+  // États pour le flux de réinitialisation du mot de passe
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showVerifyCode, setShowVerifyCode] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetCode, setResetCode] = useState("");
+  const [resetSuccessMessage, setResetSuccessMessage] = useState("");
+
+  // États pour la vérification d'email
+  const [showEmailVerification, setShowEmailVerification] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -24,14 +40,24 @@ const LoginModal = ({ isOpen, onClose }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLocalError("");
+    setResetSuccessMessage("");
 
     try {
-      console.log("[Login] Sending credentials:", { telephone: formData.telephone, type: formData.type });
-      const result = await login({
-        telephone: formData.telephone,
+      // Déterminer si l'identifiant est un email ou un téléphone
+      const isEmail = formData.identifier.includes("@");
+      const credentials = {
         password: formData.password,
         type: formData.type,
-      });
+      };
+
+      if (isEmail) {
+        credentials.email = formData.identifier;
+      } else {
+        credentials.telephone = formData.identifier;
+      }
+
+      console.log("[Login] Sending credentials:", { identifier: formData.identifier, isEmail, type: formData.type });
+      const result = await login(credentials);
       console.log("[Login] Result:", result);
 
       if (result.success) {
@@ -45,13 +71,85 @@ const LoginModal = ({ isOpen, onClose }) => {
           navigate("/dashboard");
         }
       } else {
-        console.error("[Login] Failed:", result.message || result.error);
-        setLocalError(result.message || result.error || "Échec de la connexion");
+        // Vérifier si l'erreur est due à un email non vérifié
+        const errorMessage = result.message || result.error || "";
+        if (errorMessage.toLowerCase().includes("email") && 
+            (errorMessage.toLowerCase().includes("vérif") || 
+             errorMessage.toLowerCase().includes("verify") ||
+             errorMessage.toLowerCase().includes("non vérifié"))) {
+          // Ouvrir la modale de vérification d'email
+          if (isEmail) {
+            setUnverifiedEmail(formData.identifier);
+            setShowEmailVerification(true);
+          } else {
+            setLocalError("Votre email n'est pas vérifié. Connectez-vous avec votre email pour le vérifier.");
+          }
+        } else {
+          console.error("[Login] Failed:", result.message || result.error);
+          setLocalError(result.message || result.error || "Échec de la connexion");
+        }
       }
     } catch (err) {
       console.error("[Login] Exception:", err);
       setLocalError("Une erreur est survenue lors de la connexion");
     }
+  };
+
+  // Handlers pour le flux de réinitialisation
+  const handleForgotPasswordClick = () => {
+    setShowForgotPassword(true);
+  };
+
+  const handleForgotPasswordSuccess = (email) => {
+    setResetEmail(email);
+    setShowForgotPassword(false);
+    setShowVerifyCode(true);
+  };
+
+  const handleVerifyCodeSuccess = (code) => {
+    setResetCode(code);
+    setShowVerifyCode(false);
+    setShowResetPassword(true);
+  };
+
+  const handleResetPasswordSuccess = () => {
+    setShowResetPassword(false);
+    setResetSuccessMessage("Mot de passe réinitialisé avec succès ! Vous pouvez maintenant vous connecter.");
+    // Réinitialiser les états
+    setResetEmail("");
+    setResetCode("");
+  };
+
+  const handleBackToForgotPassword = () => {
+    setShowVerifyCode(false);
+    setShowForgotPassword(true);
+  };
+
+  const handleCloseForgotPassword = () => {
+    setShowForgotPassword(false);
+    setResetEmail("");
+  };
+
+  const handleCloseVerifyCode = () => {
+    setShowVerifyCode(false);
+    setResetEmail("");
+  };
+
+  const handleCloseResetPassword = () => {
+    setShowResetPassword(false);
+    setResetEmail("");
+    setResetCode("");
+  };
+
+  const handleEmailVerificationSuccess = () => {
+    setShowEmailVerification(false);
+    setResetSuccessMessage("Email vérifié avec succès ! Vous pouvez maintenant vous connecter.");
+    setUnverifiedEmail("");
+  };
+
+  const handleCloseEmailVerification = () => {
+    setShowEmailVerification(false);
+    setUnverifiedEmail("");
   };
 
   if (!isOpen) return null;
@@ -84,33 +182,48 @@ const LoginModal = ({ isOpen, onClose }) => {
               </div>
             )}
 
+            {resetSuccessMessage && (
+              <div className="bg-green-500/10 border border-green-500/20 text-green-400 px-4 py-3 rounded-lg">
+                {resetSuccessMessage}
+              </div>
+            )}
+
             <div>
               <label
-                htmlFor="telephone"
+                htmlFor="identifier"
                 className="block text-sm font-medium text-gray-200 mb-1"
               >
-                Téléphone
+                Téléphone ou Email
               </label>
               <input
-                id="telephone"
-                name="telephone"
-                type="tel"
-                autoComplete="tel"
+                id="identifier"
+                name="identifier"
+                type="text"
+                autoComplete="username"
                 required
-                value={formData.telephone}
+                value={formData.identifier}
                 onChange={handleChange}
                 className="appearance-none block w-full px-4 py-2 bg-white/10 border border-gray-300/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="+225 66 66 66 66"
+                placeholder="0700000000 ou email@example.com"
               />
             </div>
 
             <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-200 mb-1"
-              >
-                Mot de passe
-              </label>
+              <div className="flex justify-between items-center mb-1">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-200"
+                >
+                  Mot de passe
+                </label>
+                <button
+                  type="button"
+                  onClick={handleForgotPasswordClick}
+                  className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+                >
+                  Mot de passe oublié ?
+                </button>
+              </div>
               <input
                 id="password"
                 name="password"
@@ -134,6 +247,35 @@ const LoginModal = ({ isOpen, onClose }) => {
           </form>
         </div>
       </div>
+
+      {/* Modales de réinitialisation du mot de passe */}
+      <ForgotPasswordModal
+        isOpen={showForgotPassword}
+        onClose={handleCloseForgotPassword}
+        onSuccess={handleForgotPasswordSuccess}
+      />
+      <VerifyResetCodeModal
+        isOpen={showVerifyCode}
+        onClose={handleCloseVerifyCode}
+        email={resetEmail}
+        onSuccess={handleVerifyCodeSuccess}
+        onBack={handleBackToForgotPassword}
+      />
+      <ResetPasswordModal
+        isOpen={showResetPassword}
+        onClose={handleCloseResetPassword}
+        email={resetEmail}
+        code={resetCode}
+        onSuccess={handleResetPasswordSuccess}
+      />
+
+      {/* Modale de vérification d'email */}
+      <VerifyEmailModal
+        isOpen={showEmailVerification}
+        onClose={handleCloseEmailVerification}
+        email={unverifiedEmail}
+        onSuccess={handleEmailVerificationSuccess}
+      />
     </div>
   );
 };

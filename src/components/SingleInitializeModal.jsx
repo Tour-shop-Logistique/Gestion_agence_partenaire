@@ -52,8 +52,8 @@ const SingleInitializeModal = ({
                                 <ScaleIcon className="w-6 h-6" />
                             </div>
                             <div>
-                                <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">{title}</h3>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{subtitle}</p>
+                                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-tight">{title}</h3>
+                                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">{subtitle}</p>
                             </div>
                         </div>
                         <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl transition-colors">
@@ -65,16 +65,16 @@ const SingleInitializeModal = ({
                     <div className="px-6 py-6 space-y-6">
                         {/* Context Card */}
                         <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-start gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-slate-900 flex items-center justify-center text-white font-black text-lg">
+                            <div className="w-12 h-12 rounded-xl bg-slate-900 flex items-center justify-center text-white font-bold text-lg">
                                 {tarif.indice}
                             </div>
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1">
-                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Indice</span>
+                                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide leading-none">Indice</span>
                                     <div className="h-4 w-px bg-slate-200"></div>
-                                    <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest leading-none">Modèle</span>
+                                    <span className="text-[10px] font-semibold text-indigo-600 uppercase tracking-wide leading-none">Modèle</span>
                                 </div>
-                                <p className="text-sm font-black text-slate-900 truncate leading-tight mb-1">
+                                <p className="text-sm font-bold text-slate-900 truncate leading-tight mb-1">
                                     {tarif.zone?.nom || tarif.nom_zone}
                                 </p>
                                 <div className="flex items-center gap-1.5 text-slate-500">
@@ -87,7 +87,7 @@ const SingleInitializeModal = ({
                         {/* Input Section */}
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">
+                                <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-2 px-1">
                                     Pourcentage de Prestation (%)
                                 </label>
                                 <div className="relative group">
@@ -95,11 +95,11 @@ const SingleInitializeModal = ({
                                         type="number"
                                         value={percentage}
                                         onChange={(e) => setPercentage(parseFloat(e.target.value) || 0)}
-                                        className="w-full h-12 px-4 bg-white border-2 border-slate-100 rounded-xl text-lg font-black text-slate-900 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
+                                        className="w-full h-12 px-4 bg-white border-2 border-slate-100 rounded-xl text-lg font-bold text-slate-900 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
                                         placeholder="15"
                                         autoFocus
                                     />
-                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-black text-lg">%</div>
+                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">%</div>
                                 </div>
                             </div>
 
@@ -111,11 +111,11 @@ const SingleInitializeModal = ({
                                 </div>
                                 <div className="px-4 py-3 flex justify-between items-center text-sm font-medium">
                                     <span className="text-slate-500">Frais Prestation (+{percentage}%)</span>
-                                    <span className="text-indigo-600 font-black">+{formatPrice((tarif.montant_base * percentage) / 100, "XOF")}</span>
+                                    <span className="text-indigo-600 font-bold">+{formatPrice((tarif.montant_base * percentage) / 100, "XOF")}</span>
                                 </div>
                                 <div className="px-4 py-4 flex justify-between items-center bg-indigo-50/50">
-                                    <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Total Expédition</span>
-                                    <span className="text-xl font-black text-indigo-700">{formatPrice(calculatedTotal, "XOF")}</span>
+                                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Total Expédition</span>
+                                    <span className="text-xl font-bold text-indigo-700">{formatPrice(calculatedTotal, "XOF")}</span>
                                 </div>
                             </div>
                         </div>
@@ -126,14 +126,14 @@ const SingleInitializeModal = ({
                         <button
                             onClick={onClose}
                             disabled={loading}
-                            className="flex-1 h-11 text-sm font-black text-slate-500 hover:text-slate-700 hover:bg-white rounded-xl transition-all"
+                            className="flex-1 h-11 text-sm font-bold text-slate-500 hover:text-slate-700 hover:bg-white rounded-xl transition-all"
                         >
                             Annuler
                         </button>
                         <button
                             onClick={() => onConfirm(percentage)}
                             disabled={loading}
-                            className="flex-[1.5] h-11 bg-slate-950 hover:bg-slate-800 text-white rounded-xl text-sm font-black shadow-lg shadow-slate-200 transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+                            className="flex-[1.5] h-11 bg-slate-950 hover:bg-slate-800 text-white rounded-xl text-sm font-bold shadow-lg shadow-slate-200 transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
                         >
                             {loading ? (
                                 <ArrowPathIcon className="w-5 h-5 animate-spin" />

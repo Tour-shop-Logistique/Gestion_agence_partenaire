@@ -1,0 +1,88 @@
+═══════════════════════════════════════════════════════════════
+  📷 SCANNER QR CONFIGURÉ !
+═══════════════════════════════════════════════════════════════
+
+✅ Composant QRScanner créé
+✅ Intégré dans la page ColisAReceptionner
+✅ QR codes mis à jour pour contenir le code_colis
+
+═══════════════════════════════════════════════════════════════
+  🚀 INSTALLATION REQUISE
+═══════════════════════════════════════════════════════════════
+
+1️⃣  INSTALLER LA BIBLIOTHÈQUE
+   ──────────────────────────
+   npm install html5-qrcode
+
+2️⃣  REDÉMARRER LE SERVEUR
+   ──────────────────────
+   Ctrl + C (arrêter)
+   npm run dev (redémarrer)
+
+═══════════════════════════════════════════════════════════════
+  📋 UTILISATION
+═══════════════════════════════════════════════════════════════
+
+1. Allez sur "Colis à réceptionner"
+2. Cliquez sur le bouton "Scanner"
+3. Autorisez l'accès à la caméra
+4. Scannez le QR code du reçu
+5. Le colis est automatiquement sélectionné !
+
+Alternative : Saisie manuelle du code colis
+
+═══════════════════════════════════════════════════════════════
+  🎯 FONCTIONNALITÉS
+═══════════════════════════════════════════════════════════════
+
+✓ Scan QR code avec la caméra
+✓ Saisie manuelle du code colis
+✓ Sélection automatique dans la liste
+✓ Scroll automatique vers le colis
+✓ Messages de succès/erreur
+✓ Compatible mobile et desktop
+
+═══════════════════════════════════════════════════════════════
+  📱 FORMAT DU QR CODE
+═══════════════════════════════════════════════════════════════
+
+AVANT : QR code = ID expédition (123)
+APRÈS : QR code = Code colis (COL001)
+
+Le scanner cherche le colis de 3 façons :
+  1. Par code_colis exact
+  2. Par code_colis partiel
+  3. Par ID d'expédition (compatibilité)
+
+═══════════════════════════════════════════════════════════════
+  📂 FICHIERS MODIFIÉS
+═══════════════════════════════════════════════════════════════
+
+✅ src/components/QRScanner.jsx (créé)
+✅ src/pages/ColisAReceptionner.jsx (modifié)
+✅ src/components/Receipts/ReceiptThermal.jsx (modifié)
+
+═══════════════════════════════════════════════════════════════
+  🔧 PERMISSIONS CAMÉRA
+═══════════════════════════════════════════════════════════════
+
+Le navigateur demandera l'autorisation d'accès à la caméra.
+Cliquez sur "Autoriser" pour utiliser le scanner.
+
+Si refusé par erreur :
+  • Cliquez sur le cadenas dans la barre d'adresse
+  • Autorisez l'accès à la caméra
+  • Rechargez la page
+
+═══════════════════════════════════════════════════════════════
+  ✅ RÉSUMÉ
+═══════════════════════════════════════════════════════════════
+
+Le scanner QR est prêt ! Après installation de html5-qrcode :
+
+1. Scanner rapide des colis
+2. Sélection automatique
+3. Réception en masse facilitée
+4. Gain de temps considérable
+
+═══════════════════════════════════════════════════════════════

@@ -1,0 +1,312 @@
+════════════════════════════════════════════════════════════════════════════════
+   🔒 AMÉLIORATION : ÉVITER LES DOUBLONS DANS LA SÉLECTION
+════════════════════════════════════════════════════════════════════════════════
+
+📅 DATE : 11 juillet 2026
+🎯 OBJECTIF : Vérifier qu'un colis scanné n'est pas déjà dans la liste de sélection
+
+════════════════════════════════════════════════════════════════════════════════
+   ⚠️ PROBLÈME IDENTIFIÉ
+════════════════════════════════════════════════════════════════════════════════
+
+SCÉNARIO PROBLÉMATIQUE :
+   1. Utilisateur scanne le colis "COL001" → Ajouté à la sélection ✓
+   2. Utilisateur re-scanne le colis "COL001" (après cooldown de 2s)
+   3. PROBLÈME : Le colis était ajouté à nouveau dans selectedCodes
+   4. RÉSULTAT : ["COL001", "COL001"] dans le tableau (doublon) ❌
+
+CONSÉQUENCES :
+   ❌ Colis présent plusieurs fois dans la sélection
+   ❌ Lors de la validation, tentative de réception multiple
+   ❌ Erreurs potentielles côté API
+   ❌ Expérience utilisateur dégradée
+
+════════════════════════════════════════════════════════════════════════════════
+   ✅ SOLUTION IMPLÉMENTÉE
+════════════════════════════════════════════════════════════════════════════════
+
+VÉRIFICATION AVANT AJOUT :
+   Avant d'ajouter un colis à la liste de sélection, on vérifie :
+   
+   if (!selectedCodes.includes(foundColis.code_colis)) {
+       // ✅ Le colis n'est pas encore sélectionné
+       // → Ajouter à la liste
+       // → Son de succès
+       // → Toast "Colis sélectionné !"
+   } else {
+       // ⚠️ Le colis est déjà sélectionné
+       // → NE PAS ajouter à nouveau
+       // → Son d'avertissement
+       // → Toast "Déjà sélectionné" (une seule fois)
+   }
+
+════════════════════════════════════════════════════════════════════════════════
+   📁 FICHIERS MODIFIÉS
+════════════════════════════════════════════════════════════════════════════════
+
+1. src/pages/ColisAReceptionner.jsx
+   ─────────────────────────────────
+   FONCTION : handleQRScan()
+   
+   MODIFICATIONS :
+   ✓ Vérification if (!selectedCodes.includes(...))
+   ✓ Message différent si déjà sélectionné
+   ✓ Son d'avertissement si doublon
+   ✓ Marquage dans scannedCodesRef uniquement si nouveau
+
+2. src/pages/ReceptionColis.jsx
+   ─────────────────────────────────
+   FONCTION : handleQRScan()
+   
+   MODIFICATIONS :
+   ✓ Vérification if (!selectedColis.includes(...))
+   ✓ Message différent si déjà sélectionné
+   ✓ Son d'avertissement si doublon
+   ✓ Marquage dans scannedCodesRef uniquement si nouveau
+
+════════════════════════════════════════════════════════════════════════════════
+   🔄 FLUX DE DÉCISION AMÉLIORÉ
+════════════════════════════════════════════════════════════════════════════════
+
+                        [SCAN D'UN CODE QR]
+                               ↓
+                    ┌──────────────────────┐
+                    │ Colis trouvé ?       │
+                    └──────────────────────┘
+                               ↓
+                    ┌─────────┴─────────┐
+                OUI │                   │ NON
+                    ↓                   ↓
+         ┌──────────────────┐    ┌────────────────┐
+         │ Déjà réceptionné?│    │ 🔊 Son erreur  │
+         └──────────────────┘    │ ❌ Toast erreur│
+                    ↓             └────────────────┘
+         ┌─────────┴─────────┐
+     OUI │                   │ NON
+         ↓                   ↓
+  ┌──────────────┐   ┌───────────────────┐
+  │ 🔊 Warning   │   │ En transit?       │
+  │ 💬 Déjà reçu │   └───────────────────┘
+  │ (une fois)   │            ↓
+  └──────────────┘   ┌────────┴────────┐
+                 OUI │                 │ NON
+                     ↓                 ↓
+              ┌──────────────┐  ┌──────────────────┐
+              │ 🔊 Warning   │  │ Déjà sélectionné?│ ← NOUVEAU
+              │ 💬 Transit   │  └──────────────────┘
+              │ (une fois)   │         ↓
+              └──────────────┘  ┌──────┴──────┐
+                            OUI │             │ NON
+                                ↓             ↓
+                         ┌──────────────┐ ┌──────────────┐
+                         │ 🔊 Warning   │ │ ✅ Ajouter   │
+                         │ 💬 Déjà      │ │ 🔊 Succès    │
+                         │ sélectionné  │ │ 💬 Sélection │
+                         │ (une fois)   │ │ 📜 Scroll    │
+                         └──────────────┘ └──────────────┘
+
+════════════════════════════════════════════════════════════════════════════════
+   🎬 SCÉNARIOS D'UTILISATION
+════════════════════════════════════════════════════════════════════════════════
+
+SCÉNARIO 1 : Premier scan d'un colis
+─────────────────────────────────────
+   📷 Scan "COL001"
+   ✅ Colis trouvé et disponible
+   ✅ Pas encore dans selectedCodes
+   ➡️  Ajouté à la sélection
+   🔊 Son de succès (2 notes)
+   💬 Toast : "Colis COL001 sélectionné !"
+   
+   État : selectedCodes = ["COL001"]
+
+SCÉNARIO 2 : Re-scan du même colis (avant validation)
+──────────────────────────────────────────────────────
+   📷 Scan "COL001" (après 2s de cooldown)
+   ✅ Colis trouvé et disponible
+   ⚠️  Déjà dans selectedCodes !
+   ➡️  NON ajouté (évite le doublon)
+   🔊 Son d'avertissement
+   💬 Toast : "Le colis COL001 est déjà sélectionné." (une seule fois)
+   
+   État : selectedCodes = ["COL001"] (inchangé)
+
+SCÉNARIO 3 : Scan d'un deuxième colis différent
+────────────────────────────────────────────────
+   📷 Scan "COL002"
+   ✅ Colis trouvé et disponible
+   ✅ Pas dans selectedCodes
+   ➡️  Ajouté à la sélection
+   🔊 Son de succès
+   💬 Toast : "Colis COL002 sélectionné !"
+   
+   État : selectedCodes = ["COL001", "COL002"]
+
+SCÉNARIO 4 : Re-scan du premier après avoir scanné le deuxième
+───────────────────────────────────────────────────────────────
+   📷 Scan "COL001" (encore)
+   ✅ Colis trouvé et disponible
+   ⚠️  Déjà dans selectedCodes !
+   ➡️  NON ajouté
+   🔊 Son d'avertissement
+   💬 Toast : "Le colis COL001 est déjà sélectionné." (une seule fois)
+   
+   État : selectedCodes = ["COL001", "COL002"] (inchangé)
+
+SCÉNARIO 5 : Validation puis re-scan
+─────────────────────────────────────
+   🖱️  Validation de la sélection
+   ✅ Réception effectuée
+   ➡️  selectedCodes réinitialisé = []
+   ➡️  scannedCodesRef réinitialisé
+   
+   📷 Scan "COL001" à nouveau
+   ⚠️  Colis déjà réceptionné
+   ➡️  NON ajouté
+   🔊 Son d'avertissement
+   💬 Toast : "Le colis COL001 a déjà été réceptionné."
+
+════════════════════════════════════════════════════════════════════════════════
+   🔍 GESTION DES DEUX SYSTÈMES DE TRACKING
+════════════════════════════════════════════════════════════════════════════════
+
+1. selectedCodes / selectedColis (STATE)
+   ───────────────────────────────────────
+   OBJECTIF : Liste des colis sélectionnés pour validation
+   TYPE : Array de codes colis
+   USAGE : Affichage UI, validation en masse
+   RESET : Après validation réussie
+   
+   EXEMPLE : ["COL001", "COL002", "COL005"]
+
+2. scannedCodesRef (REF)
+   ───────────────────────────────────────
+   OBJECTIF : Historique des colis scannés (éviter messages répétés)
+   TYPE : Set de codes colis
+   USAGE : Contrôle d'affichage des toasts
+   RESET : Après validation réussie
+   
+   EXEMPLE : Set(["COL001", "COL002", "COL003", "COL004"])
+   
+   Note : Peut contenir plus de codes que selectedCodes
+          (inclut les colis déjà reçus, en transit, etc.)
+
+COMPLÉMENTARITÉ :
+   • selectedCodes → Liste ACTIVE pour validation
+   • scannedCodesRef → Historique pour messages (toast anti-spam)
+
+════════════════════════════════════════════════════════════════════════════════
+   🎯 AVANTAGES DE LA VÉRIFICATION
+════════════════════════════════════════════════════════════════════════════════
+
+✅ INTÉGRITÉ DES DONNÉES
+   • Pas de doublons dans selectedCodes
+   • Un colis = une entrée dans la sélection
+   • Validation API correcte (pas de tentatives multiples)
+
+✅ FEEDBACK CLAIR
+   • Message différent si déjà sélectionné
+   • L'utilisateur comprend l'état du colis
+   • Sons différenciés (succès vs avertissement)
+
+✅ ROBUSTESSE
+   • Gestion de tous les cas de figure
+   • Pas d'erreurs lors de la validation
+   • Comportement prévisible
+
+✅ PERFORMANCE
+   • Évite les appels API redondants
+   • Moins de traitements inutiles
+
+════════════════════════════════════════════════════════════════════════════════
+   🧪 TESTS À EFFECTUER
+════════════════════════════════════════════════════════════════════════════════
+
+□ TEST 1 : Scanner un colis une fois
+   ATTENDU : Ajouté à selectedCodes, son succès, toast succès
+   
+□ TEST 2 : Re-scanner le même colis immédiatement
+   ATTENDU : Ignoré (cooldown QR), pas de changement
+   
+□ TEST 3 : Re-scanner le même colis après 2s
+   ATTENDU : Message "déjà sélectionné", son warning, pas d'ajout
+   
+□ TEST 4 : Scanner 3 colis différents
+   ATTENDU : Les 3 dans selectedCodes
+   
+□ TEST 5 : Re-scanner le 1er après avoir scanné les 3
+   ATTENDU : Message "déjà sélectionné", toujours 3 dans selectedCodes
+   
+□ TEST 6 : Décocher un colis puis le re-scanner
+   ATTENDU : Re-ajouté à selectedCodes avec son succès
+   
+□ TEST 7 : Valider puis re-scanner les mêmes colis
+   ATTENDU : Messages "déjà réceptionné", pas d'ajout
+   
+□ TEST 8 : Scanner 10 colis rapidement en alternant
+   ATTENDU : Pas de doublons, chaque colis une seule fois
+
+════════════════════════════════════════════════════════════════════════════════
+   📊 COMPARAISON AVANT / APRÈS
+════════════════════════════════════════════════════════════════════════════════
+
+AVANT (avec risque de doublon) :
+───────────────────────────────────
+   Scan COL001 → selectedCodes = ["COL001"]
+   Scan COL002 → selectedCodes = ["COL001", "COL002"]
+   Scan COL001 → selectedCodes = ["COL001", "COL002", "COL001"] ❌
+   
+   Validation → Tentative de réception de COL001 deux fois ❌
+   Résultat : Erreur potentielle, confusion
+
+APRÈS (avec vérification) :
+───────────────────────────────────
+   Scan COL001 → selectedCodes = ["COL001"] ✅
+   Scan COL002 → selectedCodes = ["COL001", "COL002"] ✅
+   Scan COL001 → selectedCodes = ["COL001", "COL002"] ✅ (inchangé)
+                 + Toast "Déjà sélectionné"
+   
+   Validation → Réception de COL001 et COL002 (une fois chacun) ✅
+   Résultat : Succès, données propres
+
+════════════════════════════════════════════════════════════════════════════════
+   💡 BONNES PRATIQUES APPLIQUÉES
+════════════════════════════════════════════════════════════════════════════════
+
+1. VALIDATION DES DONNÉES
+   ✓ Vérification avant modification de l'état
+   ✓ Utilisation de .includes() pour détecter les doublons
+   ✓ État immuable (nouveau tableau avec spread operator)
+
+2. FEEDBACK UTILISATEUR
+   ✓ Messages clairs et différenciés
+   ✓ Sons adaptés au contexte (succès vs avertissement)
+   ✓ Toast anti-spam avec scannedCodesRef
+
+3. SÉPARATION DES RESPONSABILITÉS
+   ✓ selectedCodes : sélection active
+   ✓ scannedCodesRef : historique pour UI
+   ✓ Chaque système a son rôle distinct
+
+4. DEFENSIVE PROGRAMMING
+   ✓ Anticipation des cas limites
+   ✓ Gestion des re-scans multiples
+   ✓ Protection contre les erreurs utilisateur
+
+════════════════════════════════════════════════════════════════════════════════
+   ✅ RÉSULTAT FINAL
+════════════════════════════════════════════════════════════════════════════════
+
+Le système de scan est maintenant complètement sécurisé :
+
+📍 Pas de doublons dans la sélection (vérification stricte)
+📍 Messages clairs si colis déjà sélectionné
+📍 Sons différenciés (succès/avertissement)
+📍 Toast anti-spam avec tracking intelligent
+📍 Validation API sans erreurs
+📍 Expérience utilisateur optimale
+
+L'utilisateur peut scanner autant de fois qu'il veut sans craindre
+de créer des doublons dans sa sélection ! 🎉
+
+════════════════════════════════════════════════════════════════════════════════

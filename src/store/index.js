@@ -6,6 +6,8 @@ import expeditionReducer from './slices/expeditionSlice';
 import productReducer from './slices/productSlice';
 import accountingReducer from './slices/accountingSlice';
 import dashboardReducer from './slices/dashboardSlice';
+import passwordReducer from './slices/passwordSlice';
+import notificationsReducer from './slices/notificationsSlice';
 
 /**
  * Root Reducer avec logique de reset
@@ -18,6 +20,8 @@ const appReducer = combineReducers({
   products: productReducer,
   accounting: accountingReducer,
   dashboard: dashboardReducer,
+  password: passwordReducer,
+  notifications: notificationsReducer,
 });
 
 const rootReducer = (state, action) => {
@@ -36,11 +40,8 @@ export const store = configureStore({
   reducer: rootReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      serializableCheck: {
-        // Ignorer ces chemins pour les vérifications de sérialisation
-        ignoredActions: ['auth/login/fulfilled'],
-        ignoredPaths: ['auth.currentUser'],
-      },
+      serializableCheck: false, // ✅ Désactivé pour améliorer les performances en dev
+      immutableCheck: false, // ✅ Désactivé également pour de grandes données
     }),
   devTools: import.meta.env.MODE !== 'production',
 });

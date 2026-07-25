@@ -329,11 +329,8 @@ export const agenciesApi = {
         message: response.message || "Transaction enregistrée avec succès",
       };
     } catch (error) {
-      return {
-        success: false,
-        message:
-          error.message || "Erreur lors de l'enregistrement de la transaction",
-      };
+      console.error("Erreur API recordTransaction:", error);
+      throw new Error(error.response?.data?.message || error.message || "Erreur lors de l'enregistrement de la transaction");
     }
   },
 

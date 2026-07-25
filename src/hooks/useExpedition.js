@@ -49,7 +49,7 @@ export const useExpedition = () => {
     const loadExpeditions = useCallback((params = { page: 1 }, forceRefresh = false) => {
         // Si on est déjà en cours de chargement, on ne relance pas l'appel (sauf forceRefresh)
         if (!forceRefresh && status === "loading") {
-            return;
+            return Promise.resolve();
         }
 
         // Optimisation : ne pas recharger si les filtres sont identiques et qu'on a déjà réussi
@@ -59,7 +59,7 @@ export const useExpedition = () => {
             String(params.date_fin) === String(lastFilters.date_fin);
 
         if (!forceRefresh && lastFilters && isSameParams && status === 'succeeded') {
-            return;
+            return Promise.resolve();
         }
         return dispatch(fetchExpeditions(params));
     }, [dispatch, lastFilters, status]);
@@ -75,41 +75,33 @@ export const useExpedition = () => {
             params.date_fin === lastColisFilters.date_fin;
 
         if (!forceRefresh && lastColisFilters && isSameParams && colisStatus === 'succeeded') {
-            return Promise.resolve({ payload: { data: colis, meta: colisMeta } });
+            return Promise.resolve();
         }
         return dispatch(fetchColis(params));
-    }, [dispatch, colis, colisMeta, lastColisFilters, colisStatus]);
+    }, [dispatch, lastColisFilters, colisStatus]);
 
     const getExpeditionDetails = useCallback((id) => {
         // Optimisation : si l'expédition est déjà dans l'une des listes, on l'utilise directement
-        const existingExpedition = expeditions.find(e => String(e.id) === String(id)) ||
-            demandes.find(d => String(d.id) === String(id));
-
-        if (existingExpedition) {
-            dispatch(setCurrentExpedition(existingExpedition));
-            // On lance quand même un refresh en arrière-plan pour avoir les toutes dernières infos
-            dispatch(fetchExpeditionById(id));
-            return Promise.resolve({ payload: existingExpedition });
-        }
-        // Sinon on la récupère depuis l'API
+        // Note: on évite d'inclure expeditions et demandes dans les dépendances pour éviter les boucles
+        // Le dispatch va gérer la logique de mise en cache
         return dispatch(fetchExpeditionById(id));
-    }, [dispatch, expeditions, demandes]);
+    }, [dispatch]);
 
     const cleanSimulation = useCallback(() => dispatch(clearSimulation()), [dispatch]);
 
     const loadProducts = useCallback((forceRefresh = false) => {
-        if (!forceRefresh && products && products.length > 0 && productStatus === 'succeeded') {
+        if (!forceRefresh && productStatus === 'succeeded') {
             return;
         }
         return dispatch(fetchProducts());
-    }, [dispatch, products, productStatus]);
+    }, [dispatch, productStatus]);
 
     const loadCategories = useCallback((forceRefresh = false) => {
-        if (!forceRefresh && categories && categories.length > 0 && productStatus === 'succeeded') {
+        if (!forceRefresh && productStatus === 'succeeded') {
             return;
         }
         return dispatch(fetchCategories());
-    }, [dispatch, categories, productStatus]);
+    }, [dispatch, productStatus]);
 
     return {
         // État
@@ -151,17 +143,28 @@ export const useExpedition = () => {
         loadProducts,
         loadCategories,
         loadDemandes: useCallback((params = { page: 1 }, forceRefresh = false) => {
-            if (!forceRefresh && status === 'loading') {
-                return;
+            // Vérifier si un chargement de demandes est déjà en cours
+            // On utilise demandesMeta pour vérifier l'état spécifique aux demandes
+            const isLoadingDemandes = status === 'loading' && lastDemandesFilters !== null;
+            
+            if (!forceRefresh && isLoadingDemandes) {
+                console.log('⏭️ Demandes déjà en cours de chargement, skip');
+                return Promise.resolve();
             }
+            
             const isSameParams = lastDemandesFilters &&
                 String(params.page) === String(lastDemandesFilters.page);
 
+            // ❌ SUPPRESSION de la vérification sur demandes.length qui cause la boucle
+            // Car demandes change à chaque fois, ce qui recréé le callback
             if (!forceRefresh && lastDemandesFilters && isSameParams && status === 'succeeded') {
-                return Promise.resolve({ payload: { data: demandes, meta: demandesMeta } });
+                console.log('✅ Demandes déjà chargées avec les mêmes paramètres, skip');
+                return Promise.resolve();
             }
+            
+            console.log('📞 Appel API fetchDemandesClients avec params:', params);
             return dispatch(fetchDemandesClients(params));
-        }, [dispatch, demandes, demandesMeta, lastDemandesFilters, status]),
+        }, [dispatch, lastDemandesFilters, status]), // ❌ RETRAIT de 'demandes' des dépendances
         acceptDemande: useCallback((id) => dispatch(acceptDemandeClient(id)), [dispatch]),
         refuseDemande: useCallback((id, data) => dispatch(refuseDemandeClient({ id, data })), [dispatch]),
         confirmReception: useCallback((id) => dispatch(confirmExpeditionReception(id)), [dispatch]),

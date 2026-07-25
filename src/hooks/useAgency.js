@@ -51,11 +51,12 @@ export const useAgency = () => {
   }, [dispatch]);
 
   const fetchAgencyData = useCallback((forceRefresh = false) => {
-    if (!forceRefresh && agencyData && status === 'succeeded') {
+    // Utiliser une vérification via le store directement plutôt que via les dépendances
+    if (!forceRefresh && status === 'succeeded') {
       return;
     }
     return dispatch(fetchAgency());
-  }, [dispatch, agencyData, status]);
+  }, [dispatch, status]);
 
   const updateAgencyData = useCallback((agencyData) => {
     return dispatch(updateAgency(agencyData));
@@ -67,8 +68,12 @@ export const useAgency = () => {
 
   // Actions pour les utilisateurs
   const fetchAgencyUsers = useCallback((forceRefresh = false) => {
+    // Éviter les appels répétés si on a déjà des utilisateurs et pas de forceRefresh
+    if (!forceRefresh && usersStatus === 'succeeded') {
+      return Promise.resolve();
+    }
     return dispatch(fetchUsers());
-  }, [dispatch]);
+  }, [dispatch, usersStatus]);
 
   const createAgencyUser = useCallback((userData) => {
     return dispatch(createUser(userData));

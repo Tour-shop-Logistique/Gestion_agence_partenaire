@@ -5,10 +5,14 @@ import { useExpedition } from "../hooks/useExpedition";
 import { useTarifs } from "../hooks/useTarifs";
 import { useAgency } from "../hooks/useAgency";
 import PrintSuccessModal from "../components/Receipts/PrintSuccessModal";
+import SearchableDropdown from "../components/common/SearchableDropdown";
 import { getLogoUrl } from "../utils/apiConfig";
 import { toast } from "../utils/toast";
+import { markAsRecentlyCreated } from "../hooks/useWebSocket";
 
 const CreateExpedition = () => {
+    console.log("🚀 CreateExpedition.jsx chargé - Version avec déduplication");
+    
     const navigate = useNavigate();
     const {
         createExpedition,
@@ -39,6 +43,9 @@ const CreateExpedition = () => {
     const [step, setStep] = useState(1);
     const [paymentMethod, setPaymentMethod] = useState("cash");
     const [paymentReference, setPaymentReference] = useState("");
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [selectedRouteId, setSelectedRouteId] = useState("");
+    const [selectedRoute, setSelectedRoute] = useState(null);
 
     const [formData, setFormData] = useState({
         type_expedition: "SIMPLE",
@@ -46,7 +53,7 @@ const CreateExpedition = () => {
         pays_destination: "",
         is_paiement_credit: false,
         is_livraison_domicile: true,
-        statut_paiement: "en_attente",
+        statut_paiement: "paye",
 
         // Expéditeur
         expediteur_nom_prenom: "",
@@ -79,13 +86,36 @@ const CreateExpedition = () => {
         ]
     });
 
+    // Nettoyage immédiat au montage du composant
     useEffect(() => {
+        // Nettoyage synchrone dès le montage
         resetStatus();
         clearCurrentExpedition();
+        cleanSimulation();
+        
+        // Chargement des données
         loadProducts();
         loadCategories();
         fetchTarifGroupageAgence();
         fetchAgencyData();
+        
+        console.log("🔄 CreateExpedition - Initialisation, agencyData:", agencyData);
+    }, []);
+
+    // Surveiller le chargement des données d'agence
+    useEffect(() => {
+        if (agencyData) {
+            console.log("✅ CreateExpedition - AgencyData chargé:", agencyData);
+        }
+    }, [agencyData]);
+
+    // Nettoyage au démontage
+    useEffect(() => {
+        return () => {
+            resetStatus();
+            clearCurrentExpedition();
+            cleanSimulation();
+        };
     }, []);
 
     // Gestion des pays par défaut selon le type
@@ -108,16 +138,20 @@ const CreateExpedition = () => {
                 expediteur_ville: "Abidjan"
             }));
         }
+        // Réinitialiser la route sélectionnée lorsque le type change
+        setSelectedRoute(null);
+        setSelectedRouteId(""); // Réinitialiser aussi l'ID pour le select
         cleanSimulation();
     }, [formData.type_expedition]);
 
-    // Effet pour la navigation retardée améliorée
+    // Effet pour afficher les messages de succès (sans réinitialiser le status)
+    // Le status sera réinitialisé par le modal lors de sa fermeture
     useEffect(() => {
-        if (message) {
+        if (message && status !== 'succeeded') {
             toast.success(message);
             resetStatus();
         }
-    }, [message, resetStatus]);
+    }, [message, status, resetStatus]);
 
     useEffect(() => {
         if (productError) {
@@ -137,20 +171,267 @@ const CreateExpedition = () => {
         console.log("Current Expedition Data:", currentExpedition);
     }, [status, currentExpedition]);
 
+    // Raccourcis clavier pour saisie rapide
+    useEffect(() => {
+        const handleKeyPress = (e) => {
+            // Ctrl + S pour simuler (étape 1)
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                if (step === 1 && !simulating) {
+                    handleSimulate();
+                    // toast.info('Raccourci: Ctrl+S pour simuler');
+                }
+            }
+            // Ctrl + Enter pour valider (étape 2)
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                if (step === 2 && status !== 'loading') {
+                    handleSubmit();
+                    // toast.info('Raccourci: Ctrl+Enter pour valider');
+                }
+            }
+            // Ctrl + → pour passer à l'étape suivante
+            if (e.ctrlKey && e.key === 'ArrowRight') {
+                e.preventDefault();
+                if (step === 1 && simulationResult) {
+                    setStep(2);
+                    // toast.info('Raccourci: Ctrl+→ pour étape suivante');
+                }
+            }
+            // Ctrl + ← pour revenir à l'étape précédente
+            if (e.ctrlKey && e.key === 'ArrowLeft') {
+                e.preventDefault();
+                if (step === 2) {
+                    setStep(1);
+                    // toast.info('Raccourci: Ctrl+← pour étape précédente');
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyPress);
+        return () => window.removeEventListener('keydown', handleKeyPress);
+    }, [step, simulationResult, simulating, status]);
+
+    console.log("📍 Avant calcul availableRoutes - existingGroupageTarifs:", existingGroupageTarifs?.length, "tarifs");
+
     // Liste des trajets configurés par l'agence pour le type sélectionné
     const availableRoutes = useMemo(() => {
         if (!existingGroupageTarifs || !Array.isArray(existingGroupageTarifs)) return [];
         const currentType = formData.type_expedition.toLowerCase();
-        return existingGroupageTarifs.filter(t => t.type_expedition === currentType);
+        
+        // Filtrer par type
+        const tarifsByType = existingGroupageTarifs.filter(t => t.type_expedition === currentType);
+        
+        console.log("🛣️ DEBUG DEDUPLICATION - Début");
+        console.log("Type actuel:", currentType);
+        console.log("Tarifs par type:", tarifsByType);
+        
+        // Dédupliquer les trajets
+        const uniqueRoutes = [];
+        const seenKeys = new Set();
+        const duplicatesInfo = {}; // Pour tracer les doublons
+        
+        for (const tarif of tarifsByType) {
+            let key;
+            let displayValue; // Pour le debug
+            
+            // Créer une clé unique selon le type
+            if (currentType.includes('dhd')) {
+                // Pour DHD, la clé est la ligne (ex: "abidjan-marseille")
+                const rawLigne = tarif.ligne || "";
+                key = rawLigne.toLowerCase().trim();
+                displayValue = rawLigne;
+                
+                console.log(`📍 Tarif ID ${tarif.id}: ligne="${rawLigne}" → clé="${key}"`);
+            } else if (currentType === 'groupage_afrique') {
+                // Pour AFRIQUE, la clé est le pays (ex: "GABON LIBREVILLE")
+                const rawPays = tarif.pays || "";
+                key = rawPays.toLowerCase().trim();
+                displayValue = rawPays;
+                
+                console.log(`📍 Tarif ID ${tarif.id}: pays="${rawPays}" → clé="${key}"`);
+            } else if (currentType === 'groupage_ca') {
+                // Pour CA, la clé est ligne + pays
+                const rawLigne = tarif.ligne || "";
+                const rawPays = tarif.pays || "";
+                key = `${rawLigne.toLowerCase().trim()}|${rawPays.toLowerCase().trim()}`;
+                displayValue = `${rawLigne} (${rawPays})`;
+                
+                console.log(`📍 Tarif ID ${tarif.id}: "${rawLigne}|${rawPays}" → clé="${key}"`);
+            } else {
+                // Fallback: utiliser l'ID
+                key = String(tarif.id);
+                displayValue = tarif.id;
+            }
+            
+            // Si cette clé n'a pas encore été vue, ajouter le tarif
+            if (key && !seenKeys.has(key)) {
+                console.log(`  ✅ Nouveau trajet ajouté: "${displayValue}"`);
+                seenKeys.add(key);
+                uniqueRoutes.push(tarif);
+            } else {
+                console.log(`  ⚠️ Doublon ignoré: "${displayValue}" (déjà vu comme "${key}")`);
+                
+                // Tracer les doublons pour statistiques
+                if (!duplicatesInfo[key]) {
+                    duplicatesInfo[key] = [];
+                }
+                duplicatesInfo[key].push(tarif.id);
+            }
+        }
+        
+        console.log("🛣️ Trajets disponibles:", {
+            total: tarifsByType.length,
+            uniques: uniqueRoutes.length,
+            doublons_elimines: tarifsByType.length - uniqueRoutes.length
+        });
+        
+        if (Object.keys(duplicatesInfo).length > 0) {
+            console.log("📊 Détail des doublons éliminés:", duplicatesInfo);
+        }
+        
+        console.log("🛣️ DEBUG DEDUPLICATION - Fin");
+        
+        return uniqueRoutes;
     }, [existingGroupageTarifs, formData.type_expedition]);
+
+    // Debug: Tracer les changements de selectedRoute
+    useEffect(() => {
+        console.log("🎯 selectedRoute a changé:", selectedRoute);
+    }, [selectedRoute]);
+
+    // Filtrage des catégories en fonction du type d'expédition ET de la ligne sélectionnée
+    const filteredCategories = useMemo(() => {
+        console.log("🔵 useMemo filteredCategories DÉCLENCHÉ");
+        console.log("🔵 Dépendances:", { 
+            categories: categories?.length, 
+            existingGroupageTarifs: existingGroupageTarifs?.length,
+            type_expedition: formData.type_expedition,
+            selectedRoute: selectedRoute
+        });
+        
+        if (!categories || !Array.isArray(categories)) return [];
+        
+        // Si le type est SIMPLE, afficher toutes les catégories
+        if (formData.type_expedition === 'SIMPLE') {
+            console.log("🔵 Type SIMPLE - Retour de toutes les catégories");
+            return categories;
+        }
+        
+        // Pour les autres types, filtrer par les category_id présents dans les tarifs groupage
+        if (!existingGroupageTarifs || !Array.isArray(existingGroupageTarifs)) {
+            console.log("🔵 Pas de tarifs groupage - Retour de toutes les catégories");
+            return categories;
+        }
+        
+        const currentType = formData.type_expedition.toLowerCase();
+        
+        // Debug: Afficher les informations
+        console.log("=== FILTRAGE CATEGORIES ===");
+        console.log("Type actuel:", currentType);
+        console.log("Route sélectionnée:", selectedRoute);
+        console.log("Tous les tarifs:", existingGroupageTarifs);
+        
+        // Récupérer tous les tarifs correspondant au type sélectionné
+        let filteredTarifs = existingGroupageTarifs
+            .filter(tarif => tarif.type_expedition === currentType);
+        
+        console.log("Tarifs après filtre par type:", filteredTarifs);
+        
+        // Si une ligne est sélectionnée, filtrer aussi par la ligne
+        if (selectedRoute) {
+            const routeLigne = selectedRoute.ligne;
+            const routePays = selectedRoute.pays;
+            
+            console.log("Filtrage par ligne:", routeLigne, "et pays:", routePays);
+            
+            // Filtrer les tarifs qui correspondent à la ligne/pays sélectionné(e)
+            filteredTarifs = filteredTarifs.filter(tarif => {
+                console.log("Tarif examiné:", { ligne: tarif.ligne, pays: tarif.pays, category_id: tarif.category_id });
+                
+                // Pour DHD, on compare la ligne (insensible à la casse)
+                if (currentType.includes('dhd')) {
+                    const tarifLigne = (tarif.ligne || "").toLowerCase().trim();
+                    const selectedLigne = (routeLigne || "").toLowerCase().trim();
+                    const match = tarifLigne === selectedLigne;
+                    console.log(`DHD - Comparaison ligne: "${tarif.ligne}" vs "${routeLigne}" (normalisé: "${tarifLigne}" === "${selectedLigne}") = ${match}`);
+                    return match;
+                }
+                // Pour AFRIQUE, on compare le pays (insensible à la casse)
+                if (currentType === 'groupage_afrique') {
+                    const tarifPays = (tarif.pays || "").toLowerCase().trim();
+                    const selectedPays = (routePays || "").toLowerCase().trim();
+                    const match = tarifPays === selectedPays;
+                    console.log(`AFRIQUE - Comparaison pays: "${tarif.pays}" vs "${routePays}" (normalisé: "${tarifPays}" === "${selectedPays}") = ${match}`);
+                    return match;
+                }
+                // Pour CA, on compare ligne et pays (insensible à la casse)
+                if (currentType === 'groupage_ca') {
+                    const tarifLigne = (tarif.ligne || "").toLowerCase().trim();
+                    const selectedLigne = (routeLigne || "").toLowerCase().trim();
+                    const tarifPays = (tarif.pays || "").toLowerCase().trim();
+                    const selectedPays = (routePays || "").toLowerCase().trim();
+                    const match = tarifLigne === selectedLigne && tarifPays === selectedPays;
+                    console.log(`CA - Comparaison: "${tarif.ligne}" === "${routeLigne}" && "${tarif.pays}" === "${routePays}" (normalisé) = ${match}`);
+                    return match;
+                }
+                return true;
+            });
+            
+            console.log("Tarifs après filtre par ligne:", filteredTarifs);
+        }
+        
+        // Extraire les category_id (en ignorant les null)
+        const categoryIds = filteredTarifs
+            .map(tarif => tarif.category_id)
+            .filter(id => id !== null && id !== undefined);
+        
+        console.log("Category IDs extraits (sans null):", categoryIds);
+        
+        // Éliminer les doublons
+        const uniqueCategoryIds = [...new Set(categoryIds)];
+        
+        console.log("Category IDs uniques:", uniqueCategoryIds);
+        
+        // Si aucune catégorie spécifique trouvée (tous les tarifs ont category_id null)
+        // Cela signifie que le tarif est universel pour toutes les catégories
+        if (uniqueCategoryIds.length === 0) {
+            console.log("⚠️ Aucun category_id dans les tarifs (tarifs universels) - Retour de toutes les catégories");
+            console.log("=========================");
+            return categories;
+        }
+        
+        // Filtrer les catégories pour ne garder que celles qui ont un tarif pour ce type/ligne
+        const result = categories.filter(cat => uniqueCategoryIds.includes(cat.id));
+        console.log("Catégories filtrées finales:", result);
+        console.log("=========================");
+        
+        return result;
+    }, [categories, existingGroupageTarifs, formData.type_expedition, selectedRoute]);
 
     // Sélection automatique des infos depuis un trajet configuré
     const handleRouteSelect = (e) => {
         const routeId = e.target.value;
-        if (!routeId) return;
+        console.log("=== SELECTION ROUTE ===");
+        console.log("Route ID sélectionné:", routeId);
+        
+        // Mettre à jour l'ID de la route sélectionnée
+        setSelectedRouteId(routeId);
+        
+        if (!routeId) {
+            console.log("Pas de route sélectionnée, réinitialisation");
+            setSelectedRoute(null);
+            return;
+        }
 
         const route = availableRoutes.find(r => String(r.id) === String(routeId));
+        console.log("Route trouvée:", route);
+        
         if (route) {
+            // Sauvegarder la route sélectionnée pour le filtrage des catégories
+            setSelectedRoute(route);
+            console.log("Route sauvegardée dans le state:", route);
+            
             const isDHD = formData.type_expedition.toUpperCase().includes('DHD');
 
             let depVille = "Abidjan";
@@ -173,8 +454,44 @@ const CreateExpedition = () => {
                 destinataire_ville: destVille,
                 expediteur_ville: depVille,
             }));
+            console.log("======================");
         }
     };
+
+    // Réinitialiser les catégories des colis lorsque la route change
+    useEffect(() => {
+        console.log("🔄 useEffect déclenché - selectedRoute a changé:", selectedRoute);
+        console.log("🔄 Catégories disponibles:", filteredCategories?.length);
+        
+        if (selectedRoute !== null && filteredCategories.length > 0) {
+            // Vérifier si les catégories actuellement sélectionnées sont toujours valides
+            const validCategoryIds = filteredCategories.map(cat => String(cat.id));
+            
+            console.log("🔄 IDs de catégories valides:", validCategoryIds);
+            
+            // Vérifier si au moins un colis a une catégorie invalide
+            const hasInvalidCategory = formData.colis.some(c => 
+                c.category_id && !validCategoryIds.includes(String(c.category_id))
+            );
+            
+            if (hasInvalidCategory) {
+                console.log("🔄 Au moins une catégorie invalide détectée, réinitialisation...");
+                setFormData(prev => ({
+                    ...prev,
+                    colis: prev.colis.map(c => {
+                        // Si la catégorie actuelle n'est plus dans les catégories filtrées, la réinitialiser
+                        if (c.category_id && !validCategoryIds.includes(String(c.category_id))) {
+                            console.log(`🔄 Réinitialisation catégorie ${c.category_id} du colis`);
+                            return { ...c, category_id: "" };
+                        }
+                        return c;
+                    })
+                }));
+            } else {
+                console.log("🔄 Toutes les catégories sont valides");
+            }
+        }
+    }, [selectedRoute]); // Retirer filteredCategories des dépendances pour éviter les boucles
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -270,6 +587,18 @@ const CreateExpedition = () => {
     };
 
     const handleSubmit = async () => {
+        // Validation: Vérifier si les catégories sont requises et renseignées
+        const isDHD = formData.type_expedition.includes('DHD');
+        
+        if (isDHD) {
+            const missingCategories = formData.colis.filter(c => !c.category_id || c.category_id === "");
+            if (missingCategories.length > 0) {
+                toast.error(`❌ Veuillez sélectionner une catégorie pour ${missingCategories.length === 1 ? 'le colis' : `les ${missingCategories.length} colis`}`);
+                console.error("❌ Colis sans catégorie:", missingCategories);
+                return;
+            }
+        }
+        
         const payload = {
             ...formData,
             type_expedition: formData.type_expedition.toLowerCase(),
@@ -284,7 +613,10 @@ const CreateExpedition = () => {
                     articles: c.articles || []
                 };
 
-                if (c.category_id) item.category_id = c.category_id;
+                // Pour DHD, category_id est OBLIGATOIRE
+                if (c.category_id) {
+                    item.category_id = c.category_id;
+                }
 
                 // Génération du code_colis comme dans l'exemple
                 const typeCode = formData.type_expedition.replace('GROUPAGE_', '');
@@ -294,15 +626,42 @@ const CreateExpedition = () => {
             })
         };
 
-        console.log("creation Payload (Clean):", payload);
+        console.log("✅ Validation passée - Payload à envoyer:", payload);
+        console.log("📦 Détails colis:", payload.colis.map((c, i) => ({
+            index: i,
+            designation: c.designation,
+            category_id: c.category_id || "❌ MANQUANT",
+            poids: c.poids
+        })));
+        
         const result = await createExpedition(payload);
 
         console.log("Result from createExpedition:", result);
 
+        // Si la création a réussi, activer le modal
+        if (result?.payload) {
+            setShowSuccessModal(true);
+        }
+
         // Vérifier si la création a réussi et enregistrer la transaction si ce n'est pas un crédit
         if (result?.payload && !formData.is_paiement_credit) {
-            // result.payload contient directement les données de l'expédition créée
-            const expeditionData = result.payload;
+            // result.payload peut contenir l'expédition directement ou dans expedition/data
+            const expeditionData = result.payload?.expedition || result.payload?.data || result.payload;
+            
+            console.log("Expedition data extracted:", expeditionData);
+            
+            // ✅ Marquer la référence comme récemment créée pour éviter notification auto-générée
+            if (expeditionData?.reference) {
+                markAsRecentlyCreated(expeditionData.reference);
+                console.log("🔇 Référence marquée pour ignorer notification:", expeditionData.reference);
+            }
+            
+            // Vérifier que nous avons bien un ID
+            if (!expeditionData?.id) {
+                console.error("Pas d'ID d'expédition trouvé dans:", expeditionData);
+                toast.error("Expédition créée mais impossible d'enregistrer le paiement (ID manquant)");
+                return;
+            }
             
             // Calculer le montant total à encaisser
             const montantExpedition = parseFloat(simulationTarif?.montant_expedition || simulationResult?.total_price || simulationResult?.amount || 0);
@@ -330,12 +689,16 @@ const CreateExpedition = () => {
                     transactionData.reference = paymentReference;
                 }
 
+                console.log("Transaction data to send:", transactionData);
                 await recordTransaction(transactionData);
                 console.log("Transaction enregistrée avec succès");
+                // Note: Le toast de succès est géré par le useEffect qui écoute 'message'
             } catch (error) {
                 console.error("Erreur lors de l'enregistrement de la transaction:", error);
                 toast.error("Expédition créée mais erreur lors de l'enregistrement du paiement");
             }
+        } else if (formData.is_paiement_credit) {
+            console.log("Paiement à crédit - Aucune transaction enregistrée");
         }
     };
 
@@ -348,6 +711,20 @@ const CreateExpedition = () => {
         return simulationResult.tarif || simulationResult.data?.tarif || null;
     }, [simulationResult]);
 
+    // Helper pour les bordures visuelles des champs
+    const getInputBorderClass = (value, isRequired = false, isDisabled = false) => {
+        if (isDisabled) {
+            return 'border-slate-200 bg-slate-50';
+        }
+        if (isRequired && !value) {
+            return 'border-2 border-grey-700 bg-grey-80/30 focus:border-grey-500 focus:ring-grey-500/20';
+        }
+        if (value) {
+            return 'border-2 border-emerald-400 bg-emerald-50/30 focus:border-emerald-500 focus:ring-emerald-500/20';
+        }
+        return 'border-2 border-slate-300 focus:border-indigo-500 focus:ring-indigo-500/20';
+    };
+
     return (
         <>
             <div className="min-h-screen bg-slate-100">
@@ -356,17 +733,19 @@ const CreateExpedition = () => {
                     <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
                         <div>
                             <h1 className="text-xl font-bold text-slate-900 tracking-tight">Nouvelle expédition</h1>
-                            <p className="text-xs text-slate-500 mt-0.5">Enregistrement et tarification des envois clients</p>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                                Enregistrement et tarification des envois clients
+                            </p>
                         </div>
                         {/* Step indicator */}
                         <div className="flex items-center gap-0 bg-white border border-slate-200 rounded-xl p-1 shadow-sm self-start md:self-auto">
                             <div className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${step === 1 ? 'bg-slate-800 text-white' : 'text-slate-400'}`}>
-                                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border ${step === 1 ? 'border-white/30 bg-white/10' : 'border-slate-300 text-slate-400'}`}>1</span>
+                                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold border ${step === 1 ? 'border-white/30 bg-white/10' : 'border-slate-300 text-slate-400'}`}>1</span>
                                 Config & Colis
                             </div>
                             <svg className="w-4 h-4 text-slate-300 mx-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                             <div className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${step === 2 ? 'bg-slate-800 text-white' : 'text-slate-400'}`}>
-                                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border ${step === 2 ? 'border-white/30 bg-white/10' : 'border-slate-300 text-slate-400'}`}>2</span>
+                                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold border ${step === 2 ? 'border-white/30 bg-white/10' : 'border-slate-300 text-slate-400'}`}>2</span>
                                 Contacts & Finalisation
                             </div>
                         </div>
@@ -412,6 +791,7 @@ const CreateExpedition = () => {
                                                         Trajet disponible
                                                     </label>
                                                     <select
+                                                        value={selectedRouteId}
                                                         onChange={handleRouteSelect}
                                                         disabled={formData.type_expedition === 'GROUPAGE_CA' || formData.type_expedition === 'SIMPLE'}
                                                         className={`w-full border-slate-300 rounded-lg text-sm font-semibold focus:ring-slate-500 h-10 ${formData.type_expedition === 'GROUPAGE_CA' || formData.type_expedition === 'SIMPLE' ? 'bg-slate-100 text-slate-400' : 'bg-white'}`}
@@ -432,7 +812,7 @@ const CreateExpedition = () => {
                                             </div>
 
                                             {/* {availableRoutes.length === 0 && formData.type_expedition !== 'GROUPAGE_CA' && (
-                                                <p className="text-[10px] text-orange-600 font-bold flex items-center gap-2 bg-orange-50 p-2 rounded border border-orange-100 mt-1">
+                                                <p className="text-xs text-orange-600 font-bold flex items-center gap-2 bg-orange-50 p-2 rounded border border-orange-100 mt-1">
                                                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                                                     Aucun trajet configuré pour ce service.
                                                 </p>
@@ -441,56 +821,148 @@ const CreateExpedition = () => {
                                             {/* Destination + Départ dans un bloc groupé */}
                                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 bg-slate-50 rounded-lg border border-slate-200">
                                                 <div className="space-y-1.5">
-                                                    <label className="block text-xs font-semibold text-slate-500">Pays destination</label>
+                                                    <label className="block text-xs font-semibold text-slate-500">
+                                                        Pays destination {formData.type_expedition === 'GROUPAGE_CA' || formData.type_expedition === 'SIMPLE' ? <span className="text-amber-600">*</span> : ''}
+                                                    </label>
                                                     <input
                                                         type="text"
                                                         name="pays_destination"
                                                         value={formData.pays_destination}
                                                         onChange={handleInputChange}
                                                         placeholder={formData.type_expedition === 'GROUPAGE_CA' || formData.type_expedition === 'SIMPLE' ? "Ex: France..." : "Via trajet"}
-                                                        disabled={formData.type_expedition !== 'GROUPAGE_CA' && formData.type_expedition !== 'SIMPLE'}
-                                                        className={`w-full border-slate-300 rounded-md text-sm font-semibold h-9 focus:ring-slate-500 ${formData.type_expedition !== 'GROUPAGE_CA' && formData.type_expedition !== 'SIMPLE' ? 'bg-white/60 text-slate-400' : 'bg-white'}`}
+                                                        className={`w-full rounded-md text-sm font-semibold h-9 px-3 ${getInputBorderClass(
+                                                            formData.pays_destination, 
+                                                            formData.type_expedition === 'GROUPAGE_CA' || formData.type_expedition === 'SIMPLE'
+                                                        )}`}
                                                     />
                                                 </div>
                                                 <div className="space-y-1.5">
-                                                    <label className="block text-xs font-semibold text-slate-500">Ville destination</label>
+                                                    <label className="block text-xs font-semibold text-slate-500">
+                                                        Ville destination <span className="text-amber-600">*</span>
+                                                    </label>
                                                     <input
                                                         type="text"
                                                         name="destinataire_ville"
                                                         value={formData.destinataire_ville}
                                                         onChange={handleInputChange}
                                                         placeholder="Ex: Paris..."
-                                                        disabled={formData.type_expedition !== 'GROUPAGE_CA' && formData.type_expedition !== 'GROUPAGE_AFRIQUE' && formData.type_expedition !== 'SIMPLE'}
-                                                        className={`w-full border-slate-300 rounded-md text-sm font-semibold h-9 focus:ring-slate-500 ${formData.type_expedition !== 'GROUPAGE_CA' && formData.type_expedition !== 'GROUPAGE_AFRIQUE' && formData.type_expedition !== 'SIMPLE' ? 'bg-white/60 text-slate-400' : 'bg-white'}`}
+                                                        className={`w-full rounded-md text-sm font-semibold h-9 px-3 ${getInputBorderClass(
+                                                            formData.destinataire_ville,
+                                                            true
+                                                        )}`}
                                                     />
                                                 </div>
                                                 <div className="space-y-1.5">
                                                     <label className="block text-xs font-semibold text-slate-500">Pays départ</label>
-                                                    <input type="text" value={formData.pays_depart} disabled className="w-full bg-white/60 border-slate-300 rounded-md text-sm font-semibold h-9 text-slate-400" />
+                                                    <input 
+                                                        type="text" 
+                                                        name="pays_depart"
+                                                        value={formData.pays_depart} 
+                                                        onChange={handleInputChange}
+                                                        placeholder="Ex: Côte d'Ivoire..."
+                                                        className={`w-full rounded-md text-sm font-semibold h-9 px-3 ${getInputBorderClass(formData.pays_depart, false)}`}
+                                                    />
                                                 </div>
                                                 <div className="space-y-1.5">
-                                                    <label className="block text-xs font-semibold text-slate-500">Ville départ</label>
+                                                    <label className="block text-xs font-semibold text-slate-500">
+                                                        Ville départ {formData.type_expedition === 'GROUPAGE_CA' || formData.type_expedition === 'SIMPLE' ? <span className="text-amber-600">*</span> : ''}
+                                                    </label>
                                                     <input
                                                         type="text"
                                                         name="expediteur_ville"
                                                         value={formData.expediteur_ville}
                                                         onChange={handleInputChange}
-                                                        disabled={formData.type_expedition !== 'GROUPAGE_CA' && formData.type_expedition !== 'SIMPLE'}
-                                                        className={`w-full border-slate-300 rounded-md text-sm font-semibold h-9 focus:ring-slate-500 ${formData.type_expedition !== 'GROUPAGE_CA' && formData.type_expedition !== 'SIMPLE' ? 'bg-white/60 text-slate-400' : 'bg-white'}`}
+                                                        className={`w-full rounded-md text-sm font-semibold h-9 px-3 ${getInputBorderClass(
+                                                            formData.expediteur_ville,
+                                                            formData.type_expedition === 'GROUPAGE_CA' || formData.type_expedition === 'SIMPLE'
+                                                        )}`}
                                                     />
                                                 </div>
                                             </div>
 
-                                            {/* Options */}
-                                            <div className="flex flex-wrap gap-3">
-                                                <label className="flex items-center gap-2.5 cursor-pointer group px-4 py-2.5 rounded-lg border border-slate-200 bg-white hover:border-slate-300 transition-colors">
-                                                    <input type="checkbox" name="is_livraison_domicile" checked={formData.is_livraison_domicile} onChange={handleInputChange} className="w-4 h-4 rounded border-slate-400 text-slate-800 focus:ring-slate-500/20 cursor-pointer" />
-                                                    <span className="text-xs font-semibold text-slate-600 group-hover:text-slate-800 transition-colors">Livraison à domicile</span>
-                                                </label>
-                                                <label className="flex items-center gap-2.5 cursor-pointer group px-4 py-2.5 rounded-lg border border-slate-200 bg-white hover:border-slate-300 transition-colors">
-                                                    <input type="checkbox" name="is_paiement_credit" checked={formData.is_paiement_credit} onChange={handleInputChange} className="w-4 h-4 rounded border-slate-400 text-slate-800 focus:ring-slate-500/20 cursor-pointer" />
-                                                    <span className="text-xs font-semibold text-slate-600 group-hover:text-slate-800 transition-colors">Paiement à crédit</span>
-                                                </label>
+                                            {/* Options - Mode de paiement et Livraison */}
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {/* Mode de paiement - Tabs */}
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 mb-2">Mode de paiement</label>
+                                                    <div className="inline-flex items-center gap-1 bg-slate-100 p-1 rounded-lg w-full">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setFormData(prev => ({ 
+                                                                ...prev, 
+                                                                is_paiement_credit: false,
+                                                                statut_paiement: 'paye'
+                                                            }))}
+                                                            className={`flex-1 px-4 py-2.5 rounded-md text-sm font-semibold transition-all ${
+                                                                !formData.is_paiement_credit
+                                                                    ? 'bg-emerald-500 text-white shadow-sm'
+                                                                    : 'text-slate-600 hover:text-slate-900'
+                                                            }`}
+                                                        >
+                                                            💰 Comptant
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setFormData(prev => ({ 
+                                                                ...prev, 
+                                                                is_paiement_credit: true,
+                                                                statut_paiement: 'en_attente'
+                                                            }))}
+                                                            className={`flex-1 px-4 py-2.5 rounded-md text-sm font-semibold transition-all ${
+                                                                formData.is_paiement_credit
+                                                                    ? 'bg-amber-500 text-white shadow-sm'
+                                                                    : 'text-slate-600 hover:text-slate-900'
+                                                            }`}
+                                                        >
+                                                            📋 Crédit
+                                                        </button>
+                                                    </div>
+                                                    {formData.is_paiement_credit && (
+                                                        <p className="text-xs text-amber-600 mt-2 flex items-center gap-1.5">
+                                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                            </svg>
+                                                            Paiement ultérieur
+                                                        </p>
+                                                    )}
+                                                </div>
+
+                                                {/* Mode de livraison - Tabs */}
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 mb-2">Mode de livraison</label>
+                                                    <div className="inline-flex items-center gap-1 bg-slate-100 p-1 rounded-lg w-full">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setFormData(prev => ({ ...prev, is_livraison_domicile: true }))}
+                                                            className={`flex-1 px-4 py-2.5 rounded-md text-sm font-semibold transition-all ${
+                                                                formData.is_livraison_domicile
+                                                                    ? 'bg-indigo-500 text-white shadow-sm'
+                                                                    : 'text-slate-600 hover:text-slate-900'
+                                                            }`}
+                                                        >
+                                                            🏠 Domicile
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setFormData(prev => ({ ...prev, is_livraison_domicile: false }))}
+                                                            className={`flex-1 px-4 py-2.5 rounded-md text-sm font-semibold transition-all ${
+                                                                !formData.is_livraison_domicile
+                                                                    ? 'bg-slate-600 text-white shadow-sm'
+                                                                    : 'text-slate-600 hover:text-slate-900'
+                                                            }`}
+                                                        >
+                                                            🏢 Agence
+                                                        </button>
+                                                    </div>
+                                                    {formData.is_livraison_domicile && (
+                                                        <p className="text-xs text-indigo-600 mt-2 flex items-center gap-1.5">
+                                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                            </svg>
+                                                            Livraison à l'adresse
+                                                        </p>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </section>
@@ -542,39 +1014,53 @@ const CreateExpedition = () => {
                                                     {/* Ligne 1: Désignation + Catégorie + Poids */}
                                                     <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
                                                         <div className={formData.type_expedition.includes('DHD') ? "md:col-span-2" : "md:col-span-3"}>
-                                                            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Désignation</label>
+                                                            <label className="block text-xs font-semibold text-slate-500 mb-1.5">
+                                                                Désignation <span className="text-amber-600">*</span>
+                                                            </label>
                                                             <input
                                                                 type="text"
                                                                 value={c.designation}
                                                                 onChange={(e) => handleColisChange(index, 'designation', e.target.value)}
                                                                 placeholder="Ex: Effets personnels, Électronique..."
-                                                                className="w-full border-slate-300 rounded-md text-sm font-semibold h-9 focus:ring-slate-500"
+                                                                className={`w-full rounded-md text-sm font-semibold h-9 px-3 ${getInputBorderClass(c.designation, true)}`}
                                                             />
                                                         </div>
 
                                                         {formData.type_expedition.includes('DHD') && (
                                                             <div>
-                                                                <label className="block text-xs font-semibold text-slate-500 mb-1.5">Catégorie</label>
-                                                                <select
-                                                                    value={c.category_id}
-                                                                    onChange={(e) => handleColisChange(index, 'category_id', e.target.value)}
-                                                                    className="w-full border-slate-300 rounded-md text-sm font-semibold h-9 focus:ring-slate-500 bg-white"
-                                                                >
-                                                                    <option value="">-- Choisir --</option>
-                                                                    {Array.isArray(categories) && categories.map(cat => (
-                                                                        <option key={cat.id} value={cat.id}>{cat.nom}</option>
-                                                                    ))}
-                                                                </select>
+                                                                <label className="block text-xs font-semibold text-slate-500 mb-1.5">
+                                                                    Catégorie <span className="text-amber-600">*</span>
+                                                                    <span className="text-xs text-slate-400 ml-2">
+                                                                        ({filteredCategories.length} disponible{filteredCategories.length > 1 ? 's' : ''})
+                                                                    </span>
+                                                                </label>
+                                                                <SearchableDropdown
+                                                                    options={Array.isArray(filteredCategories) ? filteredCategories.map(cat => ({
+                                                                        id: String(cat.id),
+                                                                        label: cat.nom
+                                                                    })) : []}
+                                                                    onSelect={(option) => handleColisChange(index, 'category_id', option.id)}
+                                                                    placeholder={c.category_id 
+                                                                        ? filteredCategories.find(cat => String(cat.id) === String(c.category_id))?.nom || "-- Choisir --"
+                                                                        : "-- Choisir --"
+                                                                    }
+                                                                />
+                                                                {!c.category_id && (
+                                                                    <p className="text-xs text-amber-600 mt-1">⚠️ Catégorie obligatoire pour DHD</p>
+                                                                )}
                                                             </div>
                                                         )}
 
                                                         <div>
-                                                            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Poids (kg)</label>
+                                                            <label className="block text-xs font-semibold text-slate-500 mb-1.5">
+                                                                Poids (kg) <span className="text-amber-600">*</span>
+                                                            </label>
                                                             <input
                                                                 type="number"
                                                                 value={c.poids}
                                                                 onChange={(e) => handleColisChange(index, 'poids', e.target.value)}
-                                                                className="w-full border-slate-300 rounded-md text-sm font-semibold bg-slate-50 h-9 focus:ring-slate-500"
+                                                                placeholder="0"
+                                                                className={`w-full rounded-md text-sm font-semibold h-9 px-3 ${getInputBorderClass(c.poids, true)}`}
                                                             />
                                                         </div>
                                                     </div>
@@ -584,20 +1070,15 @@ const CreateExpedition = () => {
                                                         {/* Articles */}
                                                         <div>
                                                             <label className="block text-xs font-semibold text-slate-500 mb-1.5">Articles contenus</label>
-                                                            <select
-                                                                onChange={(e) => {
-                                                                    if (e.target.value) {
-                                                                        handleAddArticle(index, e.target.value);
-                                                                        e.target.value = "";
-                                                                    }
-                                                                }}
-                                                                className="w-full border-slate-300 rounded-md text-xs font-semibold h-9 focus:ring-slate-500 bg-white mb-2"
-                                                            >
-                                                                <option value="">+ Ajouter un article</option>
-                                                                {Array.isArray(products) && products.map(p => (
-                                                                    <option key={p.id} value={p.designation}>{p.designation}</option>
-                                                                ))}
-                                                            </select>
+                                                            <SearchableDropdown
+                                                                options={Array.isArray(products) ? products.map(p => ({
+                                                                    id: p.id,
+                                                                    label: p.designation
+                                                                })) : []}
+                                                                onSelect={(option) => handleAddArticle(index, option.label)}
+                                                                placeholder="+ Ajouter un article"
+                                                                className="mb-2"
+                                                            />
                                                             <div className="flex flex-wrap gap-1.5 min-h-[34px] p-2 bg-slate-50 rounded-md border border-slate-200">
                                                                 {(c.articles || []).length > 0 ? (
                                                                     c.articles.map((art, artIdx) => (
@@ -619,20 +1100,20 @@ const CreateExpedition = () => {
                                                             <label className="block text-xs font-semibold text-slate-500 mb-1.5">Dimensions & Emballage</label>
                                                             <div className="grid grid-cols-4 gap-2">
                                                                 <div>
-                                                                    <label className="block text-[10px] font-semibold text-slate-400 text-center mb-1">Long. cm</label>
-                                                                    <input type="number" placeholder="0" value={c.longueur} onChange={(e) => handleColisChange(index, 'longueur', e.target.value)} className="w-full border-slate-300 rounded-md text-xs p-2 bg-slate-50 text-center h-9" />
+                                                                    <label className="block text-xs font-semibold text-slate-400 text-center mb-1">Long. cm</label>
+                                                                    <input type="number" placeholder="0" value={c.longueur} onChange={(e) => handleColisChange(index, 'longueur', e.target.value)} className="w-full border-2 border-slate-300 rounded-md text-xs p-2 bg-white text-center h-9 px-3 focus:border-slate-500 focus:ring-2 focus:ring-slate-500/20" />
                                                                 </div>
                                                                 <div>
-                                                                    <label className="block text-[10px] font-semibold text-slate-400 text-center mb-1">Larg. cm</label>
-                                                                    <input type="number" placeholder="0" value={c.largeur} onChange={(e) => handleColisChange(index, 'largeur', e.target.value)} className="w-full border-slate-300 rounded-md text-xs p-2 bg-slate-50 text-center h-9" />
+                                                                    <label className="block text-xs font-semibold text-slate-400 text-center mb-1">Larg. cm</label>
+                                                                    <input type="number" placeholder="0" value={c.largeur} onChange={(e) => handleColisChange(index, 'largeur', e.target.value)} className="w-full border-2 border-slate-300 rounded-md text-xs p-2 bg-white text-center h-9 px-3 focus:border-slate-500 focus:ring-2 focus:ring-slate-500/20" />
                                                                 </div>
                                                                 <div>
-                                                                    <label className="block text-[10px] font-semibold text-slate-400 text-center mb-1">Haut. cm</label>
-                                                                    <input type="number" placeholder="0" value={c.hauteur} onChange={(e) => handleColisChange(index, 'hauteur', e.target.value)} className="w-full border-slate-300 rounded-md text-xs p-2 bg-slate-50 text-center h-9" />
+                                                                    <label className="block text-xs font-semibold text-slate-400 text-center mb-1">Haut. cm</label>
+                                                                    <input type="number" placeholder="0" value={c.hauteur} onChange={(e) => handleColisChange(index, 'hauteur', e.target.value)} className="w-full border-2 border-slate-300 rounded-md text-xs p-2 bg-white text-center h-9 px-3 focus:border-slate-500 focus:ring-2 focus:ring-slate-500/20" />
                                                                 </div>
                                                                 <div>
-                                                                    <label className="block text-[10px] font-semibold text-slate-400 text-center mb-1">Emb. CFA</label>
-                                                                    <input type="number" value={c.prix_emballage} onChange={(e) => handleColisChange(index, 'prix_emballage', e.target.value)} className="w-full border-slate-300 rounded-md text-xs p-2 bg-slate-50 text-center font-semibold text-slate-700 h-9" />
+                                                                    <label className="block text-xs font-semibold text-slate-400 text-center mb-1">Emb. CFA</label>
+                                                                    <input type="number" value={c.prix_emballage} onChange={(e) => handleColisChange(index, 'prix_emballage', e.target.value)} className="w-full border-2 border-slate-300 rounded-md text-xs p-2 bg-white text-center font-semibold text-slate-700 h-9 px-3 focus:border-slate-500 focus:ring-2 focus:ring-slate-500/20" />
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -674,21 +1155,50 @@ const CreateExpedition = () => {
                                         <div className="p-6 space-y-4 flex-1">
                                             <div className="space-y-1.5">
                                                 <label className="block text-xs font-semibold text-slate-500">Nom complet *</label>
-                                                <input type="text" name="expediteur_nom_prenom" value={formData.expediteur_nom_prenom} onChange={handleInputChange} className="w-full border-slate-300 rounded-md text-sm font-semibold h-10 focus:ring-slate-800" />
+                                                <input 
+                                                    type="text" 
+                                                    name="expediteur_nom_prenom" 
+                                                    value={formData.expediteur_nom_prenom} 
+                                                    onChange={handleInputChange} 
+                                                    placeholder="Ex: Jean Dupont"
+                                                    autoFocus={step === 2}
+                                                    className={`w-full rounded-md text-sm font-semibold h-10 px-3 ${getInputBorderClass(formData.expediteur_nom_prenom, true)}`}
+                                                />
                                             </div>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                 <div className="space-y-1.5">
                                                     <label className="block text-xs font-semibold text-slate-500">Téléphone *</label>
-                                                    <input type="tel" name="expediteur_telephone" value={formData.expediteur_telephone} onChange={handleInputChange} className="w-full border-slate-300 rounded-md text-sm font-semibold h-10 focus:ring-slate-800" />
+                                                    <input 
+                                                        type="tel" 
+                                                        name="expediteur_telephone" 
+                                                        value={formData.expediteur_telephone} 
+                                                        onChange={handleInputChange} 
+                                                        placeholder="Ex: 0779061621"
+                                                        className={`w-full rounded-md text-sm font-semibold h-10 px-3 ${getInputBorderClass(formData.expediteur_telephone, true)}`}
+                                                    />
                                                 </div>
                                                 <div className="space-y-1.5">
                                                     <label className="block text-xs font-semibold text-slate-500">Email</label>
-                                                    <input type="email" name="expediteur_email" value={formData.expediteur_email} onChange={handleInputChange} className="w-full border-slate-300 rounded-md text-sm font-semibold h-10 focus:ring-slate-800" />
+                                                    <input 
+                                                        type="email" 
+                                                        name="expediteur_email" 
+                                                        value={formData.expediteur_email} 
+                                                        onChange={handleInputChange} 
+                                                        placeholder="Ex: jean@email.com"
+                                                        className={`w-full rounded-md text-sm font-semibold h-10 px-3 ${getInputBorderClass(formData.expediteur_email, false)}`}
+                                                    />
                                                 </div>
                                             </div>
                                             <div className="space-y-1.5">
                                                 <label className="block text-xs font-semibold text-slate-500">Adresse physique</label>
-                                                <input type="text" name="expediteur_adresse" value={formData.expediteur_adresse} onChange={handleInputChange} className="w-full border-slate-300 rounded-md text-sm font-semibold h-10 focus:ring-slate-800" />
+                                                <input 
+                                                    type="text" 
+                                                    name="expediteur_adresse" 
+                                                    value={formData.expediteur_adresse} 
+                                                    onChange={handleInputChange} 
+                                                    placeholder="Ex: Cocody, Angré 7ème tranche"
+                                                    className={`w-full rounded-md text-sm font-semibold h-10 px-3 ${getInputBorderClass(formData.expediteur_adresse, false)}`}
+                                                />
                                             </div>
                                         </div>
                                     </div>
@@ -707,21 +1217,48 @@ const CreateExpedition = () => {
                                         <div className="p-6 space-y-4 flex-1">
                                             <div className="space-y-1.5">
                                                 <label className="block text-xs font-semibold text-slate-500">Nom complet *</label>
-                                                <input type="text" name="destinataire_nom_prenom" value={formData.destinataire_nom_prenom} onChange={handleInputChange} className="w-full border-slate-300 rounded-md text-sm font-semibold h-10 focus:ring-slate-800" />
+                                                <input 
+                                                    type="text" 
+                                                    name="destinataire_nom_prenom" 
+                                                    value={formData.destinataire_nom_prenom} 
+                                                    onChange={handleInputChange} 
+                                                    placeholder="Ex: Marie Kouassi"
+                                                    className={`w-full rounded-md text-sm font-semibold h-10 px-3 ${getInputBorderClass(formData.destinataire_nom_prenom, true)}`}
+                                                />
                                             </div>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                 <div className="space-y-1.5">
                                                     <label className="block text-xs font-semibold text-slate-500">Téléphone *</label>
-                                                    <input type="tel" name="destinataire_telephone" value={formData.destinataire_telephone} onChange={handleInputChange} className="w-full border-slate-300 rounded-md text-sm font-semibold h-10 focus:ring-slate-800" />
+                                                    <input 
+                                                        type="tel" 
+                                                        name="destinataire_telephone" 
+                                                        value={formData.destinataire_telephone} 
+                                                        onChange={handleInputChange} 
+                                                        placeholder="Ex: +33612345678"
+                                                        className={`w-full rounded-md text-sm font-semibold h-10 px-3 ${getInputBorderClass(formData.destinataire_telephone, true)}`}
+                                                    />
                                                 </div>
                                                 <div className="space-y-1.5">
                                                     <label className="block text-xs font-semibold text-slate-500">Email</label>
-                                                    <input type="email" name="destinataire_email" value={formData.destinataire_email} onChange={handleInputChange} className="w-full border-slate-300 rounded-md text-sm font-semibold h-10 focus:ring-slate-800" />
+                                                    <input 
+                                                        type="email" 
+                                                        name="destinataire_email" 
+                                                        value={formData.destinataire_email} 
+                                                        onChange={handleInputChange} 
+                                                        placeholder="Ex: marie@email.com"
+                                                        className={`w-full rounded-md text-sm font-semibold h-10 px-3 ${getInputBorderClass(formData.destinataire_email, false)}`}
+                                                    />
                                                 </div>
                                             </div>
                                             <div className="space-y-1.5">
                                                 <label className="block text-xs font-semibold text-slate-500">Adresse complète de livraison</label>
-                                                <textarea name="destinataire_adresse" value={formData.destinataire_adresse} onChange={handleInputChange} className="w-full border-slate-300 rounded-md text-sm font-semibold p-3 h-24 focus:ring-slate-800" placeholder="Rue, Quartier, Repères..." />
+                                                <textarea 
+                                                    name="destinataire_adresse" 
+                                                    value={formData.destinataire_adresse} 
+                                                    onChange={handleInputChange} 
+                                                    placeholder="Rue, Quartier, Repères..."
+                                                    className={`w-full rounded-md text-sm font-semibold p-3 h-24 ${getInputBorderClass(formData.destinataire_adresse, false)}`}
+                                                />
                                             </div>
                                         </div>
                                     </div>
@@ -813,26 +1350,96 @@ const CreateExpedition = () => {
                                                 <div className="space-y-3 p-4 bg-slate-50 rounded-lg border border-slate-200">
                                                     <label className="block text-xs font-semibold text-slate-600">Mode de règlement</label>
                                                     <div className="grid grid-cols-2 gap-2">
-                                                        {['cash', 'mobile_money'].map(m => (
-                                                            <button
-                                                                key={m}
-                                                                type="button"
-                                                                onClick={() => setPaymentMethod(m)}
-                                                                className={`py-2 text-xs font-semibold rounded-lg border transition-all ${paymentMethod === m ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}
-                                                            >
-                                                                {m === 'cash' ? 'Espèces' : 'Mobile Money'}
-                                                            </button>
-                                                        ))}
+                                                        {/* Espèces */}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setPaymentMethod('cash')}
+                                                            className={`py-2.5 px-3 text-xs font-semibold rounded-lg border transition-all flex items-center justify-center gap-2 ${
+                                                                paymentMethod === 'cash' 
+                                                                    ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm' 
+                                                                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                                                            }`}
+                                                        >
+                                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                                                            </svg>
+                                                            Espèces
+                                                        </button>
+
+                                                        {/* Mobile Money */}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setPaymentMethod('mobile_money')}
+                                                            className={`py-2.5 px-3 text-xs font-semibold rounded-lg border transition-all flex items-center justify-center gap-2 ${
+                                                                paymentMethod === 'mobile_money' 
+                                                                    ? 'bg-orange-500 text-white border-orange-500 shadow-sm' 
+                                                                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                                                            }`}
+                                                        >
+                                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                                            </svg>
+                                                            Mobile Money
+                                                        </button>
+
+                                                        {/* Virement bancaire */}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setPaymentMethod('bank_transfer')}
+                                                            className={`py-2.5 px-3 text-xs font-semibold rounded-lg border transition-all flex items-center justify-center gap-2 ${
+                                                                paymentMethod === 'bank_transfer' 
+                                                                    ? 'bg-blue-500 text-white border-blue-500 shadow-sm' 
+                                                                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                                                            }`}
+                                                        >
+                                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+                                                            </svg>
+                                                            Virement
+                                                        </button>
+
+                                                        {/* Carte bancaire */}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setPaymentMethod('card')}
+                                                            className={`py-2.5 px-3 text-xs font-semibold rounded-lg border transition-all flex items-center justify-center gap-2 ${
+                                                                paymentMethod === 'card' 
+                                                                    ? 'bg-purple-500 text-white border-purple-500 shadow-sm' 
+                                                                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                                                            }`}
+                                                        >
+                                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                                            </svg>
+                                                            Carte
+                                                        </button>
+
+                                                        {/* Autre */}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setPaymentMethod('other')}
+                                                            className={`py-2.5 px-3 text-xs font-semibold rounded-lg border transition-all flex items-center justify-center gap-2 col-span-2 ${
+                                                                paymentMethod === 'other' 
+                                                                    ? 'bg-slate-600 text-white border-slate-600 shadow-sm' 
+                                                                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                                                            }`}
+                                                        >
+                                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                                            </svg>
+                                                            Autre
+                                                        </button>
                                                     </div>
 
+                                                    {/* Champ référence pour Mobile Money */}
                                                     {paymentMethod === 'mobile_money' && (
-                                                        <div className="space-y-1.5">
+                                                        <div className="space-y-1.5 animate-fadeIn">
                                                             <label className="block text-xs font-semibold text-slate-500">Référence transaction</label>
                                                             <input
                                                                 type="text"
                                                                 value={paymentReference}
                                                                 onChange={(e) => setPaymentReference(e.target.value)}
-                                                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-none focus:ring-1 focus:ring-slate-400"
+                                                                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-mono focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
                                                                 placeholder="Ex: OM-123456789"
                                                             />
                                                         </div>
@@ -878,17 +1485,21 @@ const CreateExpedition = () => {
             </div>
 
             {/* Print Modal on Success */}
-            {status === 'succeeded' && currentExpedition && (
+            {showSuccessModal && currentExpedition && (
                 <PrintSuccessModal
                     expedition={currentExpedition}
                     agency={{
-                        ...(agencyData?.agence || agencyData),
+                        ...(agencyData?.agence || agencyData || {}),
                         logo: getLogoUrl(agencyData?.agence?.logo || agencyData?.logo)
                     }}
                     onClose={() => {
+                        console.log("📊 DEBUG - Agency Data au moment du modal:", agencyData);
+                        setShowSuccessModal(false);
                         resetStatus();
                         cleanSimulation();
-                        navigate("/dashboard");
+                        clearCurrentExpedition();
+                        // Recharger silencieusement le dashboard si on y retourne
+                        navigate("/dashboard", { state: { silentRefresh: true } });
                     }}
                 />
             )}
@@ -897,3 +1508,4 @@ const CreateExpedition = () => {
 };
 
 export default CreateExpedition;
+

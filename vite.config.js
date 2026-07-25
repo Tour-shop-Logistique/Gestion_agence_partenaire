@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     server: {
-      port: 5173,
+      port: 5174,
       host: true,
       open: true,
       allowedHosts: true, // Allow all hosts to avoid issues with tunnels
@@ -36,14 +36,28 @@ export default defineConfig(({ mode }) => {
       outDir: 'dist',
       sourcemap: false,
       minify: 'terser',
+      terserOptions: {
+        compress: {
+          drop_console: true, // Retirer les console.log en production
+          drop_debugger: true
+        }
+      },
       rollupOptions: {
         output: {
+          // Ajout de hash dans les noms de fichiers pour forcer le rafraîchissement du cache
+          entryFileNames: 'assets/[name].[hash].js',
+          chunkFileNames: 'assets/[name].[hash].js',
+          assetFileNames: 'assets/[name].[hash].[ext]',
           manualChunks: {
             vendor: ['react', 'react-dom'],
             router: ['react-router-dom'],
+            redux: ['@reduxjs/toolkit', 'react-redux', 'redux', 'redux-thunk'],
+            icons: ['@heroicons/react'],
           },
         },
       },
+      // Augmenter la taille limite des chunks pour éviter les avertissements
+      chunkSizeWarningLimit: 1000,
     },
     optimizeDeps: {
       include: ['react', 'react-dom', 'react-router-dom'],

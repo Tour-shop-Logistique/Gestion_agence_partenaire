@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx eslint *)",
+      "Bash(npx vite *)",
+      "Bash(npm run *)",
+      "Bash(kill %1)",
+      "Bash(netstat -ano)",
+      "Bash(curl -s -o /tmp/css_5173.html -w \"%{http_code}\\\\n\" \"http://localhost:5173/src/index.css?t=1784936817993\")",
+      "Read(//tmp/**)"
+    ]
+  }
+}

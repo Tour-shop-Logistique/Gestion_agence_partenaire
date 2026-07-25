@@ -41,11 +41,11 @@ const groupTarifsByIndice = (flatTarifs) => {
 
 export const fetchTarifs = createAsyncThunk(
   'tarifs/fetchTarifs',
-  async (_, { rejectWithValue }) => {
+  async (forceRefresh = false, { rejectWithValue }) => {
     try {
       const response = await tarifsApi.getTarifsBase();
       if (response.success && response.data) {
-        return response.data.tarifs || [];
+        return { tarifs: response.data.tarifs || [], forceRefresh };
       }
       return rejectWithValue(response.message || 'Échec du chargement des tarifs');
     } catch (error) {
@@ -56,11 +56,11 @@ export const fetchTarifs = createAsyncThunk(
 
 export const fetchAgencyTarifs = createAsyncThunk(
   'tarifs/fetchAgencyTarifs',
-  async (_, { rejectWithValue }) => {
+  async (forceRefresh = false, { rejectWithValue }) => {
     try {
       const response = await tarifsApi.getTarifs();
       if (response.success) {
-        return response.data?.tarifs || [];
+        return { tarifs: response.data?.tarifs || [], forceRefresh };
       }
       return rejectWithValue(response.message || "Erreur lors du chargement des tarifs de l'agence");
     } catch (error) {
@@ -190,11 +190,11 @@ export const toggleTarifSimpleStatus = createAsyncThunk(
 // Base groupage
 export const fetchTarifsGroupage = createAsyncThunk(
   'tarifs/fetchTarifsGroupage',
-  async (_, { rejectWithValue }) => {
+  async (forceRefresh = false, { rejectWithValue }) => {
     try {
       const res = await tarifsApi.getTarifsGroupageBase();
       console.log('res Groupage base ', res);
-      if (res.success) return res.data.tarifs || [];
+      if (res.success) return { tarifs: res.data.tarifs || [], forceRefresh };
       return rejectWithValue(res.message);
     } catch (e) {
       return rejectWithValue(e.message);
@@ -205,11 +205,11 @@ export const fetchTarifsGroupage = createAsyncThunk(
 // Groupe agence
 export const fetchTarifGroupageAgence = createAsyncThunk(
   'tarifs/fetchTarifGroupageAgence',
-  async (_, { rejectWithValue }) => {
+  async (forceRefresh = false, { rejectWithValue }) => {
     try {
       const res = await tarifsApi.getTarifsGroupage();
       console.log('res Groupage agence ', res);
-      if (res.success) return res.data.tarifs || [];
+      if (res.success) return { tarifs: res.data.tarifs || [], forceRefresh };
       return rejectWithValue(res.message);
     } catch (e) {
       return rejectWithValue(e.message);
@@ -442,8 +442,9 @@ const tarifsSlice = createSlice({
   extraReducers: (builder) => {
     builder
       // Gestion de fetchTarifs
-      .addCase(fetchTarifs.pending, (state) => {
-        if (!state.flatTarifs || state.flatTarifs.length === 0) {
+      .addCase(fetchTarifs.pending, (state, action) => {
+        const forceRefresh = action.meta.arg;
+        if (forceRefresh || !state.flatTarifs || state.flatTarifs.length === 0) {
           state.loading = true;
         }
         state.error = null;
@@ -452,14 +453,15 @@ const tarifsSlice = createSlice({
         state.loading = false;
 
         // Traiter et grouper les tarifs par indice
-        const groupedTarifs = groupTarifsByIndice(action.payload);
+        const tarifs = action.payload.tarifs || action.payload;
+        const groupedTarifs = groupTarifsByIndice(tarifs);
         state.tarifs = groupedTarifs;
-        state.flatTarifs = action.payload;
+        state.flatTarifs = tarifs;
 
         // Sauvegarder dans le cache
         saveTarifsToCache({
           tarifs: groupedTarifs,
-          flatTarifs: action.payload
+          flatTarifs: tarifs
         });
 
 
@@ -475,8 +477,9 @@ const tarifsSlice = createSlice({
       })
 
       // Gestion de fetchAgencyTarifs
-      .addCase(fetchAgencyTarifs.pending, (state) => {
-        if (!state.flatExistingTarifs || state.flatExistingTarifs.length === 0) {
+      .addCase(fetchAgencyTarifs.pending, (state, action) => {
+        const forceRefresh = action.meta.arg;
+        if (forceRefresh || !state.flatExistingTarifs || state.flatExistingTarifs.length === 0) {
           state.loading = true;
         }
       })
@@ -484,14 +487,15 @@ const tarifsSlice = createSlice({
         state.loading = false;
 
         // Grouper les tarifs agence par indice
-        const groupedAgencyTarifs = groupTarifsByIndice(action.payload);
+        const tarifs = action.payload.tarifs || action.payload;
+        const groupedAgencyTarifs = groupTarifsByIndice(tarifs);
         state.existingTarifs = groupedAgencyTarifs;
-        state.flatExistingTarifs = action.payload;
+        state.flatExistingTarifs = tarifs;
 
         // Sauvegarder dans le cache
         saveTarifsToCache({
           existingTarifs: groupedAgencyTarifs,
-          flatExistingTarifs: action.payload
+          flatExistingTarifs: tarifs
         });
 
 
@@ -717,15 +721,17 @@ const tarifsSlice = createSlice({
 
     builder
       // === Base groupage ===
-      .addCase(fetchTarifsGroupage.pending, (state) => {
-        if (!state.groupageTarifs || state.groupageTarifs.length === 0) {
+      .addCase(fetchTarifsGroupage.pending, (state, action) => {
+        const forceRefresh = action.meta.arg;
+        if (forceRefresh || !state.groupageTarifs || state.groupageTarifs.length === 0) {
           state.loading = true;
         }
       })
       .addCase(fetchTarifsGroupage.fulfilled, (state, action) => {
         state.loading = false;
-        state.groupageTarifs = action.payload;
-        saveTarifsToCache({ groupageTarifs: action.payload });
+        const tarifs = action.payload.tarifs || action.payload;
+        state.groupageTarifs = tarifs;
+        saveTarifsToCache({ groupageTarifs: tarifs });
       })
       .addCase(fetchTarifsGroupage.rejected, (state, action) => {
         state.loading = false;
@@ -733,15 +739,17 @@ const tarifsSlice = createSlice({
       })
 
       // === Groupage agence ===
-      .addCase(fetchTarifGroupageAgence.pending, (state) => {
-        if (!state.existingGroupageTarifs || state.existingGroupageTarifs.length === 0) {
+      .addCase(fetchTarifGroupageAgence.pending, (state, action) => {
+        const forceRefresh = action.meta.arg;
+        if (forceRefresh || !state.existingGroupageTarifs || state.existingGroupageTarifs.length === 0) {
           state.loading = true;
         }
       })
       .addCase(fetchTarifGroupageAgence.fulfilled, (state, action) => {
         state.loading = false;
-        state.existingGroupageTarifs = action.payload;
-        saveTarifsToCache({ existingGroupageTarifs: action.payload });
+        const tarifs = action.payload.tarifs || action.payload;
+        state.existingGroupageTarifs = tarifs;
+        saveTarifsToCache({ existingGroupageTarifs: tarifs });
       })
       .addCase(fetchTarifGroupageAgence.rejected, (state, action) => {
         state.loading = false;

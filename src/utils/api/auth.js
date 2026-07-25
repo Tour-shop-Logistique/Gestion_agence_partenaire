@@ -45,17 +45,16 @@ export const authApi = {
 
   /**
    * Connexion d'un utilisateur
-   * @param {string} telephone - Téléphone de l'utilisateur
-   * @param {string} password - Mot de passe
+   * @param {Object} credentials - Les identifiants de connexion
+   * @param {string} [credentials.telephone] - Téléphone de l'utilisateur
+   * @param {string} [credentials.email] - Email de l'utilisateur
+   * @param {string} credentials.password - Mot de passe
+   * @param {string} credentials.type - Type d'utilisateur (agence, etc.)
    * @returns {Promise<Object>} Données de l'utilisateur et token
    */
-  async login(telephone, password, type) {
+  async login(credentials) {
     try {
-      const response = await apiService.post(API_ENDPOINTS.AUTH.LOGIN, {
-        telephone,
-        password,
-        type,
-      });
+      const response = await apiService.post(API_ENDPOINTS.AUTH.LOGIN, credentials);
 
       // Sauvegarder le token
       if (response.token) {

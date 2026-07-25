@@ -1,0 +1,140 @@
+✅ IMPLÉMENTATION RÉUSSIE - PAYS LD SUR CRÉATION D'EXPÉDITION V2
+======================================================================
+
+📅 Date : 01 Juillet 2026
+🎯 Objectif : Afficher les pays disponibles des tarifs simples (LD) avec recherche dans la création d'expédition V2
+
+MODIFICATIONS APPORTÉES :
+========================
+
+1. RÉCUPÉRATION DES TARIFS SIMPLES
+   --------------------------------
+   ✅ Import de `existingTarifs` depuis le hook `useTarifs`
+   ✅ Appel de `fetchAgencyTarifs()` au chargement du composant pour récupérer les tarifs simples
+   
+   Fichier : src/pages/CreateExpeditionV2.jsx
+   Ligne : ~29-30 et ~84
+
+2. EXTRACTION DES PAYS DISPONIBLES
+   --------------------------------
+   ✅ Création d'un nouveau `useMemo` : `availableCountriesForLD`
+   ✅ Extraction de tous les pays depuis toutes les zones des tarifs simples
+   ✅ Structure des zones : { id, nom, pays: [...] }
+   ✅ Dédoublonnage automatique des pays
+   ✅ Tri alphabétique des pays
+   ✅ Création d'une map pays -> zone/tarif pour récupération rapide
+   
+   Fichier : src/pages/CreateExpeditionV2.jsx
+   Ligne : ~254-293
+
+3. INTERFACE UTILISATEUR AVEC RECHERCHE
+   -------------------------------------
+   ✅ Label dynamique : "Pays de destination" pour LD, "Trajet disponible" pour autres types
+   ✅ Utilisation du composant `SearchableDropdown` pour recherche en temps réel
+   ✅ Affichage du nombre de pays disponibles
+   ✅ Message d'alerte si aucun pays configuré
+   ✅ Auto-remplissage du pays de destination après sélection
+   ✅ Nettoyage du code pays (ex: "Korea Rep Of(KR)" -> "Korea Rep Of")
+   
+   Fichier : src/pages/CreateExpeditionV2.jsx
+   Ligne : ~859-921
+
+FONCTIONNEMENT :
+===============
+
+Lorsque l'utilisateur sélectionne le type "LD" (SIMPLE) :
+
+1. Le système récupère tous les tarifs simples configurés par l'agence
+2. Parcourt toutes les zones et extrait leurs tableaux de pays
+3. Dédoublonne et trie les pays par ordre alphabétique
+4. Affiche la liste des pays dans un menu déroulant avec recherche
+5. Quand un pays est sélectionné :
+   - Le pays de destination est automatiquement rempli
+   - Le tarif et la zone correspondants sont stockés pour la simulation
+   - La ville de destination est vidée pour saisie manuelle
+
+COMPOSANT SEARCHABLEDROPDOWN :
+=============================
+
+✅ Recherche en temps réel sur le nom du pays
+✅ Interface touch-friendly avec scroll
+✅ Fermeture automatique au clic extérieur
+✅ Focus automatique sur le champ de recherche à l'ouverture
+✅ Affichage du pays sélectionné dans le placeholder
+
+MESSAGES D'AIDE :
+================
+
+✅ Si pays disponibles : "X pays disponible(s)" (texte vert)
+⚠️ Si aucun pays : Message d'alerte avec suggestion de configuration
+
+STRUCTURE DES DONNÉES :
+======================
+
+existingTarifs = [
+  {
+    id: "uuid",
+    indice: "1.5",
+    prix_zones: [
+      {
+        id: "uuid-zone",
+        nom: "TOUR 7",
+        pays: [
+          "Korea Rep Of(KR)",
+          "Mongolia(MN)",
+          "Myanmar(MM)",
+          ...
+        ],
+        montant_base: 15000,
+        ...
+      }
+    ]
+  }
+]
+
+availableCountriesForLD = [
+  {
+    id: "Korea Rep Of(KR)",
+    label: "Korea Rep Of(KR)",
+    zone: { ...zone complete... },
+    tarif: { ...tarif complet... }
+  },
+  ...
+]
+
+AVANTAGES DE CETTE APPROCHE :
+============================
+
+✅ Recherche rapide parmi des centaines de pays
+✅ UX optimale avec filtrage en temps réel
+✅ Pas de scroll infini dans un select classique
+✅ Mobile-friendly
+✅ Dédoublonnage automatique des pays
+✅ Tri alphabétique pour navigation facile
+
+COMPATIBILITÉ :
+==============
+
+✅ N'affecte pas les autres types d'expédition (DHD, AFRIQUE, CA)
+✅ Maintient la logique existante pour les trajets groupage
+✅ Pas de régression sur les fonctionnalités existantes
+
+LOGS DE DÉBOGAGE :
+=================
+
+Le système affiche dans la console :
+- "🔵 useMemo availableCountriesForLD DÉCLENCHÉ"
+- "🔵 existingTarifs: [...]"
+- "🔵 Pays disponibles pour LD: X pays [...]"
+- "Pays sélectionné: {...}"
+
+PROCHAINES ÉTAPES POSSIBLES :
+============================
+
+📋 Afficher le nom de la zone associée au pays dans la liste
+📋 Grouper les pays par zone dans le dropdown
+📋 Afficher un drapeau à côté de chaque pays
+📋 Mémoriser les derniers pays sélectionnés (localStorage)
+📋 Ajouter un raccourci clavier pour ouvrir la recherche
+
+✅ IMPLÉMENTATION TERMINÉE ET TESTÉE
