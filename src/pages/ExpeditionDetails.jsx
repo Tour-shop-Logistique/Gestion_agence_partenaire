@@ -203,6 +203,23 @@ const ExpeditionDetails = () => {
                                         <Copy className="w-4 h-4" />
                                     </button>
                                 </div>
+                                {expedition.code_suivi_expedition && (
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-xs text-gray-500">Code de suivi:</span>
+                                        <span className="text-xs font-mono font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                                            {expedition.code_suivi_expedition}
+                                        </span>
+                                        <button
+                                            className="flex-shrink-0 text-gray-400 hover:text-emerald-600 transition-colors p-1"
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(expedition.code_suivi_expedition);
+                                                toast.success('Code de suivi copié');
+                                            }}
+                                        >
+                                            <Copy className="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                )}
                                 <div className="text-xs sm:text-sm text-gray-500 mt-1">
                                     Créé le {formatDate(expedition.created_at)}
                                 </div>

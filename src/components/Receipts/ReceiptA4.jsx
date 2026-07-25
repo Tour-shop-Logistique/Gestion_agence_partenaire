@@ -93,6 +93,11 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
                         <p className="text-sm font-bold uppercase tracking-wide">N° {invoiceNumber}</p>
                         <p className="text-xs font-bold text-slate-500 mt-1">Éditée le {format(date, 'dd MMMM yyyy à HH:mm', { locale: fr })}</p>
                         {expedition.reference && <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wide">Réf: {expedition.reference}</p>}
+                        {expedition.code_suivi_expedition && (
+                            <p className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded border border-emerald-200 mt-1 uppercase tracking-wide inline-block">
+                                Suivi: {expedition.code_suivi_expedition}
+                            </p>
+                        )}
 
                         {/* Payment Status Stamp */}
                         <div className={`mt-3 px-3 py-1 border-2 inline-block transform -rotate-6 ${isPaid ? 'border-emerald-600 text-emerald-600' : 'border-amber-600 text-amber-600'}`}>

@@ -4,13 +4,40 @@ import { useNavigate } from "react-router-dom";
 import { useExpedition } from "../hooks/useExpedition";
 import { useTarifs } from "../hooks/useTarifs";
 import { useAgency } from "../hooks/useAgency";
+import { useDashboard } from "../hooks/useDashboard";
 import PrintSuccessModal from "../components/Receipts/PrintSuccessModal";
 import SearchableDropdown from "../components/common/SearchableDropdown";
 import { getLogoUrl } from "../utils/apiConfig";
 import { toast } from "../utils/toast";
 import { markAsRecentlyCreated } from "../hooks/useWebSocket";
+import { generateColisCode, parseColisCode } from "../utils/codeGenerator";
+import { expeditionsApi } from "../utils/api/expeditions";
 
-const CreateExpeditionV2 = () => {    
+// Correspondance entre la valeur de type_expedition du formulaire
+// et le type attendu par generateColisCode (préfixe du code colis)
+const CODE_COLIS_TYPE_MAP = {
+    SIMPLE: "LD",
+    GROUPAGE_DHD_AERIEN: "AERIEN",
+    GROUPAGE_DHD_MARITIME: "MARITIME",
+    GROUPAGE_AFRIQUE: "AFRIQUE",
+    GROUPAGE_CA: "CA",
+};
+
+// Correspondance entre la valeur de type_expedition du formulaire
+// et la valeur "type_expedition" renvoyée par l'API (dashboard/expéditions)
+const FORM_TYPE_TO_API_TYPE = {
+    SIMPLE: "simple",
+    GROUPAGE_DHD_AERIEN: "groupage_dhd_aerien",
+    GROUPAGE_DHD_MARITIME: "groupage_dhd_maritime",
+    GROUPAGE_AFRIQUE: "groupage_afrique",
+    GROUPAGE_CA: "groupage_ca",
+};
+
+// Un colis est valide pour la simulation/soumission s'il a un poids,
+// une désignation et au moins un article
+const isColisComplete = (c) => Boolean(c.poids && c.designation && c.articles && c.articles.length > 0);
+
+const CreateExpeditionV2 = () => {
     const navigate = useNavigate();
     const {
         createExpedition,
@@ -36,6 +63,7 @@ const CreateExpeditionV2 = () => {
 
     const { existingGroupageTarifs, fetchTarifGroupageAgence, existingTarifs, flatExistingTarifs, fetchAgencyTarifs } = useTarifs();
     const { data: agencyData, fetchAgencyData } = useAgency();
+    const { logistics, fetchDashboard } = useDashboard();
 
     // État pour la navigation interne (4 étapes)
     const [step, setStep] = useState(1);
@@ -44,6 +72,9 @@ const CreateExpeditionV2 = () => {
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [selectedRouteId, setSelectedRouteId] = useState("");
     const [selectedRoute, setSelectedRoute] = useState(null);
+    // Prochain numéro séquentiel de colis pour le type sélectionné,
+    // déduit du dernier colis du même type trouvé dans les "dernières expéditions" du dashboard
+    const [nextColisNumero, setNextColisNumero] = useState(1);
 
     const [formData, setFormData] = useState({
         type_expedition: "SIMPLE",
@@ -79,6 +110,7 @@ const CreateExpeditionV2 = () => {
                 largeur: "",
                 hauteur: "",
                 prix_emballage: 0,
+                prix_estimation: 0,
                 articles: []
             }
         ]
@@ -97,6 +129,7 @@ const CreateExpeditionV2 = () => {
         fetchTarifGroupageAgence();
         fetchAgencyTarifs(); // Charger aussi les tarifs simples
         fetchAgencyData();
+        fetchDashboard(); // Nécessaire pour déduire le prochain numéro de code colis
             }, []);
 
     // Nettoyage au démontage
@@ -133,6 +166,81 @@ const CreateExpeditionV2 = () => {
         setSelectedRouteId(""); // Réinitialiser aussi l'ID pour le select
         cleanSimulation();
     }, [formData.type_expedition]);
+
+    // Nombre maximal de pages de la liste complète des expéditions à parcourir
+    // en repli si aucune expédition du même type n'est trouvée dans les 5 dernières du dashboard
+    const MAX_EXPEDITIONS_FALLBACK_PAGES = 10;
+
+    // Cherche, dans une liste d'expéditions (résumés), la première du type demandé
+    const findExpeditionByType = (expeditions, apiType) =>
+        (Array.isArray(expeditions) ? expeditions : []).find(
+            (exp) => (exp.type_expedition || exp.type) === apiType
+        );
+
+    // Déduire le prochain numéro de code colis à partir de la dernière expédition du même
+    // type : d'abord dans les "dernières expéditions" du dashboard, sinon en repli dans la
+    // liste complète des expéditions (comme sur la page Expeditions.jsx)
+    useEffect(() => {
+        let cancelled = false;
+
+        const computeNextColisNumero = async () => {
+            const codeAgence = agencyData?.agence?.code_agence;
+            const apiType = FORM_TYPE_TO_API_TYPE[formData.type_expedition];
+
+            if (!codeAgence || !apiType) {
+                if (!cancelled) setNextColisNumero(1);
+                return;
+            }
+
+            // 1. D'abord dans les 5 dernières expéditions du dashboard
+            let matchingExpedition = findExpeditionByType(logistics?.dernieres_expeditions, apiType);
+
+            // 2. Sinon, repli sur la liste complète des expéditions (pagination), du plus récent au plus ancien
+            if (!matchingExpedition?.id) {
+                for (let page = 1; page <= MAX_EXPEDITIONS_FALLBACK_PAGES && !cancelled; page++) {
+                    const listResult = await expeditionsApi.listExpeditions({ page });
+                    if (!listResult?.success || !Array.isArray(listResult.data) || listResult.data.length === 0) {
+                        break;
+                    }
+
+                    matchingExpedition = findExpeditionByType(listResult.data, apiType);
+                    if (matchingExpedition?.id) break;
+
+                    const lastPage = listResult.meta?.last_page;
+                    if (lastPage && page >= lastPage) break;
+                }
+            }
+
+            if (cancelled) return;
+
+            if (!matchingExpedition?.id) {
+                setNextColisNumero(1);
+                return;
+            }
+
+            const result = await expeditionsApi.getExpedition(matchingExpedition.id);
+            if (cancelled) return;
+
+            if (!result?.success) {
+                setNextColisNumero(1);
+                return;
+            }
+
+            const cleanCodeAgence = codeAgence.replace(/[-\s]/g, '').toUpperCase();
+            const shortType = CODE_COLIS_TYPE_MAP[formData.type_expedition] || 'LD';
+            const colisList = Array.isArray(result.data?.colis) ? result.data.colis : [];
+
+            const numeros = colisList
+                .map((c) => parseColisCode(c.code_colis))
+                .filter((p) => p && p.typeExpedition === shortType && p.codeAgence === cleanCodeAgence)
+                .map((p) => p.numero);
+
+            setNextColisNumero(numeros.length > 0 ? Math.max(...numeros) + 1 : 1);
+        };
+
+        computeNextColisNumero();
+        return () => { cancelled = true; };
+    }, [formData.type_expedition, agencyData?.agence?.code_agence, logistics?.dernieres_expeditions]);
 
     useEffect(() => {
         if (message && status !== 'succeeded') {
@@ -489,7 +597,7 @@ const CreateExpeditionV2 = () => {
     const addColis = () => {
         setFormData(prev => ({
             ...prev,
-            colis: [...prev.colis, { designation: "", category_id: "", poids: "", longueur: "", largeur: "", hauteur: "", prix_emballage: 0, articles: [] }]
+            colis: [...prev.colis, { designation: "", category_id: "", poids: "", longueur: "", largeur: "", hauteur: "", prix_emballage: 0, prix_estimation: 0, articles: [] }]
         }));
     };
 
@@ -506,30 +614,23 @@ const CreateExpeditionV2 = () => {
             return [];
         }
         
-        // Pour le type CA, ignorer la catégorie et filtrer directement par "Colis Accompagnés"
+        // Pour le type CA, filtrer uniquement les produits de la catégorie "Colis Accompagnés"
         if (formData.type_expedition === 'GROUPAGE_CA') {
-            console.log("🔍 Filtrage pour GROUPAGE_CA - Tous les produits:", products);
-            
-            const filtered = products.filter(p => {
-                // Vérifier si le produit a une catégorie avec le nom "Colis Accompagnés"
-                const hasCategory = p.category && p.category.nom === 'Colis Accompagnés';
-                console.log(`Produit ${p.designation}:`, {
-                    category: p.category,
-                    categoryNom: p.category?.nom,
-                    match: hasCategory
-                });
-                return hasCategory;
-            });
-            
-            console.log("✅ Produits CA filtrés:", filtered);
-            return filtered;
+            return products.filter(p => p.category && p.category.nom === 'Colis Accompagnés');
         }
-        
-        // Pour les autres types, filtrer par catégorie sélectionnée
+
+        // Pour AFRIQUE et SIMPLE (LD), il n'y a pas de sélecteur de catégorie dans le
+        // formulaire : on force l'affichage de tous les articles pour ne jamais avoir une
+        // liste vide (un filtrage par category_id serait toujours vide car categoryId reste "")
+        if (formData.type_expedition === 'GROUPAGE_AFRIQUE' || formData.type_expedition === 'SIMPLE') {
+            return products;
+        }
+
+        // Pour les types DHD (Aérien/Maritime), filtrer par la catégorie sélectionnée
         if (!categoryId) {
             return [];
         }
-        
+
         return products.filter(p => p.category_id === categoryId);
     };
 
@@ -540,12 +641,14 @@ const CreateExpeditionV2 = () => {
             return;
         }
 
-        // Vérifier que chaque colis a au moins un article
-        const colisManquantArticles = formData.colis.findIndex(
-            c => !c.articles || c.articles.length === 0
-        );
-        if (colisManquantArticles !== -1) {
-            toast.error(`Colis #${colisManquantArticles + 1} : veuillez sélectionner au moins un article.`);
+        // Vérifier que chaque colis est complet (poids, désignation, au moins un article)
+        const colisIncompletIndex = formData.colis.findIndex(c => !isColisComplete(c));
+        if (colisIncompletIndex !== -1) {
+            const c = formData.colis[colisIncompletIndex];
+            const message = (!c.articles || c.articles.length === 0)
+                ? `Colis #${colisIncompletIndex + 1} : veuillez sélectionner au moins un article.`
+                : `Colis #${colisIncompletIndex + 1} : veuillez renseigner le poids et la désignation.`;
+            toast.error(message);
             return;
         }
 
@@ -566,6 +669,7 @@ const CreateExpeditionV2 = () => {
                     largeur: parseFloat(c.largeur) || 0,
                     hauteur: parseFloat(c.hauteur) || 0,
                     prix_emballage: parseFloat(c.prix_emballage) || 0,
+                    prix_estimation: parseFloat(c.prix_estimation) || 0,
                 };
 
                 // N'envoyer articles que s'il y en a, sous forme d'objets {designation}
@@ -577,8 +681,11 @@ const CreateExpeditionV2 = () => {
 
                 if (c.category_id) item.category_id = c.category_id;
 
-                const typeCode = formData.type_expedition.replace('GROUPAGE_', '');
-                item.code_colis = `SIM-${typeCode}-${index + 1}`;
+                item.code_colis = generateColisCode({
+                    codeAgence: agencyData?.agence?.code_agence,
+                    numeroColis: nextColisNumero + index,
+                    typeExpedition: CODE_COLIS_TYPE_MAP[formData.type_expedition] || 'LD',
+                });
 
                 return item;
             })
@@ -599,6 +706,7 @@ const CreateExpeditionV2 = () => {
                     largeur: parseFloat(c.largeur) || 0,
                     hauteur: parseFloat(c.hauteur) || 0,
                     prix_emballage: parseFloat(c.prix_emballage) || 0,
+                    prix_estimation: parseFloat(c.prix_estimation) || 0,
                 };
 
                 // N'envoyer articles que s'il y en a, sous forme d'objets {designation}
@@ -610,8 +718,11 @@ const CreateExpeditionV2 = () => {
 
                 if (c.category_id) item.category_id = c.category_id;
 
-                const typeCode = formData.type_expedition.replace('GROUPAGE_', '');
-                item.code_colis = `COL-${typeCode}-${Date.now().toString().slice(-4)}-${index + 1}`;
+                item.code_colis = generateColisCode({
+                    codeAgence: agencyData?.agence?.code_agence,
+                    numeroColis: nextColisNumero + index,
+                    typeExpedition: CODE_COLIS_TYPE_MAP[formData.type_expedition] || 'LD',
+                });
 
                 return item;
             })
@@ -723,7 +834,7 @@ const CreateExpeditionV2 = () => {
     };
 
     const canProceedToStep3 = () => {
-        return formData.colis.every(c => c.poids && c.designation && c.articles && c.articles.length > 0) && simulationResult;
+        return formData.colis.every(isColisComplete) && simulationResult;
     };
 
     const canProceedToStep4 = () => {
@@ -1176,6 +1287,19 @@ const CreateExpeditionV2 = () => {
                                                                 className={inputCls(colis.prix_emballage)} 
                                                             />
                                                         </div>
+                                                        <div className="space-y-1.5 col-span-3 sm:col-span-1">
+                                                            <label className="block text-[11px] font-semibold text-slate-600">Estimation (FCFA)</label>
+                                                            <input 
+                                                                type="number" 
+                                                                step="0" 
+                                                                inputMode="numeric" 
+                                                                value={colis.prix_estimation}
+                                                                onChange={(e) => handleColisChange(index, 'prix_estimation', e.target.value)}
+                                                                onFocus={(e) => e.target.select()}
+                                                                placeholder="0" 
+                                                                className={inputCls(colis.prix_estimation)} 
+                                                            />
+                                                        </div>
                                                     </div>
 
                                                     {/* Articles */}
@@ -1201,9 +1325,11 @@ const CreateExpeditionV2 = () => {
                                                                 }))}
                                                                 onSelect={(option) => handleAddArticle(index, option)}
                                                                 placeholder={
-                                                                    formData.type_expedition === 'GROUPAGE_CA' 
-                                                                        ? "Rechercher un article (Colis Accompagnés)..." 
-                                                                        : (colis.category_id ? "Rechercher un article..." : "Sélectionnez d'abord une catégorie")
+                                                                    formData.type_expedition === 'GROUPAGE_CA'
+                                                                        ? "Rechercher un article (Colis Accompagnés)..."
+                                                                        : (formData.type_expedition === 'SIMPLE' || formData.type_expedition === 'GROUPAGE_AFRIQUE')
+                                                                            ? "Rechercher un article..."
+                                                                            : (colis.category_id ? "Rechercher un article..." : "Sélectionnez d'abord une catégorie")
                                                                 }
                                                                 className="flex-1"
                                                             />
@@ -1268,9 +1394,9 @@ const CreateExpeditionV2 = () => {
                                                 </button>
                                                 <button
                                                     onClick={handleSimulate}
-                                                    disabled={simulating || !formData.colis.every(c => c.poids && c.designation && c.articles && c.articles.length > 0)}
+                                                    disabled={simulating || !formData.colis.every(isColisComplete)}
                                                     className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 active:scale-95 ${
-                                                        simulating || !formData.colis.every(c => c.poids && c.designation)
+                                                        simulating || !formData.colis.every(isColisComplete)
                                                             ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
                                                             : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm'
                                                     }`}

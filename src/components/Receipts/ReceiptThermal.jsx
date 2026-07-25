@@ -37,6 +37,11 @@ const ReceiptThermal = React.forwardRef(({ expedition, colis, agency }, ref) => 
                     </span>
                 </div>
                 <p className="text-[10px] mt-1 text-white">Date: {new Date(expedition.created_at || Date.now()).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })} à {new Date(expedition.created_at || Date.now()).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
+                {expedition.code_suivi_expedition && (
+                    <p className="text-[10px] mt-1 font-bold bg-emerald-500 text-white px-2 py-0.5 rounded inline-block">
+                        SUIVI: {expedition.code_suivi_expedition}
+                    </p>
+                )}
             </div>
 
             {/* Destination Info Only (Sans infos personnelles) */}

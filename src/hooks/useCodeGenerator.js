@@ -29,27 +29,30 @@ export const useCodeGenerator = () => {
      * Génère un code de colis
      * @param {Object} options
      * @param {number} options.numeroColis - Numéro séquentiel du colis
+     * @param {string} options.typeExpedition - Type d'expédition (AERIEN, MARITIME, AFRIQUE, CA, LD)
      * @param {Date} options.date - Date de création (optionnel)
      * @returns {string} Code du colis généré
      */
-    const genererCodeColis = useCallback(({ numeroColis, date = new Date() }) => {
+    const genererCodeColis = useCallback(({ numeroColis, typeExpedition = 'SIMPLE', date = new Date() }) => {
         if (!codeAgence) {
             console.warn('⚠️ Code agence non disponible, utilisation d\'un code par défaut');
             return `COLIS-${Date.now()}`;
         }
-        return generateColisCode({ codeAgence, numeroColis, date });
+        return generateColisCode({ codeAgence, numeroColis, typeExpedition, date });
     }, [codeAgence]);
 
     /**
      * Génère plusieurs codes de colis pour une expédition
      * @param {Object} options
      * @param {number} options.nombreColis - Nombre de colis à générer
+     * @param {string} options.typeExpedition - Type d'expédition (AERIEN, MARITIME, AFRIQUE, CA, LD)
      * @param {number} options.numeroDepart - Numéro de départ (optionnel)
      * @param {Date} options.date - Date de création (optionnel)
      * @returns {Array<string>} Tableau des codes générés
      */
     const genererCodesMultiples = useCallback(({ 
-        nombreColis, 
+        nombreColis,
+        typeExpedition = 'SIMPLE',
         numeroDepart = 1, 
         date = new Date() 
     }) => {
@@ -57,18 +60,19 @@ export const useCodeGenerator = () => {
             console.warn('⚠️ Code agence non disponible');
             return Array(nombreColis).fill(null).map((_, i) => `COLIS-${Date.now()}-${i}`);
         }
-        return generateMultipleColisCode({ codeAgence, nombreColis, numeroDepart, date });
+        return generateMultipleColisCode({ codeAgence, nombreColis, typeExpedition, numeroDepart, date });
     }, [codeAgence]);
 
     /**
      * Obtient le prochain numéro de colis disponible
      * @param {Array<string>} existingCodes - Codes existants
+     * @param {string} typeExpedition - Type d'expédition (AERIEN, MARITIME, etc.)
      * @param {Date} date - Date (optionnel)
      * @returns {number} Prochain numéro disponible
      */
-    const obtenirProchainNumeroColis = useCallback((existingCodes = [], date = new Date()) => {
+    const obtenirProchainNumeroColis = useCallback((existingCodes = [], typeExpedition = 'SIMPLE', date = new Date()) => {
         if (!codeAgence) return 1;
-        return getNextColisNumber(existingCodes, codeAgence, date);
+        return getNextColisNumber(existingCodes, codeAgence, typeExpedition, date);
     }, [codeAgence]);
 
     /**

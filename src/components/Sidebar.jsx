@@ -145,7 +145,7 @@ const Sidebar = ({ onClose }) => {
 
   return (
     <div
-      className="flex flex-col h-full w-64 lg:mt-0 mt-0 relative overflow-hidden"
+      className="flex flex-col h-full w-60 lg:mt-0 mt-0 relative overflow-hidden"
       style={{
         background: "linear-gradient(180deg, #070a14 0%, #10152a 50%, #070a14 100%)",
       }}
@@ -249,11 +249,11 @@ const Sidebar = ({ onClose }) => {
       </div>
 
       {/* ── Navigation ──────────────────────────────────────────────────────── */}
-      <nav
-        className="relative z-10 flex-1 overflow-y-auto py-5 px-3.5 scrollbar-hide"
-        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-      >
-        {menuItems.map((section, sectionIdx) => (
+      <div className="relative z-10 flex-1 min-h-0">
+        <nav
+          className="h-full overflow-y-auto py-5 pl-3.5 pr-1.5 sidebar-scrollbar"
+        >
+          {menuItems.map((section, sectionIdx) => (
           <div key={sectionIdx} className={sectionIdx > 0 ? "mt-5" : ""}>
             <p
               className="px-2.5 mb-2 text-[11.5px] font-semibold tracking-[0.1em] text-slate-200/90 uppercase select-none"
@@ -315,7 +315,8 @@ const Sidebar = ({ onClose }) => {
             </div>
           </div>
         ))}
-      </nav>
+        </nav>
+      </div>
 
       {/* ── User Footer ─────────────────────────────────────────────────────── */}
       <div className="relative z-10 p-3.5 shrink-0 border-t border-white/10">
