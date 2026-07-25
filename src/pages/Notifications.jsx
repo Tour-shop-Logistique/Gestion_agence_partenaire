@@ -3,15 +3,10 @@ import { useDispatch, useSelector } from "react-redux";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Megaphone, CheckCheck, RefreshCw, Radio } from "lucide-react";
-import { useAuth } from "../hooks/useAuth";
-import { useWebSocket } from "../hooks/useWebSocket";
-import { showToast } from "../utils/toast";
-import soundNotification from "../utils/soundNotification";
 import {
   fetchNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
-  announcementReceived,
   selectNotifications,
   selectUnreadCount,
   selectNotificationsStatus,
@@ -19,7 +14,6 @@ import {
 
 const Notifications = () => {
   const dispatch = useDispatch();
-  const { currentUser } = useAuth();
   const notifications = useSelector(selectNotifications);
   const unreadCount = useSelector(selectUnreadCount);
   const status = useSelector(selectNotificationsStatus);
@@ -28,15 +22,9 @@ const Notifications = () => {
     dispatch(fetchNotifications());
   }, [dispatch]);
 
-  // Réception temps réel : le backoffice envoie une annonce, elle apparaît
-  // immédiatement sans que l'agence ait besoin de rafraîchir la page.
-  useWebSocket(currentUser?.agence_id, {
-    onAnnouncementCreated: (data) => {
-      dispatch(announcementReceived(data));
-      showToast("📢 Nouvelle annonce du backoffice", "info");
-      soundNotification.playSuccess();
-    },
-  });
+  // La reception temps reel (websocket) est geree globalement dans App.jsx,
+  // pour que la notification systeme du navigateur fonctionne meme si cette
+  // page n'est pas ouverte.
 
   const handleMarkAsRead = (id) => {
     dispatch(markNotificationAsRead(id));

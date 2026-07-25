@@ -16,7 +16,11 @@ import { getLogoUrl } from "./utils/apiConfig";
 import { selectAgencyConfigured } from "./store/slices/agencySlice";
 import { autoCheckAndUpdate, handleChunkLoadError } from "./utils/versionChecker";
 import { getEcho, disconnectEcho } from "./services/echo";
-import { fetchNotifications } from "./store/slices/notificationsSlice";
+import { fetchNotifications, announcementReceived } from "./store/slices/notificationsSlice";
+import { useWebSocket } from "./hooks/useWebSocket";
+import { showToast } from "./utils/toast";
+import soundNotification from "./utils/soundNotification";
+import { requestNotificationPermission, showBrowserNotification } from "./utils/browserNotification";
 
 // Import des pages
 import Home from "./pages/Home";
@@ -104,10 +108,12 @@ const AgencySetupGuard = ({ children }) => {
 function AppContent() {
   // Hooks pour charger les données de l'agence et tarifs
   const { fetchAgencyData, fetchUsers } = useAgency();
-  const { checkAuth } = useAuth();
+  const { checkAuth, currentUser } = useAuth();
   const { isAuthenticated, status } = useSelector((state) => state.auth);
   const { fetchDashboard } = useDashboard();
   const hasLoadedDataRef = useRef(false);
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   // ========== INITIALISATION WEBSOCKET ==========
   useEffect(() => {
@@ -128,6 +134,30 @@ function AppContent() {
     }
   }, [isAuthenticated, status]);
 
+  // Demande la permission d'afficher des notifications systeme une fois
+  // l'utilisateur authentifie (le navigateur exige un geste/contexte utilisateur).
+  useEffect(() => {
+    if (isAuthenticated && status === "succeeded") {
+      requestNotificationPermission();
+    }
+  }, [isAuthenticated, status]);
+
+  // Ecoute globale des annonces backoffice : active sur toute l'app (pas
+  // seulement la page Notifications) pour que l'agent recoive la notification
+  // systeme meme s'il consulte une autre page au moment de l'envoi.
+  useWebSocket(currentUser?.agence_id, {
+    onAnnouncementCreated: (data) => {
+      dispatch(announcementReceived(data));
+      const announcement = Array.isArray(data) ? data[0] : data;
+      showToast("📢 Nouvelle annonce du backoffice", "info");
+      soundNotification.playSuccess();
+      showBrowserNotification(announcement?.titre || "Nouvelle annonce", {
+        body: announcement?.message,
+        onClick: () => navigate("/notifications"),
+      });
+    },
+  });
+
   useEffect(() => {
     // Vérifier si un token existe au démarrage de l'application
     // Chargement en arrière-plan sans bloquer l'interface
@@ -139,7 +169,6 @@ function AppContent() {
 
   // Charger les données de l'agence quand l'utilisateur est authentifié
   const { fetchAgencyTarifs, fetchTarifs, fetchTarifsGroupageBase, fetchTarifGroupageAgence } = useTarifs();
-  const dispatch = useDispatch();
   const agencyConfigured = useSelector(selectAgencyConfigured);
   const agencyStatus = useSelector((state) => state.agency.status);
 
