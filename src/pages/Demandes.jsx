@@ -9,6 +9,7 @@ import { toast, showToast } from "../utils/toast";
 import soundNotification from "../utils/soundNotification";
 import { Check, X, Eye, Package, Calendar, MapPin, User, ArrowRight, Loader2, RefreshCw, Search } from "lucide-react";
 import ConfirmationModal from "../components/ConfirmationModal";
+import Spinner from '../components/common/Spinner';
 
 const Demandes = () => {
     const navigate = useNavigate();
@@ -374,8 +375,7 @@ const Demandes = () => {
                     <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-20 flex items-center justify-center">
                         <div className="flex flex-col items-center gap-3">
                             <div className="relative">
-                                <div className="w-12 h-12 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
-                                <div className="absolute inset-0 w-12 h-12 border-4 border-transparent border-r-indigo-400 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1s' }}></div>
+                                <Spinner size="xl" color="indigo" />
                             </div>
                             <div className="text-center">
                                 <p className="text-sm font-bold text-slate-900">Actualisation en cours...</p>

@@ -56,9 +56,7 @@ const LoginModal = ({ isOpen, onClose }) => {
         credentials.telephone = formData.identifier;
       }
 
-      console.log("[Login] Sending credentials:", { identifier: formData.identifier, isEmail, type: formData.type });
       const result = await login(credentials);
-      console.log("[Login] Result:", result);
 
       if (result.success) {
         const user = result.data?.user || {};

@@ -1,4 +1,5 @@
 import React from "react";
+import Spinner from './common/Spinner';
 
 const AgentCardDesktop = ({
   agencyUsers,
@@ -116,7 +117,7 @@ const AgentCardDesktop = ({
               <td className="px-6 py-4 whitespace-nowrap">
                 {updatingAgent === agent.id ? (
                   <div className="flex items-center space-x-2">
-                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></div>
+                    <Spinner size="sm" color="indigo" />
                     <span className="text-sm text-gray-500 font-medium">
                       Mise à jour...
                     </span>

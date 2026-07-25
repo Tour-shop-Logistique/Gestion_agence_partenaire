@@ -8,8 +8,8 @@ const StatsCards = ({ logistics, operational }) => {
     return (
         <>
             {/* Top Destinations */}
-            <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden col-span-1 md:col-span-1">
-                <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
+            <div className="bg-white rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden col-span-1 md:col-span-1">
+                <div className="px-4 py-3 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
                     <h3 className="text-xs sm:text-sm font-bold text-slate-900">Top Destinations</h3>
                     <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">Ce mois</p>
                 </div>
@@ -49,8 +49,8 @@ const StatsCards = ({ logistics, operational }) => {
             </div>
 
             {/* Volume par Type */}
-            <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden col-span-1 md:col-span-1">
-                <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
+            <div className="bg-white rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden col-span-1 md:col-span-1">
+                <div className="px-4 py-3 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
                     <h3 className="text-xs sm:text-sm font-bold text-slate-900">Volume par Type</h3>
                     <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">Répartition</p>
                 </div>
@@ -99,7 +99,7 @@ const StatsCards = ({ logistics, operational }) => {
             </div>
 
             {/* Autres indicateurs */}
-            <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-3 sm:p-4 col-span-1 md:col-span-1">
+            <div className="bg-white rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition-shadow duration-200 p-3 sm:p-4 col-span-1 md:col-span-1">
                 <h3 className="text-xs sm:text-sm font-bold text-slate-900 mb-2 sm:mb-3">Autres indicateurs</h3>
                 <div className="space-y-2 sm:space-y-3">
                     <div className="flex items-center justify-between group/item hover:bg-slate-50 -mx-2 px-2 py-1.5 sm:py-2 rounded-lg transition-colors">

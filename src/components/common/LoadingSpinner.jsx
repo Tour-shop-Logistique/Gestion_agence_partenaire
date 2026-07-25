@@ -1,20 +1,20 @@
-import React from "react";
+import Spinner from "./Spinner";
+
+const SPINNER_SIZE = {
+    small: "sm",
+    medium: "lg",
+    large: "xl",
+};
 
 /**
- * Composant de chargement avec circular progress
- * Utilisé pour afficher un état de chargement élégant
+ * Loader plein écran / section, avec message et puces animées.
+ * Pour un simple indicateur inline (bouton, table, header), utiliser `Spinner` directement.
  */
-const LoadingSpinner = ({ 
-    message = "Chargement en cours...", 
+const LoadingSpinner = ({
+    message = "Chargement en cours...",
     size = "large",
-    fullScreen = false 
+    fullScreen = false
 }) => {
-    const sizeClasses = {
-        small: "w-6 h-6 border-2",
-        medium: "w-10 h-10 border-3",
-        large: "w-16 h-16 border-4"
-    };
-
     const textSizeClasses = {
         small: "text-xs",
         medium: "text-sm",
@@ -28,19 +28,7 @@ const LoadingSpinner = ({
     return (
         <div className={containerClasses}>
             <div className="flex flex-col items-center gap-4">
-                {/* Circular Progress */}
-                <div className="relative">
-                    {/* Cercle de fond */}
-                    <div className={`${sizeClasses[size]} rounded-full border-slate-200`}></div>
-                    
-                    {/* Cercle animé */}
-                    <div 
-                        className={`${sizeClasses[size]} rounded-full border-indigo-600 border-t-transparent animate-spin absolute top-0 left-0`}
-                        style={{
-                            animation: 'spin 0.8s linear infinite'
-                        }}
-                    ></div>
-                </div>
+                <Spinner size={SPINNER_SIZE[size] || "xl"} color="indigo" />
 
                 {/* Message */}
                 {message && (

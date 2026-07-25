@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, AlertTriangle } from 'lucide-react';
+import Spinner from './common/Spinner';
 
 const ConfirmationModal = ({
     isOpen,
@@ -88,7 +89,7 @@ const ConfirmationModal = ({
                         className={`flex-1 px-4 py-3 rounded-2xl text-sm font-bold text-white shadow-lg transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 ${colors.button}`}
                     >
                         {isLoading ? (
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                            <Spinner size="sm" color="white" />
                         ) : null}
                         {confirmText}
                     </button>

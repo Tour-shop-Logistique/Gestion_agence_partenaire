@@ -1,12 +1,30 @@
+import { toast as sonnerToast } from 'sonner';
+import { createElement } from 'react';
+import { MessageCircle } from 'lucide-react';
 
 /**
- * Utility to trigger toast notifications via custom events
+ * Façade au-dessus de sonner : garde la même API publique (showToast/toast.*)
+ * pour ne pas avoir à toucher tous les appelants existants.
  */
 export const showToast = (message, type = 'info', duration = 5000) => {
-    const event = new CustomEvent('toast', {
-        detail: { message, type, duration }
-    });
-    window.dispatchEvent(event);
+    const options = { duration };
+
+    switch (type) {
+        case 'success':
+            return sonnerToast.success(message, options);
+        case 'error':
+            return sonnerToast.error(message, options);
+        case 'warning':
+            return sonnerToast.warning(message, options);
+        case 'chat':
+            return sonnerToast(message, {
+                ...options,
+                icon: createElement(MessageCircle, { className: 'w-4 h-4 text-indigo-600' }),
+            });
+        case 'info':
+        default:
+            return sonnerToast.info(message, options);
+    }
 };
 
 export const toast = {

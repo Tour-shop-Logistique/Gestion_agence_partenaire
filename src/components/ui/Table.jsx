@@ -1,4 +1,4 @@
-import React from 'react';
+import Skeleton from '../common/Skeleton';
 
 /**
  * Composant Table du Design System
@@ -113,7 +113,7 @@ export const TableLoading = ({ rows = 5, cols = 5 }) => {
         <tr key={i}>
           {Array(cols).fill(0).map((_, j) => (
             <td key={j} className="px-4 py-3">
-              <div className="h-4 bg-slate-100 rounded animate-pulse" />
+              <Skeleton className="h-4 w-full" />
             </td>
           ))}
         </tr>

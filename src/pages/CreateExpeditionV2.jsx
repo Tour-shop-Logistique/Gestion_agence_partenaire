@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useExpedition } from "../hooks/useExpedition";
@@ -7,6 +7,9 @@ import { useAgency } from "../hooks/useAgency";
 import { useDashboard } from "../hooks/useDashboard";
 import PrintSuccessModal from "../components/Receipts/PrintSuccessModal";
 import SearchableDropdown from "../components/common/SearchableDropdown";
+import Spinner from "../components/common/Spinner";
+import Skeleton from "../components/common/Skeleton";
+import ConfirmationModal from "../components/ConfirmationModal";
 import { getLogoUrl } from "../utils/apiConfig";
 import { toast } from "../utils/toast";
 import { markAsRecentlyCreated } from "../hooks/useWebSocket";
@@ -61,17 +64,21 @@ const CreateExpeditionV2 = () => {
         recordTransaction
     } = useExpedition();
 
-    const { existingGroupageTarifs, fetchTarifGroupageAgence, existingTarifs, flatExistingTarifs, fetchAgencyTarifs } = useTarifs();
-    const { data: agencyData, fetchAgencyData } = useAgency();
-    const { logistics, fetchDashboard } = useDashboard();
+    const { existingGroupageTarifs, fetchTarifGroupageAgence, existingTarifs, flatExistingTarifs, fetchAgencyTarifs, loading: tarifsLoading } = useTarifs();
+    const { data: agencyData, fetchAgencyData, status: agencyStatus } = useAgency();
+    const { logistics, fetchDashboard, status: dashboardStatus } = useDashboard();
 
     // État pour la navigation interne (4 étapes)
     const [step, setStep] = useState(1);
     const [paymentMethod, setPaymentMethod] = useState("cash");
     const [paymentReference, setPaymentReference] = useState("");
     const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
     const [selectedRouteId, setSelectedRouteId] = useState("");
     const [selectedRoute, setSelectedRoute] = useState(null);
+    // Snapshot des colis au moment de la dernière simulation, pour détecter
+    // si le tarif affiché est devenu obsolète suite à une modification
+    const lastSimulatedColisRef = useRef(null);
     // Prochain numéro séquentiel de colis pour le type sélectionné,
     // déduit du dernier colis du même type trouvé dans les "dernières expéditions" du dashboard
     const [nextColisNumero, setNextColisNumero] = useState(1);
@@ -262,11 +269,6 @@ const CreateExpeditionV2 = () => {
         }
     }, [error, resetStatus]);
 
-    useEffect(() => {
-        console.log("Expedition Status:", status);
-        console.log("Current Expedition Data:", currentExpedition);
-    }, [status, currentExpedition]);
-
     // Raccourcis clavier pour saisie rapide
     useEffect(() => {
         const handleKeyPress = (e) => {
@@ -281,7 +283,7 @@ const CreateExpeditionV2 = () => {
             if (e.ctrlKey && e.key === 'Enter') {
                 e.preventDefault();
                 if (step === 4 && status !== 'loading') {
-                    handleSubmit();
+                    setShowSubmitConfirm(true);
                 }
             }
             // Ctrl + → pour passer à l'étape suivante
@@ -419,10 +421,6 @@ const CreateExpeditionV2 = () => {
         return countriesList;
     }, [existingTarifs, flatExistingTarifs, formData.type_expedition]);
 
-    // Debug: Tracer les changements de selectedRoute
-    useEffect(() => {
-    }, [selectedRoute]);
-
     // Filtrage des catégories en fonction du type d'expédition ET de la ligne sélectionnée
     const filteredCategories = useMemo(() => {
         if (!categories || !Array.isArray(categories)) return [];
@@ -479,38 +477,6 @@ const CreateExpeditionV2 = () => {
         return result;
     }, [categories, existingGroupageTarifs, formData.type_expedition, selectedRoute]);
 
-    // Filtrage des catégories en fonction du type d'expédition
-    const filteredCategoriesOLD = useMemo(() => {
-        if (!categories || !Array.isArray(categories)) return [];
-        
-        // Si le type est SIMPLE, afficher toutes les catégories
-        if (formData.type_expedition === 'SIMPLE') {
-            return categories;
-        }
-        
-        // Pour les autres types, filtrer par les category_id présents dans les tarifs groupage
-        if (!existingGroupageTarifs || !Array.isArray(existingGroupageTarifs)) return categories;
-        
-        const currentType = formData.type_expedition.toLowerCase();
-        
-        // Récupérer tous les category_id des tarifs correspondant au type sélectionné
-        const categoryIds = existingGroupageTarifs
-            .filter(tarif => tarif.type_expedition === currentType && tarif.category_id)
-            .map(tarif => tarif.category_id);
-        
-        // Éliminer les doublons
-        const uniqueCategoryIds = [...new Set(categoryIds)];
-        
-        // Si aucune catégorie trouvée, retourner toutes les catégories
-        if (uniqueCategoryIds.length === 0) {
-            return categories;
-        }
-        
-        // Filtrer les catégories pour ne garder que celles qui ont un tarif pour ce type
-        return categories.filter(cat => uniqueCategoryIds.includes(cat.id));
-    }, [categories, existingGroupageTarifs, formData.type_expedition]);
-
-    // Sélection automatique des infos depuis un trajet configuré
     // Sélection automatique des infos depuis un trajet configuré
     const handleRouteSelect = (e) => {
         const routeId = e.target.value;
@@ -549,7 +515,6 @@ const CreateExpeditionV2 = () => {
                 destinataire_ville: destVille,
                 expediteur_ville: depVille,
             }));
-            console.log("======================");
         }
     };
 
@@ -562,6 +527,18 @@ const CreateExpeditionV2 = () => {
             }
             return newData;
         });
+    };
+
+    // Copie les coordonnées de l'expéditeur vers le destinataire (cas d'un envoi entre
+    // deux adresses de la même personne, ou d'un point relais local)
+    const handleCopySenderToRecipient = () => {
+        setFormData(prev => ({
+            ...prev,
+            destinataire_nom_prenom: prev.expediteur_nom_prenom,
+            destinataire_telephone: prev.expediteur_telephone,
+            destinataire_email: prev.expediteur_email,
+            destinataire_adresse: prev.expediteur_adresse,
+        }));
     };
 
     const handleColisChange = (index, field, value) => {
@@ -608,6 +585,15 @@ const CreateExpeditionV2 = () => {
         }
     };
 
+    // Duplique un colis existant (pratique pour des envois multi-colis similaires)
+    const duplicateColis = (index) => {
+        setFormData(prev => {
+            const newColis = [...prev.colis];
+            newColis.splice(index + 1, 0, { ...prev.colis[index], articles: [...(prev.colis[index].articles || [])] });
+            return { ...prev, colis: newColis };
+        });
+    };
+
     // Fonction pour obtenir les produits filtrés par catégorie ET type d'expédition
     const getFilteredProducts = (categoryId) => {
         if (!products || products.length === 0) {
@@ -635,7 +621,6 @@ const CreateExpeditionV2 = () => {
     };
 
     const handleSimulate = async () => {
-        console.log("Simulation Payload:", formData);
         if (!formData.pays_destination || !formData.destinataire_ville) {
             toast.info("Veuillez renseigner le pays et la ville de destination.");
             return;
@@ -690,8 +675,8 @@ const CreateExpeditionV2 = () => {
                 return item;
             })
         };
-        console.log("simulation Payload:", simulationPayload);
         simulateExpedition(simulationPayload);
+        lastSimulatedColisRef.current = JSON.stringify(formData.colis);
     };
 
     const handleSubmit = async () => {
@@ -731,8 +716,6 @@ const CreateExpeditionV2 = () => {
         console.log("creation Payload (Clean):", payload);
         const result = await createExpedition(payload);
 
-        console.log("Result from createExpedition:", result);
-
         // Si la création a réussi, activer le modal
         if (result?.payload && !result?.type?.includes('rejected')) {
             setShowSuccessModal(true);
@@ -752,12 +735,9 @@ const CreateExpeditionV2 = () => {
             rawPayload?.data ||
             rawPayload;
 
-        console.log("Expedition data extracted:", expeditionData);
-
-        // ✅ Marquer la référence comme récemment créée pour éviter notification auto-générée
+        // Marquer la référence comme récemment créée pour éviter notification auto-générée
         if (expeditionData?.reference) {
             markAsRecentlyCreated(expeditionData.reference);
-            console.log("🔇 Référence marquée pour ignorer notification:", expeditionData.reference);
         }
 
         if (!formData.is_paiement_credit) {
@@ -775,12 +755,6 @@ const CreateExpeditionV2 = () => {
             );
             const montantTotal = montantExpedition + totalEmballage;
 
-            console.log("Enregistrement transaction:", {
-                expedition_id: expeditionData.id,
-                amount: montantTotal,
-                payment_method: paymentMethod
-            });
-
             try {
                 const transactionData = {
                     expedition_id: expeditionData.id,
@@ -795,15 +769,11 @@ const CreateExpeditionV2 = () => {
                     transactionData.reference = paymentReference;
                 }
 
-                console.log("Transaction data to send:", transactionData);
                 await recordTransaction(transactionData);
-                console.log("Transaction enregistrée avec succès");
             } catch (error) {
                 console.error("Erreur lors de l'enregistrement de la transaction:", error);
                 toast.error("Expédition créée mais erreur lors de l'enregistrement du paiement");
             }
-        } else if (formData.is_paiement_credit) {
-            console.log("Paiement à crédit - Aucune transaction enregistrée");
         }
     };
 
@@ -814,6 +784,21 @@ const CreateExpeditionV2 = () => {
         if (!simulationResult) return null;
         return simulationResult.tarif || simulationResult.data?.tarif || null;
     }, [simulationResult]);
+
+    // Le tarif simulé devient obsolète dès que les colis changent après coup
+    // (poids, dimensions, articles…) : il faut alors recalculer avant de continuer
+    const colisDirty = useMemo(() => {
+        if (!simulationResult) return false;
+        return JSON.stringify(formData.colis) !== lastSimulatedColisRef.current;
+    }, [formData.colis, simulationResult]);
+
+    // Chargement initial des données nécessaires au formulaire (produits, catégories,
+    // tarifs, agence, dashboard) : évite d'afficher des listes vides le temps du fetch
+    const initialLoading =
+        (productStatus !== 'succeeded' && productStatus !== 'failed') ||
+        (agencyStatus !== 'succeeded' && agencyStatus !== 'failed') ||
+        (dashboardStatus !== 'succeeded' && dashboardStatus !== 'failed') ||
+        tarifsLoading;
 
     const getInputBorderClass = (value, isRequired = false, isDisabled = false) => {
         if (isDisabled) {
@@ -833,8 +818,14 @@ const CreateExpeditionV2 = () => {
         return formData.type_expedition && formData.pays_destination && formData.destinataire_ville;
     };
 
+    // Liste lisible des champs qui bloquent encore le passage à l'étape 2
+    const missingStep1Fields = [
+        !formData.pays_destination && "pays de destination",
+        !formData.destinataire_ville && "ville de destination",
+    ].filter(Boolean);
+
     const canProceedToStep3 = () => {
-        return formData.colis.every(isColisComplete) && simulationResult;
+        return formData.colis.every(isColisComplete) && simulationResult && !colisDirty;
     };
 
     const canProceedToStep4 = () => {
@@ -848,7 +839,9 @@ const CreateExpeditionV2 = () => {
             return;
         }
         if (step === 2 && !canProceedToStep3()) {
-            toast.info("Veuillez enregistrer les colis et simuler le tarif");
+            toast.info(colisDirty
+                ? "Les colis ont été modifiés : veuillez recalculer le tarif avant de continuer"
+                : "Veuillez enregistrer les colis et simuler le tarif");
             return;
         }
         if (step === 3 && !canProceedToStep4()) {
@@ -870,27 +863,62 @@ const CreateExpeditionV2 = () => {
         { num: 4, label: "Paiement", short: "4" },
     ];
 
+    // Évite d'afficher un formulaire avec des listes vides (pays, catégories, tarifs…)
+    // pendant que les données nécessaires sont encore en cours de chargement
+    if (initialLoading) {
+        return (
+            <div className="min-h-screen bg-slate-100">
+                <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
+                    <div className="flex items-center justify-between mb-4 sm:mb-8 gap-3">
+                        <div className="space-y-2">
+                            <Skeleton className="h-5 w-40" />
+                            <Skeleton className="h-3 w-56 hidden sm:block" />
+                        </div>
+                        <Skeleton className="h-10 w-48 rounded-xl" />
+                    </div>
+                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
+                            <Skeleton className="h-4 w-32" />
+                        </div>
+                        <div className="p-4 sm:p-6 space-y-5">
+                            <Skeleton className="h-20 w-full" />
+                            <Skeleton className="h-11 w-full" />
+                            <div className="grid grid-cols-2 gap-3">
+                                <Skeleton className="h-11 w-full" />
+                                <Skeleton className="h-11 w-full" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <>
             {/* Bandeau tarif mobile — affiché en bas quand simulationResult existe à l'étape 2 */}
             {step === 2 && simulationResult && (
-                <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-emerald-600 text-white px-4 py-3 flex items-center justify-between shadow-lg">
+                <div className={`lg:hidden fixed bottom-0 left-0 right-0 z-40 text-white px-4 py-3 flex items-center justify-between shadow-lg ${colisDirty ? 'bg-amber-600' : 'bg-emerald-600'}`}>
                     <div>
-                        <p className="text-[11px] font-medium text-emerald-100">Total estimé</p>
+                        <p className={`text-[11px] font-medium ${colisDirty ? 'text-amber-100' : 'text-emerald-100'}`}>
+                            {colisDirty ? 'Colis modifiés' : 'Total estimé'}
+                        </p>
                         <p className="text-lg font-bold leading-tight">
-                            {(parseFloat(simulationTarif?.montant_expedition || simulationResult?.total_price || 0) + totalEmballage).toLocaleString()} FCFA
+                            {colisDirty
+                                ? 'Tarif à recalculer'
+                                : `${(parseFloat(simulationTarif?.montant_expedition || simulationResult?.total_price || 0) + totalEmballage).toLocaleString()} FCFA`}
                         </p>
                     </div>
                     <button
-                        onClick={handleNextStep}
-                        disabled={!canProceedToStep3()}
+                        onClick={colisDirty ? handleSimulate : handleNextStep}
+                        disabled={colisDirty ? (simulating || !formData.colis.every(isColisComplete)) : !canProceedToStep3()}
                         className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold transition-all ${
-                            canProceedToStep3()
+                            (colisDirty ? !simulating : canProceedToStep3())
                                 ? 'bg-white text-emerald-700 active:bg-emerald-50'
                                 : 'bg-emerald-800/50 text-emerald-300 cursor-not-allowed'
                         }`}
                     >
-                        Continuer
+                        {colisDirty ? 'Recalculer' : 'Continuer'}
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
@@ -907,6 +935,11 @@ const CreateExpeditionV2 = () => {
                             <h1 className="text-base sm:text-xl font-bold text-slate-900 tracking-tight">Nouvelle expédition</h1>
                             <p className="text-xs text-slate-500 mt-0.5 hidden sm:block">
                                 Enregistrement et tarification des envois clients
+                            </p>
+                            <p className="text-[11px] text-slate-400 mt-1 hidden lg:block" aria-hidden="true">
+                                Raccourcis : <kbd className="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-500">Ctrl+S</kbd> simuler ·{' '}
+                                <kbd className="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-500">Ctrl+↵</kbd> valider ·{' '}
+                                <kbd className="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-500">Ctrl+←/→</kbd> naviguer
                             </p>
                         </div>
 
@@ -980,6 +1013,7 @@ const CreateExpeditionV2 = () => {
                                                     key={type.value}
                                                     type="button"
                                                     onClick={() => setFormData(prev => ({ ...prev, type_expedition: type.value }))}
+                                                    aria-pressed={formData.type_expedition === type.value}
                                                     className={`relative p-2.5 sm:p-3 rounded-lg border-2 transition-all active:scale-95 ${
                                                         formData.type_expedition === type.value
                                                             ? 'border-indigo-500 bg-indigo-50 shadow-sm'
@@ -1007,46 +1041,51 @@ const CreateExpeditionV2 = () => {
                                     {/* Trajet/Pays disponible - Uniquement pour les types NON-SIMPLE */}
                                     {formData.type_expedition !== 'SIMPLE' && (
                                         <div className="space-y-1.5">
-                                            <label className="block text-xs font-semibold text-slate-600">
+                                            <label htmlFor="route-select" className="block text-xs font-semibold text-slate-600">
                                                 Trajet disponible
                                             </label>
-                                            
-                                            {/* Sélecteur de trajets pour les autres types (DHD, AFRIQUE, CA) */}
-                                            <select
-                                                value={selectedRouteId}
-                                                onChange={handleRouteSelect}
-                                                disabled={formData.type_expedition === 'GROUPAGE_CA'}
-                                                className={`w-full rounded-lg text-sm font-medium h-11 px-3 outline-none transition-colors ${
-                                                    formData.type_expedition === 'GROUPAGE_CA'
-                                                        ? 'bg-slate-100 text-slate-400 border-2 border-slate-200 cursor-not-allowed'
-                                                        : getInputBorderClass(selectedRouteId, false)
-                                                }`}
-                                            >
-                                                <option value="">Sélectionner un trajet</option>
-                                                {availableRoutes.map(r => (
-                                                    <option key={r.id} value={r.id}>
-                                                        {(formData.type_expedition === 'GROUPAGE_DHD_AERIEN' || formData.type_expedition === 'GROUPAGE_DHD_MARITIME')
-                                                            ? r.ligne
-                                                            : formData.type_expedition === 'GROUPAGE_AFRIQUE'
-                                                                ? r.pays
-                                                                : `${r.ligne} (${r.pays}) - ${r.mode}`
-                                                        }
-                                                    </option>
-                                                ))}
-                                            </select>
+
+                                            {formData.type_expedition === 'GROUPAGE_CA' ? (
+                                                <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-500">
+                                                    <svg className="w-4 h-4 flex-shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    Non applicable pour les Colis Accompagnés — renseignez directement le pays et la ville de destination ci-dessous.
+                                                </div>
+                                            ) : (
+                                                <select
+                                                    id="route-select"
+                                                    value={selectedRouteId}
+                                                    onChange={handleRouteSelect}
+                                                    className={`w-full rounded-lg text-sm font-medium h-11 px-3 outline-none transition-colors ${getInputBorderClass(selectedRouteId, false)}`}
+                                                >
+                                                    <option value="">Sélectionner un trajet</option>
+                                                    {availableRoutes.map(r => (
+                                                        <option key={r.id} value={r.id}>
+                                                            {(formData.type_expedition === 'GROUPAGE_DHD_AERIEN' || formData.type_expedition === 'GROUPAGE_DHD_MARITIME')
+                                                                ? r.ligne
+                                                                : formData.type_expedition === 'GROUPAGE_AFRIQUE'
+                                                                    ? r.pays
+                                                                    : `${r.ligne} (${r.pays}) - ${r.mode}`
+                                                            }
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            )}
                                         </div>
                                     )}
 
                                     {/* Destination + Départ — 2 colonnes sur mobile */}
                                     <div className="grid grid-cols-2 gap-3 p-4 bg-slate-50/80 rounded-lg border border-slate-200">
                                         <div className="space-y-1.5">
-                                            <label className="block text-xs font-semibold text-slate-600">
+                                            <label htmlFor="pays_destination" className="block text-xs font-semibold text-slate-600">
                                                 Pays destination <span className="text-amber-600">*</span>
                                             </label>
                                             {formData.type_expedition === 'SIMPLE' ? (
                                                 <>
                                                     {/* Sélecteur de pays pour LD avec recherche */}
                                                     <SearchableDropdown
+                                                        id="pays_destination"
                                                         options={availableCountriesForLD}
                                                         onSelect={(country) => {
                                                             setSelectedRouteId(country.id);
@@ -1087,6 +1126,7 @@ const CreateExpeditionV2 = () => {
                                                 </>
                                             ) : (
                                                 <input
+                                                    id="pays_destination"
                                                     type="text" name="pays_destination"
                                                     value={formData.pays_destination} onChange={handleInputChange}
                                                     placeholder="France…"
@@ -1095,10 +1135,11 @@ const CreateExpeditionV2 = () => {
                                             )}
                                         </div>
                                         <div className="space-y-1.5">
-                                            <label className="block text-xs font-semibold text-slate-600">
+                                            <label htmlFor="destinataire_ville" className="block text-xs font-semibold text-slate-600">
                                                 Ville destination <span className="text-amber-600">*</span>
                                             </label>
                                             <input
+                                                id="destinataire_ville"
                                                 type="text" name="destinataire_ville"
                                                 value={formData.destinataire_ville} onChange={handleInputChange}
                                                 placeholder="Paris…"
@@ -1106,8 +1147,9 @@ const CreateExpeditionV2 = () => {
                                             />
                                         </div>
                                         <div className="space-y-1.5">
-                                            <label className="block text-xs font-semibold text-slate-600">Pays départ</label>
+                                            <label htmlFor="pays_depart" className="block text-xs font-semibold text-slate-600">Pays départ</label>
                                             <input
+                                                id="pays_depart"
                                                 type="text" name="pays_depart"
                                                 value={formData.pays_depart} onChange={handleInputChange}
                                                 placeholder="Côte d'Ivoire…"
@@ -1115,8 +1157,9 @@ const CreateExpeditionV2 = () => {
                                             />
                                         </div>
                                         <div className="space-y-1.5">
-                                            <label className="block text-xs font-semibold text-slate-600">Ville départ</label>
+                                            <label htmlFor="expediteur_ville" className="block text-xs font-semibold text-slate-600">Ville départ</label>
                                             <input
+                                                id="expediteur_ville"
                                                 type="text" name="expediteur_ville"
                                                 value={formData.expediteur_ville} onChange={handleInputChange}
                                                 placeholder="Abidjan…"
@@ -1126,7 +1169,7 @@ const CreateExpeditionV2 = () => {
                                     </div>
 
                                     {/* Navigation */}
-                                    <div className="flex justify-end pt-3 border-t border-slate-100">
+                                    <div className="flex flex-col items-end gap-1.5 pt-3 border-t border-slate-100">
                                         <button
                                             onClick={handleNextStep}
                                             disabled={!canProceedToStep2()}
@@ -1141,6 +1184,11 @@ const CreateExpeditionV2 = () => {
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                             </svg>
                                         </button>
+                                        {missingStep1Fields.length > 0 && (
+                                            <p className="text-[11px] text-amber-600">
+                                                Champs requis manquants : {missingStep1Fields.join(', ')}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                             </section>
@@ -1168,17 +1216,28 @@ const CreateExpeditionV2 = () => {
                                                 <div key={index} className="p-3 sm:p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-3 sm:space-y-4">
                                                     <div className="flex items-center justify-between">
                                                         <h3 className="text-xs font-bold text-slate-700">Colis #{index + 1}</h3>
-                                                        {formData.colis.length > 1 && (
+                                                        <div className="flex items-center gap-1">
                                                             <button
-                                                                onClick={() => removeColis(index)}
-                                                                className="text-xs text-red-500 font-semibold flex items-center gap-1 py-1 px-2 rounded-md hover:bg-red-50 active:bg-red-100 transition-colors"
+                                                                onClick={() => duplicateColis(index)}
+                                                                className="text-xs text-slate-500 font-semibold flex items-center gap-1 py-1 px-2 rounded-md hover:bg-slate-100 active:bg-slate-200 transition-colors"
                                                             >
                                                                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                                                                 </svg>
-                                                                Supprimer
+                                                                Dupliquer
                                                             </button>
-                                                        )}
+                                                            {formData.colis.length > 1 && (
+                                                                <button
+                                                                    onClick={() => removeColis(index)}
+                                                                    className="text-xs text-red-500 font-semibold flex items-center gap-1 py-1 px-2 rounded-md hover:bg-red-50 active:bg-red-100 transition-colors"
+                                                                >
+                                                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                                    </svg>
+                                                                    Supprimer
+                                                                </button>
+                                                            )}
+                                                        </div>
                                                     </div>
 
                                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1214,14 +1273,16 @@ const CreateExpeditionV2 = () => {
                                                                         <option key={cat.id} value={cat.id}>{cat.nom}</option>
                                                                     ))}
                                                                 </select>
-                                                                {!colis.category_id && (
+                                                                {filteredCategories.length === 0 ? (
+                                                                    <p className="text-xs text-amber-600 mt-1">⚠️ Aucune catégorie disponible pour ce trajet</p>
+                                                                ) : !colis.category_id && (
                                                                     <p className="text-xs text-amber-600 mt-1">⚠️ Catégorie obligatoire pour DHD</p>
                                                                 )}
                                                             </div>
                                                         )}
                                                     </div>
 
-                                                    <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3">
+                                                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3">
                                                         <div className="space-y-1.5">
                                                             <label className="block text-[11px] font-semibold text-slate-600">Poids (kg) <span className="text-amber-600">*</span></label>
                                                             <input 
@@ -1274,7 +1335,7 @@ const CreateExpeditionV2 = () => {
                                                                 className={inputCls(colis.hauteur)} 
                                                             />
                                                         </div>
-                                                        <div className="space-y-1.5 col-span-3 sm:col-span-1">
+                                                        <div className="space-y-1.5 col-span-2 sm:col-span-1">
                                                             <label className="block text-[11px] font-semibold text-slate-600">Emballage (FCFA)</label>
                                                             <input 
                                                                 type="number" 
@@ -1287,7 +1348,7 @@ const CreateExpeditionV2 = () => {
                                                                 className={inputCls(colis.prix_emballage)} 
                                                             />
                                                         </div>
-                                                        <div className="space-y-1.5 col-span-3 sm:col-span-1">
+                                                        <div className="space-y-1.5 col-span-2 sm:col-span-1">
                                                             <label className="block text-[11px] font-semibold text-slate-600">Estimation (FCFA)</label>
                                                             <input 
                                                                 type="number" 
@@ -1341,6 +1402,7 @@ const CreateExpeditionV2 = () => {
                                                                         {article}
                                                                         <button
                                                                             onClick={() => handleRemoveArticle(index, artIdx)}
+                                                                            aria-label={`Retirer l'article ${article}`}
                                                                             className="hover:text-indigo-900"
                                                                         >
                                                                             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1403,10 +1465,7 @@ const CreateExpeditionV2 = () => {
                                                 >
                                                     {simulating ? (
                                                         <>
-                                                            <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                            </svg>
+                                                            <Spinner size="sm" color="current" />
                                                             Calcul en cours...
                                                         </>
                                                     ) : (
@@ -1433,6 +1492,16 @@ const CreateExpeditionV2 = () => {
                                                 </svg>
                                                 <h3 className="text-sm font-bold">Tarification calculée</h3>
                                             </div>
+                                            {colisDirty && (
+                                                <div className="mb-4 p-3 bg-amber-100 border border-amber-300 rounded-lg flex items-start gap-2">
+                                                    <svg className="w-4 h-4 text-amber-700 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                                    </svg>
+                                                    <p className="text-xs font-semibold text-amber-800">
+                                                        Les colis ont été modifiés depuis ce calcul. Le montant ci-dessous est obsolète — recalculez le tarif.
+                                                    </p>
+                                                </div>
+                                            )}
                                             <div className="space-y-3">
                                                 <div className="flex justify-between items-center pb-3 border-b border-emerald-500/30">
                                                     <span className="text-xs font-medium text-emerald-100">Frais d'expédition</span>
@@ -1447,20 +1516,31 @@ const CreateExpeditionV2 = () => {
                                                     <span className="text-2xl font-bold">{(parseFloat(simulationTarif?.montant_expedition || simulationResult?.total_price || 0) + totalEmballage).toLocaleString()} FCFA</span>
                                                 </div>
                                             </div>
-                                            <button
-                                                onClick={handleNextStep}
-                                                disabled={!canProceedToStep3()}
-                                                className={`w-full mt-6 py-3 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${
-                                                    canProceedToStep3()
-                                                        ? 'bg-white text-emerald-700 hover:bg-emerald-50 shadow-sm'
-                                                        : 'bg-emerald-800/50 text-emerald-300 cursor-not-allowed'
-                                                }`}
-                                            >
-                                                Suivant : Identifier les clients
-                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                                </svg>
-                                            </button>
+                                            {colisDirty ? (
+                                                <button
+                                                    onClick={handleSimulate}
+                                                    disabled={simulating || !formData.colis.every(isColisComplete)}
+                                                    className="w-full mt-6 py-3 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 bg-white text-amber-700 hover:bg-amber-50 shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                                                >
+                                                    {simulating ? <Spinner size="sm" color="current" /> : null}
+                                                    Recalculer le tarif
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={handleNextStep}
+                                                    disabled={!canProceedToStep3()}
+                                                    className={`w-full mt-6 py-3 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+                                                        canProceedToStep3()
+                                                            ? 'bg-white text-emerald-700 hover:bg-emerald-50 shadow-sm'
+                                                            : 'bg-emerald-800/50 text-emerald-300 cursor-not-allowed'
+                                                    }`}
+                                                >
+                                                    Suivant : Identifier les clients
+                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                    </svg>
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 )}
@@ -1495,10 +1575,11 @@ const CreateExpeditionV2 = () => {
                                         </div>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pl-0 sm:pl-8">
                                             <div className="space-y-1.5">
-                                                <label className="block text-xs font-semibold text-slate-600">
+                                                <label htmlFor="expediteur_nom_prenom" className="block text-xs font-semibold text-slate-600">
                                                     Nom complet <span className="text-amber-600">*</span>
                                                 </label>
                                                 <input
+                                                    id="expediteur_nom_prenom"
                                                     type="text"
                                                     name="expediteur_nom_prenom"
                                                     value={formData.expediteur_nom_prenom}
@@ -1508,10 +1589,11 @@ const CreateExpeditionV2 = () => {
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
-                                                <label className="block text-xs font-semibold text-slate-600">
+                                                <label htmlFor="expediteur_telephone" className="block text-xs font-semibold text-slate-600">
                                                     Téléphone <span className="text-amber-600">*</span>
                                                 </label>
                                                 <input
+                                                    id="expediteur_telephone"
                                                     type="tel"
                                                     name="expediteur_telephone"
                                                     value={formData.expediteur_telephone}
@@ -1521,8 +1603,9 @@ const CreateExpeditionV2 = () => {
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
-                                                <label className="block text-xs font-semibold text-slate-600">Email</label>
+                                                <label htmlFor="expediteur_email" className="block text-xs font-semibold text-slate-600">Email</label>
                                                 <input
+                                                    id="expediteur_email"
                                                     type="email"
                                                     name="expediteur_email"
                                                     value={formData.expediteur_email}
@@ -1532,8 +1615,9 @@ const CreateExpeditionV2 = () => {
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
-                                                <label className="block text-xs font-semibold text-slate-600">Adresse</label>
+                                                <label htmlFor="expediteur_adresse" className="block text-xs font-semibold text-slate-600">Adresse</label>
                                                 <input
+                                                    id="expediteur_adresse"
                                                     type="text"
                                                     name="expediteur_adresse"
                                                     value={formData.expediteur_adresse}
@@ -1543,6 +1627,17 @@ const CreateExpeditionV2 = () => {
                                                 />
                                             </div>
                                         </div>
+                                        <button
+                                            type="button"
+                                            onClick={handleCopySenderToRecipient}
+                                            disabled={!formData.expediteur_nom_prenom && !formData.expediteur_telephone}
+                                            className="ml-0 sm:ml-8 text-xs font-semibold text-indigo-600 hover:text-indigo-800 disabled:text-slate-300 disabled:cursor-not-allowed flex items-center gap-1.5"
+                                        >
+                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                            </svg>
+                                            Copier vers le destinataire
+                                        </button>
                                     </div>
 
                                     {/* Destinataire */}
@@ -1557,10 +1652,11 @@ const CreateExpeditionV2 = () => {
                                         </div>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pl-0 sm:pl-8">
                                             <div className="space-y-1.5">
-                                                <label className="block text-xs font-semibold text-slate-600">
+                                                <label htmlFor="destinataire_nom_prenom" className="block text-xs font-semibold text-slate-600">
                                                     Nom complet <span className="text-amber-600">*</span>
                                                 </label>
                                                 <input
+                                                    id="destinataire_nom_prenom"
                                                     type="text"
                                                     name="destinataire_nom_prenom"
                                                     value={formData.destinataire_nom_prenom}
@@ -1570,10 +1666,11 @@ const CreateExpeditionV2 = () => {
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
-                                                <label className="block text-xs font-semibold text-slate-600">
+                                                <label htmlFor="destinataire_telephone" className="block text-xs font-semibold text-slate-600">
                                                     Téléphone <span className="text-amber-600">*</span>
                                                 </label>
                                                 <input
+                                                    id="destinataire_telephone"
                                                     type="tel"
                                                     name="destinataire_telephone"
                                                     value={formData.destinataire_telephone}
@@ -1583,8 +1680,9 @@ const CreateExpeditionV2 = () => {
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
-                                                <label className="block text-xs font-semibold text-slate-600">Email</label>
+                                                <label htmlFor="destinataire_email" className="block text-xs font-semibold text-slate-600">Email</label>
                                                 <input
+                                                    id="destinataire_email"
                                                     type="email"
                                                     name="destinataire_email"
                                                     value={formData.destinataire_email}
@@ -1594,8 +1692,9 @@ const CreateExpeditionV2 = () => {
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
-                                                <label className="block text-xs font-semibold text-slate-600">Adresse</label>
+                                                <label htmlFor="destinataire_adresse" className="block text-xs font-semibold text-slate-600">Adresse</label>
                                                 <input
+                                                    id="destinataire_adresse"
                                                     type="text"
                                                     name="destinataire_adresse"
                                                     value={formData.destinataire_adresse}
@@ -1605,8 +1704,9 @@ const CreateExpeditionV2 = () => {
                                                 />
                                             </div>
                                             <div className="space-y-1.5">
-                                                <label className="block text-xs font-semibold text-slate-600">Code postal</label>
+                                                <label htmlFor="destinataire_code_postal" className="block text-xs font-semibold text-slate-600">Code postal</label>
                                                 <input
+                                                    id="destinataire_code_postal"
                                                     type="text"
                                                     name="destinataire_code_postal"
                                                     value={formData.destinataire_code_postal}
@@ -1713,6 +1813,7 @@ const CreateExpeditionV2 = () => {
                                                     <button
                                                         type="button"
                                                         onClick={() => setFormData(prev => ({ ...prev, is_livraison_domicile: !prev.is_livraison_domicile }))}
+                                                        aria-pressed={formData.is_livraison_domicile}
                                                         className={`flex items-center gap-3 p-3.5 rounded-lg border-2 text-left transition-all ${
                                                             formData.is_livraison_domicile
                                                                 ? 'border-indigo-500 bg-indigo-50'
@@ -1755,6 +1856,7 @@ const CreateExpeditionV2 = () => {
                                                             is_paiement_credit: !prev.is_paiement_credit,
                                                             statut_paiement: !prev.is_paiement_credit ? 'en_attente' : 'paye'
                                                         }))}
+                                                        aria-pressed={formData.is_paiement_credit}
                                                         className={`flex items-center gap-3 p-3.5 rounded-lg border-2 text-left transition-all ${
                                                             formData.is_paiement_credit
                                                                 ? 'border-amber-500 bg-amber-50'
@@ -1798,6 +1900,7 @@ const CreateExpeditionV2 = () => {
                                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                                         <button
                                                             onClick={() => setPaymentMethod('cash')}
+                                                            aria-pressed={paymentMethod === 'cash'}
                                                             className={`p-4 rounded-lg border-2 transition-all ${
                                                                 paymentMethod === 'cash'
                                                                     ? 'border-emerald-500 bg-emerald-50'
@@ -1819,6 +1922,7 @@ const CreateExpeditionV2 = () => {
                                                         </button>
                                                         <button
                                                             onClick={() => setPaymentMethod('mobile_money')}
+                                                            aria-pressed={paymentMethod === 'mobile_money'}
                                                             className={`p-4 rounded-lg border-2 transition-all active:scale-95 ${
                                                                 paymentMethod === 'mobile_money'
                                                                     ? 'border-indigo-500 bg-indigo-50'
@@ -1840,6 +1944,7 @@ const CreateExpeditionV2 = () => {
                                                         </button>
                                                         <button
                                                             onClick={() => setPaymentMethod('bank_transfer')}
+                                                            aria-pressed={paymentMethod === 'bank_transfer'}
                                                             className={`p-4 rounded-lg border-2 transition-all active:scale-95 ${
                                                                 paymentMethod === 'bank_transfer'
                                                                     ? 'border-indigo-500 bg-indigo-50'
@@ -1864,10 +1969,11 @@ const CreateExpeditionV2 = () => {
                                                     {/* Référence pour Mobile Money */}
                                                     {paymentMethod === 'mobile_money' && (
                                                         <div className="space-y-1.5">
-                                                            <label className="block text-xs font-semibold text-slate-600">
+                                                            <label htmlFor="payment_reference" className="block text-xs font-semibold text-slate-600">
                                                                 Référence de transaction
                                                             </label>
                                                             <input
+                                                                id="payment_reference"
                                                                 type="text"
                                                                 value={paymentReference}
                                                                 onChange={(e) => setPaymentReference(e.target.value)}
@@ -1903,7 +2009,7 @@ const CreateExpeditionV2 = () => {
                                                     Retour
                                                 </button>
                                                 <button
-                                                    onClick={handleSubmit}
+                                                    onClick={() => setShowSubmitConfirm(true)}
                                                     disabled={status === 'loading'}
                                                     className={`px-8 py-3 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${
                                                         status === 'loading'
@@ -1913,10 +2019,7 @@ const CreateExpeditionV2 = () => {
                                                 >
                                                     {status === 'loading' ? (
                                                         <>
-                                                            <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                            </svg>
+                                                            <Spinner size="sm" color="current" />
                                                             Création en cours...
                                                         </>
                                                     ) : (
@@ -1978,6 +2081,26 @@ const CreateExpeditionV2 = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Confirmation avant création définitive de l'expédition */}
+            <ConfirmationModal
+                isOpen={showSubmitConfirm}
+                onClose={() => setShowSubmitConfirm(false)}
+                onConfirm={() => {
+                    setShowSubmitConfirm(false);
+                    handleSubmit();
+                }}
+                title="Confirmer l'expédition"
+                message={
+                    formData.is_paiement_credit
+                        ? "Cette expédition sera enregistrée à crédit, sans encaissement immédiat. Confirmez-vous la création ?"
+                        : `Un encaissement de ${(parseFloat(simulationTarif?.montant_expedition || simulationResult?.total_price || 0) + totalEmballage).toLocaleString()} FCFA sera enregistré. Confirmez-vous la création de cette expédition ?`
+                }
+                confirmText="Confirmer et créer"
+                cancelText="Annuler"
+                type="success"
+                isLoading={status === 'loading'}
+            />
 
             {/* Modal de succès */}
             {showSuccessModal && currentExpedition && (

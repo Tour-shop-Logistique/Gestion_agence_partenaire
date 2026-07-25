@@ -8,6 +8,7 @@ import { Package } from 'lucide-react';
 const ParcelTable = ({ colis = [], formatCurrency }) => {
     const totalWeight = colis.reduce((sum, c) => sum + parseFloat(c.poids || 0), 0);
     const totalAmount = colis.reduce((sum, c) => sum + parseFloat(c.montant_colis_total || 0), 0);
+    const totalEstimation = colis.reduce((sum, c) => sum + parseFloat(c.prix_estimation || 0), 0);
 
     if (colis.length === 0) {
         return (
@@ -52,17 +53,20 @@ const ParcelTable = ({ colis = [], formatCurrency }) => {
                 <table className="w-full border-collapse">
                     <thead>
                         <tr className="bg-slate-50 border-b border-slate-200">
-                            <th className="px-3 py-3 text-left text-[10px] font-bold text-slate-600 uppercase tracking-wider w-[15%]">
+                            <th className="px-3 py-3 text-left text-[10px] font-bold text-slate-600 uppercase tracking-wider w-[12%]">
                                 Code
                             </th>
-                            <th className="px-3 py-3 text-left text-[10px] font-bold text-slate-600 uppercase tracking-wider w-[35%]">
+                            <th className="px-3 py-3 text-left text-[10px] font-bold text-slate-600 uppercase tracking-wider w-[28%]">
                                 Désignation
                             </th>
-                            <th className="px-3 py-3 text-center text-[10px] font-bold text-slate-600 uppercase tracking-wider w-[12%]">
+                            <th className="px-3 py-3 text-center text-[10px] font-bold text-slate-600 uppercase tracking-wider w-[10%]">
                                 Poids
                             </th>
-                            <th className="px-3 py-3 text-center text-[10px] font-bold text-slate-600 uppercase tracking-wider w-[18%]">
+                            <th className="px-3 py-3 text-center text-[10px] font-bold text-slate-600 uppercase tracking-wider w-[15%]">
                                 Catégorie
+                            </th>
+                            <th className="px-3 py-3 text-right text-[10px] font-bold text-slate-600 uppercase tracking-wider w-[15%]">
+                                Valeur estimée
                             </th>
                             <th className="px-3 py-3 text-right text-[10px] font-bold text-slate-600 uppercase tracking-wider w-[20%]">
                                 Frais
@@ -116,6 +120,16 @@ const ParcelTable = ({ colis = [], formatCurrency }) => {
                                     </span>
                                 </td>
 
+                                {/* Valeur estimée */}
+                                <td className="px-3 py-3 text-right">
+                                    <div className="flex flex-col items-end">
+                                        <span className="text-sm font-bold text-slate-900 tabular-nums">
+                                            {new Intl.NumberFormat('fr-FR').format(parcel.prix_estimation || 0)}
+                                        </span>
+                                        <span className="text-[9px] text-slate-500 font-bold">CFA</span>
+                                    </div>
+                                </td>
+
                                 {/* Frais */}
                                 <td className="px-3 py-3 text-right">
                                     <div className="flex flex-col items-end">
@@ -146,6 +160,14 @@ const ParcelTable = ({ colis = [], formatCurrency }) => {
                                 </span>
                             </td>
                             <td className="px-3 py-3"></td>
+                            <td className="px-3 py-3 text-right">
+                                <div className="flex flex-col items-end">
+                                    <span className="text-base font-bold text-slate-700 tabular-nums">
+                                        {new Intl.NumberFormat('fr-FR').format(totalEstimation)}
+                                    </span>
+                                    <span className="text-[10px] text-slate-500 font-bold">CFA</span>
+                                </div>
+                            </td>
                             <td className="px-3 py-3 text-right">
                                 <div className="flex flex-col items-end">
                                     <span className="text-base font-bold text-indigo-600 tabular-nums">
