@@ -1,87 +1,46 @@
-import React, { useState, useEffect } from 'react';
-import Toast from './Toast';
+import { Toaster } from 'sonner';
 
+/**
+ * Point de montage unique du système de toast (moteur: sonner).
+ * L'API publique reste `utils/toast.js` (toast.success/error/info/warning/chat) —
+ * ce composant ne fait que déclarer le rendu visuel et le thème.
+ */
 const ToastManager = () => {
-  const [toasts, setToasts] = useState([]);
-
-  useEffect(() => {
-    // Écouter les événements de notification
-    const handleNewMessage = (event) => {
-      const { requestId, clientName } = event.detail;
-      addToast({
-        id: Date.now(),
-        message: `Nouveau message de ${clientName}`,
-        type: 'chat',
-        duration: 6000,
-        onClick: () => {
-          // Rediriger vers la page des demandes avec focus sur le chat
-          window.location.href = `/requests?chat=${requestId}`;
-        }
-      });
-    };
-
-    const handleRequestUpdate = (event) => {
-      const { status, clientName } = event.detail;
-      const statusMessages = {
-        'accepted': `Demande de ${clientName} acceptée`,
-        'rejected': `Demande de ${clientName} rejetée`,
-        'in_progress': `Demande de ${clientName} en cours`,
-        'completed': `Demande de ${clientName} terminée`
-      };
-
-      if (statusMessages[status]) {
-        addToast({
-          id: Date.now(),
-          message: statusMessages[status],
-          type: status === 'accepted' || status === 'completed' ? 'success' : 'info',
-          duration: 5000
-        });
-      }
-    };
-
-    const handleToast = (event) => {
-      const { message, type, duration } = event.detail;
-      addToast({
-        id: Date.now(),
-        message: message || 'Notification',
-        type: type || 'info',
-        duration: duration || 5000
-      });
-    };
-
-    window.addEventListener('new-message', handleNewMessage);
-    window.addEventListener('request-update', handleRequestUpdate);
-    window.addEventListener('toast', handleToast);
-
-    return () => {
-      window.removeEventListener('new-message', handleNewMessage);
-      window.removeEventListener('request-update', handleRequestUpdate);
-      window.removeEventListener('toast', handleToast);
-    };
-  }, []);
-
-  const addToast = (toast) => {
-    setToasts(prev => [...prev, toast]);
-  };
-
-  const removeToast = (id) => {
-    setToasts(prev => prev.filter(toast => toast.id !== id));
-  };
-
   return (
-    <div className="fixed top-20 right-6 z-[9999] space-y-3 pointer-events-none">
-      {toasts.map((toast) => (
-        <div key={toast.id} className="pointer-events-auto">
-          <Toast
-            message={toast.message}
-            type={toast.type}
-            duration={toast.duration}
-            onClose={() => removeToast(toast.id)}
-            onClick={toast.onClick}
-          />
-        </div>
-      ))}
-    </div>
+    <Toaster
+      position="top-right"
+      visibleToasts={4}
+      closeButton
+      gap={12}
+      toastOptions={{
+        duration: 5000,
+        className: 'font-sans',
+        classNames: {
+          toast:
+            'rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border backdrop-blur-md px-4 py-3.5',
+          title: 'text-sm font-semibold tracking-tight',
+          description: 'text-sm text-slate-500',
+          closeButton: 'opacity-60 hover:opacity-100',
+        },
+      }}
+      style={{
+        '--normal-bg': '#ffffff',
+        '--normal-border': '#e2e8f0',
+        '--normal-text': '#1e293b',
+        '--success-bg': '#ecfdf5',
+        '--success-border': '#a7f3d0',
+        '--success-text': '#065f46',
+        '--error-bg': '#fff1f2',
+        '--error-border': '#fecdd3',
+        '--error-text': '#9f1239',
+        '--warning-bg': '#fffbeb',
+        '--warning-border': '#fde68a',
+        '--warning-text': '#92400e',
+        '--info-bg': '#eef2ff',
+        '--info-border': '#c7d2fe',
+        '--info-text': '#3730a3',
+      }}
+    />
   );
 };
 

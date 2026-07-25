@@ -11,6 +11,7 @@ import {
 import { formatPriceDual } from "../../utils/format";
 import { expeditionsApi } from "../../utils/api/expeditions";
 import { expeditionsCache } from "../../utils/expeditionsCache";
+import Spinner from '../common/Spinner';
 
 /**
  * Liste des dernières expéditions avec leurs colis (style groupé comme page Colis à Envoyer)
@@ -138,9 +139,9 @@ const RecentExpeditions = ({ expeditions = [] }) => {
     };
 
     return (
-        <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
             {/* Header compact */}
-            <div className="px-3 sm:px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+            <div className="px-3 sm:px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-slate-50 to-white">
                 <div className="flex items-center gap-2">
                     <h3 className="text-xs sm:text-sm font-bold text-slate-900">Dernières Expéditions</h3>
                     <span className="hidden sm:inline text-xs text-slate-500">(5 plus récentes)</span>
@@ -160,7 +161,7 @@ const RecentExpeditions = ({ expeditions = [] }) => {
             {/* Liste groupée avec colis (style page Colis à Envoyer) */}
             {loadingDetails ? (
                 <div className="px-6 py-16 text-center">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin"></div>
+                    <Spinner size="xl" color="indigo" className="mx-auto mb-4" />
                     <p className="text-sm font-semibold text-slate-600 mb-1">Chargement des expéditions...</p>
                     <p className="text-xs text-slate-400">Récupération des détails en cours</p>
                 </div>

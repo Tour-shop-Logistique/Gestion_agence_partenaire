@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import Spinner from '../components/common/Spinner';
 import { useDispatch } from "react-redux";
 import { logout } from "../store/slices/authSlice";
 import {
@@ -293,7 +294,7 @@ const AgentProfile = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-3">
-          <div className="animate-spin rounded-full h-9 w-9 border-2 border-slate-200 border-t-indigo-600"></div>
+          <Spinner size="lg" color="indigo" />
           <p className="text-sm text-slate-500">Chargement du profil…</p>
         </div>
       </div>
@@ -528,7 +529,7 @@ const AgentProfile = () => {
                   >
                     {submitting ? (
                       <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/40 border-t-white"></div>
+                        <Spinner size="sm" color="white" />
                         Enregistrement...
                       </>
                     ) : (
@@ -743,7 +744,7 @@ const AgentProfile = () => {
                 >
                   {submitting ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/40 border-t-white"></div>
+                      <Spinner size="sm" color="white" />
                       Modification...
                     </>
                   ) : (
@@ -824,7 +825,7 @@ const AgentProfile = () => {
                 >
                   {submitting ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/40 border-t-white"></div>
+                      <Spinner size="sm" color="white" />
                       Suppression...
                     </>
                   ) : (
@@ -904,7 +905,7 @@ const AgentProfile = () => {
                 >
                   {submitting ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white/40 border-t-white"></div>
+                      <Spinner size="sm" color="white" />
                       Vérification...
                     </>
                   ) : (

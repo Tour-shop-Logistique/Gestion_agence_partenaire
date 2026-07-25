@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import Spinner from '../components/common/Spinner';
 import { useParams, useNavigate } from 'react-router-dom';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { useExpedition } from '../hooks/useExpedition';
@@ -157,7 +158,7 @@ const ExpeditionDetails = () => {
     if (status === 'loading' || !expedition) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[400px]">
-                <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                <Spinner size="xl" color="indigo" />
                 <p className="mt-4 text-sm font-medium text-slate-500">Chargement des données...</p>
             </div>
         );

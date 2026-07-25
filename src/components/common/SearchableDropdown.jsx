@@ -8,7 +8,7 @@ import { MagnifyingGlassIcon, ChevronDownIcon } from '@heroicons/react/24/outlin
  * @param {String} placeholder - Texte du placeholder
  * @param {String} className - Classes CSS additionnelles
  */
-const SearchableDropdown = ({ options = [], onSelect, placeholder = "Sélectionner...", className = "" }) => {
+const SearchableDropdown = ({ options = [], onSelect, placeholder = "Sélectionner...", className = "", id }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const dropdownRef = useRef(null);
@@ -49,8 +49,11 @@ const SearchableDropdown = ({ options = [], onSelect, placeholder = "Sélectionn
         <div ref={dropdownRef} className={`relative ${className}`}>
             {/* Bouton pour ouvrir le dropdown */}
             <button
+                id={id}
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
+                aria-haspopup="listbox"
+                aria-expanded={isOpen}
                 className="w-full flex items-center justify-between px-3 py-2 bg-white border border-slate-300 rounded-md text-xs font-semibold text-slate-700 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-colors h-9"
             >
                 <span className="text-slate-500">{placeholder}</span>

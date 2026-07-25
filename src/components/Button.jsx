@@ -1,14 +1,15 @@
-import React from 'react';
+import Spinner from './common/Spinner';
 
-const Button = ({ 
-  children, 
-  variant = 'primary', 
-  size = 'md', 
-  disabled = false, 
-  onClick, 
+const Button = ({
+  children,
+  variant = 'primary',
+  size = 'md',
+  disabled = false,
+  loading = false,
+  onClick,
   type = 'button',
   className = '',
-  ...props 
+  ...props
 }) => {
   const variants = {
     primary: 'btn-primary',
@@ -24,18 +25,19 @@ const Button = ({
     lg: 'btn-lg'
   };
   
-  const disabledClasses = disabled ? 'opacity-50 cursor-not-allowed' : '';
-  
+  const disabledClasses = disabled || loading ? 'opacity-50 cursor-not-allowed' : '';
+
   const classes = `${variants[variant]} ${sizes[size]} ${disabledClasses} ${className}`;
-  
+
   return (
     <button
       type={type}
-      className={classes}
+      className={`${classes} inline-flex items-center justify-center gap-2`}
       onClick={onClick}
-      disabled={disabled}
+      disabled={disabled || loading}
       {...props}
     >
+      {loading && <Spinner size="sm" color="current" />}
       {children}
     </button>
   );

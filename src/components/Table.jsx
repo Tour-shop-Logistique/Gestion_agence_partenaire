@@ -1,4 +1,4 @@
-import React from 'react';
+import Spinner from './common/Spinner';
 
 /**
  * Composant Table professionnel avec typographie standardisée
@@ -46,7 +46,7 @@ const Table = ({
     return (
       <div className="table-container">
         <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+          <Spinner size="lg" color="indigo" />
           <span className="ml-3 text-body text-gray-600">Chargement...</span>
         </div>
       </div>

@@ -136,6 +136,20 @@ class SoundNotification {
     }
 
     /**
+     * Joue un son de succès générique
+     */
+    playSuccess() {
+        this.playBeep('success');
+    }
+
+    /**
+     * Joue un son d'alerte générique
+     */
+    playAlert() {
+        this.playBeep('warning');
+    }
+
+    /**
      * Joue un son d'erreur
      */
     playErrorSound() {

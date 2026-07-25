@@ -136,7 +136,7 @@ const Dashboard = () => {
     }
 
     return (
-        <div className="relative max-w-[1600px] mx-auto space-y-4 sm:space-y-6 pb-8 sm:pb-12 px-3 sm:px-4 lg:px-6">
+        <div className="relative max-w-[1600px] mx-auto space-y-4 sm:space-y-6 pb-8 sm:pb-12 px-3 sm:px-4 lg:px-6 pt-1 animate-fade-in">
 
             <DashboardHeader
                 isRefreshing={isRefreshing}

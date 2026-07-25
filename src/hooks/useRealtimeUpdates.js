@@ -1,6 +1,8 @@
 import { useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { useWebSocket } from './useWebSocket';
+import { showToast } from '../utils/toast';
+import soundNotification from '../utils/soundNotification';
 
 /**
  * Hook simplifié pour les mises à jour en temps réel
@@ -212,9 +214,6 @@ export function useAgenceDeactivation(onDeactivated, enabled = true) {
  * });
  */
 export function useRealtimeWithNotifications(onUpdate, options = {}) {
-  const { showToast } = require('../utils/toast');
-  const soundNotification = require('../utils/soundNotification').default;
-
   const handleUpdate = useCallback((data, meta, eventType) => {
     // Notifications personnalisées selon le type d'événement
     switch (eventType) {
@@ -255,7 +254,7 @@ export function useRealtimeWithNotifications(onUpdate, options = {}) {
     if (onUpdate) {
       onUpdate(data, meta, eventType);
     }
-  }, [onUpdate, showToast, soundNotification]);
+  }, [onUpdate]);
 
   return useRealtimeUpdates(handleUpdate, {
     showNotifications: false, // On gère manuellement

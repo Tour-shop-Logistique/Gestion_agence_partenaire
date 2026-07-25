@@ -103,7 +103,7 @@ const KPICard = ({
         return (
             <Link 
                 to={link}
-                className="bg-white p-3 sm:p-5 rounded-lg sm:rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition-all group relative"
+                className="bg-white p-3 sm:p-5 rounded-lg sm:rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 hover:-translate-y-0.5 transition-all duration-200 group relative"
             >
                 {content}
             </Link>
@@ -111,7 +111,7 @@ const KPICard = ({
     }
 
     return (
-        <div className="bg-white p-3 sm:p-5 rounded-lg sm:rounded-xl border border-slate-200 shadow-sm group relative">
+        <div className="bg-white p-3 sm:p-5 rounded-lg sm:rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow duration-200 group relative">
             {content}
         </div>
     );
@@ -125,12 +125,15 @@ const KPISection = ({ financial, operational }) => {
         <div className="space-y-4 sm:space-y-6">
             {/* 💰 Performance Financière */}
             <div>
-                <div className="mb-3 sm:mb-4">
-                    <h2 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
-                        <span className="text-emerald-600">💰</span>
-                        Performance financière
-                    </h2>
-                    <p className="text-xs text-slate-500 mt-0.5">Indicateurs de revenus et trésorerie</p>
+                <div className="mb-3 sm:mb-4 flex items-center gap-2.5">
+                    <div className="w-1 h-5 sm:h-6 rounded-full bg-gradient-to-b from-emerald-400 to-emerald-600"></div>
+                    <div>
+                        <h2 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-1.5">
+                            <span>💰</span>
+                            Performance financière
+                        </h2>
+                        <p className="text-xs text-slate-500 mt-0.5">Indicateurs de revenus et trésorerie</p>
+                    </div>
                 </div>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                     <KPICard
@@ -174,12 +177,15 @@ const KPISection = ({ financial, operational }) => {
 
             {/* 🚚 Activité Opérationnelle */}
             <div>
-                <div className="mb-3 sm:mb-4">
-                    <h2 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
-                        <span className="text-blue-600">🚚</span>
-                        Activité opérationnelle
-                    </h2>
-                    <p className="text-xs text-slate-500 mt-0.5">Volume et flux de colis</p>
+                <div className="mb-3 sm:mb-4 flex items-center gap-2.5">
+                    <div className="w-1 h-5 sm:h-6 rounded-full bg-gradient-to-b from-blue-400 to-blue-600"></div>
+                    <div>
+                        <h2 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-1.5">
+                            <span>🚚</span>
+                            Activité opérationnelle
+                        </h2>
+                        <p className="text-xs text-slate-500 mt-0.5">Volume et flux de colis</p>
+                    </div>
                 </div>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                     <KPICard

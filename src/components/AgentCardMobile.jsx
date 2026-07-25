@@ -1,4 +1,5 @@
 import React from "react";
+import Spinner from './common/Spinner';
 
 const AgentCardMobile = ({
   agents,
@@ -12,7 +13,7 @@ const AgentCardMobile = ({
     if (updatingAgent === agent.id) {
       return (
         <div className="flex items-center">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+          <Spinner size="sm" color="indigo" className="mr-2" />
           <span className="text-gray-500 text-xs">Mise à jour...</span>
         </div>
       );
