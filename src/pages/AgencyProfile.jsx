@@ -475,12 +475,8 @@ const AgencyProfile = () => {
         </div>
       )}
 
-      {/* ── En-tête identité (bandeau dégradé, pleine largeur) ── */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-600 to-violet-700 shadow-sm">
-        <div className="absolute inset-0 opacity-[0.07]" style={{
-          backgroundImage: "radial-gradient(circle at 20% 20%, white 1px, transparent 1px)",
-          backgroundSize: "20px 20px",
-        }} />
+      {/* ── En-tête identité (bandeau sobre, pleine largeur) ── */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 shadow-sm">
         <div className="relative flex flex-col sm:flex-row sm:items-center gap-5 p-5 sm:p-7">
 
           {/* Logo */}
@@ -516,7 +512,7 @@ const AgencyProfile = () => {
                 </span>
               )}
             </div>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-indigo-100">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-slate-300">
               {formData.code_agence && (
                 <span className="flex items-center gap-1.5">
                   <BriefcaseIcon className="w-4 h-4" />
