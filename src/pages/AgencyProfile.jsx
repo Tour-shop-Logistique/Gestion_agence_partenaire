@@ -21,6 +21,10 @@ import {
   BriefcaseIcon,
   CameraIcon,
   ExclamationTriangleIcon,
+  ChatBubbleLeftRightIcon,
+  PhotoIcon,
+  TrashIcon,
+  PlusIcon,
 } from "@heroicons/react/24/outline";
 
 /* ─────────────────────────────────────────────
@@ -133,12 +137,17 @@ const AgencyProfile = () => {
     name: "", code_agence: "", address: "", ville: "",
     pays: "Côte d'Ivoire", telephone: "", email: "", website: "",
     latitude: "", longitude: "", description: "", commune: "",
-    horaires: defaultHoraires, logo: null,
+    horaires: defaultHoraires, logo: null, message_accueil: "",
   });
 
   const [logoFile, setLogoFile]       = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
   const [originalFormData, setOriginalFormData] = useState(null);
+
+  const [existingPhotos, setExistingPhotos] = useState([]); // URLs déjà en ligne
+  const [photosToRemove, setPhotosToRemove] = useState([]); // chemins bruts à retirer
+  const [newPhotoFiles, setNewPhotoFiles] = useState([]);   // nouveaux File à uploader
+  const [newPhotoPreviews, setNewPhotoPreviews] = useState([]); // previews base64 des nouveaux
 
   /* Ouvrir l'édition automatiquement si pas encore configuré */
   useEffect(() => {
@@ -161,8 +170,11 @@ const AgencyProfile = () => {
       if (a.description) next.description = a.description;
       if (a.commune)     next.commune     = a.commune;
       if (a.logo)        next.logo        = a.logo;
+      if (a.message_accueil != null) next.message_accueil = a.message_accueil;
       if (a.latitude  != null) next.latitude  = String(a.latitude);
       if (a.longitude != null) next.longitude = String(a.longitude);
+
+      if (Array.isArray(a.photos)) setExistingPhotos(a.photos);
 
       if (Array.isArray(a.horaires) && a.horaires.length > 0) {
         const map = {};
@@ -197,6 +209,36 @@ const AgencyProfile = () => {
     const reader = new FileReader();
     reader.onloadend = () => setLogoPreview(reader.result);
     reader.readAsDataURL(file);
+  };
+
+  const MAX_PHOTOS = 8;
+
+  const handlePhotosChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    const remainingSlots = MAX_PHOTOS - (existingPhotos.length - photosToRemove.length) - newPhotoFiles.length;
+    const accepted = files.slice(0, Math.max(0, remainingSlots));
+    if (accepted.length < files.length) {
+      toast.info(`Maximum ${MAX_PHOTOS} photos, seules les ${accepted.length} premières ont été ajoutées.`);
+    }
+
+    setNewPhotoFiles((p) => [...p, ...accepted]);
+    accepted.forEach((file) => {
+      const reader = new FileReader();
+      reader.onloadend = () => setNewPhotoPreviews((p) => [...p, reader.result]);
+      reader.readAsDataURL(file);
+    });
+    e.target.value = "";
+  };
+
+  const removeExistingPhoto = (url) => {
+    setPhotosToRemove((p) => [...p, url]);
+  };
+
+  const removeNewPhoto = (index) => {
+    setNewPhotoFiles((p) => p.filter((_, i) => i !== index));
+    setNewPhotoPreviews((p) => p.filter((_, i) => i !== index));
   };
 
   const handleHoraireChange = (index, field, value) => {
@@ -240,8 +282,11 @@ const AgencyProfile = () => {
         latitude:    formData.latitude  === "" ? null : parseFloat(formData.latitude),
         longitude:   formData.longitude === "" ? null : parseFloat(formData.longitude),
         horaires:    formData.horaires,
+        message_accueil: formData.message_accueil,
       };
       if (logoFile) payload.logo = logoFile;
+      if (newPhotoFiles.length) payload.photos = newPhotoFiles;
+      if (photosToRemove.length) payload.photos_to_remove = photosToRemove;
 
       const hasId = !!(agencyData?.agence?.id || agencyData?.id);
       const result = hasId ? await updateAgencyData(payload) : await setupAgency(payload);
@@ -249,6 +294,9 @@ const AgencyProfile = () => {
       if (result.type?.includes("fulfilled") || result.success) {
         toast.success("Profil agence mis à jour.");
         setIsEditing(false);
+        setPhotosToRemove([]);
+        setNewPhotoFiles([]);
+        setNewPhotoPreviews([]);
         await fetchAgencyData(true);
       }
     } catch {
@@ -261,6 +309,9 @@ const AgencyProfile = () => {
   const handleEditToggle = () => {
     if (isEditing) {
       if (originalFormData) setFormData({ ...originalFormData });
+      setPhotosToRemove([]);
+      setNewPhotoFiles([]);
+      setNewPhotoPreviews([]);
       setIsEditing(false);
     } else {
       setOriginalFormData({ ...formData });
@@ -453,6 +504,94 @@ const AgencyProfile = () => {
               />
               <p className="mt-2 text-xs text-slate-400">
                 Visible par vos clients lors de la prise de commande.
+              </p>
+            </Card>
+
+            {/* Message d'accueil */}
+            <Card>
+              <SectionHeader icon={ChatBubbleLeftRightIcon} title="Message d'accueil" />
+              <textarea
+                name="message_accueil"
+                rows={3}
+                value={formData.message_accueil}
+                onChange={handleChange}
+                disabled={!isEditing}
+                placeholder="Ex : Bienvenue chez nous ! Nous sommes ravis de vous accompagner dans vos expéditions."
+                className="w-full px-3 py-2.5 text-sm text-slate-800 bg-white border border-slate-200 rounded-lg
+                  focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400
+                  disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-default
+                  transition-colors placeholder:text-slate-300 resize-none"
+              />
+              <p className="mt-2 text-xs text-slate-400">
+                Un mot personnalisé affiché aux clients qui découvrent votre agence.
+              </p>
+            </Card>
+
+            {/* Photos de l'agence */}
+            <Card>
+              <SectionHeader
+                icon={PhotoIcon}
+                title="Photos de l'agence"
+                action={
+                  isEditing && (
+                    <label className="flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700 cursor-pointer transition-colors">
+                      <PlusIcon className="w-3.5 h-3.5" />
+                      Ajouter
+                      <input type="file" className="hidden" accept="image/*" multiple onChange={handlePhotosChange} />
+                    </label>
+                  )
+                }
+              />
+              {(() => {
+                const visibleExisting = existingPhotos.filter((url) => !photosToRemove.includes(url));
+                const totalCount = visibleExisting.length + newPhotoPreviews.length;
+
+                if (totalCount === 0) {
+                  return (
+                    <p className="text-xs text-slate-400 py-6 text-center">
+                      Aucune photo pour l'instant. Ajoutez des photos de vos locaux pour rassurer vos clients.
+                    </p>
+                  );
+                }
+
+                return (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                    {visibleExisting.map((url) => (
+                      <div key={url} className="relative group aspect-square rounded-lg overflow-hidden border border-slate-200 bg-slate-50">
+                        <img src={url} alt="Photo agence" className="w-full h-full object-cover" />
+                        {isEditing && (
+                          <button
+                            type="button"
+                            onClick={() => removeExistingPhoto(url)}
+                            className="absolute inset-0 flex items-center justify-center bg-slate-900/50 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <TrashIcon className="w-5 h-5 text-white" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    {newPhotoPreviews.map((src, i) => (
+                      <div key={`new-${i}`} className="relative group aspect-square rounded-lg overflow-hidden border border-indigo-200 bg-indigo-50">
+                        <img src={src} alt="Nouvelle photo" className="w-full h-full object-cover" />
+                        <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-600 text-white">
+                          Nouveau
+                        </span>
+                        {isEditing && (
+                          <button
+                            type="button"
+                            onClick={() => removeNewPhoto(i)}
+                            className="absolute inset-0 flex items-center justify-center bg-slate-900/50 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <TrashIcon className="w-5 h-5 text-white" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+              <p className="mt-3 text-xs text-slate-400">
+                Jusqu'à {MAX_PHOTOS} photos, visibles par les clients qui consultent votre agence.
               </p>
             </Card>
 

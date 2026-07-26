@@ -15,16 +15,22 @@ export const agenciesApi = {
     try {
       let payload = agencyData;
 
-      // Si on a un logo ou si on veut forcer FormData
-      if (agencyData.logo instanceof File) {
+      // Si on a un logo, des photos, ou si on veut forcer FormData
+      const hasFiles = agencyData.logo instanceof File
+        || (Array.isArray(agencyData.photos) && agencyData.photos.some((f) => f instanceof File));
+
+      if (hasFiles) {
         const formData = new FormData();
         Object.keys(agencyData).forEach(key => {
-          if (agencyData[key] !== null && agencyData[key] !== undefined) {
-            if (typeof agencyData[key] === 'object' && !(agencyData[key] instanceof File)) {
-              formData.append(key, JSON.stringify(agencyData[key]));
-            } else {
-              formData.append(key, agencyData[key]);
-            }
+          const value = agencyData[key];
+          if (value === null || value === undefined) return;
+
+          if (key === 'photos' && Array.isArray(value)) {
+            value.forEach((file) => formData.append('photos[]', file));
+          } else if (typeof value === 'object' && !(value instanceof File)) {
+            formData.append(key, JSON.stringify(value));
+          } else {
+            formData.append(key, value);
           }
         });
         payload = formData;
@@ -81,20 +87,26 @@ export const agenciesApi = {
       let payload = agencyData;
       let method = 'PUT';
 
-      // Vérifier si on a un fichier
-      const hasFile = Object.values(agencyData).some(val => val instanceof File);
+      // Vérifier si on a un fichier (logo, ou un tableau de photos contenant des File)
+      const hasFile = Object.values(agencyData).some(val =>
+        val instanceof File || (Array.isArray(val) && val.some((f) => f instanceof File))
+      );
 
       // Si on a un logo ou tout autre fichier, on doit utiliser FormData
       if (hasFile) {
         const formData = new FormData();
         Object.keys(agencyData).forEach(key => {
-          if (agencyData[key] !== null && agencyData[key] !== undefined) {
-            // Pour les objets complexes (sauf les File), on stringify pour le FormData
-            if (typeof agencyData[key] === 'object' && !(agencyData[key] instanceof File)) {
-              formData.append(key, JSON.stringify(agencyData[key]));
-            } else {
-              formData.append(key, agencyData[key]);
-            }
+          const value = agencyData[key];
+          if (value === null || value === undefined) return;
+
+          if (key === 'photos' && Array.isArray(value)) {
+            value.forEach((file) => formData.append('photos[]', file));
+          } else if (key === 'photos_to_remove' && Array.isArray(value)) {
+            value.forEach((path) => formData.append('photos_to_remove[]', path));
+          } else if (typeof value === 'object' && !(value instanceof File)) {
+            formData.append(key, JSON.stringify(value));
+          } else {
+            formData.append(key, value);
           }
         });
 
