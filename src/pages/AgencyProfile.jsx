@@ -83,7 +83,7 @@ const Field = ({ icon: Icon, ...props }) => (
       {...props}
       className={`w-full ${Icon ? "pl-9" : "pl-3"} pr-3 py-2.5 text-sm text-slate-800 bg-white border border-slate-200 rounded-lg
         focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400
-        disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-default
+        disabled:bg-slate-50 disabled:text-slate-900 disabled:cursor-default
         transition-colors placeholder:text-slate-300`}
     />
   </div>
@@ -498,7 +498,7 @@ const AgencyProfile = () => {
                     disabled={!isEditing}
                     className="w-full pl-9 pr-3 py-2.5 text-sm text-slate-800 bg-white border border-slate-200 rounded-lg
                       focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400
-                      disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-default
+                      disabled:bg-slate-50 disabled:text-slate-900 disabled:cursor-default
                       transition-colors appearance-none cursor-pointer"
                   >
                     <option value="">Sélectionnez un pays</option>
@@ -534,7 +534,7 @@ const AgencyProfile = () => {
                 placeholder="Présentez votre agence en quelques lignes…"
                 className="w-full px-3 py-2.5 text-sm text-slate-800 bg-white border border-slate-200 rounded-lg
                   focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400
-                  disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-default
+                  disabled:bg-slate-50 disabled:text-slate-900 disabled:cursor-default
                   transition-colors placeholder:text-slate-300 resize-none"
               />
               <p className="mt-2 text-xs text-slate-400">
@@ -553,7 +553,7 @@ const AgencyProfile = () => {
                 placeholder="Ex : Bienvenue chez nous ! Nous sommes ravis de vous accompagner dans vos expéditions."
                 className="w-full px-3 py-2.5 text-sm text-slate-800 bg-white border border-slate-200 rounded-lg
                   focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400
-                  disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-default
+                  disabled:bg-slate-50 disabled:text-slate-900 disabled:cursor-default
                   transition-colors placeholder:text-slate-300 resize-none"
               />
               <p className="mt-2 text-xs text-slate-400">
