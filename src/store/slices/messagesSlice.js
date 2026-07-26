@@ -31,6 +31,51 @@ export const sendMessage = createAsyncThunk(
   }
 );
 
+export const searchMessages = createAsyncThunk(
+  'messages/search',
+  async (q, { rejectWithValue }) => {
+    try {
+      const result = await messagesApi.searchMessages(q);
+      if (!result.success) {
+        return rejectWithValue(result.message);
+      }
+      return result.messages;
+    } catch (error) {
+      return rejectWithValue(error.message || 'Erreur lors de la recherche');
+    }
+  }
+);
+
+export const updateMessage = createAsyncThunk(
+  'messages/update',
+  async ({ messageId, body }, { rejectWithValue }) => {
+    try {
+      const result = await messagesApi.updateMessage(messageId, body);
+      if (!result.success) {
+        return rejectWithValue(result.message);
+      }
+      return result.updatedMessage;
+    } catch (error) {
+      return rejectWithValue(error.message || 'Erreur lors de la modification');
+    }
+  }
+);
+
+export const deleteMessage = createAsyncThunk(
+  'messages/delete',
+  async (messageId, { rejectWithValue }) => {
+    try {
+      const result = await messagesApi.deleteMessage(messageId);
+      if (!result.success) {
+        return rejectWithValue(result.message);
+      }
+      return messageId;
+    } catch (error) {
+      return rejectWithValue(error.message || 'Erreur lors de la suppression');
+    }
+  }
+);
+
 const messagesSlice = createSlice({
   name: 'messages',
   initialState: {
@@ -39,6 +84,8 @@ const messagesSlice = createSlice({
     status: 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed'
     isSending: false,
     unreadCount: 0,
+    searchResults: null,
+    isSearching: false,
     error: null,
   },
   reducers: {
@@ -51,6 +98,19 @@ const messagesSlice = createSlice({
           state.unreadCount += 1;
         }
       }
+    },
+    // Reçu en temps réel : message modifié par l'autre partie (event Message/updated)
+    messageUpdated: (state, action) => {
+      const message = action.payload;
+      const idx = state.items.findIndex((m) => m.id === message.id);
+      if (idx !== -1) state.items[idx] = message;
+    },
+    // Reçu en temps réel : message supprimé par l'autre partie (event Message/deleted)
+    messageDeleted: (state, action) => {
+      state.items = state.items.filter((m) => m.id !== action.payload);
+    },
+    clearSearch: (state) => {
+      state.searchResults = null;
     },
   },
   extraReducers: (builder) => {
@@ -82,11 +142,29 @@ const messagesSlice = createSlice({
       .addCase(sendMessage.rejected, (state, action) => {
         state.isSending = false;
         state.error = action.payload;
+      })
+      .addCase(searchMessages.pending, (state) => {
+        state.isSearching = true;
+      })
+      .addCase(searchMessages.fulfilled, (state, action) => {
+        state.isSearching = false;
+        state.searchResults = action.payload;
+      })
+      .addCase(searchMessages.rejected, (state, action) => {
+        state.isSearching = false;
+        state.error = action.payload;
+      })
+      .addCase(updateMessage.fulfilled, (state, action) => {
+        const idx = state.items.findIndex((m) => m.id === action.payload.id);
+        if (idx !== -1) state.items[idx] = action.payload;
+      })
+      .addCase(deleteMessage.fulfilled, (state, action) => {
+        state.items = state.items.filter((m) => m.id !== action.payload);
       });
   },
 });
 
-export const { messageReceived } = messagesSlice.actions;
+export const { messageReceived, messageUpdated, messageDeleted, clearSearch } = messagesSlice.actions;
 
 export const selectMessages = (state) => state.messages.items;
 export const selectMessagesStatus = (state) => state.messages.status;

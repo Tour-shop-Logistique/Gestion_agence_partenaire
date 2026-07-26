@@ -177,6 +177,12 @@ export function useWebSocket(agenceId, handlers = {}, enabled = true) {
         if (action === 'created' && handlersRef.current.onMessageReceived) {
           console.log('✅ [WebSocket] Handler onMessageReceived appelé');
           handlersRef.current.onMessageReceived(data, { ids, references, changes, count, at });
+        } else if (action === 'updated' && handlersRef.current.onMessageUpdated) {
+          console.log('✅ [WebSocket] Handler onMessageUpdated appelé');
+          handlersRef.current.onMessageUpdated(data, { ids, references, changes, count, at });
+        } else if (action === 'deleted' && handlersRef.current.onMessageDeleted) {
+          console.log('✅ [WebSocket] Handler onMessageDeleted appelé');
+          handlersRef.current.onMessageDeleted(data, { ids, references, changes, count, at });
         } else {
           console.warn(`⚠️ [WebSocket] Action '${action}' non gérée pour Message ou handler manquant`);
         }

@@ -17,7 +17,7 @@ import { selectAgencyConfigured } from "./store/slices/agencySlice";
 import { autoCheckAndUpdate, handleChunkLoadError } from "./utils/versionChecker";
 import { getEcho, disconnectEcho } from "./services/echo";
 import { fetchNotifications, announcementReceived } from "./store/slices/notificationsSlice";
-import { messageReceived } from "./store/slices/messagesSlice";
+import { messageReceived, messageUpdated, messageDeleted } from "./store/slices/messagesSlice";
 import { useWebSocket } from "./hooks/useWebSocket";
 import { showToast } from "./utils/toast";
 import soundNotification from "./utils/soundNotification";
@@ -170,6 +170,14 @@ function AppContent() {
         body: message.body || "Pièce jointe",
         onClick: () => navigate("/messages"),
       });
+    },
+    onMessageUpdated: (data) => {
+      const message = Array.isArray(data) ? data[0] : data;
+      if (message) dispatch(messageUpdated(message));
+    },
+    onMessageDeleted: (data) => {
+      const item = Array.isArray(data) ? data[0] : data;
+      if (item?.id) dispatch(messageDeleted(item.id));
     },
   });
 

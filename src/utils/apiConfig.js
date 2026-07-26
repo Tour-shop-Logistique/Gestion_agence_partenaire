@@ -105,6 +105,9 @@ export const API_ENDPOINTS = {
   MESSAGES: {
     SHOW: "/agence/messages",
     SEND: "/agence/messages",
+    SEARCH: "/agence/messages/search",
+    UPDATE: "/agence/messages/:id",
+    DELETE: "/agence/messages/:id",
   },
 };
 

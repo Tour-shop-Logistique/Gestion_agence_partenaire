@@ -1,11 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Send, Paperclip, X, FileText, Loader2, MessageCircle, Building2 } from "lucide-react";
+import { Send, Paperclip, X, FileText, Loader2, MessageCircle, Building2, Search, MoreVertical, Pencil, Trash2, Check, CheckCheck } from "lucide-react";
 import {
   fetchConversation,
   sendMessage,
+  searchMessages,
+  updateMessage,
+  deleteMessage,
+  clearSearch,
   selectMessages,
   selectMessagesStatus,
 } from "../store/slices/messagesSlice";
@@ -17,14 +21,23 @@ const formatSize = (bytes) => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
 };
 
+const isImage = (mimeType) => mimeType?.startsWith("image/");
+
 const Messages = () => {
   const dispatch = useDispatch();
   const messages = useSelector(selectMessages);
   const status = useSelector(selectMessagesStatus);
   const isSending = useSelector((state) => state.messages.isSending);
+  const searchResults = useSelector((state) => state.messages.searchResults);
+  const isSearching = useSelector((state) => state.messages.isSearching);
 
   const [body, setBody] = useState("");
   const [attachments, setAttachments] = useState([]);
+  const [openMenuId, setOpenMenuId] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [editBody, setEditBody] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const fileInputRef = useRef(null);
   const bottomRef = useRef(null);
 
@@ -32,9 +45,14 @@ const Messages = () => {
     dispatch(fetchConversation());
   }, [dispatch]);
 
+  const displayedMessages = useMemo(
+    () => (searchOpen && searchResults ? searchResults : messages),
+    [searchOpen, searchResults, messages]
+  );
+
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages.length]);
+    if (!searchOpen) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages.length, searchOpen]);
 
   const handleFilesChange = (e) => {
     const files = Array.from(e.target.files || []);
@@ -64,6 +82,47 @@ const Messages = () => {
     }
   };
 
+  const startEdit = (m) => {
+    setEditingId(m.id);
+    setEditBody(m.body || "");
+    setOpenMenuId(null);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditBody("");
+  };
+
+  const saveEdit = async (messageId) => {
+    if (!editBody.trim()) return;
+    try {
+      await dispatch(updateMessage({ messageId, body: editBody.trim() })).unwrap();
+      cancelEdit();
+    } catch (err) {
+      showToast(err || "Erreur lors de la modification", "error");
+    }
+  };
+
+  const handleDelete = async (messageId) => {
+    setOpenMenuId(null);
+    try {
+      await dispatch(deleteMessage(messageId)).unwrap();
+    } catch (err) {
+      showToast(err || "Erreur lors de la suppression", "error");
+    }
+  };
+
+  const handleSearch = () => {
+    if (!searchQuery.trim()) return;
+    dispatch(searchMessages(searchQuery.trim()));
+  };
+
+  const toggleSearch = () => {
+    setSearchOpen((prev) => !prev);
+    setSearchQuery("");
+    dispatch(clearSearch());
+  };
+
   return (
     <div className="space-y-4 sm:space-y-5 max-w-[1000px] mx-auto px-3 sm:px-6 pb-6 sm:pb-10">
       <div className="flex items-center gap-2.5 sm:gap-3.5">
@@ -84,11 +143,38 @@ const Messages = () => {
           <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center shrink-0">
             <Building2 className="w-4 h-4 text-white" />
           </div>
-          <div>
+          <div className="flex-1">
             <p className="text-sm font-bold text-slate-900">Backoffice</p>
             <p className="text-[11px] text-slate-400">Équipe Tour Shop Express</p>
           </div>
+          <button
+            onClick={toggleSearch}
+            className={`p-2 rounded-lg transition-colors ${searchOpen ? "bg-indigo-600 text-white" : "text-slate-500 hover:text-indigo-600 hover:bg-indigo-50"}`}
+            title="Rechercher dans la conversation"
+          >
+            <Search size={16} />
+          </button>
         </div>
+
+        {searchOpen && (
+          <div className="px-4 sm:px-5 py-2.5 border-b border-slate-100 bg-white flex items-center gap-2">
+            <input
+              autoFocus
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              placeholder="Rechercher un mot..."
+              className="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400"
+            />
+            <button
+              onClick={handleSearch}
+              disabled={!searchQuery.trim() || isSearching}
+              className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold disabled:opacity-40"
+            >
+              {isSearching ? <Loader2 size={14} className="animate-spin" /> : "Chercher"}
+            </button>
+          </div>
+        )}
 
         {/* Fil de discussion */}
         <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-3 bg-slate-50/60">
@@ -96,48 +182,114 @@ const Messages = () => {
             <div className="flex justify-center py-10">
               <Loader2 className="animate-spin text-indigo-500" size={28} />
             </div>
-          ) : messages.length === 0 ? (
+          ) : displayedMessages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-slate-400">
               <div className="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center mb-3">
                 <MessageCircle className="w-7 h-7 text-indigo-300" strokeWidth={1.5} />
               </div>
-              <p className="text-sm font-bold text-slate-600">Aucun message pour l'instant</p>
-              <p className="text-xs text-slate-400 mt-1">Écrivez au backoffice pour démarrer la conversation</p>
+              <p className="text-sm font-bold text-slate-600">
+                {searchOpen && searchResults ? "Aucun résultat" : "Aucun message pour l'instant"}
+              </p>
+              {!searchOpen && (
+                <p className="text-xs text-slate-400 mt-1">Écrivez au backoffice pour démarrer la conversation</p>
+              )}
             </div>
           ) : (
-            messages.map((m) => {
+            displayedMessages.map((m) => {
               const isMine = m.sender?.type === "agence";
+              const isEditing = editingId === m.id;
               return (
-                <div key={m.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
+                <div key={m.id} className={`group flex ${isMine ? "justify-end" : "justify-start"}`}>
                   <div
-                    className={`max-w-[75%] px-4 py-2.5 shadow-sm ${
+                    className={`relative max-w-[75%] px-4 py-2.5 shadow-sm ${
                       isMine
                         ? "bg-gradient-to-br from-indigo-600 to-indigo-500 text-white rounded-2xl rounded-br-md"
                         : "bg-white text-slate-900 border border-slate-200 rounded-2xl rounded-bl-md"
                     }`}
                   >
-                    {m.body && <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">{m.body}</p>}
-                    {m.attachments?.length > 0 && (
-                      <div className="mt-1.5 space-y-1.5">
-                        {m.attachments.map((a) => (
-                          <a
-                            key={a.id}
-                            href={a.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={`flex items-center gap-2 text-xs px-2.5 py-1.5 rounded-lg transition-colors ${
-                              isMine ? "bg-white/15 hover:bg-white/25" : "bg-slate-100 hover:bg-slate-200"
-                            }`}
-                          >
-                            <FileText size={14} className="shrink-0" />
-                            <span className="truncate">{a.original_name}</span>
-                          </a>
-                        ))}
+                    {isMine && !isEditing && (
+                      <div className="absolute -top-2 -left-2">
+                        <button
+                          onClick={() => setOpenMenuId(openMenuId === m.id ? null : m.id)}
+                          className="opacity-0 group-hover:opacity-100 p-1 bg-white border border-slate-200 rounded-full shadow-sm text-slate-500 hover:text-indigo-600 transition-opacity"
+                        >
+                          <MoreVertical size={12} />
+                        </button>
+                        {openMenuId === m.id && (
+                          <div className="absolute top-6 left-0 bg-white border border-slate-200 rounded-lg shadow-lg py-1 z-10 w-32">
+                            {m.body && (
+                              <button
+                                onClick={() => startEdit(m)}
+                                className="w-full text-left px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                              >
+                                <Pencil size={12} /> Modifier
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleDelete(m.id)}
+                              className="w-full text-left px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 flex items-center gap-2"
+                            >
+                              <Trash2 size={12} /> Supprimer
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
-                    <p className={`text-[10px] mt-1.5 font-medium ${isMine ? "text-indigo-100" : "text-slate-400"}`}>
-                      {format(new Date(m.created_at), "HH:mm", { locale: fr })}
-                    </p>
+
+                    {isEditing ? (
+                      <div className="space-y-2">
+                        <textarea
+                          autoFocus
+                          value={editBody}
+                          onChange={(e) => setEditBody(e.target.value)}
+                          rows={2}
+                          className="w-full px-2 py-1.5 rounded-lg text-sm bg-white/10 text-white placeholder-indigo-100 border border-white/20 focus:outline-none resize-none"
+                        />
+                        <div className="flex gap-2 justify-end">
+                          <button onClick={cancelEdit} className="text-xs font-bold text-indigo-100 hover:text-white">Annuler</button>
+                          <button onClick={() => saveEdit(m.id)} className="text-xs font-bold text-white bg-white/20 px-2 py-0.5 rounded">Enregistrer</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        {m.body && <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">{m.body}</p>}
+                        {m.attachments?.length > 0 && (
+                          <div className="mt-1.5 space-y-1.5">
+                            {m.attachments.map((a) => isImage(a.mime_type) ? (
+                              <a key={a.id} href={a.url} target="_blank" rel="noopener noreferrer" className="block">
+                                <img src={a.url} alt={a.original_name} className="max-w-full max-h-48 rounded-lg object-cover" />
+                              </a>
+                            ) : (
+                              <a
+                                key={a.id}
+                                href={a.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`flex items-center gap-2 text-xs px-2.5 py-1.5 rounded-lg transition-colors ${
+                                  isMine ? "bg-white/15 hover:bg-white/25" : "bg-slate-100 hover:bg-slate-200"
+                                }`}
+                              >
+                                <FileText size={14} className="shrink-0" />
+                                <span className="truncate">{a.original_name}</span>
+                              </a>
+                            ))}
+                          </div>
+                        )}
+                        <div className={`flex items-center gap-1 mt-1.5 ${isMine ? "justify-end" : ""}`}>
+                          {m.edited_at && (
+                            <span className={`text-[10px] italic font-medium ${isMine ? "text-indigo-100" : "text-slate-400"}`}>modifié</span>
+                          )}
+                          <p className={`text-[10px] font-medium ${isMine ? "text-indigo-100" : "text-slate-400"}`}>
+                            {format(new Date(m.created_at), "HH:mm", { locale: fr })}
+                          </p>
+                          {isMine && (
+                            m.read_at
+                              ? <CheckCheck size={13} className="text-sky-200" />
+                              : <Check size={13} className="text-indigo-200" />
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               );

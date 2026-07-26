@@ -50,6 +50,69 @@ export const messagesApi = {
       };
     }
   },
+
+  /**
+   * Recherche des messages contenant un texte donné
+   * @param {string} q
+   * @returns {Promise<Object>}
+   */
+  async searchMessages(q) {
+    try {
+      const response = await apiService.get(`${API_ENDPOINTS.MESSAGES.SEARCH}?q=${encodeURIComponent(q)}`);
+      return {
+        success: response.success !== false,
+        messages: response.messages || [],
+      };
+    } catch (error) {
+      return {
+        success: false,
+        messages: [],
+        message: error.message || "Erreur lors de la recherche",
+      };
+    }
+  },
+
+  /**
+   * Modifie le texte d'un message
+   * @param {string} messageId
+   * @param {string} body
+   * @returns {Promise<Object>}
+   */
+  async updateMessage(messageId, body) {
+    try {
+      const endpoint = API_ENDPOINTS.MESSAGES.UPDATE.replace(":id", messageId);
+      const response = await apiService.put(endpoint, { body });
+      return {
+        success: response.success !== false,
+        updatedMessage: response.message,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || "Erreur lors de la modification",
+      };
+    }
+  },
+
+  /**
+   * Supprime un message
+   * @param {string} messageId
+   * @returns {Promise<Object>}
+   */
+  async deleteMessage(messageId) {
+    try {
+      const endpoint = API_ENDPOINTS.MESSAGES.DELETE.replace(":id", messageId);
+      const response = await apiService.delete(endpoint);
+      return {
+        success: response.success !== false,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || "Erreur lors de la suppression",
+      };
+    }
+  },
 };
 
 export default messagesApi;
