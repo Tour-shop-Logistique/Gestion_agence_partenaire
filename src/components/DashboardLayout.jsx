@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import OrnamentalBackground from './OrnamentalBackground';
+import PushNotificationPrompt from './PushNotificationPrompt';
 
 const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -44,6 +45,7 @@ const DashboardLayout = () => {
         <div className="flex flex-col min-h-screen">
           <Header onToggleSidebar={() => setSidebarOpen(open => !open)} />
           <main className="flex-1 overflow-y-auto pt-1 pb-4 bg-transparent">
+            <PushNotificationPrompt />
             <div className="px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10 max-w-full">
               <Outlet />
             </div>
