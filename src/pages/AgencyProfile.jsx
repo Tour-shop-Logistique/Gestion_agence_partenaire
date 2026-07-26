@@ -107,10 +107,60 @@ const Card = ({ children, className = "" }) => (
   </div>
 );
 
+/** Bouton Modifier/Annuler propre à une section */
+const SectionEditButton = ({ isEditing, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
+      isEditing
+        ? "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
+        : "border-slate-800 bg-slate-800 text-white hover:bg-slate-700"
+    }`}
+  >
+    {isEditing
+      ? <><XMarkIcon className="w-3.5 h-3.5" /> Annuler</>
+      : <><PencilSquareIcon className="w-3.5 h-3.5" /> Modifier</>
+    }
+  </button>
+);
+
+/** Barre de sauvegarde fixe, affichée pendant l'édition d'un onglet */
+const SaveBar = ({ saving, onCancel }) => (
+  <div className="fixed bottom-0 left-0 right-0 z-50 lg:left-60">
+    <div className="bg-white border-t border-slate-200 px-4 py-3 sm:px-6">
+      <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
+        <p className="text-xs text-slate-500 hidden sm:block">
+          Les modifications ne sont pas encore enregistrées.
+        </p>
+        <div className="flex items-center gap-2 ml-auto">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-4 py-2 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+          >
+            Annuler
+          </button>
+          <button
+            type="submit"
+            disabled={saving}
+            className="flex items-center gap-2 px-5 py-2 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-400 rounded-lg transition-colors"
+          >
+            {saving
+              ? <ArrowPathIcon className="w-4 h-4 animate-spin" />
+              : <CheckIcon className="w-4 h-4" />
+            }
+            {saving ? "Enregistrement…" : "Enregistrer les modifications"}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
 const TABS = [
   { key: "identite", label: "Identité", icon: IdentificationIcon },
   { key: "vitrine", label: "Vitrine", icon: SparklesIcon },
-  { key: "localisation", label: "Localisation", icon: MapPinSolidIcon },
   { key: "horaires", label: "Horaires", icon: ClockIcon },
 ];
 
@@ -130,7 +180,9 @@ const AgencyProfile = () => {
   const isAdmin = useSelector(selectIsAdmin);
   const agencyConfigured = useSelector(selectAgencyConfigured);
 
-  const [isEditing, setIsEditing] = useState(false);
+  // Un état d'édition indépendant par onglet : on ne modifie qu'une
+  // section à la fois (identité, vitrine ou horaires).
+  const [editingTab, setEditingTab] = useState(null);
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState("identite");
@@ -142,6 +194,7 @@ const AgencyProfile = () => {
     { jour: "Jeudi",    ouverture: "08:00", fermeture: "18:00", ferme: false },
     { jour: "Vendredi", ouverture: "08:00", fermeture: "18:00", ferme: false },
     { jour: "Samedi",   ouverture: "08:00", fermeture: "12:00", ferme: false },
+    { jour: "Dimanche", ouverture: "08:00", fermeture: "12:00", ferme: true },
   ];
 
   const [formData, setFormData] = useState({
@@ -162,7 +215,7 @@ const AgencyProfile = () => {
 
   /* Ouvrir l'édition automatiquement si pas encore configuré */
   useEffect(() => {
-    if (!agencyConfigured && isAdmin) setIsEditing(true);
+    if (!agencyConfigured && isAdmin) setEditingTab("identite");
   }, [agencyConfigured, isAdmin]);
 
   /* Remplir le formulaire depuis Redux */
@@ -306,7 +359,7 @@ const AgencyProfile = () => {
 
       if (result.type?.includes("fulfilled") || result.success) {
         toast.success("Profil agence mis à jour.");
-        setIsEditing(false);
+        setEditingTab(null);
         setPhotosToRemove([]);
         setNewPhotoFiles([]);
         setNewPhotoPreviews([]);
@@ -319,16 +372,16 @@ const AgencyProfile = () => {
     }
   };
 
-  const handleEditToggle = () => {
-    if (isEditing) {
+  const handleEditToggle = (tabKey) => {
+    if (editingTab === tabKey) {
       if (originalFormData) setFormData({ ...originalFormData });
       setPhotosToRemove([]);
       setNewPhotoFiles([]);
       setNewPhotoPreviews([]);
-      setIsEditing(false);
+      setEditingTab(null);
     } else {
       setOriginalFormData({ ...formData });
-      setIsEditing(true);
+      setEditingTab(tabKey);
     }
   };
 
@@ -367,7 +420,7 @@ const AgencyProfile = () => {
                 <BuildingOffice2Icon className="w-8 h-8 text-slate-300" />
               )}
             </div>
-            {isEditing && (
+            {editingTab === "identite" && (
               <label className="absolute inset-0 flex items-center justify-center bg-slate-900/50 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
                 <CameraIcon className="w-5 h-5 text-white" />
                 <input type="file" className="hidden" accept="image/*" onChange={handleLogoChange} />
@@ -414,20 +467,6 @@ const AgencyProfile = () => {
               >
                 <ArrowPathIcon className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
               </button>
-              <button
-                type="button"
-                onClick={handleEditToggle}
-                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium transition-colors border ${
-                  isEditing
-                    ? "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
-                    : "border-slate-800 bg-slate-800 text-white hover:bg-slate-700"
-                }`}
-              >
-                {isEditing
-                  ? <><XMarkIcon className="w-3.5 h-3.5" /> Annuler</>
-                  : <><PencilSquareIcon className="w-3.5 h-3.5" /> Modifier</>
-                }
-              </button>
             </div>
           )}
         </div>
@@ -458,79 +497,167 @@ const AgencyProfile = () => {
       {/* ── Corps du formulaire ── */}
       <form onSubmit={handleSubmit}>
 
-        {/* Onglet : Identité */}
+        {/* Onglet : Identité (+ Localisation) */}
         {activeTab === "identite" && (
-          <Card>
-            <SectionHeader icon={BuildingOffice2Icon} title="Informations générales" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <FieldLabel>Nom de l'agence</FieldLabel>
-                <Field name="name" value={formData.name} onChange={handleChange} disabled={!isEditing} placeholder="Ex : Agence Centrale Abidjan" />
-              </div>
-              <div>
-                <FieldLabel>Code agence</FieldLabel>
-                <Field name="code_agence" value={formData.code_agence} onChange={handleChange} disabled={!isEditing} placeholder="Ex : AGC-001" />
-              </div>
-              <div className="sm:col-span-2">
-                <FieldLabel>Adresse</FieldLabel>
-                <Field name="address" value={formData.address} onChange={handleChange} disabled={!isEditing} placeholder="Rue, quartier…" />
-              </div>
-              <div>
-                <FieldLabel>Ville</FieldLabel>
-                <Field name="ville" value={formData.ville} onChange={handleChange} disabled={!isEditing} placeholder="Ex : Abidjan" />
-              </div>
-              <div>
-                <FieldLabel>Commune</FieldLabel>
-                <Field name="commune" value={formData.commune} onChange={handleChange} disabled={!isEditing} placeholder="Ex : Cocody" />
-              </div>
-              <div>
-                <FieldLabel>Téléphone</FieldLabel>
-                <Field icon={PhoneIcon} type="tel" name="telephone" value={formData.telephone} onChange={handleChange} disabled={!isEditing} placeholder="+225 07 00 00 00 00" />
-              </div>
-              <div>
-                <FieldLabel>Pays</FieldLabel>
-                <div className="relative">
-                  <GlobeAltIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none z-10" />
-                  <select
-                    name="pays"
-                    value={formData.pays}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                    className="w-full pl-9 pr-3 py-2.5 text-sm text-slate-800 bg-white border border-slate-200 rounded-lg
-                      focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400
-                      disabled:bg-slate-50 disabled:text-slate-900 disabled:cursor-default
-                      transition-colors appearance-none cursor-pointer"
-                  >
-                    <option value="">Sélectionnez un pays</option>
-                    {PAYS_LISTE.map((pays) => (
-                      <option key={pays} value={pays}>
-                        {pays}
-                      </option>
-                    ))}
-                  </select>
-                  {/* Flèche dropdown personnalisée */}
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                    <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
+          <div className="space-y-5">
+            <Card>
+              <SectionHeader
+                icon={BuildingOffice2Icon}
+                title="Informations générales"
+                action={
+                  <SectionEditButton
+                    isEditing={editingTab === "identite"}
+                    onClick={() => handleEditToggle("identite")}
+                  />
+                }
+              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <FieldLabel>Nom de l'agence</FieldLabel>
+                  <Field name="name" value={formData.name} onChange={handleChange} disabled={editingTab !== "identite"} placeholder="Ex : Agence Centrale Abidjan" />
+                </div>
+                <div>
+                  <FieldLabel>Code agence</FieldLabel>
+                  <Field name="code_agence" value={formData.code_agence} disabled placeholder="Ex : AGC-001" />
+                </div>
+                <div className="sm:col-span-2">
+                  <FieldLabel>Adresse</FieldLabel>
+                  <Field name="address" value={formData.address} onChange={handleChange} disabled={editingTab !== "identite"} placeholder="Rue, quartier…" />
+                </div>
+                <div>
+                  <FieldLabel>Ville</FieldLabel>
+                  <Field name="ville" value={formData.ville} onChange={handleChange} disabled={editingTab !== "identite"} placeholder="Ex : Abidjan" />
+                </div>
+                <div>
+                  <FieldLabel>Commune</FieldLabel>
+                  <Field name="commune" value={formData.commune} onChange={handleChange} disabled={editingTab !== "identite"} placeholder="Ex : Cocody" />
+                </div>
+                <div>
+                  <FieldLabel>Téléphone</FieldLabel>
+                  <Field icon={PhoneIcon} type="tel" name="telephone" value={formData.telephone} onChange={handleChange} disabled={editingTab !== "identite"} placeholder="+225 07 00 00 00 00" />
+                </div>
+                <div>
+                  <FieldLabel>Pays</FieldLabel>
+                  <div className="relative">
+                    <GlobeAltIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none z-10" />
+                    <select
+                      name="pays"
+                      value={formData.pays}
+                      onChange={handleChange}
+                      disabled={editingTab !== "identite"}
+                      className="w-full pl-9 pr-3 py-2.5 text-sm text-slate-800 bg-white border border-slate-200 rounded-lg
+                        focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400
+                        disabled:bg-slate-50 disabled:text-slate-900 disabled:cursor-default
+                        transition-colors appearance-none cursor-pointer"
+                    >
+                      <option value="">Sélectionnez un pays</option>
+                      {PAYS_LISTE.map((pays) => (
+                        <option key={pays} value={pays}>
+                          {pays}
+                        </option>
+                      ))}
+                    </select>
+                    {/* Flèche dropdown personnalisée */}
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                      <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </Card>
+            </Card>
+
+            <Card>
+              <SectionHeader
+                icon={MapPinSolidIcon}
+                title="Localisation"
+                action={
+                  editingTab === "identite" ? (
+                    <button
+                      type="button"
+                      onClick={getCurrentLocation}
+                      className="text-xs font-medium text-indigo-600 hover:text-indigo-700 hover:underline transition-colors"
+                    >
+                      Détecter ma position
+                    </button>
+                  ) : null
+                }
+              />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <FieldLabel>Latitude</FieldLabel>
+                  <Field name="latitude" value={formData.latitude} onChange={handleChange} disabled={editingTab !== "identite"} placeholder="5.354722" />
+                </div>
+                <div>
+                  <FieldLabel>Longitude</FieldLabel>
+                  <Field name="longitude" value={formData.longitude} onChange={handleChange} disabled={editingTab !== "identite"} placeholder="-4.008256" />
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <div className="flex items-center justify-between mb-1.5">
+                  <FieldLabel>Zone de couverture</FieldLabel>
+                  <span className="text-xs font-semibold text-indigo-600">
+                    {formData.zone_couverture_km || 0} km
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={1}
+                  max={100}
+                  value={formData.zone_couverture_km || 10}
+                  onChange={(e) => setFormData((p) => ({ ...p, zone_couverture_km: e.target.value }))}
+                  disabled={editingTab !== "identite"}
+                  className="w-full accent-indigo-600 disabled:opacity-50"
+                />
+                <p className="text-xs text-slate-400 mt-1">
+                  Rayon autour de votre agence, visible par les clients qui vous découvrent sur la carte.
+                </p>
+              </div>
+
+              <div className="mt-4">
+                <CoverageMap
+                  latitude={formData.latitude === "" ? null : parseFloat(formData.latitude)}
+                  longitude={formData.longitude === "" ? null : parseFloat(formData.longitude)}
+                  radiusKm={parseFloat(formData.zone_couverture_km) || 0}
+                  editable={editingTab === "identite"}
+                  onPositionChange={([lat, lng]) =>
+                    setFormData((p) => ({ ...p, latitude: lat.toFixed(6), longitude: lng.toFixed(6) }))
+                  }
+                />
+                {editingTab === "identite" && (
+                  <p className="text-xs text-slate-400 mt-1.5">Cliquez sur la carte pour repositionner votre agence.</p>
+                )}
+              </div>
+            </Card>
+
+            {editingTab === "identite" && (
+              <SaveBar saving={saving} onCancel={() => handleEditToggle("identite")} />
+            )}
+          </div>
         )}
 
         {/* Onglet : Vitrine (description, message d'accueil, photos) */}
         {activeTab === "vitrine" && (
           <div className="space-y-5">
             <Card>
-              <SectionHeader icon={BriefcaseIcon} title="Description" />
+              <SectionHeader
+                icon={BriefcaseIcon}
+                title="Description"
+                action={
+                  <SectionEditButton
+                    isEditing={editingTab === "vitrine"}
+                    onClick={() => handleEditToggle("vitrine")}
+                  />
+                }
+              />
               <textarea
                 name="description"
                 rows={4}
                 value={formData.description}
                 onChange={handleChange}
-                disabled={!isEditing}
+                disabled={editingTab !== "vitrine"}
                 placeholder="Présentez votre agence en quelques lignes…"
                 className="w-full px-3 py-2.5 text-sm text-slate-800 bg-white border border-slate-200 rounded-lg
                   focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400
@@ -549,7 +676,7 @@ const AgencyProfile = () => {
                 rows={3}
                 value={formData.message_accueil}
                 onChange={handleChange}
-                disabled={!isEditing}
+                disabled={editingTab !== "vitrine"}
                 placeholder="Ex : Bienvenue chez nous ! Nous sommes ravis de vous accompagner dans vos expéditions."
                 className="w-full px-3 py-2.5 text-sm text-slate-800 bg-white border border-slate-200 rounded-lg
                   focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400
@@ -566,7 +693,7 @@ const AgencyProfile = () => {
                 icon={PhotoIcon}
                 title="Photos de l'agence"
                 action={
-                  isEditing && (
+                  editingTab === "vitrine" && (
                     <label className="flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700 cursor-pointer transition-colors">
                       <PlusIcon className="w-3.5 h-3.5" />
                       Ajouter
@@ -592,7 +719,7 @@ const AgencyProfile = () => {
                     {visibleExisting.map((url) => (
                       <div key={url} className="relative group aspect-square rounded-lg overflow-hidden border border-slate-200 bg-slate-50">
                         <img src={url} alt="Photo agence" className="w-full h-full object-cover" />
-                        {isEditing && (
+                        {editingTab === "vitrine" && (
                           <button
                             type="button"
                             onClick={() => removeExistingPhoto(url)}
@@ -609,7 +736,7 @@ const AgencyProfile = () => {
                         <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-600 text-white">
                           Nouveau
                         </span>
-                        {isEditing && (
+                        {editingTab === "vitrine" && (
                           <button
                             type="button"
                             onClick={() => removeNewPhoto(i)}
@@ -627,169 +754,88 @@ const AgencyProfile = () => {
                 Jusqu'à {MAX_PHOTOS} photos, visibles par les clients qui consultent votre agence.
               </p>
             </Card>
+
+            {editingTab === "vitrine" && (
+              <SaveBar saving={saving} onCancel={() => handleEditToggle("vitrine")} />
+            )}
           </div>
-        )}
-
-        {/* Onglet : Localisation (GPS + carte + zone de couverture) */}
-        {activeTab === "localisation" && (
-          <Card>
-            <SectionHeader
-              icon={MapPinSolidIcon}
-              title="Coordonnées GPS"
-              action={
-                isEditing && (
-                  <button
-                    type="button"
-                    onClick={getCurrentLocation}
-                    className="text-xs font-medium text-indigo-600 hover:text-indigo-700 hover:underline transition-colors"
-                  >
-                    Détecter ma position
-                  </button>
-                )
-              }
-            />
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <FieldLabel>Latitude</FieldLabel>
-                <Field name="latitude" value={formData.latitude} onChange={handleChange} disabled={!isEditing} placeholder="5.354722" />
-              </div>
-              <div>
-                <FieldLabel>Longitude</FieldLabel>
-                <Field name="longitude" value={formData.longitude} onChange={handleChange} disabled={!isEditing} placeholder="-4.008256" />
-              </div>
-            </div>
-
-            <div className="mt-4">
-              <div className="flex items-center justify-between mb-1.5">
-                <FieldLabel>Zone de couverture</FieldLabel>
-                <span className="text-xs font-semibold text-indigo-600">
-                  {formData.zone_couverture_km || 0} km
-                </span>
-              </div>
-              <input
-                type="range"
-                min={1}
-                max={100}
-                value={formData.zone_couverture_km || 10}
-                onChange={(e) => setFormData((p) => ({ ...p, zone_couverture_km: e.target.value }))}
-                disabled={!isEditing}
-                className="w-full accent-indigo-600 disabled:opacity-50"
-              />
-              <p className="text-xs text-slate-400 mt-1">
-                Rayon autour de votre agence, visible par les clients qui vous découvrent sur la carte.
-              </p>
-            </div>
-
-            <div className="mt-4">
-              <CoverageMap
-                latitude={formData.latitude === "" ? null : parseFloat(formData.latitude)}
-                longitude={formData.longitude === "" ? null : parseFloat(formData.longitude)}
-                radiusKm={parseFloat(formData.zone_couverture_km) || 0}
-                editable={isEditing}
-                onPositionChange={([lat, lng]) =>
-                  setFormData((p) => ({ ...p, latitude: lat.toFixed(6), longitude: lng.toFixed(6) }))
-                }
-              />
-              {isEditing && (
-                <p className="text-xs text-slate-400 mt-1.5">Cliquez sur la carte pour repositionner votre agence.</p>
-              )}
-            </div>
-          </Card>
         )}
 
         {/* Onglet : Horaires */}
         {activeTab === "horaires" && (
-          <Card>
-            <SectionHeader icon={ClockIcon} title="Horaires d'ouverture" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {formData.horaires.map((h, i) => (
-                <div
-                  key={`horaire-${h.jour}-${i}`}
-                  className={`rounded-lg border px-3 py-2.5 transition-colors ${
-                    h.ferme ? "bg-slate-50 border-slate-100" : "bg-white border-slate-200"
-                  }`}
-                >
-                  {/* Ligne jour + statut */}
-                  <div className="flex items-center justify-between">
-                    <span className={`text-xs font-medium ${h.ferme ? "text-slate-400" : "text-slate-700"}`}>
-                      {h.jour}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      {isEditing && (
-                        <input
-                          type="checkbox"
-                          checked={h.ferme}
-                          onChange={(e) => handleHoraireChange(i, "ferme", e.target.checked)}
-                          className="w-3.5 h-3.5 accent-slate-700 cursor-pointer"
-                          title="Marquer comme fermé"
-                        />
-                      )}
-                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
-                        h.ferme
-                          ? "bg-slate-100 text-slate-400"
-                          : "bg-emerald-50 text-emerald-600"
-                      }`}>
-                        {h.ferme ? "Fermé" : "Ouvert"}
+          <div className="space-y-5">
+            <Card>
+              <SectionHeader
+                icon={ClockIcon}
+                title="Horaires d'ouverture"
+                action={
+                  <SectionEditButton
+                    isEditing={editingTab === "horaires"}
+                    onClick={() => handleEditToggle("horaires")}
+                  />
+                }
+              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {formData.horaires.map((h, i) => (
+                  <div
+                    key={`horaire-${h.jour}-${i}`}
+                    className={`rounded-lg border px-3 py-2.5 transition-colors ${
+                      h.ferme ? "bg-slate-50 border-slate-100" : "bg-white border-slate-200"
+                    }`}
+                  >
+                    {/* Ligne jour + statut */}
+                    <div className="flex items-center justify-between">
+                      <span className={`text-xs font-medium ${h.ferme ? "text-slate-400" : "text-slate-700"}`}>
+                        {h.jour}
                       </span>
+                      <div className="flex items-center gap-2">
+                        {editingTab === "horaires" && (
+                          <input
+                            type="checkbox"
+                            checked={h.ferme}
+                            onChange={(e) => handleHoraireChange(i, "ferme", e.target.checked)}
+                            className="w-3.5 h-3.5 accent-slate-700 cursor-pointer"
+                            title="Marquer comme fermé"
+                          />
+                        )}
+                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                          h.ferme
+                            ? "bg-slate-100 text-slate-400"
+                            : "bg-emerald-50 text-emerald-600"
+                        }`}>
+                          {h.ferme ? "Fermé" : "Ouvert"}
+                        </span>
+                      </div>
                     </div>
+
+                    {/* Plage horaire */}
+                    {!h.ferme && (
+                      <div className="flex items-center gap-1.5 mt-2">
+                        <input
+                          type="time"
+                          value={h.ouverture}
+                          onChange={(e) => handleHoraireChange(i, "ouverture", e.target.value)}
+                          disabled={editingTab !== "horaires"}
+                          className="flex-1 px-2 py-1 text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-indigo-400 disabled:cursor-default"
+                        />
+                        <span className="text-slate-300 text-xs">–</span>
+                        <input
+                          type="time"
+                          value={h.fermeture}
+                          onChange={(e) => handleHoraireChange(i, "fermeture", e.target.value)}
+                          disabled={editingTab !== "horaires"}
+                          className="flex-1 px-2 py-1 text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-indigo-400 disabled:cursor-default"
+                        />
+                      </div>
+                    )}
                   </div>
-
-                  {/* Plage horaire */}
-                  {!h.ferme && (
-                    <div className="flex items-center gap-1.5 mt-2">
-                      <input
-                        type="time"
-                        value={h.ouverture}
-                        onChange={(e) => handleHoraireChange(i, "ouverture", e.target.value)}
-                        disabled={!isEditing}
-                        className="flex-1 px-2 py-1 text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-indigo-400 disabled:cursor-default"
-                      />
-                      <span className="text-slate-300 text-xs">–</span>
-                      <input
-                        type="time"
-                        value={h.fermeture}
-                        onChange={(e) => handleHoraireChange(i, "fermeture", e.target.value)}
-                        disabled={!isEditing}
-                        className="flex-1 px-2 py-1 text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-indigo-400 disabled:cursor-default"
-                      />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </Card>
-        )}
-
-        {/* ── Barre de sauvegarde fixe ── */}
-        {isEditing && (
-          <div className="fixed bottom-0 left-0 right-0 z-50 lg:left-60">
-            <div className="bg-white border-t border-slate-200 px-4 py-3 sm:px-6">
-              <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
-                <p className="text-xs text-slate-500 hidden sm:block">
-                  Les modifications ne sont pas encore enregistrées.
-                </p>
-                <div className="flex items-center gap-2 ml-auto">
-                  <button
-                    type="button"
-                    onClick={handleEditToggle}
-                    className="px-4 py-2 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={saving}
-                    className="flex items-center gap-2 px-5 py-2 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-400 rounded-lg transition-colors"
-                  >
-                    {saving
-                      ? <ArrowPathIcon className="w-4 h-4 animate-spin" />
-                      : <CheckIcon className="w-4 h-4" />
-                    }
-                    {saving ? "Enregistrement…" : "Enregistrer les modifications"}
-                  </button>
-                </div>
+                ))}
               </div>
-            </div>
+            </Card>
+
+            {editingTab === "horaires" && (
+              <SaveBar saving={saving} onCancel={() => handleEditToggle("horaires")} />
+            )}
           </div>
         )}
       </form>
