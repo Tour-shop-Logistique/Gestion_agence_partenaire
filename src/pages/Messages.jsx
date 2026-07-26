@@ -255,15 +255,15 @@ const Messages = () => {
             </div>
           )}
 
-          {/* Fil de discussion — sans bulles, aligné à gauche, ligne verticale colorée */}
-          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5">
+          {/* Fil de discussion — bulles de chat classiques, avatar + alignement gauche/droite */}
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 bg-slate-50/40">
             {status === "loading" && messages.length === 0 ? (
               <div className="flex justify-center py-10">
                 <Loader2 className="animate-spin text-slate-400" size={28} />
               </div>
             ) : displayedMessages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-slate-400">
-                <div className="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center mb-3">
+                <div className="w-14 h-14 rounded-2xl bg-white border border-slate-100 flex items-center justify-center mb-3">
                   <Mail className="w-6 h-6 text-slate-300" strokeWidth={1.5} />
                 </div>
                 <p className="text-sm font-bold text-slate-600">
@@ -277,116 +277,133 @@ const Messages = () => {
               <div className="space-y-6">
                 {dayGroups.map((group) => (
                   <div key={group.day}>
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="h-px flex-1 bg-slate-100" />
-                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                    <div className="flex items-center justify-center mb-4">
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-white px-3 py-1 rounded-full border border-slate-100 shadow-sm">
                         {formatDayLabel(group.date)}
                       </span>
-                      <div className="h-px flex-1 bg-slate-100" />
                     </div>
 
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {group.items.map((m) => {
                         const isMine = m.sender?.type === "agence";
                         const isEditing = editingId === m.id;
                         const senderName = isMine
                           ? "Vous"
                           : [m.sender?.prenoms, m.sender?.nom].filter(Boolean).join(" ") || "Backoffice";
+                        const initial = isMine ? "V" : (senderName?.[0] || "B").toUpperCase();
 
                         return (
-                          <div
-                            key={m.id}
-                            className={`group relative pl-4 border-l-2 ${isMine ? "border-slate-900" : "border-indigo-300"}`}
-                          >
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className={`text-xs font-bold ${isMine ? "text-slate-900" : "text-indigo-600"}`}>
-                                {senderName}
-                              </span>
-                              <span className="text-[11px] text-slate-400">
-                                {format(new Date(m.created_at), "HH:mm")}
-                              </span>
-                              {m.edited_at && (
-                                <span className="text-[10px] italic text-slate-300">modifié</span>
-                              )}
-                              {isMine && (
-                                m.read_at
-                                  ? <CheckCheck size={13} className="text-sky-500" />
-                                  : <Check size={13} className="text-slate-300" />
-                              )}
-
-                              {isMine && !isEditing && (
-                                <div className="relative ml-auto">
-                                  <button
-                                    onClick={() => setOpenMenuId(openMenuId === m.id ? null : m.id)}
-                                    className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-slate-700 transition-opacity"
-                                  >
-                                    <MoreVertical size={14} />
-                                  </button>
-                                  {openMenuId === m.id && (
-                                    <div className="absolute top-6 right-0 bg-white border border-slate-200 rounded-lg shadow-lg py-1 z-10 w-32">
-                                      {m.body && (
-                                        <button
-                                          onClick={() => startEdit(m)}
-                                          className="w-full text-left px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-                                        >
-                                          <Pencil size={12} /> Modifier
-                                        </button>
-                                      )}
-                                      <button
-                                        onClick={() => handleDelete(m.id)}
-                                        className="w-full text-left px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 flex items-center gap-2"
-                                      >
-                                        <Trash2 size={12} /> Supprimer
-                                      </button>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
+                          <div key={m.id} className={`group flex items-end gap-2 ${isMine ? "flex-row-reverse" : ""}`}>
+                            <div
+                              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 ${
+                                isMine ? "bg-slate-900" : "bg-indigo-500"
+                              }`}
+                            >
+                              {initial}
                             </div>
 
-                            {isEditing ? (
-                              <div className="space-y-2 max-w-lg">
-                                <textarea
-                                  autoFocus
-                                  value={editBody}
-                                  onChange={(e) => setEditBody(e.target.value)}
-                                  rows={2}
-                                  className="w-full px-3 py-2 rounded-lg text-sm bg-slate-50 border border-slate-200 focus:outline-none focus:ring-4 focus:ring-slate-900/5 focus:border-slate-400 resize-none"
-                                />
-                                <div className="flex gap-2">
-                                  <button onClick={() => saveEdit(m.id)} className="text-xs font-bold text-white bg-slate-900 px-3 py-1 rounded-lg">Enregistrer</button>
-                                  <button onClick={cancelEdit} className="text-xs font-bold text-slate-500 hover:text-slate-800">Annuler</button>
-                                </div>
-                              </div>
-                            ) : (
-                              <>
-                                {m.body && (
-                                  <p className="text-sm text-slate-700 whitespace-pre-wrap break-words leading-relaxed max-w-2xl">
-                                    {m.body}
-                                  </p>
-                                )}
-                                {m.attachments?.length > 0 && (
-                                  <div className="mt-2 space-y-1.5 max-w-md">
-                                    {m.attachments.map((a) => isImage(a.mime_type) ? (
-                                      <a key={a.id} href={a.url} target="_blank" rel="noopener noreferrer" className="block">
-                                        <img src={a.url} alt={a.original_name} className="max-w-full max-h-48 rounded-lg object-cover border border-slate-200" />
-                                      </a>
-                                    ) : (
-                                      <a
-                                        key={a.id}
-                                        href={a.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center gap-2 text-xs px-2.5 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors w-fit"
-                                      >
-                                        <FileText size={14} className="shrink-0 text-slate-400" />
-                                        <span className="truncate text-slate-600">{a.original_name}</span>
-                                      </a>
-                                    ))}
+                            <div className={`flex flex-col max-w-[75%] sm:max-w-[65%] ${isMine ? "items-end" : "items-start"}`}>
+                              <div className="flex items-center gap-1.5 mb-1 px-1">
+                                <span className={`text-[11px] font-bold ${isMine ? "text-slate-700" : "text-indigo-600"}`}>
+                                  {senderName}
+                                </span>
+                                <span className="text-[10px] text-slate-400">
+                                  {format(new Date(m.created_at), "HH:mm")}
+                                </span>
+                                {isMine && !isEditing && (
+                                  <div className="relative">
+                                    <button
+                                      onClick={() => setOpenMenuId(openMenuId === m.id ? null : m.id)}
+                                      className="opacity-0 group-hover:opacity-100 p-0.5 text-slate-400 hover:text-slate-700 transition-opacity"
+                                    >
+                                      <MoreVertical size={13} />
+                                    </button>
+                                    {openMenuId === m.id && (
+                                      <div className="absolute top-5 right-0 bg-white border border-slate-200 rounded-lg shadow-lg py-1 z-10 w-32">
+                                        {m.body && (
+                                          <button
+                                            onClick={() => startEdit(m)}
+                                            className="w-full text-left px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                                          >
+                                            <Pencil size={12} /> Modifier
+                                          </button>
+                                        )}
+                                        <button
+                                          onClick={() => handleDelete(m.id)}
+                                          className="w-full text-left px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                        >
+                                          <Trash2 size={12} /> Supprimer
+                                        </button>
+                                      </div>
+                                    )}
                                   </div>
                                 )}
-                              </>
-                            )}
+                              </div>
+
+                              {isEditing ? (
+                                <div className="space-y-2 w-full min-w-[240px]">
+                                  <textarea
+                                    autoFocus
+                                    value={editBody}
+                                    onChange={(e) => setEditBody(e.target.value)}
+                                    rows={2}
+                                    className="w-full px-3 py-2 rounded-lg text-sm bg-white border border-slate-200 focus:outline-none focus:ring-4 focus:ring-slate-900/5 focus:border-slate-400 resize-none"
+                                  />
+                                  <div className="flex gap-2">
+                                    <button onClick={() => saveEdit(m.id)} className="text-xs font-bold text-white bg-slate-900 px-3 py-1 rounded-lg">Enregistrer</button>
+                                    <button onClick={cancelEdit} className="text-xs font-bold text-slate-500 hover:text-slate-800">Annuler</button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <>
+                                  {m.body && (
+                                    <div
+                                      className={`px-3.5 py-2.5 rounded-2xl text-sm whitespace-pre-wrap break-words leading-relaxed shadow-sm ${
+                                        isMine
+                                          ? "bg-indigo-600 text-white rounded-br-md"
+                                          : "bg-white text-slate-700 border border-slate-200 rounded-bl-md"
+                                      }`}
+                                    >
+                                      {m.body}
+                                      {m.edited_at && (
+                                        <span className={`ml-1.5 text-[10px] italic ${isMine ? "text-indigo-200" : "text-slate-400"}`}>
+                                          modifié
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                  {m.attachments?.length > 0 && (
+                                    <div className="mt-1.5 space-y-1.5 w-full">
+                                      {m.attachments.map((a) => isImage(a.mime_type) ? (
+                                        <a key={a.id} href={a.url} target="_blank" rel="noopener noreferrer" className="block">
+                                          <img src={a.url} alt={a.original_name} className="max-w-full max-h-48 rounded-xl object-cover border border-slate-200" />
+                                        </a>
+                                      ) : (
+                                        <a
+                                          key={a.id}
+                                          href={a.url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className={`flex items-center gap-2 text-xs px-2.5 py-1.5 rounded-lg transition-colors w-fit ${
+                                            isMine ? "bg-indigo-50 hover:bg-indigo-100 text-indigo-700" : "bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600"
+                                          }`}
+                                        >
+                                          <FileText size={14} className="shrink-0" />
+                                          <span className="truncate">{a.original_name}</span>
+                                        </a>
+                                      ))}
+                                    </div>
+                                  )}
+                                  {isMine && (
+                                    <span className="mt-0.5 px-1">
+                                      {m.read_at
+                                        ? <CheckCheck size={13} className="text-sky-500" />
+                                        : <Check size={13} className="text-slate-300" />}
+                                    </span>
+                                  )}
+                                </>
+                              )}
+                            </div>
                           </div>
                         );
                       })}
