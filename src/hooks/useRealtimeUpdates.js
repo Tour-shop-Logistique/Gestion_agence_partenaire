@@ -104,6 +104,11 @@ export function useRealtimeUpdates(onUpdate, options = {}) {
     onTarifsUpdated: shouldListen('tarifs')
       ? (data, meta) => handleUpdate(data, meta, 'tarifs.updated')
       : undefined,
+
+    // Messagerie
+    onMessageReceived: shouldListen('messages')
+      ? (data, meta) => handleUpdate(data, meta, 'message.received')
+      : undefined,
   };
 
   // Utiliser le hook WebSocket principal
@@ -298,6 +303,27 @@ export function useAutoRefreshWithRealtime(onRefresh, intervalMs = 60000, enable
       onRefresh();
     },
     { enabled }
+  );
+}
+
+/**
+ * Hook pour écouter uniquement les nouveaux messages de la messagerie
+ *
+ * @param {Function} onMessage - Fonction appelée avec le message reçu
+ * @param {boolean} enabled - Activer/désactiver (défaut: true)
+ *
+ * @example
+ * useRealtimeMessages((message) => {
+ *   dispatch(messageReceived(message));
+ * });
+ */
+export function useRealtimeMessages(onMessage, enabled = true) {
+  return useRealtimeUpdates(
+    (data) => {
+      const message = Array.isArray(data) ? data[0] : data;
+      if (onMessage && message) onMessage(message);
+    },
+    { only: ['messages'], showNotifications: false, enabled }
   );
 }
 

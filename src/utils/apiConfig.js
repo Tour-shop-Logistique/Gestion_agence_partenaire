@@ -100,6 +100,12 @@ export const API_ENDPOINTS = {
     MARK_ALL_READ: "/agence/notifications/marquer-toutes-lues",
     DELETE: "/agence/notifications/:id",
   },
+
+  // Messagerie avec le backoffice
+  MESSAGES: {
+    SHOW: "/agence/messages",
+    SEND: "/agence/messages",
+  },
 };
 
 /**

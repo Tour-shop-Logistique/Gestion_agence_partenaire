@@ -4,11 +4,12 @@ import { selectCurrentUser, logout } from "../store/slices/authSlice";
 import { useAgency } from "../hooks/useAgency";
 import { useExpedition } from "../hooks/useExpedition";
 import { getLogoUrl } from "../utils/apiConfig";
-import { Bell, Menu, Euro, RefreshCcw } from "lucide-react";
+import { Bell, Menu, Euro, RefreshCcw, MessageSquare } from "lucide-react";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
 import WebSocketStatus from "./WebSocketStatus";
 import { selectUnreadCount } from "../store/slices/notificationsSlice";
+import { selectUnreadMessagesCount } from "../store/slices/messagesSlice";
 
 const Header = ({ onToggleSidebar }) => {
   const dispatch = useDispatch();
@@ -103,6 +104,7 @@ const Header = ({ onToggleSidebar }) => {
 
   const pendingDemandesCount = demandesMeta?.total || 0;
   const unreadAnnouncementsCount = useSelector(selectUnreadCount);
+  const unreadMessagesCount = useSelector(selectUnreadMessagesCount);
 
   const initials = (currentUser?.name || "")
     .split(" ")
@@ -143,6 +145,22 @@ const Header = ({ onToggleSidebar }) => {
             <div className="lg:hidden">
               <span className="text-xs font-semibold text-indigo-600">{parseFloat(exchangeRate).toLocaleString('fr-FR')}</span>
             </div>
+          </button>
+
+          {/* Messagerie avec le backoffice */}
+          <button
+            onClick={() => navigate('/messages')}
+            className="relative p-2 rounded-lg hover:bg-slate-100 transition"
+          >
+            <MessageSquare className="w-5 h-5 text-slate-600" />
+            {unreadMessagesCount > 0 && (
+              <span className="absolute top-1 right-1 flex h-4 w-4">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 items-center justify-center">
+                  <span className="text-[10px] font-semibold text-white">{unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}</span>
+                </span>
+              </span>
+            )}
           </button>
 
           {/* Notifications / Annonces */}
