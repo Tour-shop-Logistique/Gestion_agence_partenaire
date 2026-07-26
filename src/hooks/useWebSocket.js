@@ -4,6 +4,15 @@ import { getEcho, disconnectEcho } from '../services/echo';
 // Stockage des références récemment créées pour éviter les notifications auto-générées
 const recentlyCreatedRefs = new Set();
 
+// Registre partagé des callbacks par canal : plusieurs composants (ex. un
+// listener global dans App.jsx + la page actuellement affichée) peuvent
+// s'abonner en même temps au même canal "agence.{id}". channel.listen()
+// remplacerait le callback précédent s'il était appelé plusieurs fois sur le
+// même canal Echo — ce registre garantit qu'un seul vrai channel.listen()
+// est posé par canal, qui dispatche ensuite vers tous les callbacks inscrits.
+const channelListeners = new Map(); // channelName -> Set<callback>
+const channelRefs = new Map(); // channelName -> instance Echo channel
+
 /**
  * Marque une référence comme récemment créée (pour ignorer sa notification WebSocket)
  * @param {string} reference - La référence de l'expédition/colis créé
@@ -182,32 +191,50 @@ export function useWebSocket(agenceId, handlers = {}, enabled = true) {
     }
 
     const channelName = `agence.${agenceId}`;
-    console.log(`🔌 [WebSocket] Tentative d'abonnement au canal: ${channelName}`);
 
-    // S'abonner au canal privé de l'agence
-    const channel = echo.private(channelName);
-    channelRef.current = channel;
+    // Inscrit ce composant dans le registre partagé du canal
+    if (!channelListeners.has(channelName)) {
+      channelListeners.set(channelName, new Set());
+    }
+    channelListeners.get(channelName).add(handleModelUpdate);
 
-    // Log de la souscription
-    channel.subscribed(() => {
-      console.log(`✅ [WebSocket] Abonné avec succès au canal: ${channelName}`);
-    });
+    // Ne pose le vrai channel.listen() qu'une seule fois par canal, même si
+    // plusieurs composants s'y abonnent en parallèle
+    if (!channelRefs.has(channelName)) {
+      console.log(`🔌 [WebSocket] Tentative d'abonnement au canal: ${channelName}`);
+      const channel = echo.private(channelName);
+      channelRefs.set(channelName, channel);
 
-    channel.error((error) => {
-      console.error(`❌ [WebSocket] Erreur sur le canal ${channelName}:`, error);
-    });
+      channel.subscribed(() => {
+        console.log(`✅ [WebSocket] Abonné avec succès au canal: ${channelName}`);
+      });
 
-    // Écouter l'événement model.updated
-    console.log(`👂 [WebSocket] Écoute de l'événement '.model.updated' sur ${channelName}`);
-    channel.listen('.model.updated', handleModelUpdate);
+      channel.error((error) => {
+        console.error(`❌ [WebSocket] Erreur sur le canal ${channelName}:`, error);
+      });
 
-    // Nettoyage lors du démontage
+      console.log(`👂 [WebSocket] Écoute de l'événement '.model.updated' sur ${channelName}`);
+      channel.listen('.model.updated', (payload) => {
+        channelListeners.get(channelName)?.forEach((cb) => cb(payload));
+      });
+    }
+
+    channelRef.current = channelName;
+
+    // Nettoyage lors du démontage : retire uniquement ce callback du
+    // registre ; ne quitte le canal Echo que si plus personne n'écoute.
     return () => {
-      if (channelRef.current) {
-        console.log(`🔌 [WebSocket] Désabonnement du canal: ${channelName}`);
-        echo.leave(channelName);
-        channelRef.current = null;
+      const listeners = channelListeners.get(channelName);
+      if (listeners) {
+        listeners.delete(handleModelUpdate);
+        if (listeners.size === 0) {
+          console.log(`🔌 [WebSocket] Désabonnement du canal: ${channelName}`);
+          echo.leave(channelName);
+          channelListeners.delete(channelName);
+          channelRefs.delete(channelName);
+        }
       }
+      channelRef.current = null;
     };
   }, [agenceId, enabled, handleModelUpdate]);
 
