@@ -701,10 +701,23 @@ const AgencyProfile = () => {
                 const totalCount = visibleExisting.length + newPhotoPreviews.length;
 
                 if (totalCount === 0) {
-                  return (
-                    <p className="text-xs text-slate-400 py-6 text-center">
-                      Aucune photo pour l'instant. Ajoutez des photos de vos locaux pour rassurer vos clients.
-                    </p>
+                  return editingTab === "vitrine" ? (
+                    <label className="flex flex-col items-center justify-center gap-2.5 py-10 rounded-xl border-2 border-dashed border-indigo-200 bg-indigo-50/40 hover:bg-indigo-50 hover:border-indigo-300 transition-colors cursor-pointer">
+                      <div className="h-11 w-11 rounded-full bg-indigo-100 flex items-center justify-center">
+                        <PhotoIcon className="w-5 h-5 text-indigo-500" />
+                      </div>
+                      <p className="text-sm font-semibold text-indigo-700">Ajoutez vos premières photos</p>
+                      <p className="text-xs text-slate-400">Cliquez ou déposez des images ici — jusqu'à {MAX_PHOTOS} photos</p>
+                      <input type="file" className="hidden" accept="image/*" multiple onChange={handlePhotosChange} />
+                    </label>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center gap-2.5 py-10 rounded-xl border border-dashed border-slate-200 bg-slate-50/60">
+                      <div className="h-11 w-11 rounded-full bg-slate-100 flex items-center justify-center">
+                        <PhotoIcon className="w-5 h-5 text-slate-300" />
+                      </div>
+                      <p className="text-sm font-medium text-slate-400">Aucune photo pour l'instant</p>
+                      <p className="text-xs text-slate-400">Ajoutez des photos de vos locaux pour rassurer vos clients.</p>
+                    </div>
                   );
                 }
 
@@ -741,6 +754,13 @@ const AgencyProfile = () => {
                         )}
                       </div>
                     ))}
+                    {editingTab === "vitrine" && totalCount < MAX_PHOTOS && (
+                      <label className="aspect-square rounded-lg border-2 border-dashed border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/40 flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors">
+                        <PlusIcon className="w-5 h-5 text-slate-400" />
+                        <span className="text-[10px] font-medium text-slate-400">Ajouter</span>
+                        <input type="file" className="hidden" accept="image/*" multiple onChange={handlePhotosChange} />
+                      </label>
+                    )}
                   </div>
                 );
               })()}
