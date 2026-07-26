@@ -616,7 +616,7 @@ const AgencyProfile = () => {
                   <FieldLabel>Adresse email</FieldLabel>
                   <Field icon={EnvelopeIcon} type="email" name="email" value={formData.email} onChange={handleChange} disabled={editingTab !== "identite"} placeholder="contact@agence.com" required />
                 </div>
-                <div>
+                <div className="sm:col-span-2">
                   <FieldLabel>Pays</FieldLabel>
                   <div className="relative">
                     <GlobeAltIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none z-10" />
