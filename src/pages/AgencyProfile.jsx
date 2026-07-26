@@ -29,6 +29,8 @@ import {
   IdentificationIcon,
   SparklesIcon,
   EnvelopeIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
 } from "@heroicons/react/24/outline";
 
 /* ─────────────────────────────────────────────
@@ -165,6 +167,68 @@ const TABS = [
   { key: "horaires", label: "Horaires", icon: ClockIcon },
 ];
 
+/** Visionneuse plein écran pour parcourir les photos de l'agence */
+const ImageLightbox = ({ images, index, onClose, onNavigate }) => {
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowRight") onNavigate(1);
+      if (e.key === "ArrowLeft") onNavigate(-1);
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose, onNavigate]);
+
+  if (index == null || !images[index]) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] bg-slate-950/90 flex items-center justify-center p-4 sm:p-8"
+      onClick={onClose}
+    >
+      <button
+        type="button"
+        onClick={onClose}
+        className="absolute top-4 right-4 sm:top-6 sm:right-6 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+      >
+        <XMarkIcon className="w-6 h-6" />
+      </button>
+
+      {images.length > 1 && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onNavigate(-1); }}
+          className="absolute left-2 sm:left-6 p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+        >
+          <ChevronLeftIcon className="w-6 h-6" />
+        </button>
+      )}
+
+      <img
+        src={images[index]}
+        alt={`Photo ${index + 1}`}
+        onClick={(e) => e.stopPropagation()}
+        className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+      />
+
+      {images.length > 1 && (
+        <>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onNavigate(1); }}
+            className="absolute right-2 sm:right-6 p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+          >
+            <ChevronRightIcon className="w-6 h-6" />
+          </button>
+          <span className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 text-xs font-medium text-white/70 bg-white/10 px-3 py-1 rounded-full">
+            {index + 1} / {images.length}
+          </span>
+        </>
+      )}
+    </div>
+  );
+};
+
 /* ─────────────────────────────────────────────
    Page principale
 ───────────────────────────────────────────── */
@@ -213,6 +277,7 @@ const AgencyProfile = () => {
   const [photosToRemove, setPhotosToRemove] = useState([]); // chemins bruts à retirer
   const [newPhotoFiles, setNewPhotoFiles] = useState([]);   // nouveaux File à uploader
   const [newPhotoPreviews, setNewPhotoPreviews] = useState([]); // previews base64 des nouveaux
+  const [viewerIndex, setViewerIndex] = useState(null); // index ouvert dans la visionneuse plein écran
 
   /* Ouvrir l'édition automatiquement si pas encore configuré */
   useEffect(() => {
@@ -385,6 +450,12 @@ const AgencyProfile = () => {
       setEditingTab(tabKey);
     }
   };
+
+  // Liste combinée (existantes + nouvelles) pour la navigation dans la visionneuse
+  const viewerImages = [
+    ...existingPhotos.filter((url) => !photosToRemove.includes(url)),
+    ...newPhotoPreviews,
+  ];
 
   /* ── Render ── */
   return (
@@ -723,9 +794,14 @@ const AgencyProfile = () => {
 
                 return (
                   <div className="grid grid-cols-3 sm:grid-cols-5 xl:grid-cols-6 gap-3">
-                    {visibleExisting.map((url) => (
+                    {visibleExisting.map((url, i) => (
                       <div key={url} className="relative group aspect-square rounded-lg overflow-hidden border border-slate-200 bg-slate-50">
-                        <img src={url} alt="Photo agence" className="w-full h-full object-cover" />
+                        <img
+                          src={url}
+                          alt="Photo agence"
+                          onClick={() => setViewerIndex(i)}
+                          className="w-full h-full object-cover cursor-zoom-in"
+                        />
                         {editingTab === "vitrine" && (
                           <button
                             type="button"
@@ -739,7 +815,12 @@ const AgencyProfile = () => {
                     ))}
                     {newPhotoPreviews.map((src, i) => (
                       <div key={`new-${i}`} className="relative group aspect-square rounded-lg overflow-hidden border border-indigo-200 bg-indigo-50">
-                        <img src={src} alt="Nouvelle photo" className="w-full h-full object-cover" />
+                        <img
+                          src={src}
+                          alt="Nouvelle photo"
+                          onClick={() => setViewerIndex(visibleExisting.length + i)}
+                          className="w-full h-full object-cover cursor-zoom-in"
+                        />
                         <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-600 text-white">
                           Nouveau
                         </span>
@@ -855,6 +936,17 @@ const AgencyProfile = () => {
         )}
         </div>
       </form>
+
+      {viewerIndex != null && (
+        <ImageLightbox
+          images={viewerImages}
+          index={viewerIndex}
+          onClose={() => setViewerIndex(null)}
+          onNavigate={(delta) =>
+            setViewerIndex((i) => (i + delta + viewerImages.length) % viewerImages.length)
+          }
+        />
+      )}
     </div>
     </ErrorBoundary>
   );
