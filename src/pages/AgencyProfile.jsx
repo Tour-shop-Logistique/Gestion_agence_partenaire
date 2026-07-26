@@ -130,7 +130,7 @@ const SectionEditButton = ({ isEditing, onClick }) => (
 const SaveBar = ({ saving, onCancel }) => (
   <div className="fixed bottom-0 left-0 right-0 z-50 lg:left-60">
     <div className="bg-white border-t border-slate-200 px-4 py-3 sm:px-6">
-      <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
+      <div className="max-w-[1600px] mx-auto flex items-center justify-between gap-4">
         <p className="text-xs text-slate-500 hidden sm:block">
           Les modifications ne sont pas encore enregistrées.
         </p>
@@ -389,7 +389,7 @@ const AgencyProfile = () => {
   /* ── Render ── */
   return (
     <ErrorBoundary>
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-24 space-y-5">
+    <div className="max-w-[1600px] mx-auto px-3 sm:px-4 lg:px-6 pb-24 space-y-4 sm:space-y-6">
 
       {/* ── Bannière setup requis ── */}
       {!agencyConfigured && (
@@ -404,13 +404,17 @@ const AgencyProfile = () => {
         </div>
       )}
 
-      {/* ── En-tête identité ── */}
-      <Card>
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+      {/* ── En-tête identité (bandeau dégradé, pleine largeur) ── */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-600 to-violet-700 shadow-sm">
+        <div className="absolute inset-0 opacity-[0.07]" style={{
+          backgroundImage: "radial-gradient(circle at 20% 20%, white 1px, transparent 1px)",
+          backgroundSize: "20px 20px",
+        }} />
+        <div className="relative flex flex-col sm:flex-row sm:items-center gap-5 p-5 sm:p-7">
 
           {/* Logo */}
           <div className="relative group flex-shrink-0">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden">
+            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl border-2 border-white/20 bg-white flex items-center justify-center overflow-hidden shadow-lg">
               {logoPreview || agencyData?.agence?.logo ? (
                 <img
                   src={logoPreview || getLogoUrl(agencyData?.agence?.logo)}
@@ -418,11 +422,11 @@ const AgencyProfile = () => {
                   className="w-full h-full object-contain"
                 />
               ) : (
-                <BuildingOffice2Icon className="w-8 h-8 text-slate-300" />
+                <BuildingOffice2Icon className="w-9 h-9 text-slate-300" />
               )}
             </div>
             {editingTab === "identite" && (
-              <label className="absolute inset-0 flex items-center justify-center bg-slate-900/50 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+              <label className="absolute inset-0 flex items-center justify-center bg-slate-900/50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
                 <CameraIcon className="w-5 h-5 text-white" />
                 <input type="file" className="hidden" accept="image/*" onChange={handleLogoChange} />
               </label>
@@ -432,25 +436,25 @@ const AgencyProfile = () => {
           {/* Infos */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-base font-semibold text-slate-800 truncate">
+              <h1 className="text-xl sm:text-2xl font-bold text-white truncate">
                 {formData.name || "Nouvelle agence"}
               </h1>
               {agencyConfigured && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-400/20 text-emerald-200 border border-emerald-300/30">
                   Actif
                 </span>
               )}
             </div>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs text-slate-500">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-indigo-100">
               {formData.code_agence && (
-                <span className="flex items-center gap-1">
-                  <BriefcaseIcon className="w-3.5 h-3.5" />
+                <span className="flex items-center gap-1.5">
+                  <BriefcaseIcon className="w-4 h-4" />
                   {formData.code_agence}
                 </span>
               )}
               {(formData.ville || formData.pays) && (
-                <span className="flex items-center gap-1">
-                  <MapPinIcon className="w-3.5 h-3.5" />
+                <span className="flex items-center gap-1.5">
+                  <MapPinIcon className="w-4 h-4" />
                   {[formData.ville, formData.pays].filter(Boolean).join(", ")}
                 </span>
               )}
@@ -463,7 +467,7 @@ const AgencyProfile = () => {
               <button
                 type="button"
                 onClick={async () => { setRefreshing(true); await fetchAgencyData(true); setRefreshing(false); }}
-                className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
+                className="p-2.5 rounded-xl border border-white/20 bg-white/10 text-white hover:bg-white/20 transition-colors"
                 title="Actualiser"
               >
                 <ArrowPathIcon className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
@@ -471,36 +475,40 @@ const AgencyProfile = () => {
             </div>
           )}
         </div>
-      </Card>
-
-      {/* ── Navigation par onglets ── */}
-      <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl p-1.5 overflow-x-auto">
-        {TABS.map((tab) => {
-          const isActive = activeTab === tab.key;
-          return (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
-                isActive
-                  ? "bg-indigo-600 text-white shadow-sm"
-                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
-              }`}
-            >
-              <tab.icon className="w-4 h-4" />
-              {tab.label}
-            </button>
-          );
-        })}
       </div>
 
-      {/* ── Corps du formulaire ── */}
-      <form onSubmit={handleSubmit}>
+      {/* ── Corps : navigation par onglets (sidebar) + contenu ── */}
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-4 sm:gap-6 items-start">
+
+        {/* Navigation par onglets */}
+        <div className="lg:sticky lg:top-6 flex lg:flex-col gap-1.5 bg-white border border-slate-200 rounded-xl p-2 overflow-x-auto lg:overflow-visible">
+          {TABS.map((tab) => {
+            const isActive = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors ${
+                  isActive
+                    ? "bg-indigo-600 text-white shadow-sm"
+                    : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+                }`}
+              >
+                <tab.icon className="w-4 h-4 flex-shrink-0" />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Contenu de l'onglet actif */}
+        <div className="min-w-0">
 
         {/* Onglet : Identité (+ Localisation) */}
         {activeTab === "identite" && (
-          <div className="space-y-5">
+          <>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 items-start">
             <Card>
               <SectionHeader
                 icon={BuildingOffice2Icon}
@@ -615,16 +623,18 @@ const AgencyProfile = () => {
                 )}
               </div>
             </Card>
-
-            {editingTab === "identite" && (
-              <SaveBar saving={saving} onCancel={() => handleEditToggle("identite")} />
-            )}
           </div>
+
+          {editingTab === "identite" && (
+            <SaveBar saving={saving} onCancel={() => handleEditToggle("identite")} />
+          )}
+          </>
         )}
 
         {/* Onglet : Vitrine (description, message d'accueil, photos) */}
         {activeTab === "vitrine" && (
-          <div className="space-y-5">
+          <>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 items-start">
             <Card>
               <SectionHeader
                 icon={BriefcaseIcon}
@@ -672,7 +682,7 @@ const AgencyProfile = () => {
               </p>
             </Card>
 
-            <Card>
+            <Card className="xl:col-span-2">
               <SectionHeader
                 icon={PhotoIcon}
                 title="Photos de l'agence"
@@ -699,7 +709,7 @@ const AgencyProfile = () => {
                 }
 
                 return (
-                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-3 sm:grid-cols-5 xl:grid-cols-6 gap-3">
                     {visibleExisting.map((url) => (
                       <div key={url} className="relative group aspect-square rounded-lg overflow-hidden border border-slate-200 bg-slate-50">
                         <img src={url} alt="Photo agence" className="w-full h-full object-cover" />
@@ -738,11 +748,12 @@ const AgencyProfile = () => {
                 Jusqu'à {MAX_PHOTOS} photos, visibles par les clients qui consultent votre agence.
               </p>
             </Card>
-
-            {editingTab === "vitrine" && (
-              <SaveBar saving={saving} onCancel={() => handleEditToggle("vitrine")} />
-            )}
           </div>
+
+          {editingTab === "vitrine" && (
+            <SaveBar saving={saving} onCancel={() => handleEditToggle("vitrine")} />
+          )}
+          </>
         )}
 
         {/* Onglet : Horaires */}
@@ -759,7 +770,7 @@ const AgencyProfile = () => {
                   />
                 }
               />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
                 {formData.horaires.map((h, i) => (
                   <div
                     key={`horaire-${h.jour}-${i}`}
@@ -822,6 +833,7 @@ const AgencyProfile = () => {
             )}
           </div>
         )}
+        </div>
       </form>
     </div>
     </ErrorBoundary>
