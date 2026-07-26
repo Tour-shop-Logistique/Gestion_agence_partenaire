@@ -612,7 +612,7 @@ const AgencyProfile = () => {
                 <CoverageMap
                   latitude={formData.latitude === "" ? null : parseFloat(formData.latitude)}
                   longitude={formData.longitude === "" ? null : parseFloat(formData.longitude)}
-                  radiusKm={parseFloat(formData.zone_couverture_km) || 0}
+                  radiusKm={0}
                   editable={editingTab === "identite"}
                   onPositionChange={([lat, lng]) =>
                     setFormData((p) => ({ ...p, latitude: lat.toFixed(6), longitude: lng.toFixed(6) }))
