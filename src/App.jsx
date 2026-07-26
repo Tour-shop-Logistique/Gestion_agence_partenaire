@@ -46,6 +46,7 @@ import Transactions from "./pages/Transactions";
 import TransactionsPro from "./pages/TransactionsPro";
 import Notifications from "./pages/Notifications";
 import Messages from "./pages/Messages";
+import Promotions from "./pages/Promotions";
 import ToastManager from "./components/ToastManager";
 import DashboardLayout from "./components/DashboardLayout";
 import WebSocketDebugPanel from "./components/WebSocketDebugPanel";
@@ -293,6 +294,7 @@ function AppContent() {
           <Route path="/transactions-legacy" element={<AgencySetupGuard><Transactions /></AgencySetupGuard>} />
           <Route path="/notifications" element={<AgencySetupGuard><Notifications /></AgencySetupGuard>} />
           <Route path="/messages" element={<AgencySetupGuard><Messages /></AgencySetupGuard>} />
+          <Route path="/promotions" element={<AgencySetupGuard><Promotions /></AgencySetupGuard>} />
         </Route>
         {/* Route par défaut */}
         <Route path="*" element={<Navigate to="/" replace />} />

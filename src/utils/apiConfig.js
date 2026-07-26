@@ -46,6 +46,14 @@ export const API_ENDPOINTS = {
     LIST_TRANSACTIONS: "/agence/list-transactions",
   },
 
+  // Promotions et offres spéciales
+  PROMOTIONS: {
+    LIST: "/agence/promotions",
+    CREATE: "/agence/promotions",
+    UPDATE: "/agence/promotions/:id",
+    DELETE: "/agence/promotions/:id",
+  },
+
   // Tarifs
   TARIFS: {
     LIST_BASE: "/tarification/list-simple",

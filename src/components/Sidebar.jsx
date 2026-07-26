@@ -19,6 +19,7 @@ import {
   BanknotesIcon,
   ArrowsRightLeftIcon,
   ChatBubbleLeftRightIcon,
+  MegaphoneIcon,
 } from "@heroicons/react/24/outline";
 import { getLogoUrl } from "../utils/apiConfig";
 import { selectUnreadMessagesCount } from "../store/slices/messagesSlice";
@@ -77,6 +78,7 @@ const Sidebar = ({ onClose }) => {
       section: "Communication",
       items: [
         { path: "/messages", name: "Messages", icon: ChatBubbleLeftRightIcon },
+        { path: "/promotions", name: "Promotions", icon: MegaphoneIcon },
       ],
     },
     {
@@ -123,6 +125,7 @@ const Sidebar = ({ onClose }) => {
       section: "Communication",
       items: [
         { path: "/messages", name: "Messages", icon: ChatBubbleLeftRightIcon },
+        { path: "/promotions", name: "Promotions", icon: MegaphoneIcon },
       ],
     },
     {
@@ -156,6 +159,7 @@ const Sidebar = ({ onClose }) => {
     "/agents":                 { icon: "#fda4af", chip: "rgba(244,63,94,0.16)",   ring: "rgba(244,63,94,0.35)",   accent: "#fb7185" },
     "/agency-profile":         { icon: "#67e8f9", chip: "rgba(6,182,212,0.16)",   ring: "rgba(6,182,212,0.35)",   accent: "#22d3ee" },
     "/messages":               { icon: "#fdba74", chip: "rgba(249,115,22,0.16)",  ring: "rgba(249,115,22,0.35)",  accent: "#fb923c" },
+    "/promotions":             { icon: "#f9a8d4", chip: "rgba(219,39,119,0.16)",  ring: "rgba(219,39,119,0.35)",  accent: "#ec4899" },
   };
   const DEFAULT_ACCENT = { icon: "#cbd5e1", chip: "rgba(148,163,184,0.14)", ring: "rgba(148,163,184,0.3)", accent: "#94a3b8" };
 
