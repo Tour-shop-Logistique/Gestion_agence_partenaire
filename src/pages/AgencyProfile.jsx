@@ -6,6 +6,7 @@ import { selectAgencyConfigured } from "../store/slices/agencySlice";
 import { getLogoUrl } from "../utils/apiConfig";
 import { toast } from "../utils/toast";
 import ErrorBoundary from "../components/ErrorBoundary";
+import CoverageMap from "../components/CoverageMap";
 
 import {
   BuildingOffice2Icon,
@@ -137,7 +138,7 @@ const AgencyProfile = () => {
     name: "", code_agence: "", address: "", ville: "",
     pays: "Côte d'Ivoire", telephone: "", email: "", website: "",
     latitude: "", longitude: "", description: "", commune: "",
-    horaires: defaultHoraires, logo: null, message_accueil: "",
+    horaires: defaultHoraires, logo: null, message_accueil: "", zone_couverture_km: "10",
   });
 
   const [logoFile, setLogoFile]       = useState(null);
@@ -171,6 +172,7 @@ const AgencyProfile = () => {
       if (a.commune)     next.commune     = a.commune;
       if (a.logo)        next.logo        = a.logo;
       if (a.message_accueil != null) next.message_accueil = a.message_accueil;
+      if (a.zone_couverture_km != null) next.zone_couverture_km = String(a.zone_couverture_km);
       if (a.latitude  != null) next.latitude  = String(a.latitude);
       if (a.longitude != null) next.longitude = String(a.longitude);
 
@@ -283,6 +285,7 @@ const AgencyProfile = () => {
         longitude:   formData.longitude === "" ? null : parseFloat(formData.longitude),
         horaires:    formData.horaires,
         message_accueil: formData.message_accueil,
+        zone_couverture_km: formData.zone_couverture_km === "" ? null : parseInt(formData.zone_couverture_km, 10),
       };
       if (logoFile) payload.logo = logoFile;
       if (newPhotoFiles.length) payload.photos = newPhotoFiles;
@@ -621,6 +624,42 @@ const AgencyProfile = () => {
                   <FieldLabel>Longitude</FieldLabel>
                   <Field name="longitude" value={formData.longitude} onChange={handleChange} disabled={!isEditing} placeholder="-4.008256" />
                 </div>
+              </div>
+
+              <div className="mt-4">
+                <div className="flex items-center justify-between mb-1.5">
+                  <FieldLabel>Zone de couverture</FieldLabel>
+                  <span className="text-xs font-semibold text-indigo-600">
+                    {formData.zone_couverture_km || 0} km
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={1}
+                  max={100}
+                  value={formData.zone_couverture_km || 10}
+                  onChange={(e) => setFormData((p) => ({ ...p, zone_couverture_km: e.target.value }))}
+                  disabled={!isEditing}
+                  className="w-full accent-indigo-600 disabled:opacity-50"
+                />
+                <p className="text-xs text-slate-400 mt-1">
+                  Rayon autour de votre agence, visible par les clients qui vous découvrent sur la carte.
+                </p>
+              </div>
+
+              <div className="mt-4">
+                <CoverageMap
+                  latitude={formData.latitude === "" ? null : parseFloat(formData.latitude)}
+                  longitude={formData.longitude === "" ? null : parseFloat(formData.longitude)}
+                  radiusKm={parseFloat(formData.zone_couverture_km) || 0}
+                  editable={isEditing}
+                  onPositionChange={([lat, lng]) =>
+                    setFormData((p) => ({ ...p, latitude: lat.toFixed(6), longitude: lng.toFixed(6) }))
+                  }
+                />
+                {isEditing && (
+                  <p className="text-xs text-slate-400 mt-1.5">Cliquez sur la carte pour repositionner votre agence.</p>
+                )}
               </div>
             </Card>
           </div>
