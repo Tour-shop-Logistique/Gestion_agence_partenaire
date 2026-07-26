@@ -28,6 +28,7 @@ import {
   PlusIcon,
   IdentificationIcon,
   SparklesIcon,
+  EnvelopeIcon,
 } from "@heroicons/react/24/outline";
 
 /* ─────────────────────────────────────────────
@@ -339,6 +340,7 @@ const AgencyProfile = () => {
         nom_agence:  formData.name,
         code_agence: formData.code_agence,
         telephone:   formData.telephone,
+        email:       formData.email,
         description: formData.description,
         adresse:     formData.address,
         ville:       formData.ville,
@@ -348,7 +350,6 @@ const AgencyProfile = () => {
         longitude:   formData.longitude === "" ? null : parseFloat(formData.longitude),
         horaires:    formData.horaires,
         message_accueil: formData.message_accueil,
-        zone_couverture_km: formData.zone_couverture_km === "" ? null : parseInt(formData.zone_couverture_km, 10),
       };
       if (logoFile) payload.logo = logoFile;
       if (newPhotoFiles.length) payload.photos = newPhotoFiles;
@@ -537,6 +538,10 @@ const AgencyProfile = () => {
                   <Field icon={PhoneIcon} type="tel" name="telephone" value={formData.telephone} onChange={handleChange} disabled={editingTab !== "identite"} placeholder="+225 07 00 00 00 00" />
                 </div>
                 <div>
+                  <FieldLabel>Adresse email</FieldLabel>
+                  <Field icon={EnvelopeIcon} type="email" name="email" value={formData.email} onChange={handleChange} disabled={editingTab !== "identite"} placeholder="contact@agence.com" required />
+                </div>
+                <div>
                   <FieldLabel>Pays</FieldLabel>
                   <div className="relative">
                     <GlobeAltIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none z-10" />
@@ -593,27 +598,6 @@ const AgencyProfile = () => {
                   <FieldLabel>Longitude</FieldLabel>
                   <Field name="longitude" value={formData.longitude} onChange={handleChange} disabled={editingTab !== "identite"} placeholder="-4.008256" />
                 </div>
-              </div>
-
-              <div className="mt-4">
-                <div className="flex items-center justify-between mb-1.5">
-                  <FieldLabel>Zone de couverture</FieldLabel>
-                  <span className="text-xs font-semibold text-indigo-600">
-                    {formData.zone_couverture_km || 0} km
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min={1}
-                  max={100}
-                  value={formData.zone_couverture_km || 10}
-                  onChange={(e) => setFormData((p) => ({ ...p, zone_couverture_km: e.target.value }))}
-                  disabled={editingTab !== "identite"}
-                  className="w-full accent-indigo-600 disabled:opacity-50"
-                />
-                <p className="text-xs text-slate-400 mt-1">
-                  Rayon autour de votre agence, visible par les clients qui vous découvrent sur la carte.
-                </p>
               </div>
 
               <div className="mt-4">

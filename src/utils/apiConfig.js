@@ -54,6 +54,15 @@ export const API_ENDPOINTS = {
     DELETE: "/agence/promotions/:id",
   },
 
+  // Facturation
+  FACTURES: {
+    LIST: "/agence/factures",
+    GENERATE: "/agence/factures/expedition/:expeditionId",
+    DOWNLOAD: "/agence/factures/:id/download",
+    UPDATE_STATUT: "/agence/factures/:id/statut",
+    SEND_EMAIL: "/agence/factures/:id/send-email",
+  },
+
   // Tarifs
   TARIFS: {
     LIST_BASE: "/tarification/list-simple",
