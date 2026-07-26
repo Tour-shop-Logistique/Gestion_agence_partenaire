@@ -19,7 +19,6 @@ import {
   BanknotesIcon,
   ArrowsRightLeftIcon,
   ChatBubbleLeftRightIcon,
-  MegaphoneIcon,
 } from "@heroicons/react/24/outline";
 import { getLogoUrl } from "../utils/apiConfig";
 import { selectUnreadMessagesCount } from "../store/slices/messagesSlice";
@@ -78,7 +77,6 @@ const Sidebar = ({ onClose }) => {
       section: "Communication",
       items: [
         { path: "/messages", name: "Messages", icon: ChatBubbleLeftRightIcon },
-        { path: "/promotions", name: "Promotions", icon: MegaphoneIcon },
       ],
     },
     {
@@ -125,7 +123,6 @@ const Sidebar = ({ onClose }) => {
       section: "Communication",
       items: [
         { path: "/messages", name: "Messages", icon: ChatBubbleLeftRightIcon },
-        { path: "/promotions", name: "Promotions", icon: MegaphoneIcon },
       ],
     },
     {
