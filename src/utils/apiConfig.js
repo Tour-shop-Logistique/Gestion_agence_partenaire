@@ -3,10 +3,10 @@
  */
 
 // Configuration de base de l'API : en dev, on passe par le proxy Vite (/api,
-// voir vite.config.js) ; en prod, on appelle directement l'URL du backend.
-// Une seule variable d'env (VITE_API_URL) sert les deux usages, comme dans
-// backoffice-app.
-export const API_BASE_URL = import.meta.env.DEV ? "/api" : import.meta.env.VITE_API_URL;
+// voir vite.config.js) ; en prod, on appelle directement l'URL du backend,
+// en ajoutant le préfixe /api ici plutôt que de l'exiger dans VITE_API_URL
+// (source d'erreurs silencieuses si oublié). Même pattern que backoffice-app.
+export const API_BASE_URL = import.meta.env.DEV ? "/api" : `${import.meta.env.VITE_API_URL}/api`;
 
 // Endpoints de l'API
 export const API_ENDPOINTS = {
