@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { format, isToday, isYesterday } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Send, Paperclip, X, FileText, Loader2, Building2, Search, MoreVertical, Pencil, Trash2, Check, CheckCheck, Phone, Mail } from "lucide-react";
+import { Send, Paperclip, X, FileText, Loader2, Building2, Search, MoreVertical, Pencil, Trash2, Check, CheckCheck, Phone, Mail, RefreshCw } from "lucide-react";
 import {
   fetchConversation,
   sendMessage,
@@ -61,12 +61,24 @@ const Messages = () => {
   const [editBody, setEditBody] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const fileInputRef = useRef(null);
   const bottomRef = useRef(null);
 
   useEffect(() => {
     dispatch(fetchConversation());
   }, [dispatch]);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await dispatch(fetchConversation()).unwrap();
+    } catch {
+      showToast("Erreur lors de l'actualisation", "error");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const displayedMessages = useMemo(
     () => (searchOpen && searchResults ? searchResults : messages),
@@ -204,7 +216,7 @@ const Messages = () => {
             </div>
           </div>
 
-          <div className="p-4 border-t border-slate-100">
+          <div className="p-4 border-t border-slate-100 space-y-2">
             <button
               onClick={toggleSearch}
               className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-colors ${
@@ -213,6 +225,14 @@ const Messages = () => {
             >
               <Search size={14} />
               Rechercher dans le fil
+            </button>
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-bold bg-slate-50 text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} />
+              Actualiser
             </button>
           </div>
         </div>
@@ -228,8 +248,17 @@ const Messages = () => {
               <p className="text-sm font-bold text-slate-900 truncate">Backoffice</p>
             </div>
             <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="p-2 rounded-lg transition-colors shrink-0 text-slate-500 hover:bg-slate-50 disabled:opacity-50"
+              title="Actualiser"
+            >
+              <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
+            </button>
+            <button
               onClick={toggleSearch}
               className={`p-2 rounded-lg transition-colors shrink-0 ${searchOpen ? "bg-slate-900 text-white" : "text-slate-500 hover:bg-slate-50"}`}
+              title="Rechercher"
             >
               <Search size={16} />
             </button>
