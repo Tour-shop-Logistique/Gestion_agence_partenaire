@@ -82,7 +82,7 @@ const Sidebar = ({ onClose }) => {
     {
       section: "Configuration",
       items: [
-        { path: "/agents",         name: "Équipe",  icon: UsersIcon },
+        { path: "/agents",         name: "Équipe & Accès",  icon: UsersIcon },
         { path: "/agency-profile", name: "Agence",  icon: BuildingOffice2Icon },
       ],
     },
