@@ -6,6 +6,7 @@ import { selectAgencyConfigured } from "../store/slices/agencySlice";
 import { getLogoUrl } from "../utils/apiConfig";
 import { toast } from "../utils/toast";
 import ErrorBoundary from "../components/ErrorBoundary";
+import CoverageMap from "../components/CoverageMap";
 
 import {
   BuildingOffice2Icon,
@@ -21,6 +22,15 @@ import {
   BriefcaseIcon,
   CameraIcon,
   ExclamationTriangleIcon,
+  ChatBubbleLeftRightIcon,
+  PhotoIcon,
+  TrashIcon,
+  PlusIcon,
+  IdentificationIcon,
+  SparklesIcon,
+  EnvelopeIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
 } from "@heroicons/react/24/outline";
 
 /* ─────────────────────────────────────────────
@@ -76,7 +86,7 @@ const Field = ({ icon: Icon, ...props }) => (
       {...props}
       className={`w-full ${Icon ? "pl-9" : "pl-3"} pr-3 py-2.5 text-sm text-slate-800 bg-white border border-slate-200 rounded-lg
         focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400
-        disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-default
+        disabled:bg-slate-50 disabled:text-slate-900 disabled:cursor-default
         transition-colors placeholder:text-slate-300`}
     />
   </div>
@@ -100,6 +110,125 @@ const Card = ({ children, className = "" }) => (
   </div>
 );
 
+/** Bouton Modifier/Annuler propre à une section */
+const SectionEditButton = ({ isEditing, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
+      isEditing
+        ? "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
+        : "border-slate-800 bg-slate-800 text-white hover:bg-slate-700"
+    }`}
+  >
+    {isEditing
+      ? <><XMarkIcon className="w-3.5 h-3.5" /> Annuler</>
+      : <><PencilSquareIcon className="w-3.5 h-3.5" /> Modifier</>
+    }
+  </button>
+);
+
+/** Barre de sauvegarde fixe, affichée pendant l'édition d'un onglet */
+const SaveBar = ({ saving, onCancel }) => (
+  <div className="fixed bottom-0 left-0 right-0 z-50 lg:left-60">
+    <div className="bg-white border-t border-slate-200 px-4 py-3 sm:px-6">
+      <div className="max-w-[1600px] mx-auto flex items-center justify-between gap-4">
+        <p className="text-xs text-slate-500 hidden sm:block">
+          Les modifications ne sont pas encore enregistrées.
+        </p>
+        <div className="flex items-center gap-2 ml-auto">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-4 py-2 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+          >
+            Annuler
+          </button>
+          <button
+            type="submit"
+            disabled={saving}
+            className="flex items-center gap-2 px-5 py-2 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-400 rounded-lg transition-colors"
+          >
+            {saving
+              ? <ArrowPathIcon className="w-4 h-4 animate-spin" />
+              : <CheckIcon className="w-4 h-4" />
+            }
+            {saving ? "Enregistrement…" : "Enregistrer les modifications"}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const TABS = [
+  { key: "identite", label: "Identité", icon: IdentificationIcon },
+  { key: "vitrine", label: "Vitrine", icon: SparklesIcon },
+  { key: "horaires", label: "Horaires", icon: ClockIcon },
+];
+
+/** Visionneuse plein écran pour parcourir les photos de l'agence */
+const ImageLightbox = ({ images, index, onClose, onNavigate }) => {
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowRight") onNavigate(1);
+      if (e.key === "ArrowLeft") onNavigate(-1);
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose, onNavigate]);
+
+  if (index == null || !images[index]) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] bg-slate-950/90 flex items-center justify-center p-4 sm:p-8"
+      onClick={onClose}
+    >
+      <button
+        type="button"
+        onClick={onClose}
+        className="absolute top-4 right-4 sm:top-6 sm:right-6 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+      >
+        <XMarkIcon className="w-6 h-6" />
+      </button>
+
+      {images.length > 1 && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onNavigate(-1); }}
+          className="absolute left-2 sm:left-6 p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+        >
+          <ChevronLeftIcon className="w-6 h-6" />
+        </button>
+      )}
+
+      <img
+        src={images[index]}
+        alt={`Photo ${index + 1}`}
+        onClick={(e) => e.stopPropagation()}
+        className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+      />
+
+      {images.length > 1 && (
+        <>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onNavigate(1); }}
+            className="absolute right-2 sm:right-6 p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+          >
+            <ChevronRightIcon className="w-6 h-6" />
+          </button>
+          <span className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 text-xs font-medium text-white/70 bg-white/10 px-3 py-1 rounded-full">
+            {index + 1} / {images.length}
+          </span>
+        </>
+      )}
+    </div>
+  );
+};
+
 /* ─────────────────────────────────────────────
    Page principale
 ───────────────────────────────────────────── */
@@ -116,9 +245,12 @@ const AgencyProfile = () => {
   const isAdmin = useSelector(selectIsAdmin);
   const agencyConfigured = useSelector(selectAgencyConfigured);
 
-  const [isEditing, setIsEditing] = useState(false);
+  // Un état d'édition indépendant par onglet : on ne modifie qu'une
+  // section à la fois (identité, vitrine ou horaires).
+  const [editingTab, setEditingTab] = useState(null);
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState("identite");
 
   const defaultHoraires = [
     { jour: "Lundi",    ouverture: "08:00", fermeture: "18:00", ferme: false },
@@ -127,22 +259,29 @@ const AgencyProfile = () => {
     { jour: "Jeudi",    ouverture: "08:00", fermeture: "18:00", ferme: false },
     { jour: "Vendredi", ouverture: "08:00", fermeture: "18:00", ferme: false },
     { jour: "Samedi",   ouverture: "08:00", fermeture: "12:00", ferme: false },
+    { jour: "Dimanche", ouverture: "08:00", fermeture: "12:00", ferme: true },
   ];
 
   const [formData, setFormData] = useState({
     name: "", code_agence: "", address: "", ville: "",
     pays: "Côte d'Ivoire", telephone: "", email: "", website: "",
     latitude: "", longitude: "", description: "", commune: "",
-    horaires: defaultHoraires, logo: null,
+    horaires: defaultHoraires, logo: null, message_accueil: "", zone_couverture_km: "10",
   });
 
   const [logoFile, setLogoFile]       = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
   const [originalFormData, setOriginalFormData] = useState(null);
 
+  const [existingPhotos, setExistingPhotos] = useState([]); // URLs déjà en ligne
+  const [photosToRemove, setPhotosToRemove] = useState([]); // chemins bruts à retirer
+  const [newPhotoFiles, setNewPhotoFiles] = useState([]);   // nouveaux File à uploader
+  const [newPhotoPreviews, setNewPhotoPreviews] = useState([]); // previews base64 des nouveaux
+  const [viewerIndex, setViewerIndex] = useState(null); // index ouvert dans la visionneuse plein écran
+
   /* Ouvrir l'édition automatiquement si pas encore configuré */
   useEffect(() => {
-    if (!agencyConfigured && isAdmin) setIsEditing(true);
+    if (!agencyConfigured && isAdmin) setEditingTab("identite");
   }, [agencyConfigured, isAdmin]);
 
   /* Remplir le formulaire depuis Redux */
@@ -161,8 +300,12 @@ const AgencyProfile = () => {
       if (a.description) next.description = a.description;
       if (a.commune)     next.commune     = a.commune;
       if (a.logo)        next.logo        = a.logo;
+      if (a.message_accueil != null) next.message_accueil = a.message_accueil;
+      if (a.zone_couverture_km != null) next.zone_couverture_km = String(a.zone_couverture_km);
       if (a.latitude  != null) next.latitude  = String(a.latitude);
       if (a.longitude != null) next.longitude = String(a.longitude);
+
+      if (Array.isArray(a.photos)) setExistingPhotos(a.photos);
 
       if (Array.isArray(a.horaires) && a.horaires.length > 0) {
         const map = {};
@@ -199,6 +342,36 @@ const AgencyProfile = () => {
     reader.readAsDataURL(file);
   };
 
+  const MAX_PHOTOS = 8;
+
+  const handlePhotosChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    const remainingSlots = MAX_PHOTOS - (existingPhotos.length - photosToRemove.length) - newPhotoFiles.length;
+    const accepted = files.slice(0, Math.max(0, remainingSlots));
+    if (accepted.length < files.length) {
+      toast.info(`Maximum ${MAX_PHOTOS} photos, seules les ${accepted.length} premières ont été ajoutées.`);
+    }
+
+    setNewPhotoFiles((p) => [...p, ...accepted]);
+    accepted.forEach((file) => {
+      const reader = new FileReader();
+      reader.onloadend = () => setNewPhotoPreviews((p) => [...p, reader.result]);
+      reader.readAsDataURL(file);
+    });
+    e.target.value = "";
+  };
+
+  const removeExistingPhoto = (url) => {
+    setPhotosToRemove((p) => [...p, url]);
+  };
+
+  const removeNewPhoto = (index) => {
+    setNewPhotoFiles((p) => p.filter((_, i) => i !== index));
+    setNewPhotoPreviews((p) => p.filter((_, i) => i !== index));
+  };
+
   const handleHoraireChange = (index, field, value) => {
     setFormData((p) => {
       const h = [...p.horaires];
@@ -232,6 +405,7 @@ const AgencyProfile = () => {
         nom_agence:  formData.name,
         code_agence: formData.code_agence,
         telephone:   formData.telephone,
+        email:       formData.email,
         description: formData.description,
         adresse:     formData.address,
         ville:       formData.ville,
@@ -240,15 +414,21 @@ const AgencyProfile = () => {
         latitude:    formData.latitude  === "" ? null : parseFloat(formData.latitude),
         longitude:   formData.longitude === "" ? null : parseFloat(formData.longitude),
         horaires:    formData.horaires,
+        message_accueil: formData.message_accueil,
       };
       if (logoFile) payload.logo = logoFile;
+      if (newPhotoFiles.length) payload.photos = newPhotoFiles;
+      if (photosToRemove.length) payload.photos_to_remove = photosToRemove;
 
       const hasId = !!(agencyData?.agence?.id || agencyData?.id);
       const result = hasId ? await updateAgencyData(payload) : await setupAgency(payload);
 
       if (result.type?.includes("fulfilled") || result.success) {
         toast.success("Profil agence mis à jour.");
-        setIsEditing(false);
+        setEditingTab(null);
+        setPhotosToRemove([]);
+        setNewPhotoFiles([]);
+        setNewPhotoPreviews([]);
         await fetchAgencyData(true);
       }
     } catch {
@@ -258,20 +438,29 @@ const AgencyProfile = () => {
     }
   };
 
-  const handleEditToggle = () => {
-    if (isEditing) {
+  const handleEditToggle = (tabKey) => {
+    if (editingTab === tabKey) {
       if (originalFormData) setFormData({ ...originalFormData });
-      setIsEditing(false);
+      setPhotosToRemove([]);
+      setNewPhotoFiles([]);
+      setNewPhotoPreviews([]);
+      setEditingTab(null);
     } else {
       setOriginalFormData({ ...formData });
-      setIsEditing(true);
+      setEditingTab(tabKey);
     }
   };
+
+  // Liste combinée (existantes + nouvelles) pour la navigation dans la visionneuse
+  const viewerImages = [
+    ...existingPhotos.filter((url) => !photosToRemove.includes(url)),
+    ...newPhotoPreviews,
+  ];
 
   /* ── Render ── */
   return (
     <ErrorBoundary>
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 pb-24 space-y-5">
+    <div className="max-w-[1600px] mx-auto px-3 sm:px-4 lg:px-6 pb-24 space-y-4 sm:space-y-6">
 
       {/* ── Bannière setup requis ── */}
       {!agencyConfigured && (
@@ -286,13 +475,13 @@ const AgencyProfile = () => {
         </div>
       )}
 
-      {/* ── En-tête identité ── */}
-      <Card>
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+      {/* ── En-tête identité (bandeau sobre, pleine largeur) ── */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 shadow-sm">
+        <div className="relative flex flex-col sm:flex-row sm:items-center gap-5 p-5 sm:p-7">
 
           {/* Logo */}
           <div className="relative group flex-shrink-0">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden">
+            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl border-2 border-white/20 bg-white flex items-center justify-center overflow-hidden shadow-lg">
               {logoPreview || agencyData?.agence?.logo ? (
                 <img
                   src={logoPreview || getLogoUrl(agencyData?.agence?.logo)}
@@ -300,11 +489,11 @@ const AgencyProfile = () => {
                   className="w-full h-full object-contain"
                 />
               ) : (
-                <BuildingOffice2Icon className="w-8 h-8 text-slate-300" />
+                <BuildingOffice2Icon className="w-9 h-9 text-slate-300" />
               )}
             </div>
-            {isEditing && (
-              <label className="absolute inset-0 flex items-center justify-center bg-slate-900/50 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+            {editingTab === "identite" && (
+              <label className="absolute inset-0 flex items-center justify-center bg-slate-900/50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
                 <CameraIcon className="w-5 h-5 text-white" />
                 <input type="file" className="hidden" accept="image/*" onChange={handleLogoChange} />
               </label>
@@ -314,25 +503,25 @@ const AgencyProfile = () => {
           {/* Infos */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-base font-semibold text-slate-800 truncate">
+              <h1 className="text-xl sm:text-2xl font-bold text-white truncate">
                 {formData.name || "Nouvelle agence"}
               </h1>
               {agencyConfigured && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-400/20 text-emerald-200 border border-emerald-300/30">
                   Actif
                 </span>
               )}
             </div>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs text-slate-500">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-slate-300">
               {formData.code_agence && (
-                <span className="flex items-center gap-1">
-                  <BriefcaseIcon className="w-3.5 h-3.5" />
+                <span className="flex items-center gap-1.5">
+                  <BriefcaseIcon className="w-4 h-4" />
                   {formData.code_agence}
                 </span>
               )}
               {(formData.ville || formData.pays) && (
-                <span className="flex items-center gap-1">
-                  <MapPinIcon className="w-3.5 h-3.5" />
+                <span className="flex items-center gap-1.5">
+                  <MapPinIcon className="w-4 h-4" />
                   {[formData.ville, formData.pays].filter(Boolean).join(", ")}
                 </span>
               )}
@@ -345,66 +534,89 @@ const AgencyProfile = () => {
               <button
                 type="button"
                 onClick={async () => { setRefreshing(true); await fetchAgencyData(true); setRefreshing(false); }}
-                className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
+                className="p-2.5 rounded-xl border border-white/20 bg-white/10 text-white hover:bg-white/20 transition-colors"
                 title="Actualiser"
               >
                 <ArrowPathIcon className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
               </button>
-              <button
-                type="button"
-                onClick={handleEditToggle}
-                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium transition-colors border ${
-                  isEditing
-                    ? "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
-                    : "border-slate-800 bg-slate-800 text-white hover:bg-slate-700"
-                }`}
-              >
-                {isEditing
-                  ? <><XMarkIcon className="w-3.5 h-3.5" /> Annuler</>
-                  : <><PencilSquareIcon className="w-3.5 h-3.5" /> Modifier</>
-                }
-              </button>
             </div>
           )}
         </div>
-      </Card>
+      </div>
 
-      {/* ── Corps du formulaire ── */}
-      <form onSubmit={handleSubmit}>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      {/* ── Corps : navigation par onglets (sidebar) + contenu ── */}
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-4 sm:gap-6 items-start">
 
-          {/* Colonne principale */}
-          <div className="lg:col-span-2 space-y-5">
+        {/* Navigation par onglets */}
+        <div className="lg:sticky lg:top-6 flex lg:flex-col gap-1.5 bg-white border border-slate-200 rounded-xl p-2 overflow-x-auto lg:overflow-visible">
+          {TABS.map((tab) => {
+            const isActive = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors ${
+                  isActive
+                    ? "bg-indigo-600 text-white shadow-sm"
+                    : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+                }`}
+              >
+                <tab.icon className="w-4 h-4 flex-shrink-0" />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
 
-            {/* Informations générales */}
+        {/* Contenu de l'onglet actif */}
+        <div className="min-w-0">
+
+        {/* Onglet : Identité (+ Localisation) */}
+        {activeTab === "identite" && (
+          <>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 items-start">
             <Card>
-              <SectionHeader icon={BuildingOffice2Icon} title="Informations générales" />
+              <SectionHeader
+                icon={BuildingOffice2Icon}
+                title="Informations générales"
+                action={
+                  <SectionEditButton
+                    isEditing={editingTab === "identite"}
+                    onClick={() => handleEditToggle("identite")}
+                  />
+                }
+              />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <FieldLabel>Nom de l'agence</FieldLabel>
-                  <Field name="name" value={formData.name} onChange={handleChange} disabled={!isEditing} placeholder="Ex : Agence Centrale Abidjan" />
+                  <Field name="name" value={formData.name} onChange={handleChange} disabled={editingTab !== "identite"} placeholder="Ex : Agence Centrale Abidjan" />
                 </div>
                 <div>
                   <FieldLabel>Code agence</FieldLabel>
-                  <Field name="code_agence" value={formData.code_agence} onChange={handleChange} disabled={!isEditing} placeholder="Ex : AGC-001" />
+                  <Field name="code_agence" value={formData.code_agence} disabled placeholder="Ex : AGC-001" />
                 </div>
                 <div className="sm:col-span-2">
                   <FieldLabel>Adresse</FieldLabel>
-                  <Field name="address" value={formData.address} onChange={handleChange} disabled={!isEditing} placeholder="Rue, quartier…" />
+                  <Field name="address" value={formData.address} onChange={handleChange} disabled={editingTab !== "identite"} placeholder="Rue, quartier…" />
                 </div>
                 <div>
                   <FieldLabel>Ville</FieldLabel>
-                  <Field name="ville" value={formData.ville} onChange={handleChange} disabled={!isEditing} placeholder="Ex : Abidjan" />
+                  <Field name="ville" value={formData.ville} onChange={handleChange} disabled={editingTab !== "identite"} placeholder="Ex : Abidjan" />
                 </div>
                 <div>
                   <FieldLabel>Commune</FieldLabel>
-                  <Field name="commune" value={formData.commune} onChange={handleChange} disabled={!isEditing} placeholder="Ex : Cocody" />
+                  <Field name="commune" value={formData.commune} onChange={handleChange} disabled={editingTab !== "identite"} placeholder="Ex : Cocody" />
                 </div>
                 <div>
                   <FieldLabel>Téléphone</FieldLabel>
-                  <Field icon={PhoneIcon} type="tel" name="telephone" value={formData.telephone} onChange={handleChange} disabled={!isEditing} placeholder="+225 07 00 00 00 00" />
+                  <Field icon={PhoneIcon} type="tel" name="telephone" value={formData.telephone} onChange={handleChange} disabled={editingTab !== "identite"} placeholder="+225 07 00 00 00 00" />
                 </div>
                 <div>
+                  <FieldLabel>Adresse email</FieldLabel>
+                  <Field icon={EnvelopeIcon} type="email" name="email" value={formData.email} onChange={handleChange} disabled={editingTab !== "identite"} placeholder="contact@agence.com" required />
+                </div>
+                <div className="sm:col-span-2">
                   <FieldLabel>Pays</FieldLabel>
                   <div className="relative">
                     <GlobeAltIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none z-10" />
@@ -412,10 +624,10 @@ const AgencyProfile = () => {
                       name="pays"
                       value={formData.pays}
                       onChange={handleChange}
-                      disabled={!isEditing}
+                      disabled={editingTab !== "identite"}
                       className="w-full pl-9 pr-3 py-2.5 text-sm text-slate-800 bg-white border border-slate-200 rounded-lg
                         focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400
-                        disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-default
+                        disabled:bg-slate-50 disabled:text-slate-900 disabled:cursor-default
                         transition-colors appearance-none cursor-pointer"
                     >
                       <option value="">Sélectionnez un pays</option>
@@ -436,33 +648,12 @@ const AgencyProfile = () => {
               </div>
             </Card>
 
-            {/* Description */}
-            <Card>
-              <SectionHeader icon={BriefcaseIcon} title="Description" />
-              <textarea
-                name="description"
-                rows={4}
-                value={formData.description}
-                onChange={handleChange}
-                disabled={!isEditing}
-                placeholder="Présentez votre agence en quelques lignes…"
-                className="w-full px-3 py-2.5 text-sm text-slate-800 bg-white border border-slate-200 rounded-lg
-                  focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400
-                  disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-default
-                  transition-colors placeholder:text-slate-300 resize-none"
-              />
-              <p className="mt-2 text-xs text-slate-400">
-                Visible par vos clients lors de la prise de commande.
-              </p>
-            </Card>
-
-            {/* GPS */}
             <Card>
               <SectionHeader
                 icon={MapPinSolidIcon}
-                title="Coordonnées GPS"
+                title="Localisation"
                 action={
-                  isEditing && (
+                  editingTab === "identite" ? (
                     <button
                       type="button"
                       onClick={getCurrentLocation}
@@ -470,27 +661,213 @@ const AgencyProfile = () => {
                     >
                       Détecter ma position
                     </button>
-                  )
+                  ) : null
                 }
               />
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <FieldLabel>Latitude</FieldLabel>
-                  <Field name="latitude" value={formData.latitude} onChange={handleChange} disabled={!isEditing} placeholder="5.354722" />
+                  <Field name="latitude" value={formData.latitude} onChange={handleChange} disabled={editingTab !== "identite"} placeholder="5.354722" />
                 </div>
                 <div>
                   <FieldLabel>Longitude</FieldLabel>
-                  <Field name="longitude" value={formData.longitude} onChange={handleChange} disabled={!isEditing} placeholder="-4.008256" />
+                  <Field name="longitude" value={formData.longitude} onChange={handleChange} disabled={editingTab !== "identite"} placeholder="-4.008256" />
                 </div>
+              </div>
+
+              <div className="mt-4">
+                <CoverageMap
+                  latitude={formData.latitude === "" ? null : parseFloat(formData.latitude)}
+                  longitude={formData.longitude === "" ? null : parseFloat(formData.longitude)}
+                  radiusKm={0}
+                  editable={editingTab === "identite"}
+                  onPositionChange={([lat, lng]) =>
+                    setFormData((p) => ({ ...p, latitude: lat.toFixed(6), longitude: lng.toFixed(6) }))
+                  }
+                />
+                {editingTab === "identite" && (
+                  <p className="text-xs text-slate-400 mt-1.5">Cliquez sur la carte pour repositionner votre agence.</p>
+                )}
               </div>
             </Card>
           </div>
 
-          {/* Colonne horaires */}
-          <div>
-            <Card className="h-full">
-              <SectionHeader icon={ClockIcon} title="Horaires d'ouverture" />
-              <div className="space-y-2">
+          {editingTab === "identite" && (
+            <SaveBar saving={saving} onCancel={() => handleEditToggle("identite")} />
+          )}
+          </>
+        )}
+
+        {/* Onglet : Vitrine (description, message d'accueil, photos) */}
+        {activeTab === "vitrine" && (
+          <>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 items-start">
+            <Card>
+              <SectionHeader
+                icon={BriefcaseIcon}
+                title="Description"
+                action={
+                  <SectionEditButton
+                    isEditing={editingTab === "vitrine"}
+                    onClick={() => handleEditToggle("vitrine")}
+                  />
+                }
+              />
+              <textarea
+                name="description"
+                rows={4}
+                value={formData.description}
+                onChange={handleChange}
+                disabled={editingTab !== "vitrine"}
+                placeholder="Présentez votre agence en quelques lignes…"
+                className="w-full px-3 py-2.5 text-sm text-slate-800 bg-white border border-slate-200 rounded-lg
+                  focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400
+                  disabled:bg-slate-50 disabled:text-slate-900 disabled:cursor-default
+                  transition-colors placeholder:text-slate-300 resize-none"
+              />
+              <p className="mt-2 text-xs text-slate-400">
+                Visible par vos clients lors de la prise de commande.
+              </p>
+            </Card>
+
+            <Card>
+              <SectionHeader icon={ChatBubbleLeftRightIcon} title="Message d'accueil" />
+              <textarea
+                name="message_accueil"
+                rows={3}
+                value={formData.message_accueil}
+                onChange={handleChange}
+                disabled={editingTab !== "vitrine"}
+                placeholder="Ex : Bienvenue chez nous ! Nous sommes ravis de vous accompagner dans vos expéditions."
+                className="w-full px-3 py-2.5 text-sm text-slate-800 bg-white border border-slate-200 rounded-lg
+                  focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400
+                  disabled:bg-slate-50 disabled:text-slate-900 disabled:cursor-default
+                  transition-colors placeholder:text-slate-300 resize-none"
+              />
+              <p className="mt-2 text-xs text-slate-400">
+                Un mot personnalisé affiché aux clients qui découvrent votre agence.
+              </p>
+            </Card>
+
+            <Card className="xl:col-span-2">
+              <SectionHeader
+                icon={PhotoIcon}
+                title="Photos de l'agence"
+                action={
+                  editingTab === "vitrine" && (
+                    <label className="flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700 cursor-pointer transition-colors">
+                      <PlusIcon className="w-3.5 h-3.5" />
+                      Ajouter
+                      <input type="file" className="hidden" accept="image/*" multiple onChange={handlePhotosChange} />
+                    </label>
+                  )
+                }
+              />
+              {(() => {
+                const visibleExisting = existingPhotos.filter((url) => !photosToRemove.includes(url));
+                const totalCount = visibleExisting.length + newPhotoPreviews.length;
+
+                if (totalCount === 0) {
+                  return editingTab === "vitrine" ? (
+                    <label className="flex flex-col items-center justify-center gap-2.5 py-10 rounded-xl border-2 border-dashed border-indigo-200 bg-indigo-50/40 hover:bg-indigo-50 hover:border-indigo-300 transition-colors cursor-pointer">
+                      <div className="h-11 w-11 rounded-full bg-indigo-100 flex items-center justify-center">
+                        <PhotoIcon className="w-5 h-5 text-indigo-500" />
+                      </div>
+                      <p className="text-sm font-semibold text-indigo-700">Ajoutez vos premières photos</p>
+                      <p className="text-xs text-slate-400">Cliquez ou déposez des images ici — jusqu'à {MAX_PHOTOS} photos</p>
+                      <input type="file" className="hidden" accept="image/*" multiple onChange={handlePhotosChange} />
+                    </label>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center gap-2.5 py-10 rounded-xl border border-dashed border-slate-200 bg-slate-50/60">
+                      <div className="h-11 w-11 rounded-full bg-slate-100 flex items-center justify-center">
+                        <PhotoIcon className="w-5 h-5 text-slate-300" />
+                      </div>
+                      <p className="text-sm font-medium text-slate-400">Aucune photo pour l'instant</p>
+                      <p className="text-xs text-slate-400">Ajoutez des photos de vos locaux pour rassurer vos clients.</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="grid grid-cols-3 sm:grid-cols-5 xl:grid-cols-6 gap-3">
+                    {visibleExisting.map((url, i) => (
+                      <div key={url} className="relative group aspect-square rounded-lg overflow-hidden border border-slate-200 bg-slate-50">
+                        <img
+                          src={url}
+                          alt="Photo agence"
+                          onClick={() => setViewerIndex(i)}
+                          className="w-full h-full object-cover cursor-zoom-in"
+                        />
+                        {editingTab === "vitrine" && (
+                          <button
+                            type="button"
+                            onClick={() => removeExistingPhoto(url)}
+                            className="absolute inset-0 flex items-center justify-center bg-slate-900/50 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <TrashIcon className="w-5 h-5 text-white" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    {newPhotoPreviews.map((src, i) => (
+                      <div key={`new-${i}`} className="relative group aspect-square rounded-lg overflow-hidden border border-indigo-200 bg-indigo-50">
+                        <img
+                          src={src}
+                          alt="Nouvelle photo"
+                          onClick={() => setViewerIndex(visibleExisting.length + i)}
+                          className="w-full h-full object-cover cursor-zoom-in"
+                        />
+                        <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-600 text-white">
+                          Nouveau
+                        </span>
+                        {editingTab === "vitrine" && (
+                          <button
+                            type="button"
+                            onClick={() => removeNewPhoto(i)}
+                            className="absolute inset-0 flex items-center justify-center bg-slate-900/50 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <TrashIcon className="w-5 h-5 text-white" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    {editingTab === "vitrine" && totalCount < MAX_PHOTOS && (
+                      <label className="aspect-square rounded-lg border-2 border-dashed border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/40 flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors">
+                        <PlusIcon className="w-5 h-5 text-slate-400" />
+                        <span className="text-[10px] font-medium text-slate-400">Ajouter</span>
+                        <input type="file" className="hidden" accept="image/*" multiple onChange={handlePhotosChange} />
+                      </label>
+                    )}
+                  </div>
+                );
+              })()}
+              <p className="mt-3 text-xs text-slate-400">
+                Jusqu'à {MAX_PHOTOS} photos, visibles par les clients qui consultent votre agence.
+              </p>
+            </Card>
+          </div>
+
+          {editingTab === "vitrine" && (
+            <SaveBar saving={saving} onCancel={() => handleEditToggle("vitrine")} />
+          )}
+          </>
+        )}
+
+        {/* Onglet : Horaires */}
+        {activeTab === "horaires" && (
+          <div className="space-y-5">
+            <Card>
+              <SectionHeader
+                icon={ClockIcon}
+                title="Horaires d'ouverture"
+                action={
+                  <SectionEditButton
+                    isEditing={editingTab === "horaires"}
+                    onClick={() => handleEditToggle("horaires")}
+                  />
+                }
+              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
                 {formData.horaires.map((h, i) => (
                   <div
                     key={`horaire-${h.jour}-${i}`}
@@ -504,7 +881,7 @@ const AgencyProfile = () => {
                         {h.jour}
                       </span>
                       <div className="flex items-center gap-2">
-                        {isEditing && (
+                        {editingTab === "horaires" && (
                           <input
                             type="checkbox"
                             checked={h.ferme}
@@ -530,7 +907,7 @@ const AgencyProfile = () => {
                           type="time"
                           value={h.ouverture}
                           onChange={(e) => handleHoraireChange(i, "ouverture", e.target.value)}
-                          disabled={!isEditing}
+                          disabled={editingTab !== "horaires"}
                           className="flex-1 px-2 py-1 text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-indigo-400 disabled:cursor-default"
                         />
                         <span className="text-slate-300 text-xs">–</span>
@@ -538,7 +915,7 @@ const AgencyProfile = () => {
                           type="time"
                           value={h.fermeture}
                           onChange={(e) => handleHoraireChange(i, "fermeture", e.target.value)}
-                          disabled={!isEditing}
+                          disabled={editingTab !== "horaires"}
                           className="flex-1 px-2 py-1 text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-indigo-400 disabled:cursor-default"
                         />
                       </div>
@@ -547,42 +924,25 @@ const AgencyProfile = () => {
                 ))}
               </div>
             </Card>
-          </div>
-        </div>
 
-        {/* ── Barre de sauvegarde fixe ── */}
-        {isEditing && (
-          <div className="fixed bottom-0 left-0 right-0 z-50 lg:left-60">
-            <div className="bg-white border-t border-slate-200 px-4 py-3 sm:px-6">
-              <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
-                <p className="text-xs text-slate-500 hidden sm:block">
-                  Les modifications ne sont pas encore enregistrées.
-                </p>
-                <div className="flex items-center gap-2 ml-auto">
-                  <button
-                    type="button"
-                    onClick={handleEditToggle}
-                    className="px-4 py-2 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={saving}
-                    className="flex items-center gap-2 px-5 py-2 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-400 rounded-lg transition-colors"
-                  >
-                    {saving
-                      ? <ArrowPathIcon className="w-4 h-4 animate-spin" />
-                      : <CheckIcon className="w-4 h-4" />
-                    }
-                    {saving ? "Enregistrement…" : "Enregistrer les modifications"}
-                  </button>
-                </div>
-              </div>
-            </div>
+            {editingTab === "horaires" && (
+              <SaveBar saving={saving} onCancel={() => handleEditToggle("horaires")} />
+            )}
           </div>
         )}
+        </div>
       </form>
+
+      {viewerIndex != null && (
+        <ImageLightbox
+          images={viewerImages}
+          index={viewerIndex}
+          onClose={() => setViewerIndex(null)}
+          onNavigate={(delta) =>
+            setViewerIndex((i) => (i + delta + viewerImages.length) % viewerImages.length)
+          }
+        />
+      )}
     </div>
     </ErrorBoundary>
   );

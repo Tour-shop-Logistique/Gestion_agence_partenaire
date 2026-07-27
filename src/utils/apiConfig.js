@@ -46,6 +46,23 @@ export const API_ENDPOINTS = {
     LIST_TRANSACTIONS: "/agence/list-transactions",
   },
 
+  // Promotions et offres spéciales
+  PROMOTIONS: {
+    LIST: "/agence/promotions",
+    CREATE: "/agence/promotions",
+    UPDATE: "/agence/promotions/:id",
+    DELETE: "/agence/promotions/:id",
+  },
+
+  // Facturation
+  FACTURES: {
+    LIST: "/agence/factures",
+    GENERATE: "/agence/factures/expedition/:expeditionId",
+    DOWNLOAD: "/agence/factures/:id/download",
+    UPDATE_STATUT: "/agence/factures/:id/statut",
+    SEND_EMAIL: "/agence/factures/:id/send-email",
+  },
+
   // Tarifs
   TARIFS: {
     LIST_BASE: "/tarification/list-simple",
@@ -99,6 +116,15 @@ export const API_ENDPOINTS = {
     MARK_READ: "/agence/notifications/:id/lue",
     MARK_ALL_READ: "/agence/notifications/marquer-toutes-lues",
     DELETE: "/agence/notifications/:id",
+  },
+
+  // Messagerie avec le backoffice
+  MESSAGES: {
+    SHOW: "/agence/messages",
+    SEND: "/agence/messages",
+    SEARCH: "/agence/messages/search",
+    UPDATE: "/agence/messages/:id",
+    DELETE: "/agence/messages/:id",
   },
 };
 

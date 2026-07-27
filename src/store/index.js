@@ -8,6 +8,9 @@ import accountingReducer from './slices/accountingSlice';
 import dashboardReducer from './slices/dashboardSlice';
 import passwordReducer from './slices/passwordSlice';
 import notificationsReducer from './slices/notificationsSlice';
+import messagesReducer from './slices/messagesSlice';
+import promotionsReducer from './slices/promotionsSlice';
+import factureReducer from './slices/factureSlice';
 
 /**
  * Root Reducer avec logique de reset
@@ -22,6 +25,9 @@ const appReducer = combineReducers({
   dashboard: dashboardReducer,
   password: passwordReducer,
   notifications: notificationsReducer,
+  messages: messagesReducer,
+  promotions: promotionsReducer,
+  factures: factureReducer,
 });
 
 const rootReducer = (state, action) => {

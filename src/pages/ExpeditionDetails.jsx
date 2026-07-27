@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import Spinner from '../components/common/Spinner';
 import { useParams, useNavigate } from 'react-router-dom';
 import ConfirmationModal from '../components/ConfirmationModal';
@@ -7,8 +8,15 @@ import { useAgency } from '../hooks/useAgency';
 import PrintSuccessModal from '../components/Receipts/PrintSuccessModal';
 import { getLogoUrl } from '../utils/apiConfig';
 import { toast } from '../utils/toast';
-import { ArrowLeft, Copy } from 'lucide-react';
+import { ArrowLeft, Copy, Receipt, Download, Mail, Link as LinkIcon, MessageCircle, Loader2 } from 'lucide-react';
 import { Button } from "../components/ui";
+import { facturesApi } from '../utils/api/factures';
+import {
+    fetchFactureForExpedition,
+    generateFacture,
+    updateFactureStatut,
+    sendFactureEmail,
+} from '../store/slices/factureSlice';
 import {
     OperationalSummary,
     KPICards,
@@ -17,6 +25,12 @@ import {
     ContactCard,
     FinanceCard
 } from '../components/expedition';
+
+const FACTURE_STATUT_STYLES = {
+    emise: 'bg-blue-50 text-blue-700 border-blue-200',
+    payee: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    annulee: 'bg-rose-50 text-rose-700 border-rose-200',
+};
 
 /**
  * 🚀 PAGE DÉTAIL EXPÉDITION - VERSION REFACTORISÉE
@@ -43,6 +57,10 @@ const ExpeditionDetails = () => {
         recordTransaction
     } = useExpedition();
     const { data: agencyData, fetchAgencyData } = useAgency();
+    const dispatch = useDispatch();
+    const facture = useSelector((state) => state.factures.byExpedition[id]);
+    const isGeneratingFacture = useSelector((state) => state.factures.isGenerating);
+    const isSendingFacture = useSelector((state) => state.factures.isSending);
 
     // États des modales
     const [isRefuseModalOpen, setIsRefuseModalOpen] = React.useState(false);
@@ -55,13 +73,81 @@ const ExpeditionDetails = () => {
     const [paymentReference, setPaymentReference] = React.useState("");
     const [isProcessing, setIsProcessing] = React.useState(false);
     const [motifRefus, setMotifRefus] = React.useState("");
+    const [isDownloadingFacture, setIsDownloadingFacture] = useState(false);
 
     // Chargement des données
     useEffect(() => {
         if (id) {
             getExpeditionDetails(id);
+            dispatch(fetchFactureForExpedition(id));
         }
-    }, [id, getExpeditionDetails]);
+    }, [id, getExpeditionDetails, dispatch]);
+
+    // Facturation
+    const handleGenerateFacture = async () => {
+        try {
+            await dispatch(generateFacture(id)).unwrap();
+            toast.success('Facture générée avec succès.');
+        } catch (err) {
+            toast.error(err || 'Erreur lors de la génération de la facture');
+        }
+    };
+
+    const handleDownloadFacture = async () => {
+        if (!facture) return;
+        setIsDownloadingFacture(true);
+        try {
+            const blob = await facturesApi.downloadPdf(facture.id);
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `${facture.numero}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch {
+            toast.error('Erreur lors du téléchargement de la facture');
+        } finally {
+            setIsDownloadingFacture(false);
+        }
+    };
+
+    const handleSendFactureEmail = async () => {
+        if (!facture) return;
+        try {
+            const msg = await dispatch(sendFactureEmail({ id: facture.id })).unwrap();
+            toast.success(msg);
+        } catch (err) {
+            toast.error(err || "Erreur lors de l'envoi de la facture");
+        }
+    };
+
+    const handleShareFactureWhatsApp = () => {
+        if (!facture) return;
+        const publicUrl = `${import.meta.env.VITE_API_URL}/api/factures/${facture.public_token}`;
+        const text = encodeURIComponent(`Voici votre facture ${facture.numero} : ${publicUrl}`);
+        window.open(`https://wa.me/?text=${text}`, '_blank');
+    };
+
+    const handleCopyFactureLink = async () => {
+        if (!facture) return;
+        const publicUrl = `${import.meta.env.VITE_API_URL}/api/factures/${facture.public_token}`;
+        try {
+            await navigator.clipboard.writeText(publicUrl);
+            toast.success('Lien copié dans le presse-papiers.');
+        } catch {
+            toast.error('Impossible de copier le lien.');
+        }
+    };
+
+    const handleFactureStatutChange = async (statut) => {
+        if (!facture) return;
+        try {
+            await dispatch(updateFactureStatut({ id: facture.id, statut })).unwrap();
+        } catch (err) {
+            toast.error(err || 'Erreur lors de la mise à jour du statut');
+        }
+    };
 
     useEffect(() => {
         fetchAgencyData();
@@ -347,6 +433,75 @@ const ExpeditionDetails = () => {
                             formatCurrency={formatCurrency}
                             onRecordTransaction={handleRecordTransaction}
                         />
+
+                        {/* 🧾 FACTURATION */}
+                        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 sm:p-5">
+                            <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="h-9 w-9 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600 shrink-0">
+                                        <Receipt size={17} />
+                                    </div>
+                                    <p className="text-sm font-semibold text-gray-900">Facturation</p>
+                                </div>
+                                {facture && (
+                                    <select
+                                        value={facture.statut}
+                                        onChange={(e) => handleFactureStatutChange(e.target.value)}
+                                        className={`text-xs font-bold uppercase tracking-wide px-2.5 py-1.5 rounded-lg border cursor-pointer ${FACTURE_STATUT_STYLES[facture.statut] || 'bg-gray-50 text-gray-600 border-gray-200'}`}
+                                    >
+                                        <option value="emise">Émise</option>
+                                        <option value="payee">Payée</option>
+                                        <option value="annulee">Annulée</option>
+                                    </select>
+                                )}
+                            </div>
+
+                            {!facture ? (
+                                <button
+                                    onClick={handleGenerateFacture}
+                                    disabled={isGeneratingFacture}
+                                    className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-gray-900 text-white rounded-lg text-sm font-semibold hover:bg-gray-800 transition-all active:scale-95 disabled:opacity-50"
+                                >
+                                    {isGeneratingFacture ? <Loader2 size={16} className="animate-spin" /> : <Receipt size={16} />}
+                                    {isGeneratingFacture ? 'Génération…' : 'Générer la facture'}
+                                </button>
+                            ) : (
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-sm font-semibold text-gray-700">{facture.numero}</p>
+                                        <p className="text-sm font-semibold text-gray-900">{formatCurrency(facture.montant_total)}</p>
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <button
+                                            onClick={handleDownloadFacture}
+                                            disabled={isDownloadingFacture}
+                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-semibold hover:bg-gray-200 transition-colors disabled:opacity-50"
+                                        >
+                                            {isDownloadingFacture ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />} PDF
+                                        </button>
+                                        <button
+                                            onClick={handleSendFactureEmail}
+                                            disabled={isSendingFacture}
+                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-semibold hover:bg-gray-200 transition-colors disabled:opacity-50"
+                                        >
+                                            {isSendingFacture ? <Loader2 size={13} className="animate-spin" /> : <Mail size={13} />} Email
+                                        </button>
+                                        <button
+                                            onClick={handleShareFactureWhatsApp}
+                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-semibold hover:bg-emerald-100 transition-colors"
+                                        >
+                                            <MessageCircle size={13} /> WhatsApp
+                                        </button>
+                                        <button
+                                            onClick={handleCopyFactureLink}
+                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-semibold hover:bg-gray-200 transition-colors"
+                                        >
+                                            <LinkIcon size={13} /> Copier le lien
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
 
                         {/* 💼 COMMISSIONS AGENCE (si disponible) */}
                         {expedition.commission_details && Object.keys(expedition.commission_details).length > 0 && (

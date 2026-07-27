@@ -17,6 +17,7 @@ import { selectAgencyConfigured } from "./store/slices/agencySlice";
 import { autoCheckAndUpdate, handleChunkLoadError } from "./utils/versionChecker";
 import { getEcho, disconnectEcho } from "./services/echo";
 import { fetchNotifications, announcementReceived } from "./store/slices/notificationsSlice";
+import { messageReceived, messageUpdated, messageDeleted } from "./store/slices/messagesSlice";
 import { useWebSocket } from "./hooks/useWebSocket";
 import { showToast } from "./utils/toast";
 import soundNotification from "./utils/soundNotification";
@@ -44,6 +45,7 @@ import RetraitColis from "./pages/RetraitColis";
 import Transactions from "./pages/Transactions";
 import TransactionsPro from "./pages/TransactionsPro";
 import Notifications from "./pages/Notifications";
+import Messages from "./pages/Messages";
 import ToastManager from "./components/ToastManager";
 import DashboardLayout from "./components/DashboardLayout";
 import WebSocketDebugPanel from "./components/WebSocketDebugPanel";
@@ -155,6 +157,27 @@ function AppContent() {
         body: announcement?.message,
         onClick: () => navigate("/notifications"),
       });
+    },
+    onMessageReceived: (data) => {
+      const message = Array.isArray(data) ? data[0] : data;
+      if (!message) return;
+      dispatch(messageReceived(message));
+      // N'affiche pas de toast pour ses propres messages (déjà ajoutés localement à l'envoi)
+      if (message.sender?.type === "agence") return;
+      showToast("💬 Nouveau message du backoffice", "info");
+      soundNotification.playSuccess();
+      showBrowserNotification(message.sender?.name || "Backoffice", {
+        body: message.body || "Pièce jointe",
+        onClick: () => navigate("/messages"),
+      });
+    },
+    onMessageUpdated: (data) => {
+      const message = Array.isArray(data) ? data[0] : data;
+      if (message) dispatch(messageUpdated(message));
+    },
+    onMessageDeleted: (data) => {
+      const item = Array.isArray(data) ? data[0] : data;
+      if (item?.id) dispatch(messageDeleted(item.id));
     },
   });
 
@@ -269,6 +292,7 @@ function AppContent() {
           <Route path="/transactions" element={<AgencySetupGuard><TransactionsPro /></AgencySetupGuard>} />
           <Route path="/transactions-legacy" element={<AgencySetupGuard><Transactions /></AgencySetupGuard>} />
           <Route path="/notifications" element={<AgencySetupGuard><Notifications /></AgencySetupGuard>} />
+          <Route path="/messages" element={<AgencySetupGuard><Messages /></AgencySetupGuard>} />
         </Route>
         {/* Route par défaut */}
         <Route path="*" element={<Navigate to="/" replace />} />
