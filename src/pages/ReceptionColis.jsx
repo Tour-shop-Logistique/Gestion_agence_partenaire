@@ -222,11 +222,11 @@ const ReceptionColis = () => {
                         <div className="p-3 bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-2xl shadow-lg shadow-indigo-300/50">
                             <InboxArrowDownIcon className="w-7 h-7 text-white" />
                         </div>
-                        <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight leading-none">
+                        <h1 className="text-lg sm:text-xl font-black tracking-tight text-slate-900">
                             Réception des Colis 📦 [NOUVEAU]
                         </h1>
                     </div>
-                    <p className="text-sm font-semibold text-slate-600 tracking-wide ml-14">
+                    <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5 ml-14">
                         Gérez l'arrivée des colis à votre agence (Destination)
                     </p>
                 </div>

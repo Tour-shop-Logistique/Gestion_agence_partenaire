@@ -1,9 +1,10 @@
-import { PlusIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
+import { ArrowPathIcon } from "@heroicons/react/24/outline";
+import ExchangeRateWidget from "./ExchangeRateWidget";
 
 /**
- * Header du dashboard : titre, statut de rafraîchissement, actions principales
+ * Header du dashboard : titre, statut de rafraîchissement, taux de conversion
  */
-const DashboardHeader = ({ isRefreshing, lastUpdated, onRefresh, onCreateExpedition }) => {
+const DashboardHeader = ({ isRefreshing, lastUpdated, onRefresh }) => {
     return (
         <div className="flex items-center justify-between flex-wrap gap-3 pb-1">
             <div className="flex items-center gap-2.5 sm:gap-3.5">
@@ -17,7 +18,7 @@ const DashboardHeader = ({ isRefreshing, lastUpdated, onRefresh, onCreateExpedit
                     <ArrowPathIcon className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-indigo-600' : ''}`} />
                 </button>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-2">
-                    <h1 className="text-lg sm:text-xl font-black tracking-tight bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
+                    <h1 className="text-lg sm:text-xl font-black tracking-tight text-slate-900">
                         Dashboard
                     </h1>
                     {isRefreshing && (
@@ -33,14 +34,7 @@ const DashboardHeader = ({ isRefreshing, lastUpdated, onRefresh, onCreateExpedit
                 </div>
             </div>
 
-            <button
-                onClick={onCreateExpedition}
-                className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-lg font-semibold text-xs sm:text-sm hover:from-indigo-700 hover:to-indigo-600 active:scale-[0.98] transition-all shadow-sm hover:shadow-md hover:shadow-indigo-200 flex items-center gap-1.5 sm:gap-2"
-            >
-                <PlusIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">Nouvelle expédition</span>
-                <span className="sm:hidden">Nouveau</span>
-            </button>
+            <ExchangeRateWidget />
         </div>
     );
 };

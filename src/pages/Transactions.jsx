@@ -186,7 +186,7 @@ const Transactions = () => {
           >
             <ChevronLeftIcon className="w-4 h-4" />
           </button>
-          <h1 className="text-lg sm:text-xl font-semibold text-slate-900 tracking-tight">Historique financier</h1>
+          <h1 className="text-lg sm:text-xl font-black tracking-tight text-slate-900">Historique financier</h1>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">

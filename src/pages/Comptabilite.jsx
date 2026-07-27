@@ -697,8 +697,8 @@ const Comptabilite = () => {
       {/* Page Header - Responsive */}
       <div className="flex flex-col gap-3 sm:gap-4 border-b border-slate-200 pb-4 sm:pb-6">
         <div>
-          <h1 className="text-lg sm:text-xl font-semibold text-slate-900 tracking-tight">Comptabilité & Flux</h1>
-          <p className="text-xs text-slate-500 mt-1 font-medium">Tableau de bord financier professionnel - Analyse des revenus et répartition des commissions</p>
+          <h1 className="text-lg sm:text-xl font-black tracking-tight text-slate-900">Comptabilité & Flux</h1>
+          <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5 font-medium">Tableau de bord financier professionnel - Analyse des revenus et répartition des commissions</p>
         </div>
         
         <div className="flex items-center gap-2 flex-wrap">

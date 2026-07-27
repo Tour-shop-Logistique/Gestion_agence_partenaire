@@ -932,8 +932,8 @@ const CreateExpeditionV2 = () => {
                     {/* ── Header ── */}
                     <div className="flex items-center justify-between mb-4 sm:mb-8 gap-3">
                         <div>
-                            <h1 className="text-base sm:text-xl font-bold text-slate-900 tracking-tight">Nouvelle expédition</h1>
-                            <p className="text-xs text-slate-500 mt-0.5 hidden sm:block">
+                            <h1 className="text-lg sm:text-xl font-black tracking-tight text-slate-900">Nouvelle expédition</h1>
+                            <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5 hidden sm:block">
                                 Enregistrement et tarification des envois clients
                             </p>
                             <p className="text-[11px] text-slate-400 mt-1 hidden lg:block" aria-hidden="true">

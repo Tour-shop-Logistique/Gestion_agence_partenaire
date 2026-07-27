@@ -39,8 +39,8 @@ const Notifications = () => {
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0">
         <div>
-          <h1 className="text-lg sm:text-2xl font-semibold text-gray-900">Annonces</h1>
-          <p className="mt-1 text-xs sm:text-sm text-gray-500">
+          <h1 className="text-lg sm:text-xl font-black tracking-tight text-slate-900">Annonces</h1>
+          <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">
             Communications officielles envoyées par le backoffice
           </p>
         </div>

@@ -191,7 +191,7 @@ const ExpeditionDetails = () => {
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <h1 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">
+                                    <h1 className="text-lg sm:text-xl font-black tracking-tight text-slate-900 truncate">
                                         {expedition.reference}
                                     </h1>
                                     <button

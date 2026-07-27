@@ -318,34 +318,35 @@ const ColisAReceptionner = () => {
     };
 
     return (
-        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-1 space-y-3 sm:space-y-6">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-1 space-y-3 sm:space-y-6 animate-fade-in">
             {/* Header Section - Responsive */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div>
-                    <h1 className="text-lg sm:text-2xl font-semibold text-gray-900">
-                        Colis à réceptionner
-                    </h1>
-                    <p className="mt-1 text-xs sm:text-sm text-gray-500">
-                        Gérez les colis en transit vers votre agence
-                    </p>
-                </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2.5 sm:gap-3.5">
                     <button
                         onClick={() => fetchReceptionData(true)}
                         disabled={loading}
-                        className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
+                        aria-label="Actualiser"
+                        className="p-2 bg-white border border-slate-200 rounded-lg text-slate-500 hover:text-indigo-600 hover:border-indigo-300 hover:shadow-sm active:scale-95 transition-all disabled:opacity-50"
+                        title="Actualiser"
                     >
-                        <ArrowPathIcon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2 ${loading ? 'animate-spin' : ''}`} />
-                        <span className="hidden sm:inline">Actualiser</span>
+                        <ArrowPathIcon className={`w-4 h-4 ${loading ? 'animate-spin text-indigo-600' : ''}`} />
                     </button>
-                    <button 
-                        onClick={() => setScannerOpen(true)}
-                        className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 border border-transparent rounded-lg text-xs sm:text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
-                    >
-                        <QrCodeIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
-                        <span className="hidden sm:inline">Scanner</span>
-                    </button>
+                    <div>
+                        <h1 className="text-lg sm:text-xl font-black tracking-tight text-slate-900">
+                            Colis à réceptionner
+                        </h1>
+                        <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">
+                            Gérez les colis en transit vers votre agence
+                        </p>
+                    </div>
                 </div>
+                <button
+                    onClick={() => setScannerOpen(true)}
+                    className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-transparent rounded-lg text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm hover:shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
+                >
+                    <QrCodeIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Scanner</span>
+                </button>
             </div>
 
             {/* QR Scanner Modal */}
@@ -357,12 +358,12 @@ const ColisAReceptionner = () => {
 
             {/* Search Bar - Responsive */}
             <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
-                    <MagnifyingGlassIcon className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
+                <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
+                    <MagnifyingGlassIcon className="h-4 w-4 sm:h-5 sm:w-5 text-slate-400" />
                 </div>
                 <input
                     type="text"
-                    className="block w-full pl-8 sm:pl-10 pr-2 sm:pr-3 py-2 sm:py-2.5 border-2 border-gray-400 rounded-lg text-xs sm:text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow"
+                    className="block w-full pl-9 sm:pl-11 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm placeholder-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow"
                     placeholder="Rechercher..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -371,9 +372,9 @@ const ColisAReceptionner = () => {
 
             {/* Selection Bar - Responsive */}
             {selectedCodes.length > 0 && (
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-0 px-3 sm:px-4 py-2 sm:py-3 bg-indigo-50 border border-indigo-200 rounded-lg">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-0 px-3 sm:px-4 py-2 sm:py-3 bg-indigo-50 border border-indigo-200 rounded-2xl shadow-sm animate-fade-in-down">
                     <div className="flex items-center gap-2 sm:gap-3">
-                        <span className="text-xs sm:text-sm font-medium text-gray-700">
+                        <span className="text-xs sm:text-sm font-bold text-slate-700">
                             {selectedCodes.length} sélectionné{selectedCodes.length > 1 ? 's' : ''}
                         </span>
                     </div>
@@ -381,7 +382,7 @@ const ColisAReceptionner = () => {
                         <button
                             onClick={handleReceiveSelected}
                             disabled={processing}
-                            className="flex-1 sm:flex-none inline-flex items-center justify-center px-3 sm:px-4 py-1.5 sm:py-2 border border-transparent rounded-lg text-xs sm:text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
+                            className="flex-1 sm:flex-none inline-flex items-center justify-center px-3 sm:px-4 py-1.5 sm:py-2 border border-transparent rounded-lg text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm hover:shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-all"
                         >
                             {processing ? (
                                 <>
@@ -397,7 +398,7 @@ const ColisAReceptionner = () => {
                         </button>
                         <button
                             onClick={() => setSelectedCodes([])}
-                            className="flex-1 sm:flex-none inline-flex items-center justify-center px-3 sm:px-4 py-1.5 sm:py-2 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                            className="flex-1 sm:flex-none inline-flex items-center justify-center px-3 sm:px-4 py-1.5 sm:py-2 border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-600 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
                         >
                             Annuler
                         </button>
@@ -409,7 +410,7 @@ const ColisAReceptionner = () => {
             <div className="lg:hidden space-y-2 pb-20">
                 {loading && (reception || []).length === 0 ? (
                     Array(3).fill(0).map((_, i) => (
-                        <div key={i} className="bg-white rounded-xl p-3 border border-slate-100 shadow-sm animate-pulse space-y-2">
+                        <div key={i} className="bg-white rounded-2xl p-3 border border-slate-100 shadow-sm animate-pulse space-y-2">
                             <div className="h-4 bg-slate-100 rounded w-1/3"></div>
                             <div className="h-3 bg-slate-100 rounded w-full"></div>
                             <div className="h-3 bg-slate-100 rounded w-2/3"></div>
@@ -426,14 +427,14 @@ const ColisAReceptionner = () => {
                         <div
                             key={item.id}
                             id={`colis-${item.code_colis}`}
-                            className={`bg-white rounded-xl border transition-all active:scale-[0.98] overflow-hidden ${
-                                selectedCodes.includes(item.code_colis) 
-                                    ? 'border-indigo-500 ring-2 ring-indigo-500/10 shadow-md' 
-                                    : isReceived 
-                                        ? 'border-green-200 bg-green-50/30 opacity-60' 
+                            className={`bg-white rounded-2xl border transition-all active:scale-[0.98] overflow-hidden ${
+                                selectedCodes.includes(item.code_colis)
+                                    ? 'border-indigo-500 ring-2 ring-indigo-500/10 shadow-md'
+                                    : isReceived
+                                        ? 'border-emerald-200 bg-emerald-50/30 opacity-60'
                                         : isInTransit
                                             ? 'border-amber-200 bg-amber-50/30'
-                                            : 'border-slate-200 shadow-sm'
+                                            : 'border-slate-100 shadow-sm hover:shadow-md'
                             }`}
                             onClick={() => isReadyToReceive && toggleSelect(item.code_colis)}
                         >
@@ -467,7 +468,7 @@ const ColisAReceptionner = () => {
                                         <div className="flex items-center gap-1.5 flex-wrap">
                                             <span className="text-xs font-bold text-indigo-600 truncate">{item.code_colis}</span>
                                             {isReceived ? (
-                                                <span className="px-1.5 py-0.5 rounded-full bg-green-50 text-green-700 text-[8px] font-bold uppercase border border-green-200">
+                                                <span className="px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[8px] font-bold uppercase border border-emerald-200">
                                                     ✓ Réceptionné
                                                 </span>
                                             ) : isInTransit ? (
@@ -546,54 +547,55 @@ const ColisAReceptionner = () => {
                         </div>
                     )})
                 ) : (
-                    <div className="bg-white rounded-xl p-8 text-center border border-slate-100 shadow-sm">
-                        <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-2">
-                            <InboxArrowDownIcon className="w-6 h-6 text-slate-300" />
+                    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm px-6 py-12 text-center">
+                        <div className="w-16 h-16 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 border-2 border-slate-200 flex items-center justify-center">
+                            <InboxArrowDownIcon className="w-8 h-8 text-slate-400" />
                         </div>
-                        <p className="text-xs font-bold text-slate-400">Aucun colis à réceptionner</p>
+                        <p className="text-sm font-semibold text-slate-600 mb-1">Aucun colis à réceptionner</p>
+                        <p className="text-xs text-slate-400">Les colis en attente de réception apparaîtront ici</p>
                     </div>
                 )}
             </div>
 
             {/* Table Section - Desktop Only */}
-            <div className="hidden lg:block bg-white border border-gray-200 rounded-lg overflow-hidden">
+            <div className="hidden lg:block bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
                 <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
+                    <table className="min-w-full divide-y divide-slate-100">
+                        <thead className="bg-gradient-to-r from-slate-50 to-white">
                             <tr>
                                 <th scope="col" className="w-12 px-4 py-3">
                                     <input
                                         type="checkbox"
-                                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                        className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                                         checked={selectableColis.length > 0 && selectedCodes.length === selectableColis.length}
                                         onChange={toggleSelectAll}
                                     />
                                 </th>
-                                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th scope="col" className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
                                     Colis
                                 </th>
-                                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th scope="col" className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
                                     Provenance
                                 </th>
-                                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th scope="col" className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
                                     Destination
                                 </th>
-                                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th scope="col" className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
                                     Poids
                                 </th>
-                                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th scope="col" className="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">
                                     Statut
                                 </th>
-                                <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th scope="col" className="px-4 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">
                                     Actions
                                 </th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">{loading && (reception || []).length === 0 ? (
+                        <tbody className="bg-white divide-y divide-slate-100">{loading && (reception || []).length === 0 ? (
                         <tr>
                             <td colSpan="7" className="px-4 py-12 text-center">
-                                <ArrowPathIcon className="mx-auto h-8 w-8 text-gray-400 animate-spin" />
-                                <p className="mt-2 text-sm text-gray-500">Chargement...</p>
+                                <ArrowPathIcon className="mx-auto h-8 w-8 text-indigo-400 animate-spin" />
+                                <p className="mt-2 text-sm text-slate-500">Chargement...</p>
                             </td>
                         </tr>
                     ) : filteredColis.length > 0 ? (
@@ -700,7 +702,7 @@ const ColisAReceptionner = () => {
                                         >
                                             <td className="px-4 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                                                 {isReceived ? (
-                                                    <CheckCircleIcon className="h-5 w-5 text-green-500" />
+                                                    <CheckCircleIcon className="h-5 w-5 text-emerald-500" />
                                                 ) : isInTransit ? (
                                                     <svg className="h-5 w-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -708,7 +710,7 @@ const ColisAReceptionner = () => {
                                                 ) : (
                                                     <input
                                                         type="checkbox"
-                                                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                                        className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                                                         checked={selectedCodes.includes(item.code_colis)}
                                                         onChange={() => toggleSelect(item.code_colis)}
                                                     />
@@ -717,42 +719,42 @@ const ColisAReceptionner = () => {
                                             <td className="px-4 py-4">
                                                 <div className="flex items-center">
                                                     <div className={`flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-lg ${
-                                                        isReceived ? 'bg-green-100' : isInTransit ? 'bg-amber-100' : 'bg-gray-100'
+                                                        isReceived ? 'bg-emerald-100' : isInTransit ? 'bg-amber-100' : 'bg-slate-100'
                                                     }`}>
                                                         <InboxArrowDownIcon className={`h-5 w-5 ${
-                                                            isReceived ? 'text-green-600' : isInTransit ? 'text-amber-600' : 'text-gray-500'
+                                                            isReceived ? 'text-emerald-600' : isInTransit ? 'text-amber-600' : 'text-slate-500'
                                                         }`} />
                                                     </div>
                                                     <div className="ml-3">
-                                                        <div className="text-sm font-medium text-gray-900">
+                                                        <div className="text-sm font-bold text-slate-900">
                                                             {item.code_colis}
                                                         </div>
-                                                        <div className="text-sm text-gray-500">
+                                                        <div className="text-sm text-slate-500">
                                                             {item.designation || 'Sans désignation'}
                                                         </div>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td className="px-4 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-900">{exp.pays_depart}</div>
+                                                <div className="text-sm text-slate-700">{exp.pays_depart}</div>
                                             </td>
                                             <td className="px-4 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-900">{exp.pays_destination}</div>
+                                                <div className="text-sm text-slate-700">{exp.pays_destination}</div>
                                             </td>
                                             <td className="px-4 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-gray-900">{parseFloat(item.poids).toFixed(2)} kg</div>
+                                                <div className="text-sm font-semibold text-slate-900">{parseFloat(item.poids).toFixed(2)} kg</div>
                                             </td>
                                             <td className="px-4 py-4 whitespace-nowrap">
                                                 {isReceived ? (
-                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                                                         ✓ Réceptionné
                                                     </span>
                                                 ) : isInTransit ? (
-                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
+                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
                                                         ⏱ En transit
                                                     </span>
                                                 ) : (
-                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200 animate-pulse">
+                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 animate-pulse">
                                                         → À réceptionner
                                                     </span>
                                                 )}
@@ -760,7 +762,7 @@ const ColisAReceptionner = () => {
                                             <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                 <div className="flex items-center justify-end gap-2">
                                                     <Link to={`/expeditions/${exp.id}`}>
-                                                        <button className="text-gray-600 hover:text-gray-900 transition-colors">
+                                                        <button className="text-slate-500 hover:text-slate-900 transition-colors font-semibold">
                                                             Détails
                                                         </button>
                                                     </Link>
@@ -772,12 +774,12 @@ const ColisAReceptionner = () => {
                                                                 handleReceiveSingle(item.code_colis);
                                                             }}
                                                             disabled={processing}
-                                                            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
+                                                            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-semibold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm hover:shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-all"
                                                         >
                                                             Réceptionner
                                                         </button>
                                                     )}
-                                                  
+
                                                 </div>
                                             </td>
                                         </tr>
@@ -787,10 +789,12 @@ const ColisAReceptionner = () => {
                         })
                     ) : (
                         <tr>
-                            <td colSpan="7" className="px-4 py-12 text-center">
-                                <InboxArrowDownIcon className="mx-auto h-12 w-12 text-gray-400" />
-                                <h3 className="mt-2 text-sm font-medium text-gray-900">Aucun colis</h3>
-                                <p className="mt-1 text-sm text-gray-500">
+                            <td colSpan="7" className="px-6 py-16 text-center">
+                                <div className="w-16 h-16 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 border-2 border-slate-200 flex items-center justify-center">
+                                    <InboxArrowDownIcon className="w-8 h-8 text-slate-400" />
+                                </div>
+                                <h3 className="text-sm font-semibold text-slate-600 mb-1">Aucun colis</h3>
+                                <p className="text-xs text-slate-400">
                                     Les colis en attente de réception apparaîtront ici.
                                 </p>
                             </td>
@@ -803,46 +807,46 @@ const ColisAReceptionner = () => {
 
             {/* Pagination - Responsive */}
             {receptionMeta && receptionMeta.last_page > 1 && (
-                <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 bg-white border border-gray-200 rounded-lg">
+                <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 bg-white border border-slate-100 rounded-2xl shadow-sm">
                     <div className="flex-1 flex justify-between sm:hidden">
                         <button
                             onClick={() => handlePageChange(currentPage - 1)}
                             disabled={currentPage === 1}
-                            className="relative inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="relative inline-flex items-center px-3 py-1.5 border border-slate-200 text-xs font-semibold rounded-lg text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                             Préc.
                         </button>
-                        <span className="text-xs text-gray-700 flex items-center">
+                        <span className="text-xs font-semibold text-slate-600 flex items-center">
                             {receptionMeta.current_page}/{receptionMeta.last_page}
                         </span>
                         <button
                             onClick={() => handlePageChange(currentPage + 1)}
                             disabled={currentPage === receptionMeta.last_page}
-                            className="ml-3 relative inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="ml-3 relative inline-flex items-center px-3 py-1.5 border border-slate-200 text-xs font-semibold rounded-lg text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                             Suiv.
                         </button>
                     </div>
                     <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                         <div>
-                            <p className="text-sm text-gray-700">
-                                Page <span className="font-medium">{receptionMeta.current_page}</span> sur{' '}
-                                <span className="font-medium">{receptionMeta.last_page}</span>
+                            <p className="text-sm text-slate-600">
+                                Page <span className="font-bold text-slate-900">{receptionMeta.current_page}</span> sur{' '}
+                                <span className="font-bold text-slate-900">{receptionMeta.last_page}</span>
                             </p>
                         </div>
                         <div>
-                            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                            <nav className="relative z-0 inline-flex rounded-lg shadow-sm -space-x-px" aria-label="Pagination">
                                 <button
                                     onClick={() => handlePageChange(currentPage - 1)}
                                     disabled={currentPage === 1}
-                                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="relative inline-flex items-center px-2 py-2 rounded-l-lg border border-slate-200 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50 hover:text-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 >
                                     <ChevronLeftIcon className="h-5 w-5" />
                                 </button>
                                 <button
                                     onClick={() => handlePageChange(currentPage + 1)}
                                     disabled={currentPage === receptionMeta.last_page}
-                                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="relative inline-flex items-center px-2 py-2 rounded-r-lg border border-slate-200 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50 hover:text-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 >
                                     <ChevronRightIcon className="h-5 w-5" />
                                 </button>

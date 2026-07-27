@@ -7,8 +7,8 @@ import {
     ClockIcon,
     CubeIcon,
     CheckCircleIcon,
-    ArchiveBoxIcon,
-    TruckIcon,
+    BuildingOfficeIcon,
+    ArrowsRightLeftIcon,
     InformationCircleIcon,
     ArrowRightIcon
 } from "@heroicons/react/24/outline";
@@ -16,94 +16,63 @@ import {
 /**
  * Carte KPI réutilisable
  */
-const KPICard = ({ 
-    icon: Icon, 
-    label, 
-    value, 
-    unit, 
-    badge, 
-    tooltip, 
+const KPICard = ({
+    icon: Icon,
+    label,
+    value,
+    unit,
+    badge,
+    tooltip,
     colorScheme = 'slate',
     link = null,
     isClickable = false
 }) => {
     const colorMap = {
-        emerald: {
-            iconBg: 'bg-emerald-50',
-            iconColor: 'text-emerald-600',
-            badgeBg: 'bg-emerald-50',
-            badgeText: 'text-emerald-600'
-        },
-        indigo: {
-            iconBg: 'bg-indigo-50',
-            iconColor: 'text-indigo-600',
-            badgeBg: 'bg-indigo-50',
-            badgeText: 'text-indigo-600'
-        },
-        red: {
-            iconBg: 'bg-red-50',
-            iconColor: 'text-red-600',
-            badgeBg: 'bg-red-50',
-            badgeText: 'text-red-600'
-        },
-        amber: {
-            iconBg: 'bg-amber-50',
-            iconColor: 'text-amber-600',
-            badgeBg: 'bg-amber-50',
-            badgeText: 'text-amber-600'
-        },
-        blue: {
-            iconBg: 'bg-blue-50',
-            iconColor: 'text-blue-600',
-            badgeBg: 'bg-blue-50',
-            badgeText: 'text-blue-600'
-        },
-        green: {
-            iconBg: 'bg-green-50',
-            iconColor: 'text-green-600',
-            badgeBg: 'bg-green-50',
-            badgeText: 'text-green-600'
-        }
+        emerald: { iconBg: 'bg-emerald-500' },
+        indigo: { iconBg: 'bg-indigo-500' },
+        red: { iconBg: 'bg-red-500' },
+        amber: { iconBg: 'bg-amber-500' },
+        blue: { iconBg: 'bg-blue-500' },
+        green: { iconBg: 'bg-green-500' }
     };
 
     const colors = colorMap[colorScheme];
 
     const content = (
-        <>
-            <div className="flex justify-between items-start mb-2 sm:mb-3">
-                <div className={`p-1.5 sm:p-2 ${colors.iconBg} ${colors.iconColor} rounded-lg ${isClickable ? 'group-hover:scale-110 transition-transform' : ''}`}>
-                    <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
-                </div>
+        <div className="flex items-start gap-3 sm:gap-4">
+            <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full ${colors.iconBg} flex items-center justify-center flex-shrink-0 shadow-sm ${isClickable ? 'group-hover:scale-105 transition-transform' : ''}`}>
+                <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+            </div>
+            <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1">
-                    <span className={`text-[9px] sm:text-xs font-semibold ${colors.badgeBg} ${colors.badgeText} px-1.5 sm:px-2 py-0.5 rounded-full`}>
-                        {badge}
-                    </span>
+                    <p className="text-xs sm:text-sm font-medium text-slate-500 truncate">{label}</p>
                     {tooltip && (
                         <div className="relative group/tooltip hidden sm:block">
-                            <InformationCircleIcon className="w-4 h-4 text-slate-400 cursor-help" />
-                            <div className="absolute right-0 top-6 w-64 bg-slate-900 text-white text-xs rounded-lg p-3 opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-10 shadow-xl">
+                            <InformationCircleIcon className="w-3.5 h-3.5 text-slate-300 hover:text-slate-400 cursor-help" />
+                            <div className="absolute left-0 top-5 w-64 bg-slate-900 text-white text-xs rounded-lg p-3 opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-10 shadow-xl">
                                 {tooltip}
                             </div>
                         </div>
                     )}
                 </div>
+                <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 mt-1 leading-none truncate">
+                    {typeof value === 'number' ? new Intl.NumberFormat('fr-FR').format(value) : value}
+                </h3>
+                <p className="text-[11px] sm:text-xs text-slate-400 mt-1.5 flex items-center gap-1">
+                    {badge && <span className="font-medium text-slate-500">{badge}</span>}
+                    {badge && unit && <span>·</span>}
+                    <span className="truncate">{unit}</span>
+                    {isClickable && <ArrowRightIcon className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity ml-auto flex-shrink-0" />}
+                </p>
             </div>
-            <p className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">{label}</p>
-            <h3 className="text-lg sm:text-2xl font-bold text-slate-900">
-                {typeof value === 'number' ? new Intl.NumberFormat('fr-FR').format(value) : value}
-            </h3>
-            <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5 sm:mt-1 flex items-center gap-1">
-                {unit}
-                {isClickable && <ArrowRightIcon className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />}
-            </p>
-        </>
+        </div>
     );
 
     if (link) {
         return (
-            <Link 
+            <Link
                 to={link}
-                className="bg-white p-3 sm:p-5 rounded-lg sm:rounded-xl border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 hover:-translate-y-0.5 transition-all duration-200 group relative"
+                className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 hover:-translate-y-0.5 transition-all duration-200 group relative"
             >
                 {content}
             </Link>
@@ -111,7 +80,7 @@ const KPICard = ({
     }
 
     return (
-        <div className="bg-white p-3 sm:p-5 rounded-lg sm:rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow duration-200 group relative">
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow duration-200 group relative">
             {content}
         </div>
     );
@@ -122,7 +91,7 @@ const KPICard = ({
  */
 const KPISection = ({ financial, operational }) => {
     return (
-        <div className="space-y-4 sm:space-y-6">
+        <div className="space-y-5 sm:space-y-8">
             {/* 💰 Performance Financière */}
             <div>
                 <div className="mb-3 sm:mb-4 flex items-center gap-2.5">
@@ -135,7 +104,7 @@ const KPISection = ({ financial, operational }) => {
                         <p className="text-xs text-slate-500 mt-0.5">Indicateurs de revenus et trésorerie</p>
                     </div>
                 </div>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
                     <KPICard
                         icon={CurrencyDollarIcon}
                         label="Chiffre d'affaires"
@@ -187,7 +156,7 @@ const KPISection = ({ financial, operational }) => {
                         <p className="text-xs text-slate-500 mt-0.5">Volume et flux de colis</p>
                     </div>
                 </div>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
                     <KPICard
                         icon={CubeIcon}
                         label="Expéditions créées"
@@ -200,36 +169,33 @@ const KPISection = ({ financial, operational }) => {
                         tooltip="Nombre total de nouvelles fiches d'expéditions enregistrées par votre agence depuis ce matin."
                     />
                     <KPICard
-                        icon={ArchiveBoxIcon}
-                        label="À réceptionner (Départ)"
-                        value={operational.colis_attente_reception_depart || 0}
-                        unit="Colis clients"
-                        badge={(operational.colis_attente_reception_depart || 0) > 10 ? 'Urgent' : 'Départ'}
+                        icon={BuildingOfficeIcon}
+                        label="Vers entrepôt"
+                        value={operational.colis_attente_expedition_entrepot || 0}
+                        unit="Colis en agence"
+                        badge="À transférer"
                         colorScheme="amber"
                         link="/colis"
                         isClickable={true}
                         tooltip={
                             <>
-                                <p className="font-semibold mb-1">Colis en attente de réception (Départ)</p>
-                                <p className="text-slate-300 mb-2">Colis déclarés dans une expédition au départ de votre agence, mais pas encore scannés ou marqués comme "reçus physiquement" à votre comptoir.</p>
-                                <p className="text-amber-300 font-semibold">→ Action : Réceptionner les colis apportés par les clients</p>
+                                <p className="font-semibold mb-1">Colis en attente d'expédition vers l'entrepôt</p>
+                                <p className="text-slate-300 mb-2">Colis déjà reçus à votre agence mais encore stockés chez vous. Ils attendent d'être regroupés et envoyés vers l'entrepôt central.</p>
+                                <p className="text-amber-300 font-semibold">→ Action : Préparer le transfert vers l'entrepôt</p>
                             </>
                         }
                     />
                     <KPICard
-                        icon={TruckIcon}
-                        label="À remettre"
-                        value={operational.colis_attente_retrait_livraison || 0}
-                        unit="Prêts en agence"
-                        badge="Arrivée"
-                        colorScheme="emerald"
-                        link="/retrait-colis"
-                        isClickable={true}
+                        icon={ArrowsRightLeftIcon}
+                        label="En transit"
+                        value={operational.colis_en_transit_vers_agence || 0}
+                        unit="Vers votre agence"
+                        badge="En route"
+                        colorScheme="blue"
                         tooltip={
                             <>
-                                <p className="font-semibold mb-1">Colis en attente de retrait/livraison</p>
-                                <p className="text-slate-300 mb-2">Colis physiquement arrivés dans votre agence de destination, mais que le client final n'a pas encore récupérés (ou qui n'ont pas encore été livrés à domicile).</p>
-                                <p className="text-emerald-300 font-semibold">→ Action : Contacter les clients pour le retrait</p>
+                                <p className="font-semibold mb-1">Colis en transit vers votre agence</p>
+                                <p className="text-slate-300">Colis qui ont quitté l'entrepôt international et qui sont en route vers votre ville (rôle d'agence de destination).</p>
                             </>
                         }
                     />

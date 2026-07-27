@@ -4,7 +4,7 @@ import { selectCurrentUser, logout } from "../store/slices/authSlice";
 import { useAgency } from "../hooks/useAgency";
 import { useExpedition } from "../hooks/useExpedition";
 import { getLogoUrl } from "../utils/apiConfig";
-import { Bell, Menu, Euro, RefreshCcw } from "lucide-react";
+import { Bell, Menu, Euro, RefreshCcw, Plus } from "lucide-react";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
 import WebSocketStatus from "./WebSocketStatus";
@@ -131,18 +131,14 @@ const Header = ({ onToggleSidebar }) => {
           {/* WebSocket Status Indicator */}
           <WebSocketStatus compact={true} />
 
-          {/* Conversion Rate */}
+          {/* Nouvelle expédition - accessible depuis n'importe quelle page */}
           <button
-            onClick={handleOpenModal}
-            className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 hover:border-slate-300 transition-all"
+            onClick={() => navigate('/create-expedition')}
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-lg font-semibold text-xs sm:text-sm hover:from-indigo-700 hover:to-indigo-600 active:scale-[0.98] transition-all shadow-sm hover:shadow-md hover:shadow-indigo-200"
           >
-            <Euro className="w-4 h-4 text-indigo-600" />
-            <div className="hidden lg:block">
-              <span className="text-xs font-semibold text-slate-900">1€ = {parseFloat(exchangeRate).toLocaleString('fr-FR')} CFA</span>
-            </div>
-            <div className="lg:hidden">
-              <span className="text-xs font-semibold text-indigo-600">{parseFloat(exchangeRate).toLocaleString('fr-FR')}</span>
-            </div>
+            <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Nouvelle expédition</span>
+            <span className="sm:hidden">Nouveau</span>
           </button>
 
           {/* Notifications / Annonces */}

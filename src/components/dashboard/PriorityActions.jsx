@@ -3,16 +3,15 @@ import { Link } from "react-router-dom";
 import {
     ArchiveBoxIcon,
     TruckIcon,
-    BellAlertIcon,
-    ArrowRightIcon,
     FireIcon
 } from "@heroicons/react/24/outline";
 
 /**
  * Section Actions Prioritaires
  * Affiche les actions urgentes que l'agent doit effectuer
+ * (les demandes en attente sont signalées séparément via la bande d'alerte DemandesAlert)
  */
-const PriorityActions = ({ operational, pendingDemandesCount }) => {
+const PriorityActions = ({ operational }) => {
     const actions = [
         {
             id: 'reception',
@@ -35,64 +34,37 @@ const PriorityActions = ({ operational, pendingDemandesCount }) => {
             link: '/retrait-colis',
             color: 'emerald',
             description: 'Prêts pour retrait client'
-        },
-        {
-            id: 'demandes',
-            title: 'Demandes en attente',
-            subtitle: 'À valider',
-            count: pendingDemandesCount,
-            urgent: pendingDemandesCount > 5,
-            icon: BellAlertIcon,
-            link: '/demandes',
-            color: 'indigo',
-            description: 'Demandes clients à accepter ou refuser'
         }
     ];
 
     const getColorClasses = (color, isUrgent) => {
         if (isUrgent) {
             return {
-                bg: 'bg-gradient-to-br from-red-50 to-orange-100',
-                hover: 'hover:from-red-100 hover:to-orange-200',
                 iconBg: 'bg-red-500',
-                iconColor: 'text-white',
-                text: 'text-red-900',
-                textSecondary: 'text-red-700',
                 countText: 'text-red-900',
-                subtitleText: 'text-red-600'
+                badge: 'bg-red-500 text-white',
+                cardBg: 'bg-red-50',
+                cardBorder: 'border-red-200',
+                cardHoverBorder: 'hover:border-red-300'
             };
         }
 
         const colorMap = {
             orange: {
-                bg: 'bg-gradient-to-br from-orange-50 to-orange-100',
-                hover: 'hover:from-orange-100 hover:to-orange-200',
                 iconBg: 'bg-orange-500',
-                iconColor: 'text-white',
-                text: 'text-orange-900',
-                textSecondary: 'text-orange-700',
                 countText: 'text-orange-900',
-                subtitleText: 'text-orange-500'
+                badge: null,
+                cardBg: 'bg-orange-50',
+                cardBorder: 'border-orange-100',
+                cardHoverBorder: 'hover:border-orange-200'
             },
             emerald: {
-                bg: 'bg-gradient-to-br from-emerald-50 to-emerald-100',
-                hover: 'hover:from-emerald-100 hover:to-emerald-200',
                 iconBg: 'bg-emerald-500',
-                iconColor: 'text-white',
-                text: 'text-emerald-900',
-                textSecondary: 'text-emerald-700',
                 countText: 'text-emerald-900',
-                subtitleText: 'text-emerald-600'
-            },
-            indigo: {
-                bg: 'bg-gradient-to-br from-indigo-50 to-indigo-100',
-                hover: 'hover:from-indigo-100 hover:to-indigo-200',
-                iconBg: 'bg-indigo-500',
-                iconColor: 'text-white',
-                text: 'text-indigo-900',
-                textSecondary: 'text-indigo-700',
-                countText: 'text-indigo-900',
-                subtitleText: 'text-indigo-600'
+                badge: null,
+                cardBg: 'bg-emerald-50',
+                cardBorder: 'border-emerald-100',
+                cardHoverBorder: 'hover:border-emerald-200'
             }
         };
 
@@ -108,8 +80,8 @@ const PriorityActions = ({ operational, pendingDemandesCount }) => {
                 <h2 className="text-sm font-bold text-slate-900">Actions prioritaires</h2>
             </div>
 
-            {/* Cartes d'actions compactes - 3 colonnes sur toutes les tailles */}
-            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            {/* Cartes horizontales, alignées avec le style des KPI */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-5">
                 {actions.map((action) => {
                     const colors = getColorClasses(action.color, action.urgent);
                     const Icon = action.icon;
@@ -118,34 +90,26 @@ const PriorityActions = ({ operational, pendingDemandesCount }) => {
                         <Link
                             key={action.id}
                             to={action.link}
-                            className={`${colors.bg} ${colors.hover} rounded-lg p-2 sm:p-4 transition-all duration-200 border ${action.urgent && action.id === 'reception' ? 'border-orange-300 shadow-md' : action.urgent ? 'border-red-400 shadow-md' : 'border-slate-200'} group relative hover:shadow-lg hover:-translate-y-0.5`}
+                            className={`${colors.cardBg} p-4 sm:p-5 rounded-2xl border ${colors.cardBorder} shadow-sm hover:shadow-md ${colors.cardHoverBorder} hover:-translate-y-0.5 transition-all duration-200 group relative flex items-center gap-3 sm:gap-4`}
                         >
-                            {/* Layout vertical compact pour mobile */}
-                            <div className="flex flex-col items-center gap-2 text-center">
-                                {/* Icône */}
-                                <div className={`w-8 h-8 sm:w-10 sm:h-10 ${colors.iconBg} rounded-lg flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform shadow-sm`}>
-                                    <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${colors.iconColor}`} />
-                                </div>
+                            {colors.badge && (
+                                <span className={`absolute top-3 right-3 text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${colors.badge}`}>
+                                    Urgent
+                                </span>
+                            )}
 
-                                {/* Compteur */}
-                                <div className="flex-shrink-0">
-                                    <div className={`text-xl sm:text-2xl font-black ${colors.countText} leading-none`}>
-                                        {action.count}
-                                    </div>
-                                    <div className={`text-[8px] sm:text-[10px] font-semibold ${colors.subtitleText} uppercase mt-0.5`}>
-                                        {action.subtitle}
-                                    </div>
-                                </div>
+                            {/* Icône */}
+                            <div className={`w-10 h-10 sm:w-12 sm:h-12 ${colors.iconBg} rounded-full flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform`}>
+                                <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                            </div>
 
-                                {/* Titre */}
-                                <div className="flex-1 min-w-0 w-full">
-                                    <h3 className={`text-[10px] sm:text-sm font-bold ${colors.text} leading-tight`}>
-                                        {action.title}
-                                    </h3>
-                                    <p className={`text-[8px] sm:text-xs ${colors.textSecondary} mt-1 hidden sm:block leading-tight`}>
-                                        {action.description}
-                                    </p>
-                                </div>
+                            {/* Libellé + compteur */}
+                            <div className="min-w-0 flex-1">
+                                <p className="text-xs sm:text-sm font-medium text-slate-500 truncate">{action.title}</p>
+                                <h3 className={`text-xl sm:text-2xl font-extrabold ${colors.countText} mt-1 leading-none`}>
+                                    {action.count}
+                                </h3>
+                                <p className="text-[11px] sm:text-xs text-slate-400 mt-1.5 truncate">{action.subtitle} · {action.description}</p>
                             </div>
                         </Link>
                     );
