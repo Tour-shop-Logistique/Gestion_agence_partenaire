@@ -11,6 +11,7 @@ import notificationsReducer from './slices/notificationsSlice';
 import messagesReducer from './slices/messagesSlice';
 import promotionsReducer from './slices/promotionsSlice';
 import factureReducer from './slices/factureSlice';
+import rolesReducer from './slices/rolesSlice';
 
 /**
  * Root Reducer avec logique de reset
@@ -28,6 +29,7 @@ const appReducer = combineReducers({
   messages: messagesReducer,
   promotions: promotionsReducer,
   factures: factureReducer,
+  roles: rolesReducer,
 });
 
 const rootReducer = (state, action) => {

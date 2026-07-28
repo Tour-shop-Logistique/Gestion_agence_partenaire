@@ -14,6 +14,7 @@ import { useTarifs } from "./hooks/useTarifs";
 import { useDashboard } from "./hooks/useDashboard";
 import { getLogoUrl } from "./utils/apiConfig";
 import { selectAgencyConfigured } from "./store/slices/agencySlice";
+import { selectCurrentUser, selectIsAdmin, setUser } from "./store/slices/authSlice";
 import { autoCheckAndUpdate, handleChunkLoadError } from "./utils/versionChecker";
 import { getEcho, disconnectEcho } from "./services/echo";
 import { fetchNotifications, announcementReceived } from "./store/slices/notificationsSlice";
@@ -66,11 +67,33 @@ const AutoRedirect = ({ children }) => {
   return children;
 };
 
-// Composant pour les routes protégées
+// Doit rester synchronisé avec AgenceRoleController::AVAILABLE_PAGES côté backend
+// et PAGE_KEY_BY_PATH dans components/Sidebar.jsx.
+const canAccessPage = (user, isAdminLike, pageKey) => {
+  if (!pageKey || isAdminLike) return true;
+  if (!user?.role_id) return true;
+  const pages = user?.role_details?.pages || [];
+  return pages.includes(pageKey);
+};
+
+// Composant pour les routes protégées (vérifie uniquement l'authentification).
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, status } = useSelector((state) => state.auth);
 
   return isAuthenticated ? children : <Navigate to="/" replace />;
+};
+
+// Garde de page : redirige vers /dashboard si l'agent connecté n'a pas accès
+// à cette page (rôle assigné dont les pages n'incluent pas pageKey).
+const PageGuard = ({ children, pageKey }) => {
+  const currentUser = useSelector(selectCurrentUser);
+  const isAdmin = useSelector(selectIsAdmin);
+
+  if (!canAccessPage(currentUser, isAdmin, pageKey)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return children;
 };
 
 // Composant pour les routes publiques
@@ -179,6 +202,14 @@ function AppContent() {
       const item = Array.isArray(data) ? data[0] : data;
       if (item?.id) dispatch(messageDeleted(item.id));
     },
+    onUserRoleChanged: (data) => {
+      const item = Array.isArray(data) ? data[0] : data;
+      if (item?.id && item.id === currentUser?.id) {
+        dispatch(setUser({ ...currentUser, role_id: item.role_id, role_details: item.role_details }));
+        localStorage.setItem("auth_user", JSON.stringify({ ...currentUser, role_id: item.role_id, role_details: item.role_details }));
+        showToast("Vos permissions d'accès ont été mises à jour.", "info");
+      }
+    },
   });
 
   useEffect(() => {
@@ -274,25 +305,25 @@ function AppContent() {
 
         {/* Routes protégées */}
         <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
-          <Route path="/dashboard" element={<AgencySetupGuard><Dashboard /></AgencySetupGuard>} />
-          <Route path="/tarifs-simples" element={<AgencySetupGuard><TarifsSimples /></AgencySetupGuard>} />
-          <Route path="/tarifs-groupage" element={<AgencySetupGuard><TarifsGroupes /></AgencySetupGuard>} />
-          <Route path="/agency-profile" element={<AgencyProfile />} />
+          <Route path="/dashboard" element={<AgencySetupGuard><PageGuard pageKey="dashboard"><Dashboard /></PageGuard></AgencySetupGuard>} />
+          <Route path="/tarifs-simples" element={<AgencySetupGuard><PageGuard pageKey="tarifs_simples"><TarifsSimples /></PageGuard></AgencySetupGuard>} />
+          <Route path="/tarifs-groupage" element={<AgencySetupGuard><PageGuard pageKey="tarifs_groupage"><TarifsGroupes /></PageGuard></AgencySetupGuard>} />
+          <Route path="/agency-profile" element={<PageGuard pageKey="agency_profile"><AgencyProfile /></PageGuard>} />
           <Route path="/agent-profile" element={<AgentProfile />} />
-          <Route path="/comptabilite" element={<AgencySetupGuard><Comptabilite /></AgencySetupGuard>} />
-          <Route path="/agents" element={<AgencySetupGuard><Agents /></AgencySetupGuard>} />
-          <Route path="/expeditions" element={<AgencySetupGuard><Expeditions /></AgencySetupGuard>} />
-          <Route path="/demandes" element={<AgencySetupGuard><Demandes /></AgencySetupGuard>} />
-          <Route path="/colis" element={<AgencySetupGuard><Colis /></AgencySetupGuard>} />
-          <Route path="/reception-colis" element={<AgencySetupGuard><ReceptionColis /></AgencySetupGuard>} />
-          <Route path="/colis-a-receptionner" element={<AgencySetupGuard><ColisAReceptionner /></AgencySetupGuard>} />
-          <Route path="/expeditions/:id" element={<AgencySetupGuard><ExpeditionDetails /></AgencySetupGuard>} />
-          <Route path="/create-expedition" element={<AgencySetupGuard><CreateExpeditionV2 /></AgencySetupGuard>} />
-          <Route path="/retrait-colis" element={<AgencySetupGuard><RetraitColis /></AgencySetupGuard>} />
-          <Route path="/transactions" element={<AgencySetupGuard><TransactionsPro /></AgencySetupGuard>} />
-          <Route path="/transactions-legacy" element={<AgencySetupGuard><Transactions /></AgencySetupGuard>} />
+          <Route path="/comptabilite" element={<AgencySetupGuard><PageGuard pageKey="comptabilite"><Comptabilite /></PageGuard></AgencySetupGuard>} />
+          <Route path="/agents" element={<AgencySetupGuard><PageGuard pageKey="agents"><Agents /></PageGuard></AgencySetupGuard>} />
+          <Route path="/expeditions" element={<AgencySetupGuard><PageGuard pageKey="expeditions"><Expeditions /></PageGuard></AgencySetupGuard>} />
+          <Route path="/demandes" element={<AgencySetupGuard><PageGuard pageKey="demandes"><Demandes /></PageGuard></AgencySetupGuard>} />
+          <Route path="/colis" element={<AgencySetupGuard><PageGuard pageKey="colis"><Colis /></PageGuard></AgencySetupGuard>} />
+          <Route path="/reception-colis" element={<AgencySetupGuard><PageGuard pageKey="colis"><ReceptionColis /></PageGuard></AgencySetupGuard>} />
+          <Route path="/colis-a-receptionner" element={<AgencySetupGuard><PageGuard pageKey="colis_a_receptionner"><ColisAReceptionner /></PageGuard></AgencySetupGuard>} />
+          <Route path="/expeditions/:id" element={<AgencySetupGuard><PageGuard pageKey="expeditions"><ExpeditionDetails /></PageGuard></AgencySetupGuard>} />
+          <Route path="/create-expedition" element={<AgencySetupGuard><PageGuard pageKey="expeditions"><CreateExpeditionV2 /></PageGuard></AgencySetupGuard>} />
+          <Route path="/retrait-colis" element={<AgencySetupGuard><PageGuard pageKey="retrait_colis"><RetraitColis /></PageGuard></AgencySetupGuard>} />
+          <Route path="/transactions" element={<AgencySetupGuard><PageGuard pageKey="transactions"><TransactionsPro /></PageGuard></AgencySetupGuard>} />
+          <Route path="/transactions-legacy" element={<AgencySetupGuard><PageGuard pageKey="transactions"><Transactions /></PageGuard></AgencySetupGuard>} />
           <Route path="/notifications" element={<AgencySetupGuard><Notifications /></AgencySetupGuard>} />
-          <Route path="/messages" element={<AgencySetupGuard><Messages /></AgencySetupGuard>} />
+          <Route path="/messages" element={<AgencySetupGuard><PageGuard pageKey="communication"><Messages /></PageGuard></AgencySetupGuard>} />
         </Route>
         {/* Route par défaut */}
         <Route path="*" element={<Navigate to="/" replace />} />

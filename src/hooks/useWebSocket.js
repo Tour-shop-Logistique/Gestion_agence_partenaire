@@ -172,6 +172,16 @@ export function useWebSocket(agenceId, handlers = {}, enabled = true) {
         }
         break;
 
+      case 'User':
+        console.log(`👤 [WebSocket] User - Action: ${action}`);
+        if (action === 'role_changed' && handlersRef.current.onUserRoleChanged) {
+          console.log('✅ [WebSocket] Handler onUserRoleChanged appelé');
+          handlersRef.current.onUserRoleChanged(data, { ids, references, changes, count, at });
+        } else {
+          console.warn(`⚠️ [WebSocket] Action '${action}' non gérée pour User ou handler manquant`);
+        }
+        break;
+
       case 'Message':
         console.log(`💬 [WebSocket] Message - Action: ${action}`);
         if (action === 'created' && handlersRef.current.onMessageReceived) {

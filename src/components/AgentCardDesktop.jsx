@@ -22,6 +22,9 @@ const AgentCardDesktop = ({
               Contact
             </th>
             <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              Rôle
+            </th>
+            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
               Statut
             </th>
             <th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
@@ -112,6 +115,16 @@ const AgentCardDesktop = ({
                     <span>{agent.telephone || "Non défini"}</span>
                   </div>
                 </div>
+              </td>
+
+              <td className="px-6 py-4 whitespace-nowrap">
+                {agent.custom_role?.nom ? (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                    {agent.custom_role.nom}
+                  </span>
+                ) : (
+                  <span className="text-xs text-gray-400 italic">Accès complet</span>
+                )}
               </td>
 
               <td className="px-6 py-4 whitespace-nowrap">

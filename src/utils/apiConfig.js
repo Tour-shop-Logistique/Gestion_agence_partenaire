@@ -54,6 +54,14 @@ export const API_ENDPOINTS = {
     DELETE: "/agence/promotions/:id",
   },
 
+  // Rôles et permissions
+  ROLES: {
+    LIST: "/agence/roles",
+    CREATE: "/agence/roles",
+    UPDATE: "/agence/roles/:id",
+    DELETE: "/agence/roles/:id",
+  },
+
   // Facturation
   FACTURES: {
     LIST: "/agence/factures",

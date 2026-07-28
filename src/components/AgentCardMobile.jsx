@@ -172,6 +172,12 @@ const AgentCardMobile = ({
 
             </div>
 
+            {agent.custom_role?.nom && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                {agent.custom_role.nom}
+              </span>
+            )}
+
             {/* Actions */}
             <div className="flex items-center justify-end space-x-2 pt-2 border-t border-gray-100">
               <button

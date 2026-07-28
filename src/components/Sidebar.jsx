@@ -23,12 +23,36 @@ import {
 import { getLogoUrl } from "../utils/apiConfig";
 import { selectUnreadMessagesCount } from "../store/slices/messagesSlice";
 
+// Doit rester synchronisé avec AgenceRoleController::AVAILABLE_PAGES côté backend.
+const PAGE_KEY_BY_PATH = {
+  "/dashboard": "dashboard",
+  "/demandes": "demandes",
+  "/expeditions": "expeditions",
+  "/colis": "colis",
+  "/colis-a-receptionner": "colis_a_receptionner",
+  "/retrait-colis": "retrait_colis",
+  "/comptabilite": "comptabilite",
+  "/transactions": "transactions",
+  "/tarifs-simples": "tarifs_simples",
+  "/tarifs-groupage": "tarifs_groupage",
+  "/messages": "communication",
+  "/agents": "agents",
+  "/agency-profile": "agency_profile",
+};
+
 const Sidebar = ({ onClose }) => {
   const currentUser = useSelector(selectCurrentUser);
   const isAdmin = useSelector(selectIsAdmin);
   const location = useLocation();
   const { data: agencyData } = useAgency();
   const { demandesMeta } = useExpedition();
+
+  const canAccessPage = (pageKey) => {
+    if (isAdmin || !pageKey) return true;
+    if (!currentUser?.role_id) return true;
+    const pages = currentUser?.role_details?.pages || [];
+    return pages.includes(pageKey);
+  };
 
   const demandesMetaDirect = useSelector((state) => state.expedition?.demandesMeta);
   const unreadMessagesCount = useSelector(selectUnreadMessagesCount);
@@ -138,7 +162,14 @@ const Sidebar = ({ onClose }) => {
     currentUser?.role === "is_agence_admin" ||
     currentUser?.is_agence_admin === true;
 
-  const menuItems = isAdminLike ? adminMenuItems : agentMenuItems;
+  const rawMenuItems = isAdminLike ? adminMenuItems : agentMenuItems;
+
+  const menuItems = rawMenuItems
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => canAccessPage(PAGE_KEY_BY_PATH[item.path])),
+    }))
+    .filter((section) => section.items.length > 0);
 
   // Palette d'accent par item (purement visuelle, indexée par route) — chaque
   // rubrique garde sa propre couleur de repère, y compris à l'état actif.

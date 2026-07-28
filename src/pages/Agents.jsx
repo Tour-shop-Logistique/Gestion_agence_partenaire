@@ -1,11 +1,30 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { useAuth } from "../hooks/useAuth";
 import { useAgency } from "../hooks/useAgency";
 import AgentCardMobile from "../components/AgentCardMobile";
 import AgentCardDesktop from "../components/AgentCardDesktop";
-import { XMarkIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, KeyIcon, UserGroupIcon, CheckCircleIcon, TrashIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
 import Spinner from "../components/common/Spinner";
 import { toast } from "../utils/toast";
+import { fetchRoles, createRole, updateRole, deleteRole, selectRoles, selectRolesStatus } from "../store/slices/rolesSlice";
+
+// Doit rester synchronisé avec AgenceRoleController::AVAILABLE_PAGES côté backend.
+const AVAILABLE_PAGES = [
+  { key: "dashboard", label: "Tableau de bord" },
+  { key: "demandes", label: "Demandes clients" },
+  { key: "expeditions", label: "Expéditions" },
+  { key: "colis", label: "Colis" },
+  { key: "colis_a_receptionner", label: "Colis à réceptionner" },
+  { key: "retrait_colis", label: "Retrait de colis" },
+  { key: "comptabilite", label: "Comptabilité" },
+  { key: "transactions", label: "Transactions" },
+  { key: "tarifs_simples", label: "Tarifs simples" },
+  { key: "tarifs_groupage", label: "Tarifs groupage" },
+  { key: "communication", label: "Communication" },
+  { key: "agents", label: "Équipe & Accès" },
+  { key: "agency_profile", label: "Profil de l'agence" },
+];
 
 const Agents = () => {
   const { isAdmin } = useAuth();
@@ -19,6 +38,12 @@ const Agents = () => {
     usersStatus: usersStatus,
   } = useAgency();
 
+  const dispatch = useDispatch();
+  const roles = useSelector(selectRoles);
+  const rolesStatus = useSelector(selectRolesStatus);
+
+  const [activeTab, setActiveTab] = useState("agents");
+
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingAgent, setEditingAgent] = useState(null);
   const [formData, setFormData] = useState({
@@ -28,12 +53,102 @@ const Agents = () => {
     phone: "",
     password: "",
     type: "agence",
+    role_id: "",
   });
   const [loading, setLoading] = useState(false);
   const [updatingAgent, setUpdatingAgent] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [agentToDelete, setAgentToDelete] = useState(null);
+
+  // Gestion des rôles
+  const [showRoleForm, setShowRoleForm] = useState(false);
+  const [editingRole, setEditingRole] = useState(null);
+  const [roleFormData, setRoleFormData] = useState({ nom: "", description: "", pages: [] });
+  const [savingRole, setSavingRole] = useState(false);
+  const [roleToDelete, setRoleToDelete] = useState(null);
+  const [deletingRole, setDeletingRole] = useState(false);
+
+  useEffect(() => {
+    if (rolesStatus === "idle") {
+      dispatch(fetchRoles());
+    }
+  }, [dispatch, rolesStatus]);
+
+  const openAddRoleModal = () => {
+    setEditingRole(null);
+    setRoleFormData({ nom: "", description: "", pages: [] });
+    setShowRoleForm(true);
+    document.body.style.overflow = "hidden";
+  };
+
+  const openEditRoleModal = (role) => {
+    setEditingRole(role);
+    setRoleFormData({ nom: role.nom || "", description: role.description || "", pages: role.pages || [] });
+    setShowRoleForm(true);
+    document.body.style.overflow = "hidden";
+  };
+
+  const closeRoleModal = () => {
+    setShowRoleForm(false);
+    setEditingRole(null);
+    setRoleFormData({ nom: "", description: "", pages: [] });
+    document.body.style.overflow = "auto";
+  };
+
+  const toggleRolePage = (pageKey) => {
+    setRoleFormData((prev) => ({
+      ...prev,
+      pages: prev.pages.includes(pageKey)
+        ? prev.pages.filter((p) => p !== pageKey)
+        : [...prev.pages, pageKey],
+    }));
+  };
+
+  const handleSubmitRole = async (e) => {
+    e.preventDefault();
+    if (!roleFormData.nom.trim()) {
+      toast.error("Le nom du rôle est requis");
+      return;
+    }
+    if (roleFormData.pages.length === 0) {
+      toast.error("Sélectionnez au moins une page accessible");
+      return;
+    }
+
+    setSavingRole(true);
+    try {
+      if (editingRole) {
+        const result = await dispatch(updateRole({ id: editingRole.id, data: roleFormData }));
+        if (result.error) throw new Error(result.payload || "Erreur lors de la modification du rôle");
+        toast.success("Rôle mis à jour avec succès");
+      } else {
+        const result = await dispatch(createRole(roleFormData));
+        if (result.error) throw new Error(result.payload || "Erreur lors de la création du rôle");
+        toast.success("Rôle créé avec succès");
+      }
+      closeRoleModal();
+    } catch (error) {
+      toast.error(error.message || "Une erreur est survenue");
+    } finally {
+      setSavingRole(false);
+    }
+  };
+
+  const confirmDeleteRole = async () => {
+    if (!roleToDelete) return;
+    setDeletingRole(true);
+    try {
+      const result = await dispatch(deleteRole(roleToDelete.id));
+      if (result.error) throw new Error(result.payload || "Erreur lors de la suppression du rôle");
+      toast.success("Rôle supprimé avec succès");
+      setRoleToDelete(null);
+    } catch (error) {
+      toast.error(error.message || "Erreur lors de la suppression");
+    } finally {
+      setDeletingRole(false);
+    }
+  };
 
   // Toggle agent active status
   const handleToggleStatus = async (agent) => {
@@ -77,6 +192,7 @@ const Agents = () => {
           telephone: formData.phone || "",
           email: formData.email || "",
           type: formData.type || "agence",
+          role_id: formData.role_id || null,
           ...(formData.password ? { password: formData.password } : {}),
         };
 
@@ -84,6 +200,7 @@ const Agents = () => {
 
         if (result.payload.success) {
           await fetchUsers();
+          dispatch(fetchRoles());
           toast.success("Agent mis à jour avec succès");
           closeModal();
         } else {
@@ -99,12 +216,14 @@ const Agents = () => {
           password: formData.password || "123456",
           password_confirmation: formData.password || "123456",
           type: formData.type || "agence",
+          role_id: formData.role_id || null,
         };
 
         const result = await createUser(payload);
 
         if (result.payload.success) {
           await fetchUsers();
+          dispatch(fetchRoles());
           toast.success("Agent créé avec succès");
           closeModal();
         } else {
@@ -128,6 +247,7 @@ const Agents = () => {
       phone: agent.telephone || "",
       type: agent.type || "agence",
       password: "",
+      role_id: agent.role_id || "",
     });
     setShowAddForm(true);
     document.body.style.overflow = "hidden";
@@ -175,6 +295,7 @@ const Agents = () => {
       phone: "",
       type: "agence",
       password: "",
+      role_id: "",
     });
   };
 
@@ -224,44 +345,48 @@ const Agents = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0">
           <div>
             <h1 className="text-lg sm:text-2xl font-semibold text-gray-900">
-              Gestion des agents
+              {activeTab === "agents" ? "Gestion des agents" : "Rôles & Permissions"}
             </h1>
             <p className="mt-1 text-xs sm:text-sm text-gray-500">
-              Administrez votre équipe d'agents
+              {activeTab === "agents"
+                ? "Administrez votre équipe d'agents"
+                : "Définissez les pages accessibles pour chaque rôle"}
             </p>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
+            {activeTab === "agents" && (
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="inline-flex items-center px-3 sm:px-4 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
+              >
+                {refreshing ? (
+                  <>
+                    <Spinner size="sm" color="current" className="sm:mr-2" />
+                    <span className="hidden sm:inline">Actualisation...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      className="w-3.5 sm:w-4 h-3.5 sm:h-4 sm:mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      ></path>
+                    </svg>
+                    <span className="hidden sm:inline">Actualiser</span>
+                  </>
+                )}
+              </button>
+            )}
             <button
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="inline-flex items-center px-3 sm:px-4 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
-            >
-              {refreshing ? (
-                <>
-                  <Spinner size="sm" color="current" className="sm:mr-2" />
-                  <span className="hidden sm:inline">Actualisation...</span>
-                </>
-              ) : (
-                <>
-                  <svg
-                    className="w-3.5 sm:w-4 h-3.5 sm:h-4 sm:mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                    ></path>
-                  </svg>
-                  <span className="hidden sm:inline">Actualiser</span>
-                </>
-              )}
-            </button>
-            <button
-              onClick={openAddModal}
+              onClick={activeTab === "agents" ? openAddModal : openAddRoleModal}
               className="bg-green-600 hover:bg-green-700 text-white px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center justify-center transition-colors"
             >
               <svg
@@ -278,15 +403,41 @@ const Agents = () => {
                   d="M12 6v6m0 0v6m0-6h6m-6 0H6"
                 ></path>
               </svg>
-              <span className="hidden sm:inline">Ajouter un agent</span>
+              <span className="hidden sm:inline">
+                {activeTab === "agents" ? "Ajouter un agent" : "Nouveau rôle"}
+              </span>
               <span className="sm:hidden">Ajouter</span>
             </button>
           </div>
         </div>
+
+        {/* Onglets Agents / Rôles */}
+        <div className="mt-4 flex items-center gap-1 bg-white border border-gray-200 rounded-xl p-1.5 w-fit shadow-sm">
+          <button
+            type="button"
+            onClick={() => setActiveTab("agents")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors ${
+              activeTab === "agents" ? "bg-gray-900 text-white shadow-sm" : "text-gray-500 hover:text-gray-800 hover:bg-gray-50"
+            }`}
+          >
+            <UserGroupIcon className="w-3.5 h-3.5" />
+            Agents
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("roles")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors ${
+              activeTab === "roles" ? "bg-gray-900 text-white shadow-sm" : "text-gray-500 hover:text-gray-800 hover:bg-gray-50"
+            }`}
+          >
+            <KeyIcon className="w-3.5 h-3.5" />
+            Rôles
+          </button>
+        </div>
       </div>
 
       {/* Section statistiques - Responsive */}
-      {agencyUsers && agencyUsers.length > 0 && (
+      {activeTab === "agents" && agencyUsers && agencyUsers.length > 0 && (
         <div className="mb-4 sm:mb-6 px-3 sm:px-0">
           <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-3 sm:p-4 border border-gray-200 shadow-sm">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
@@ -315,6 +466,7 @@ const Agents = () => {
 
 
       {/* Liste des agents - Design responsive */}
+      {activeTab === "agents" && (
       <div className="bg-white shadow-sm rounded-lg border border-gray-100 overflow-hidden mx-3 sm:mx-0">
         {usersStatus === "loading" && (!agencyUsers || agencyUsers.length === 0) ? (
           <div className="p-6">
@@ -400,6 +552,80 @@ const Agents = () => {
           </div>
         )}
       </div>
+      )}
+
+      {/* Liste des rôles - Design responsive */}
+      {activeTab === "roles" && (
+        <div className="bg-white shadow-sm rounded-lg border border-gray-100 overflow-hidden mx-3 sm:mx-0">
+          {rolesStatus === "loading" && roles.length === 0 ? (
+            <div className="p-6">
+              <div className="animate-pulse space-y-4">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <div key={index} className="h-20 bg-gray-50 rounded-lg" />
+                ))}
+              </div>
+            </div>
+          ) : roles.length === 0 ? (
+            <div className="p-8 text-center">
+              <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center shadow-lg">
+                <KeyIcon className="w-10 h-10 text-gray-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Aucun rôle créé</h3>
+              <p className="text-gray-500 mb-8 max-w-sm mx-auto leading-relaxed">
+                Créez un rôle pour restreindre l'accès de certains agents à des pages précises.
+              </p>
+              <button
+                onClick={openAddRoleModal}
+                className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white font-semibold rounded-lg hover:from-primary-700 hover:to-primary-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
+              >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Nouveau rôle
+              </button>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {roles.map((role) => (
+                <div key={role.id} className="p-4 sm:p-5 flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-semibold text-gray-900">{role.nom}</p>
+                      <span className="text-xs font-bold text-gray-400">
+                        {role.users_count || 0} agent{(role.users_count || 0) > 1 ? "s" : ""}
+                      </span>
+                    </div>
+                    {role.description && <p className="text-sm text-gray-500 mt-0.5">{role.description}</p>}
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {(role.pages || []).map((pageKey) => (
+                        <span key={pageKey} className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-gray-100 text-gray-600">
+                          {AVAILABLE_PAGES.find((p) => p.key === pageKey)?.label || pageKey}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={() => openEditRoleModal(role)}
+                      className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                      title="Modifier"
+                    >
+                      <PencilSquareIcon className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setRoleToDelete(role)}
+                      className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Supprimer"
+                    >
+                      <TrashIcon className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {showAddForm && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -657,6 +883,32 @@ const Agents = () => {
                       </div>
                     </div>
                   </div>
+
+                  {/* Section rôle */}
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-1 h-6 bg-primary-500 rounded-full"></div>
+                      <h4 className="text-lg font-medium text-gray-900">Rôle</h4>
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="role_id" className="block text-sm font-medium text-gray-700">
+                        Rôle attribué
+                      </label>
+                      <select
+                        id="role_id"
+                        name="role_id"
+                        value={formData.role_id || ""}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors bg-white"
+                      >
+                        <option value="">Accès complet (aucun rôle)</option>
+                        {roles.map((role) => (
+                          <option key={role.id} value={role.id}>{role.nom}</option>
+                        ))}
+                      </select>
+                      <p className="text-xs text-gray-500">Sans rôle, l'agent a accès à toutes les pages.</p>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Footer avec boutons */}
@@ -771,6 +1023,183 @@ const Agents = () => {
                   className="flex-1 px-4 py-2.5 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
                 >
                   {loading ? "Suppression..." : "Supprimer"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Ajout / Edition Rôle */}
+      {showRoleForm && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-screen items-center justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+              onClick={closeRoleModal}
+            ></div>
+            <span className="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">
+              &#8203;
+            </span>
+            <div className="inline-block w-full max-w-2xl mx-4 sm:mx-auto transform overflow-hidden rounded-xl bg-white text-left align-bottom shadow-2xl transition-all sm:my-8 sm:align-middle">
+              <form onSubmit={handleSubmitRole}>
+                <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                        <KeyIcon className="w-4 h-4 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-white">
+                          {editingRole ? `Modifier ${editingRole.nom}` : "Nouveau rôle"}
+                        </h3>
+                        <p className="text-blue-100 text-xs">
+                          Définissez les pages accessibles pour ce rôle
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="rounded-full p-1.5 bg-white/20 text-white hover:bg-white/30 transition-colors"
+                      onClick={closeRoleModal}
+                    >
+                      <span className="sr-only">Fermer</span>
+                      <XMarkIcon className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="px-6 py-4 space-y-4">
+                  <div className="space-y-2">
+                    <label htmlFor="role_nom" className="block text-sm font-medium text-gray-700">
+                      Nom du rôle <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="role_nom"
+                      value={roleFormData.nom}
+                      onChange={(e) => setRoleFormData((p) => ({ ...p, nom: e.target.value }))}
+                      required
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                      placeholder="Ex: Comptable"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="role_description" className="block text-sm font-medium text-gray-700">
+                      Description
+                    </label>
+                    <textarea
+                      id="role_description"
+                      value={roleFormData.description}
+                      onChange={(e) => setRoleFormData((p) => ({ ...p, description: e.target.value }))}
+                      rows={2}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors resize-none"
+                      placeholder="Description facultative du rôle..."
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Pages accessibles <span className="text-red-500">*</span>
+                    </label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      {AVAILABLE_PAGES.map((page) => {
+                        const checked = roleFormData.pages.includes(page.key);
+                        return (
+                          <label
+                            key={page.key}
+                            className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg border cursor-pointer transition-all ${
+                              checked ? "bg-gray-900 border-gray-900 text-white" : "bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => toggleRolePage(page.key)}
+                              className="sr-only"
+                            />
+                            <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${checked ? "bg-white border-white" : "border-gray-300"}`}>
+                              {checked && <CheckCircleIcon className="w-3 h-3 text-gray-900" />}
+                            </div>
+                            <span className="text-sm font-medium">{page.label}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-3 rounded-b-xl">
+                  <button
+                    type="button"
+                    onClick={closeRoleModal}
+                    className="px-6 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingRole}
+                    className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 border border-transparent rounded-lg text-sm font-medium text-white hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+                  >
+                    {savingRole ? (
+                      <span className="flex items-center">
+                        <Spinner size="sm" color="white" className="-ml-1 mr-2" />
+                        Enregistrement...
+                      </span>
+                    ) : editingRole ? (
+                      "Mettre à jour le rôle"
+                    ) : (
+                      "Enregistrer le rôle"
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {roleToDelete && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-screen items-center justify-center px-4">
+            <div
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+              onClick={() => setRoleToDelete(null)}
+            ></div>
+            <div className="relative bg-white rounded-xl max-w-md w-full p-6 shadow-2xl transition-all font-sans">
+              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 text-red-600 mb-4 mx-auto">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 text-center mb-2">
+                Supprimer le rôle ?
+              </h3>
+              <p className="text-gray-500 text-center mb-6">
+                Êtes-vous sûr de vouloir supprimer{" "}
+                <span className="font-bold text-gray-900">{roleToDelete?.nom}</span>{" "}
+                ? Les agents concernés retrouveront un accès complet.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={() => setRoleToDelete(null)}
+                  className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 font-bold rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={confirmDeleteRole}
+                  disabled={deletingRole}
+                  className="flex-1 px-4 py-2.5 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+                >
+                  {deletingRole ? "Suppression..." : "Supprimer"}
                 </button>
               </div>
             </div>
