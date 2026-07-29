@@ -51,7 +51,11 @@ const FiltersPanel = ({
     searchQuery,
     onSearchChange,
     onResetAll,
+    onClose,
+    resultCount,
+    variant = 'sidebar',
 }) => {
+    const isDrawer = variant === 'drawer';
     // Compter les expéditions par statut
     const statusCounts = React.useMemo(() => {
         const counts = {};
@@ -94,35 +98,52 @@ const FiltersPanel = ({
         type !== '' ||
         searchQuery !== '';
 
+    const activeCount = (selectedStatuses.length > 0 ? 1 : 0) + (type ? 1 : 0) + (searchQuery ? 1 : 0);
+
     return (
-        <div className="bg-white rounded-2xl border-2 border-slate-200 shadow-xl overflow-hidden flex flex-col sticky top-4">
+        <div className={
+            isDrawer
+                ? 'bg-white h-full flex flex-col shadow-2xl'
+                : 'bg-white rounded-2xl border-2 border-slate-200 shadow-xl overflow-hidden flex flex-col sticky top-4'
+        }>
             {/* Panel Header avec gradient */}
-            <div className="relative px-5 py-4 border-b-2 border-slate-200 bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-indigo-100 rounded-xl">
+            <div className={`relative flex-shrink-0 px-5 py-4 border-b-2 border-slate-200 bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 ${isDrawer ? 'pt-[calc(env(safe-area-inset-top)+1rem)]' : ''}`}>
+                <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <div className="p-2 bg-indigo-100 rounded-xl flex-shrink-0">
                             <FunnelIcon className="w-5 h-5 text-indigo-600" />
                         </div>
-                        <div>
+                        <div className="min-w-0">
                             <h3 className="text-sm font-bold text-slate-800">Filtres</h3>
-                            {hasFilters && (
-                                <p className="text-[10px] text-slate-500 mt-0.5">
-                                    {(selectedStatuses.length > 0 ? 1 : 0) + (type ? 1 : 0) + (searchQuery ? 1 : 0)} actif(s)
-                                </p>
-                            )}
+                            <p className="text-[10px] text-slate-500 mt-0.5">
+                                {hasFilters ? `${activeCount} filtre(s) actif(s)` : 'Aucun filtre actif'}
+                            </p>
                         </div>
                     </div>
-                    {hasFilters && (
-                        <button
-                            onClick={onResetAll}
-                            className="px-3 py-1.5 text-[10px] font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg uppercase tracking-wide flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95"
-                        >
-                            <XMarkIcon className="w-3.5 h-3.5" />
-                            Réinitialiser
-                        </button>
-                    )}
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                        {hasFilters && (
+                            <button
+                                onClick={onResetAll}
+                                className="px-3 py-1.5 text-[10px] font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg uppercase tracking-wide flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95 whitespace-nowrap"
+                            >
+                                <XMarkIcon className="w-3.5 h-3.5" />
+                                <span className={isDrawer ? 'hidden sm:inline' : ''}>Réinitialiser</span>
+                            </button>
+                        )}
+                        {onClose && (
+                            <button
+                                onClick={onClose}
+                                className="p-2 rounded-lg text-slate-500 bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-700 transition-all active:scale-95"
+                                title="Fermer"
+                            >
+                                <XMarkIcon className="w-4 h-4" />
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
+
+            <div className={isDrawer ? 'flex-1 overflow-y-auto overscroll-contain' : ''}>
 
             {/* Recherche */}
             <FilterSection title="Recherche rapide" defaultOpen={true} icon={MagnifyingGlassIcon}>
@@ -262,6 +283,19 @@ const FiltersPanel = ({
 
             {/* Période */}
             {/* Les filtres de date sont gérés dans le header de la page */}
+            </div>
+
+            {/* Pied de tiroir : compteur de résultats + bouton de validation (drawer uniquement) */}
+            {isDrawer && (
+                <div className="flex-shrink-0 px-5 py-4 border-t-2 border-slate-200 bg-white pb-[calc(env(safe-area-inset-bottom)+1rem)]">
+                    <button
+                        onClick={onClose}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-sm hover:shadow-md transition-all active:scale-[0.98]"
+                    >
+                        Voir {typeof resultCount === 'number' ? `${resultCount} résultat${resultCount !== 1 ? 's' : ''}` : 'les résultats'}
+                    </button>
+                </div>
+            )}
         </div>
     );
 };
