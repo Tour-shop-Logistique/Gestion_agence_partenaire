@@ -136,13 +136,12 @@ const Dashboard = () => {
     }
 
     return (
-        <div className="relative max-w-[1600px] mx-auto space-y-4 sm:space-y-6 pb-8 sm:pb-12 px-3 sm:px-4 lg:px-6 pt-1 animate-fade-in">
+        <div className="relative max-w-[1600px] mx-auto space-y-5 sm:space-y-7 pb-8 sm:pb-12 px-3 sm:px-4 lg:px-6 pt-1 animate-fade-in">
 
             <DashboardHeader
                 isRefreshing={isRefreshing}
                 lastUpdated={lastUpdated}
                 onRefresh={refreshAll}
-                onCreateExpedition={() => navigate('/create-expedition')}
             />
 
             {showDemandesAlert && (
@@ -156,7 +155,6 @@ const Dashboard = () => {
             {/* ========== 1. ACTIONS PRIORITAIRES ========== */}
             <PriorityActions
                 operational={operational}
-                pendingDemandesCount={pendingDemandesCount}
             />
 
             {/* ========== 2. KPI PAR CATÉGORIES MÉTIER ========== */}
@@ -169,7 +167,7 @@ const Dashboard = () => {
             <RecentExpeditions expeditions={logistics.dernieres_expeditions} />
 
             {/* ========== 4. STATISTIQUES (En dessous) ========== */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-5">
                 <StatsCards
                     logistics={logistics}
                     operational={operational}

@@ -8,7 +8,7 @@ const StatsCards = ({ logistics, operational }) => {
     return (
         <>
             {/* Top Destinations */}
-            <div className="bg-white rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden col-span-1 md:col-span-1">
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden col-span-1 md:col-span-1">
                 <div className="px-4 py-3 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
                     <h3 className="text-xs sm:text-sm font-bold text-slate-900">Top Destinations</h3>
                     <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">Ce mois</p>
@@ -26,7 +26,7 @@ const StatsCards = ({ logistics, operational }) => {
                             return (
                                 <div key={index} className="flex items-center justify-between group hover:bg-slate-50 -mx-2 px-2 py-1 sm:py-1.5 rounded-lg transition-colors">
                                     <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                                        <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg ${colors[index]} flex items-center justify-center flex-shrink-0 shadow-sm`}>
+                                        <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full ${colors[index]} flex items-center justify-center flex-shrink-0 shadow-sm`}>
                                             <span className="text-xs sm:text-sm font-black text-white">{index + 1}</span>
                                         </div>
                                         <span className="text-xs sm:text-sm font-bold text-slate-700 truncate group-hover:text-slate-900 transition-colors">
@@ -49,7 +49,7 @@ const StatsCards = ({ logistics, operational }) => {
             </div>
 
             {/* Volume par Type */}
-            <div className="bg-white rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden col-span-1 md:col-span-1">
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden col-span-1 md:col-span-1">
                 <div className="px-4 py-3 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
                     <h3 className="text-xs sm:text-sm font-bold text-slate-900">Volume par Type</h3>
                     <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">Répartition</p>
@@ -99,49 +99,14 @@ const StatsCards = ({ logistics, operational }) => {
             </div>
 
             {/* Autres indicateurs */}
-            <div className="bg-white rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition-shadow duration-200 p-3 sm:p-4 col-span-1 md:col-span-1">
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow duration-200 p-4 sm:p-5 col-span-1 md:col-span-1">
                 <h3 className="text-xs sm:text-sm font-bold text-slate-900 mb-2 sm:mb-3">Autres indicateurs</h3>
                 <div className="space-y-2 sm:space-y-3">
                     <div className="flex items-center justify-between group/item hover:bg-slate-50 -mx-2 px-2 py-1.5 sm:py-2 rounded-lg transition-colors">
                         <div className="flex items-center gap-1.5 sm:gap-2">
-                            <div className="w-2 h-2 rounded-full bg-purple-500"></div>
-                            <span className="text-[10px] sm:text-xs font-medium text-slate-600 group-hover/item:text-slate-900 transition-colors">
-                                En transit
-                            </span>
-                            <div className="relative group/tooltip hidden sm:block">
-                                <InformationCircleIcon className="w-3.5 h-3.5 text-slate-400 cursor-help" />
-                                <div className="absolute left-0 top-5 w-64 bg-slate-900 text-white text-xs rounded-lg p-3 opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-10 shadow-xl">
-                                    <p className="font-semibold mb-1">Colis en transit vers votre agence</p>
-                                    <p className="text-slate-300">Colis qui ont quitté l'entrepôt international et qui sont en route vers votre ville (rôle d'agence de destination).</p>
-                                </div>
-                            </div>
-                        </div>
-                        <span className="text-xs sm:text-sm font-bold text-slate-900">{operational.colis_en_transit_vers_agence || 0}</span>
-                    </div>
-
-                    <div className="flex items-center justify-between group/item hover:bg-slate-50 -mx-2 px-2 py-1.5 sm:py-2 rounded-lg transition-colors">
-                        <div className="flex items-center gap-1.5 sm:gap-2">
-                            <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                            <span className="text-[10px] sm:text-xs font-medium text-slate-600 group-hover/item:text-slate-900 transition-colors">
-                                Vers entrepôt
-                            </span>
-                            <div className="relative group/tooltip hidden sm:block">
-                                <InformationCircleIcon className="w-3.5 h-3.5 text-slate-400 cursor-help" />
-                                <div className="absolute left-0 top-5 w-72 bg-slate-900 text-white text-xs rounded-lg p-3 opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-10 shadow-xl">
-                                    <p className="font-semibold mb-1">Colis en attente d'expédition vers l'entrepôt</p>
-                                    <p className="text-slate-300 mb-2">Colis déjà reçus à votre agence mais encore stockés chez vous. Ils attendent d'être regroupés et envoyés vers l'entrepôt central.</p>
-                                    <p className="text-amber-300 font-semibold">→ Action : Préparer le transfert vers l'entrepôt</p>
-                                </div>
-                            </div>
-                        </div>
-                        <span className="text-xs sm:text-sm font-bold text-slate-900">{operational.colis_attente_expedition_entrepot || 0}</span>
-                    </div>
-
-                    <div className="flex items-center justify-between group/item hover:bg-slate-50 -mx-2 px-2 py-1.5 sm:py-2 rounded-lg transition-colors">
-                        <div className="flex items-center gap-1.5 sm:gap-2">
                             <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
                             <span className="text-[10px] sm:text-xs font-medium text-slate-600 group-hover/item:text-slate-900 transition-colors">
-                                Demandes en attente
+                                Expéditions à valider
                             </span>
                             <div className="relative group/tooltip hidden sm:block">
                                 <InformationCircleIcon className="w-3.5 h-3.5 text-slate-400 cursor-help" />

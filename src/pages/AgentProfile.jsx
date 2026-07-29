@@ -326,8 +326,8 @@ const AgentProfile = () => {
               Actualiser
             </button>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Mon profil</h1>
-          <p className="text-sm text-slate-500 mt-1">Gérez vos informations personnelles et les paramètres de votre compte</p>
+          <h1 className="text-lg sm:text-xl font-black tracking-tight text-slate-900">Mon profil</h1>
+          <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">Gérez vos informations personnelles et les paramètres de votre compte</p>
         </div>
 
         {/* Card principale */}

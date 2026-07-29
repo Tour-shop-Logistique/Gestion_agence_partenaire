@@ -39,10 +39,10 @@ const TarifsSimples = () => {
             {/* --- SIMPLE HEADER - Responsive --- */}
             <div className="flex flex-col gap-3 sm:gap-0 sm:flex-row sm:items-end justify-between border-b border-slate-200 pb-4 sm:pb-6">
                 <div>
-                    <h1 className="text-xl sm:text-3xl font-bold text-slate-900 tracking-tight mb-1 sm:mb-2">
+                    <h1 className="text-lg sm:text-xl font-black tracking-tight text-slate-900">
                         Tarifs Simples
                     </h1>
-                    <p className="text-xs sm:text-sm font-medium text-slate-500 max-w-lg">
+                    <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5 font-medium max-w-lg">
                         Gérez vos tarifs d'expédition standard par zones et indices
                     </p>
                 </div>

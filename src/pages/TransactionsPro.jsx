@@ -578,10 +578,10 @@ const TransactionsPro = () => {
       <div className="flex flex-col gap-3 sm:gap-4 border-b border-slate-200 pb-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight">
+            <h1 className="text-lg sm:text-xl font-black tracking-tight text-slate-900">
               💼 Gestion Financière
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">
               Journal de trésorerie et analyses financières professionnelles
             </p>
           </div>

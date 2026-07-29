@@ -139,9 +139,9 @@ const RecentExpeditions = ({ expeditions = [] }) => {
     };
 
     return (
-        <div className="bg-white rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
             {/* Header compact */}
-            <div className="px-3 sm:px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-slate-50 to-white">
+            <div className="px-4 sm:px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-slate-50 to-white">
                 <div className="flex items-center gap-2">
                     <h3 className="text-xs sm:text-sm font-bold text-slate-900">Dernières Expéditions</h3>
                     <span className="hidden sm:inline text-xs text-slate-500">(5 plus récentes)</span>
@@ -180,8 +180,8 @@ const RecentExpeditions = ({ expeditions = [] }) => {
                                 )}
 
                                 {/* 📦 EXPEDITION HEADER - Design Card-like avec ombre - CLIQUABLE */}
-                                <div 
-                                   className="bg-gradient-to-r from-cyan-700 via-sky-600 to-blue-600 shadow-md hover:from-cyan-800 hover:via-sky-700 hover:to-blue-700 transition-all duration-300 px-3 sm:px-4 py-2.5 sm:py-3 "
+                                <div
+                                   className="bg-gradient-to-r from-indigo-600 to-indigo-500 shadow-md hover:from-indigo-700 hover:to-indigo-600 transition-all duration-300 px-3 sm:px-4 py-2.5 sm:py-3 "
                                     onClick={() => toggleExpedition(exp.id)}
                                 >
                                     <div className="flex items-center justify-between gap-2">
@@ -303,8 +303,8 @@ const RecentExpeditions = ({ expeditions = [] }) => {
                                                 {/* Ligne principale */}
                                                 <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                                                     {/* Icône colis */}
-                                                    <div className="w-6 h-6 sm:w-7 sm:h-7 rounded bg-slate-100 flex items-center justify-center flex-shrink-0">
-                                                        <CubeIcon className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-slate-600" />
+                                                    <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-indigo-50 flex items-center justify-center flex-shrink-0">
+                                                        <CubeIcon className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-indigo-600" />
                                                     </div>
 
                                                     {/* Code colis + désignation */}

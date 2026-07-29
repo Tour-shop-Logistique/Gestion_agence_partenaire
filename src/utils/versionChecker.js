@@ -4,7 +4,9 @@
  */
 
 const APP_VERSION_KEY = 'app_version';
-const CURRENT_VERSION = import.meta.env.VITE_APP_VERSION || Date.now().toString();
+// VITE_BUILD_ID est injecte a la compilation (voir vite.config.js) et change a
+// chaque build, contrairement a VITE_APP_VERSION qui restait figee dans .env.
+const CURRENT_VERSION = import.meta.env.VITE_BUILD_ID || import.meta.env.VITE_APP_VERSION || 'dev';
 
 /**
  * Vérifie si une nouvelle version est disponible
@@ -86,12 +88,15 @@ export const clearAppCache = async () => {
  * Gère les erreurs de chargement de chunks
  */
 export const handleChunkLoadError = (error) => {
-  const isChunkError = 
-    error?.message?.includes('Failed to fetch') ||
-    error?.message?.includes('Loading chunk') ||
-    error?.message?.includes('dynamically imported module') ||
-    error?.message?.includes('Importing a module script failed');
-    
+  const message = error?.message || '';
+  const isChunkError =
+    message.includes('Failed to fetch') ||
+    message.includes('Loading chunk') ||
+    message.includes('dynamically imported module') ||
+    message.includes('Importing a module script failed') ||
+    message.includes('Failed to load module script') ||
+    message.includes('error loading dynamically imported module');
+
   if (isChunkError) {
     console.error('❌ Erreur de chargement de chunk:', error);
     

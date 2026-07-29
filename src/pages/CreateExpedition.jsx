@@ -733,8 +733,8 @@ const CreateExpedition = () => {
                     {/* Header */}
                     <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
                         <div>
-                            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Nouvelle expédition</h1>
-                            <p className="text-xs text-slate-500 mt-0.5">
+                            <h1 className="text-lg sm:text-xl font-black tracking-tight text-slate-900">Nouvelle expédition</h1>
+                            <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">
                                 Enregistrement et tarification des envois clients
                             </p>
                         </div>

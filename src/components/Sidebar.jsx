@@ -255,10 +255,10 @@ const Sidebar = ({ onClose }) => {
       <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-[#060811]/65 via-[#060811]/35 to-[#060811]/65" />
 
       {/* ── Branding Header ─────────────────────────────────────────────────── */}
-      <div className="relative z-10 h-20 flex items-center px-5 shrink-0 border-b border-white/10">
-        <div className="flex items-center gap-3.5 min-w-0 flex-1">
+      <div className="relative z-10 h-14 flex items-center px-4 shrink-0 border-b border-white/10">
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
           {/* Logo container avec ombre et dégradé */}
-          <div className="w-11 h-11 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center p-2 bg-gradient-to-br from-white to-slate-100 shadow-lg shadow-black/20 ring-1 ring-white/10">
+          <div className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center p-1.5 bg-gradient-to-br from-white to-slate-100 shadow-lg shadow-black/20 ring-1 ring-white/10">
             {agencyData?.agence?.logo ? (
               <img
                 src={getLogoUrl(agencyData.agence.logo)}
@@ -266,17 +266,17 @@ const Sidebar = ({ onClose }) => {
                 className="w-full h-full object-contain"
               />
             ) : (
-              <TruckIcon className="w-6 h-6 text-slate-700" />
+              <TruckIcon className="w-5 h-5 text-slate-700" />
             )}
           </div>
           <div className="min-w-0 flex-1">
             <span
-              className="font-bold text-white tracking-tight text-base truncate block leading-tight"
+              className="font-bold text-white tracking-tight text-sm truncate block leading-tight"
               style={{ textShadow: "0 1px 3px rgba(0,0,0,0.5)" }}
             >
               {agencyData?.agence?.nom_agence || "Tous Shop"}
             </span>
-            <span className="text-xs text-cyan-100 font-medium tracking-wide uppercase">
+            <span className="text-[10px] text-cyan-100 font-medium tracking-wide uppercase leading-tight">
               Gestion d'expéditions
             </span>
           </div>
@@ -295,17 +295,17 @@ const Sidebar = ({ onClose }) => {
       {/* ── Navigation ──────────────────────────────────────────────────────── */}
       <div className="relative z-10 flex-1 min-h-0">
         <nav
-          className="h-full overflow-y-auto py-5 pl-3.5 pr-1.5 sidebar-scrollbar"
+          className="h-full overflow-y-auto py-3 pl-3.5 pr-1.5 sidebar-scrollbar"
         >
           {menuItems.map((section, sectionIdx) => (
-          <div key={sectionIdx} className={sectionIdx > 0 ? "mt-5" : ""}>
+          <div key={sectionIdx} className={sectionIdx > 0 ? "mt-2.5" : ""}>
             <p
-              className="px-2.5 mb-2 text-[11.5px] font-semibold tracking-[0.1em] text-slate-200/90 uppercase select-none"
+              className="px-2.5 mb-1 text-[10.5px] font-semibold tracking-[0.1em] text-slate-200/90 uppercase select-none"
               style={{ textShadow: "0 1px 2px rgba(0,0,0,0.6)" }}
             >
               {section.section}
             </p>
-            <div className="space-y-0.5">
+            <div className="space-y-0">
               {section.items.map((item) => {
                 const active = isActive(item.path);
                 const showBadge =
@@ -320,7 +320,7 @@ const Sidebar = ({ onClose }) => {
                     to={item.path}
                     onClick={onClose}
                     className={`
-                      group flex items-center px-2 py-2.5 rounded-xl text-[15px] font-medium
+                      group flex items-center px-2 py-1.5 rounded-lg text-[14px] font-medium
                       transition-all duration-150 ease-out relative
                       ${active ? "text-white" : "text-slate-100 hover:bg-white/[0.06] hover:text-white"}
                     `}
@@ -333,19 +333,19 @@ const Sidebar = ({ onClose }) => {
                     }}
                   >
                     <span
-                      className="flex items-center justify-center w-9 h-9 rounded-lg mr-3 shrink-0 transition-all duration-150"
+                      className="flex items-center justify-center w-7 h-7 rounded-md mr-2.5 shrink-0 transition-all duration-150"
                       style={{
                         background: active ? `${c.accent}33` : c.chip,
                         boxShadow: `inset 0 0 0 1px ${active ? c.accent + "66" : c.ring}`,
                       }}
                     >
-                      <item.icon className="w-5 h-5" style={{ color: active ? "#ffffff" : c.icon }} />
+                      <item.icon className="w-4 h-4" style={{ color: active ? "#ffffff" : c.icon }} />
                     </span>
 
                     <span className="flex-1 truncate">{item.name}</span>
 
                     {showBadge && (
-                      <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-gradient-to-r from-red-500 to-red-600 text-white text-[10px] font-bold rounded-full shadow-sm shadow-red-500/40 ring-1 ring-red-400/20">
+                      <span className="flex items-center justify-center min-w-[18px] h-4 px-1 bg-gradient-to-r from-red-500 to-red-600 text-white text-[9px] font-bold rounded-full shadow-sm shadow-red-500/40 ring-1 ring-red-400/20">
                         {badgeCount > 99 ? "99+" : badgeCount}
                       </span>
                     )}
@@ -366,10 +366,10 @@ const Sidebar = ({ onClose }) => {
       </div>
 
       {/* ── User Footer ─────────────────────────────────────────────────────── */}
-      <div className="relative z-10 p-3.5 shrink-0 border-t border-white/10">
-        <div className="flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.04] ring-1 ring-white/10 transition-colors duration-200 hover:bg-white/[0.07]">
+      <div className="relative z-10 p-2.5 shrink-0 border-t border-white/10">
+        <div className="flex items-center gap-2.5 p-2 rounded-lg bg-white/[0.04] ring-1 ring-white/10 transition-colors duration-200 hover:bg-white/[0.07]">
           <div
-            className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ring-1 ring-white/10"
+            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ring-1 ring-white/10"
             style={{
               background: isAdminLike
                 ? "linear-gradient(135deg, #dc2626 0%, #ef4444 100%)"
@@ -383,13 +383,13 @@ const Sidebar = ({ onClose }) => {
 
           <div className="min-w-0 flex-1">
             <p
-              className="text-[15px] font-semibold text-white truncate leading-tight"
+              className="text-[13.5px] font-semibold text-white truncate leading-tight"
               style={{ textShadow: "0 1px 3px rgba(0,0,0,0.65)" }}
             >
               {currentUser?.name ||
                 `${currentUser?.prenoms || ""} ${currentUser?.nom || ""}`.trim()}
             </p>
-            <span className="text-xs text-slate-200 font-medium">
+            <span className="text-[11px] text-slate-200 font-medium">
               {isAdminLike ? "Administrateur" : "Agent"}
             </span>
           </div>

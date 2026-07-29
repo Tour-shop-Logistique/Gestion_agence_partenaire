@@ -8,6 +8,12 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    define: {
+      // Identifiant unique genere a chaque build, utilise par versionChecker.js
+      // pour forcer le rechargement des onglets ouverts sur une ancienne version
+      // (evite les erreurs "MIME type text/html" sur des chunks obsoletes apres deploiement).
+      'import.meta.env.VITE_BUILD_ID': JSON.stringify(Date.now().toString()),
+    },
     server: {
       port: 5174,
       host: true,

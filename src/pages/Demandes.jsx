@@ -254,10 +254,10 @@ const Demandes = () => {
             {/* Header Section - Responsive */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0">
                 <div>
-                    <h1 className="text-lg sm:text-2xl font-semibold text-gray-900">
+                    <h1 className="text-lg sm:text-xl font-black tracking-tight text-slate-900">
                         Demandes Clients
                     </h1>
-                    <p className="mt-1 text-xs sm:text-sm text-gray-500">
+                    <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">
                         Gérez les demandes d'expédition effectuées par les clients
                     </p>
                 </div>
