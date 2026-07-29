@@ -11,11 +11,13 @@ import WebSocketStatus from "./WebSocketStatus";
 import { selectUnreadCount } from "../store/slices/notificationsSlice";
 import { selectInAppUnreadCount } from "../store/slices/inAppNotificationsSlice";
 import NotificationDropdown from "./NotificationDropdown";
+import useHasPermission from "../hooks/useHasPermission";
 
 const Header = ({ onToggleSidebar }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const currentUser = useSelector(selectCurrentUser);
+  const canCreateExpedition = useHasPermission("expeditions.create");
   const { data: agencyData } = useAgency();
   const { demandesMeta, loadDemandes } = useExpedition();
 
@@ -137,14 +139,16 @@ const Header = ({ onToggleSidebar }) => {
           <WebSocketStatus compact={true} />
 
           {/* Nouvelle expédition - accessible depuis n'importe quelle page */}
-          <button
-            onClick={() => navigate('/create-expedition')}
-            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-lg font-semibold text-xs sm:text-sm hover:from-indigo-700 hover:to-indigo-600 active:scale-[0.98] transition-all shadow-sm hover:shadow-md hover:shadow-indigo-200"
-          >
-            <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <span className="hidden sm:inline">Nouvelle expédition</span>
-            <span className="sm:hidden">Nouveau</span>
-          </button>
+          {canCreateExpedition && (
+            <button
+              onClick={() => navigate('/create-expedition')}
+              className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-lg font-semibold text-xs sm:text-sm hover:from-indigo-700 hover:to-indigo-600 active:scale-[0.98] transition-all shadow-sm hover:shadow-md hover:shadow-indigo-200"
+            >
+              <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Nouvelle expédition</span>
+              <span className="sm:hidden">Nouveau</span>
+            </button>
+          )}
 
           {/* Notifications / Annonces */}
           <div className="relative">
