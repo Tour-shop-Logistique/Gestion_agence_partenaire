@@ -38,11 +38,7 @@ export const useTarifs = () => {
     isSaving,
     loading,
     error,
-    message,
-    hasFetchedTarifs,
-    hasFetchedAgencyTarifs,
-    hasFetchedTarifsGroupage,
-    hasFetchedGroupageAgence
+    message
   } = useSelector(selectTarifsState);
 
 
@@ -51,55 +47,43 @@ export const useTarifs = () => {
 
   // Actions encapsulées
   const fetchAllTarifs = useCallback(async (forceRefresh = false) => {
-    if (!forceRefresh && hasFetchedTarifs) {
-      return Promise.resolve();
-    }
     try {
       return await dispatch(fetchTarifs()).unwrap();
     } catch (error) {
       console.error('Erreur lors de la récupération des tarifs:', error);
       return { success: false, error };
     }
-  }, [dispatch, hasFetchedTarifs]);
+  }, [dispatch]);
 
 
   const fetchAgencyTarifsData = useCallback(async (forceRefresh = false) => {
-    if (!forceRefresh && hasFetchedAgencyTarifs) {
-      return Promise.resolve();
-    }
     try {
       return await dispatch(fetchAgencyTarifs(forceRefresh)).unwrap();
     } catch (error) {
       console.error("Erreur lors de la récupération des tarifs de l'agence:", error);
       return { success: false, error };
     }
-  }, [dispatch, hasFetchedAgencyTarifs]);
+  }, [dispatch]);
 
 
   // === TARIFS GROUPAGE ===
   const fetchAllTarifsGroupageBase = useCallback(async (forceRefresh = false) => {
-    if (!forceRefresh && hasFetchedTarifsGroupage) {
-      return Promise.resolve();
-    }
     try {
       return await dispatch(fetchTarifsGroupage()).unwrap();
     } catch (error) {
       console.error("Erreur lors du chargement des tarifs groupage:", error);
       return { success: false, error };
     }
-  }, [dispatch, hasFetchedTarifsGroupage]);
+  }, [dispatch]);
 
   const fetchAgencyTarifsGroupage = useCallback(async (forceRefresh = false) => {
-    if (!forceRefresh && hasFetchedGroupageAgence) {
-      return Promise.resolve();
-    }
     try {
       return await dispatch(fetchTarifGroupageAgence()).unwrap();
     } catch (error) {
       console.error("Erreur lors du chargement des tarifs groupage agence:", error);
       return { success: false, error };
     }
-  }, [dispatch, hasFetchedGroupageAgence]);
+  }, [dispatch]);
   const saveGroupageTarifData = useCallback(async (payload) => {
     try {
       return await dispatch(createTarifGroupage(payload)).unwrap();
