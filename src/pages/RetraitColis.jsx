@@ -16,8 +16,11 @@ import {
 import { useExpedition } from "../hooks/useExpedition";
 import { toast } from "../utils/toast";
 import ConfirmationModal from "../components/ConfirmationModal";
+import useHasPermission from "../hooks/useHasPermission";
 
 const RetraitColis = () => {
+    const canInitiate = useHasPermission("retrait_colis.initiate");
+    const canValidate = useHasPermission("retrait_colis.validate");
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedColis, setSelectedColis] = useState([]);
     const [localLoading, setLocalLoading] = useState(false);
@@ -233,7 +236,7 @@ const RetraitColis = () => {
                                 {selectedColis.length} colis sélectionné(s) sur {searchResults.length}
                             </span>
                         </div>
-                        {selectedColis.length > 0 && (
+                        {selectedColis.length > 0 && canInitiate && (
                             <button
                                 onClick={handleInitiateRecup}
                                 disabled={isRefreshing}
@@ -504,9 +507,10 @@ const RetraitColis = () => {
                             >
                                 Annuler
                             </button>
-                            <button 
+                            <button
                                 onClick={handleVerifyOtp}
-                                disabled={isRefreshing || !otp}
+                                disabled={isRefreshing || !otp || !canValidate}
+                                title={!canValidate ? "Permission requise" : undefined}
                                 className="px-5 py-2 bg-slate-900 text-white rounded-md text-xs font-bold uppercase tracking-wider hover:bg-slate-800 disabled:opacity-50"
                             >
                                 {isRefreshing ? "Validation..." : "Confirmer le retrait"}

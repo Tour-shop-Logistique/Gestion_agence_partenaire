@@ -9,6 +9,8 @@ import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
 import WebSocketStatus from "./WebSocketStatus";
 import { selectUnreadCount } from "../store/slices/notificationsSlice";
+import { selectInAppUnreadCount } from "../store/slices/inAppNotificationsSlice";
+import NotificationDropdown from "./NotificationDropdown";
 
 const Header = ({ onToggleSidebar }) => {
   const dispatch = useDispatch();
@@ -18,6 +20,7 @@ const Header = ({ onToggleSidebar }) => {
   const { demandesMeta, loadDemandes } = useExpedition();
 
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const [agencyName, setAgencyName] = useState("Dashboard");
   const [agencyLogo, setAgencyLogo] = useState(null);
   const [showRateModal, setShowRateModal] = useState(false);
@@ -103,6 +106,8 @@ const Header = ({ onToggleSidebar }) => {
 
   const pendingDemandesCount = demandesMeta?.total || 0;
   const unreadAnnouncementsCount = useSelector(selectUnreadCount);
+  const unreadInAppCount = useSelector(selectInAppUnreadCount);
+  const unreadNotifTotal = unreadAnnouncementsCount + unreadInAppCount;
 
   const initials = (currentUser?.name || "")
     .split(" ")
@@ -146,20 +151,29 @@ const Header = ({ onToggleSidebar }) => {
           </button>
 
           {/* Notifications / Annonces */}
-          <button
-            onClick={() => navigate('/notifications')}
-            className="relative p-2 rounded-lg hover:bg-slate-100 transition"
-          >
-            <Bell className="w-5 h-5 text-slate-600" />
-            {unreadAnnouncementsCount > 0 && (
-              <span className="absolute top-1 right-1 flex h-4 w-4">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 items-center justify-center">
-                  <span className="text-[10px] font-semibold text-white">{unreadAnnouncementsCount > 9 ? '9+' : unreadAnnouncementsCount}</span>
+          <div className="relative">
+            <button
+              onClick={() => setShowNotifDropdown((v) => !v)}
+              className="relative p-2 rounded-lg hover:bg-slate-100 transition"
+            >
+              <Bell className="w-5 h-5 text-slate-600" />
+              {unreadNotifTotal > 0 && (
+                <span className="absolute top-1 right-1 flex h-4 w-4">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 items-center justify-center">
+                    <span className="text-[10px] font-semibold text-white">{unreadNotifTotal > 9 ? '9+' : unreadNotifTotal}</span>
+                  </span>
                 </span>
-              </span>
+              )}
+            </button>
+
+            {showNotifDropdown && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowNotifDropdown(false)} />
+                <NotificationDropdown onClose={() => setShowNotifDropdown(false)} />
+              </>
             )}
-          </button>
+          </div>
 
           {/* Settings Icon */}
           <button className="p-2 rounded-lg hover:bg-slate-100 transition">

@@ -60,6 +60,7 @@ export const API_ENDPOINTS = {
     CREATE: "/agence/roles",
     UPDATE: "/agence/roles/:id",
     DELETE: "/agence/roles/:id",
+    AVAILABLE_PERMISSIONS: "/agence/roles/available-permissions",
   },
 
   // Facturation

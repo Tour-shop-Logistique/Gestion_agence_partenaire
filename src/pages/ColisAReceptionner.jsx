@@ -15,9 +15,11 @@ import {
     ChevronRightIcon
 } from "@heroicons/react/24/outline";
 import QRScanner from "../components/QRScanner";
+import useHasPermission from "../hooks/useHasPermission";
 
 const ColisAReceptionner = () => {
     const { currentUser } = useAuth();
+    const canReceive = useHasPermission("colis_a_receptionner.receive_destination");
     const {
         reception = [],
         receptionMeta = { current_page: 1, last_page: 1 },
@@ -380,7 +382,8 @@ const ColisAReceptionner = () => {
                     <div className="flex items-center gap-2">
                         <button
                             onClick={handleReceiveSelected}
-                            disabled={processing}
+                            disabled={processing || !canReceive}
+                            title={!canReceive ? "Permission requise" : undefined}
                             className="flex-1 sm:flex-none inline-flex items-center justify-center px-3 sm:px-4 py-1.5 sm:py-2 border border-transparent rounded-lg text-xs sm:text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
                         >
                             {processing ? (
@@ -517,7 +520,7 @@ const ColisAReceptionner = () => {
                             <div className="p-3 pt-2 border-t border-slate-100 flex items-center justify-end gap-2">
                                 <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
                                     {/* Afficher le bouton de réception uniquement si le colis est arrivé au backoffice et non réceptionné */}
-                                    {isReadyToReceive && (
+                                    {isReadyToReceive && canReceive && (
                                         <button
                                             onClick={() => handleReceiveSingle(item.code_colis)}
                                             disabled={processing}

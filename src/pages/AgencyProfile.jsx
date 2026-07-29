@@ -403,7 +403,6 @@ const AgencyProfile = () => {
     try {
       const payload = {
         nom_agence:  formData.name,
-        code_agence: formData.code_agence,
         telephone:   formData.telephone,
         email:       formData.email,
         description: formData.description,

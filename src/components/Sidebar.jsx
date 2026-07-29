@@ -22,6 +22,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { getLogoUrl } from "../utils/apiConfig";
 import { selectUnreadMessagesCount } from "../store/slices/messagesSlice";
+import { canAccessPage as checkCanAccessPage } from "../utils/permissions";
 
 // Doit rester synchronisé avec AgenceRoleController::AVAILABLE_PAGES côté backend.
 const PAGE_KEY_BY_PATH = {
@@ -47,12 +48,7 @@ const Sidebar = ({ onClose }) => {
   const { data: agencyData } = useAgency();
   const { demandesMeta } = useExpedition();
 
-  const canAccessPage = (pageKey) => {
-    if (isAdmin || !pageKey) return true;
-    if (!currentUser?.role_id) return true;
-    const pages = currentUser?.role_details?.pages || [];
-    return pages.includes(pageKey);
-  };
+  const canAccessPage = (pageKey) => checkCanAccessPage(currentUser, isAdmin, pageKey);
 
   const demandesMetaDirect = useSelector((state) => state.expedition?.demandesMeta);
   const unreadMessagesCount = useSelector(selectUnreadMessagesCount);

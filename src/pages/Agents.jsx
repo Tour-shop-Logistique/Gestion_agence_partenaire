@@ -4,27 +4,12 @@ import { useAuth } from "../hooks/useAuth";
 import { useAgency } from "../hooks/useAgency";
 import AgentCardMobile from "../components/AgentCardMobile";
 import AgentCardDesktop from "../components/AgentCardDesktop";
-import { XMarkIcon, KeyIcon, UserGroupIcon, CheckCircleIcon, TrashIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, KeyIcon, UserGroupIcon, TrashIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
 import Spinner from "../components/common/Spinner";
 import { toast } from "../utils/toast";
 import { fetchRoles, createRole, updateRole, deleteRole, selectRoles, selectRolesStatus } from "../store/slices/rolesSlice";
-
-// Doit rester synchronisé avec AgenceRoleController::AVAILABLE_PAGES côté backend.
-const AVAILABLE_PAGES = [
-  { key: "dashboard", label: "Tableau de bord" },
-  { key: "demandes", label: "Demandes clients" },
-  { key: "expeditions", label: "Expéditions" },
-  { key: "colis", label: "Colis" },
-  { key: "colis_a_receptionner", label: "Colis à réceptionner" },
-  { key: "retrait_colis", label: "Retrait de colis" },
-  { key: "comptabilite", label: "Comptabilité" },
-  { key: "transactions", label: "Transactions" },
-  { key: "tarifs_simples", label: "Tarifs simples" },
-  { key: "tarifs_groupage", label: "Tarifs groupage" },
-  { key: "communication", label: "Communication" },
-  { key: "agents", label: "Équipe & Accès" },
-  { key: "agency_profile", label: "Profil de l'agence" },
-];
+import { fetchAvailablePermissions, selectAvailablePermissions, selectPermissionsHasLoaded } from "../store/slices/permissionsSlice";
+import PermissionMatrix from "../components/roles/PermissionMatrix";
 
 const Agents = () => {
   const { isAdmin } = useAuth();
@@ -41,6 +26,8 @@ const Agents = () => {
   const dispatch = useDispatch();
   const roles = useSelector(selectRoles);
   const rolesStatus = useSelector(selectRolesStatus);
+  const availablePermissions = useSelector(selectAvailablePermissions);
+  const permissionsHasLoaded = useSelector(selectPermissionsHasLoaded);
 
   const [activeTab, setActiveTab] = useState("agents");
 
@@ -64,7 +51,7 @@ const Agents = () => {
   // Gestion des rôles
   const [showRoleForm, setShowRoleForm] = useState(false);
   const [editingRole, setEditingRole] = useState(null);
-  const [roleFormData, setRoleFormData] = useState({ nom: "", description: "", pages: [] });
+  const [roleFormData, setRoleFormData] = useState({ nom: "", description: "", permissions: [] });
   const [savingRole, setSavingRole] = useState(false);
   const [roleToDelete, setRoleToDelete] = useState(null);
   const [deletingRole, setDeletingRole] = useState(false);
@@ -75,16 +62,22 @@ const Agents = () => {
     }
   }, [dispatch, rolesStatus]);
 
+  useEffect(() => {
+    if (!permissionsHasLoaded) {
+      dispatch(fetchAvailablePermissions());
+    }
+  }, [dispatch, permissionsHasLoaded]);
+
   const openAddRoleModal = () => {
     setEditingRole(null);
-    setRoleFormData({ nom: "", description: "", pages: [] });
+    setRoleFormData({ nom: "", description: "", permissions: [] });
     setShowRoleForm(true);
     document.body.style.overflow = "hidden";
   };
 
   const openEditRoleModal = (role) => {
     setEditingRole(role);
-    setRoleFormData({ nom: role.nom || "", description: role.description || "", pages: role.pages || [] });
+    setRoleFormData({ nom: role.nom || "", description: role.description || "", permissions: role.permissions || [] });
     setShowRoleForm(true);
     document.body.style.overflow = "hidden";
   };
@@ -92,17 +85,8 @@ const Agents = () => {
   const closeRoleModal = () => {
     setShowRoleForm(false);
     setEditingRole(null);
-    setRoleFormData({ nom: "", description: "", pages: [] });
+    setRoleFormData({ nom: "", description: "", permissions: [] });
     document.body.style.overflow = "auto";
-  };
-
-  const toggleRolePage = (pageKey) => {
-    setRoleFormData((prev) => ({
-      ...prev,
-      pages: prev.pages.includes(pageKey)
-        ? prev.pages.filter((p) => p !== pageKey)
-        : [...prev.pages, pageKey],
-    }));
   };
 
   const handleSubmitRole = async (e) => {
@@ -111,8 +95,8 @@ const Agents = () => {
       toast.error("Le nom du rôle est requis");
       return;
     }
-    if (roleFormData.pages.length === 0) {
-      toast.error("Sélectionnez au moins une page accessible");
+    if (roleFormData.permissions.length === 0) {
+      toast.error("Sélectionnez au moins une permission");
       return;
     }
 
@@ -597,9 +581,17 @@ const Agents = () => {
                     </div>
                     {role.description && <p className="text-sm text-gray-500 mt-0.5">{role.description}</p>}
                     <div className="flex flex-wrap gap-1.5 mt-2">
-                      {(role.pages || []).map((pageKey) => (
-                        <span key={pageKey} className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-gray-100 text-gray-600">
-                          {AVAILABLE_PAGES.find((p) => p.key === pageKey)?.label || pageKey}
+                      {Object.entries(
+                        (role.permissions || []).reduce((acc, key) => {
+                          const [resourceKey] = key.split(".");
+                          const resource = availablePermissions.find((r) => r.key === resourceKey);
+                          const label = resource?.label || resourceKey;
+                          acc[label] = (acc[label] || 0) + 1;
+                          return acc;
+                        }, {})
+                      ).map(([label, count]) => (
+                        <span key={label} className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-gray-100 text-gray-600">
+                          {label} ({count})
                         </span>
                       ))}
                     </div>
@@ -1101,32 +1093,13 @@ const Agents = () => {
 
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-700">
-                      Pages accessibles <span className="text-red-500">*</span>
+                      Permissions <span className="text-red-500">*</span>
                     </label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      {AVAILABLE_PAGES.map((page) => {
-                        const checked = roleFormData.pages.includes(page.key);
-                        return (
-                          <label
-                            key={page.key}
-                            className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg border cursor-pointer transition-all ${
-                              checked ? "bg-gray-900 border-gray-900 text-white" : "bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100"
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={() => toggleRolePage(page.key)}
-                              className="sr-only"
-                            />
-                            <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${checked ? "bg-white border-white" : "border-gray-300"}`}>
-                              {checked && <CheckCircleIcon className="w-3 h-3 text-gray-900" />}
-                            </div>
-                            <span className="text-sm font-medium">{page.label}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
+                    <PermissionMatrix
+                      resources={availablePermissions}
+                      value={roleFormData.permissions}
+                      onChange={(next) => setRoleFormData((p) => ({ ...p, permissions: next }))}
+                    />
                   </div>
                 </div>
 

@@ -10,10 +10,13 @@ import soundNotification from "../utils/soundNotification";
 import { Check, X, Eye, Package, Calendar, MapPin, User, ArrowRight, Loader2, RefreshCw, Search } from "lucide-react";
 import ConfirmationModal from "../components/ConfirmationModal";
 import Spinner from '../components/common/Spinner';
+import useHasPermission from "../hooks/useHasPermission";
 
 const Demandes = () => {
     const navigate = useNavigate();
     const { currentUser } = useAuth();
+    const canAccept = useHasPermission("demandes.accept");
+    const canRefuse = useHasPermission("demandes.refuse");
     const {
         demandes,
         demandesMeta,
@@ -450,6 +453,7 @@ const Demandes = () => {
                                         >
                                             <Eye className="w-3.5 h-3.5" /> Détails
                                         </Link>
+                                        {canRefuse && (
                                         <button
                                             onClick={() => handleRefuse(demande.id)}
                                             disabled={processingId === demande.id}
@@ -457,6 +461,8 @@ const Demandes = () => {
                                         >
                                             <X className="w-4 h-4" />
                                         </button>
+                                        )}
+                                        {canAccept && (
                                         <button
                                             onClick={() => handleAccept(demande.id)}
                                             disabled={processingId === demande.id}
@@ -470,6 +476,7 @@ const Demandes = () => {
                                                 </>
                                             )}
                                         </button>
+                                        )}
                                     </div>
                                 </div>
                             ))
@@ -573,6 +580,7 @@ const Demandes = () => {
                                         </td>
                                         <td className="px-4 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                                                {canRefuse && (
                                                 <button
                                                     onClick={() => handleRefuse(demande.id)}
                                                     disabled={processingId === demande.id}
@@ -588,6 +596,8 @@ const Demandes = () => {
                                                         <span className="text-xs font-bold">Refuser</span>
                                                     </div>
                                                 </button>
+                                                )}
+                                                {canAccept && (
                                                 <button
                                                     onClick={() => handleAccept(demande.id)}
                                                     disabled={processingId === demande.id}
@@ -603,6 +613,7 @@ const Demandes = () => {
                                                         <span className="text-xs font-bold">Accepter</span>
                                                     </div>
                                                 </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>

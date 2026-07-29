@@ -15,6 +15,9 @@ import { useDashboard } from "./hooks/useDashboard";
 import { getLogoUrl } from "./utils/apiConfig";
 import { selectAgencyConfigured } from "./store/slices/agencySlice";
 import { selectCurrentUser, selectIsAdmin, setUser } from "./store/slices/authSlice";
+import { notificationAdded } from "./store/slices/inAppNotificationsSlice";
+import { classifyNotification } from "./utils/notificationClassifier";
+import { canAccessPage } from "./utils/permissions";
 import { autoCheckAndUpdate, handleChunkLoadError } from "./utils/versionChecker";
 import { getEcho, disconnectEcho } from "./services/echo";
 import { fetchNotifications, announcementReceived } from "./store/slices/notificationsSlice";
@@ -65,15 +68,6 @@ const AutoRedirect = ({ children }) => {
   }, [isAuthenticated, status, location.pathname, navigate]);
 
   return children;
-};
-
-// Doit rester synchronisé avec AgenceRoleController::AVAILABLE_PAGES côté backend
-// et PAGE_KEY_BY_PATH dans components/Sidebar.jsx.
-const canAccessPage = (user, isAdminLike, pageKey) => {
-  if (!pageKey || isAdminLike) return true;
-  if (!user?.role_id) return true;
-  const pages = user?.role_details?.pages || [];
-  return pages.includes(pageKey);
 };
 
 // Composant pour les routes protégées (vérifie uniquement l'authentification).
@@ -180,6 +174,38 @@ function AppContent() {
         body: announcement?.message,
         onClick: () => navigate("/notifications"),
       });
+    },
+    onColisAssigned: (data) => {
+      const entry = classifyNotification('Colis', 'assigned', data);
+      if (!entry) return;
+      dispatch(notificationAdded(entry));
+      showToast(`📦 ${entry.message}`, "info");
+      soundNotification.playSuccess();
+      showBrowserNotification(entry.title, { body: entry.message, onClick: () => navigate(entry.link) });
+    },
+    onColisReceivedByBackoffice: (data) => {
+      const entry = classifyNotification('Colis', 'received_by_backoffice', data);
+      if (!entry) return;
+      dispatch(notificationAdded(entry));
+      showToast(`📦 ${entry.message}`, "info");
+      soundNotification.playSuccess();
+      showBrowserNotification(entry.title, { body: entry.message, onClick: () => navigate(entry.link) });
+    },
+    onColisBlocked: (data) => {
+      const entry = classifyNotification('Colis', 'blocked', data);
+      if (!entry) return;
+      dispatch(notificationAdded(entry));
+      showToast(`⚠️ ${entry.message}`, "warning");
+      soundNotification.playAlert();
+      showBrowserNotification(entry.title, { body: entry.message, onClick: () => navigate(entry.link) });
+    },
+    onColisUnblocked: (data) => {
+      const entry = classifyNotification('Colis', 'unblocked', data);
+      if (!entry) return;
+      dispatch(notificationAdded(entry));
+      showToast(`✅ ${entry.message}`, "success");
+      soundNotification.playSuccess();
+      showBrowserNotification(entry.title, { body: entry.message, onClick: () => navigate(entry.link) });
     },
     onMessageReceived: (data) => {
       const message = Array.isArray(data) ? data[0] : data;
