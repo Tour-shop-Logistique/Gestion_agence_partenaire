@@ -412,7 +412,7 @@ const AgencyProfile = () => {
         pays:        formData.pays,
         latitude:    formData.latitude  === "" ? null : parseFloat(formData.latitude),
         longitude:   formData.longitude === "" ? null : parseFloat(formData.longitude),
-        horaires:    formData.horaires,
+        horaires:    formData.horaires.map((h) => ({ ...h, jour: h.jour.toLowerCase() })),
         message_accueil: formData.message_accueil,
       };
       if (logoFile) payload.logo = logoFile;
