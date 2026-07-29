@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowPathIcon, DocumentArrowDownIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { ArrowPathIcon, DocumentArrowDownIcon, PlusIcon, FunnelIcon } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 
 /**
@@ -21,7 +21,9 @@ const ExpeditionHeader = ({
     dateFin,
     onDateDebutChange,
     onDateFinChange,
-    canExport = true
+    canExport = true,
+    onOpenFilters,
+    activeFiltersCount = 0
 }) => {
     const navigate = useNavigate();
 
@@ -121,6 +123,20 @@ const ExpeditionHeader = ({
 
                         {/* Action Buttons */}
                         <div className="flex items-center gap-2">
+                            {/* Filtres (drawer trigger, masqué en très grand écran où la sidebar est fixe) */}
+                            <button
+                                onClick={onOpenFilters}
+                                className="relative 2xl:hidden inline-flex items-center justify-center p-2.5 border border-slate-200 rounded-xl text-slate-600 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm hover:shadow active:scale-95"
+                                title="Filtres"
+                            >
+                                <FunnelIcon className="w-5 h-5" />
+                                {activeFiltersCount > 0 && (
+                                    <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-indigo-600 text-white text-[10px] font-bold">
+                                        {activeFiltersCount}
+                                    </span>
+                                )}
+                            </button>
+
                             <button
                                 onClick={onRefresh}
                                 disabled={loading}

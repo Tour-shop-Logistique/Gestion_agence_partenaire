@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-    EyeIcon, 
-    PrinterIcon, 
-    PencilIcon, 
+import {
+    EyeIcon,
+    PrinterIcon,
+    PencilIcon,
     ClockIcon,
-    EllipsisVerticalIcon 
+    EllipsisVerticalIcon
 } from '@heroicons/react/24/outline';
 import StatusTimeline from './StatusTimeline';
 import PaymentBadge from './PaymentBadge';
@@ -31,6 +31,7 @@ const ExpeditionRow = ({
     const navigate = useNavigate();
     const [showActions, setShowActions] = useState(false);
     const [showPopover, setShowPopover] = useState(false);
+    const [showCompactMenu, setShowCompactMenu] = useState(false);
 
     const handleRowClick = (e) => {
         // Éviter la navigation si on clique sur un bouton d'action
@@ -64,11 +65,11 @@ const ExpeditionRow = ({
         <tr
             onClick={handleRowClick}
             onMouseEnter={() => setShowActions(true)}
-            onMouseLeave={() => { setShowActions(false); setShowPopover(false); }}
+            onMouseLeave={() => { setShowActions(false); setShowPopover(false); setShowCompactMenu(false); }}
             className={`group relative hover:bg-indigo-50/30 transition-all duration-200 cursor-pointer border-l-[3px] ${getStatusBorderColor(expedition.statut_expedition)}`}
         >
             {/* Référence + Date + Type */}
-            <td className="px-5 py-4">
+            <td className="px-3 py-3 2xl:px-5 2xl:py-4">
                 <div className="flex flex-col gap-1">
                     <span className="text-sm font-bold text-slate-800 group-hover:text-indigo-600 transition-colors tabular-nums tracking-tight">
                         {expedition.reference}
@@ -83,13 +84,13 @@ const ExpeditionRow = ({
             </td>
 
             {/* Expéditeur / Destinataire */}
-            <td className="px-5 py-4">
+            <td className="px-3 py-3 2xl:px-5 2xl:py-4">
                 <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-lg bg-blue-100 text-blue-600 text-[9px] font-bold flex items-center justify-center flex-shrink-0">
                             E
                         </div>
-                        <span className="text-xs font-semibold text-slate-700 truncate max-w-[180px]">
+                        <span className="text-xs font-semibold text-slate-700 truncate max-w-[110px] 2xl:max-w-[180px]">
                             {expedition.expediteur?.nom_prenom || '—'}
                         </span>
                     </div>
@@ -97,7 +98,7 @@ const ExpeditionRow = ({
                         <div className="w-6 h-6 rounded-lg bg-violet-100 text-violet-600 text-[9px] font-bold flex items-center justify-center flex-shrink-0">
                             D
                         </div>
-                        <span className="text-xs font-semibold text-slate-700 truncate max-w-[180px]">
+                        <span className="text-xs font-semibold text-slate-700 truncate max-w-[110px] 2xl:max-w-[180px]">
                             {expedition.destinataire?.nom_prenom || '—'}
                         </span>
                     </div>
@@ -105,22 +106,22 @@ const ExpeditionRow = ({
             </td>
 
             {/* Trajet */}
-            <td className="px-5 py-4">
+            <td className="px-3 py-3 2xl:px-5 2xl:py-4">
                 <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-slate-600 px-2.5 py-1 bg-slate-100 rounded-lg whitespace-nowrap">
+                    <span className="text-xs font-semibold text-slate-600 px-2.5 py-1 bg-slate-100 rounded-lg truncate max-w-[90px] 2xl:max-w-none 2xl:whitespace-nowrap">
                         {expedition.pays_depart}
                     </span>
                     <svg className="w-4 h-4 text-indigo-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                     </svg>
-                    <span className="text-xs font-semibold text-indigo-600 px-2.5 py-1 bg-indigo-50 border border-indigo-100 rounded-lg whitespace-nowrap">
+                    <span className="text-xs font-semibold text-indigo-600 px-2.5 py-1 bg-indigo-50 border border-indigo-100 rounded-lg truncate max-w-[90px] 2xl:max-w-none 2xl:whitespace-nowrap">
                         {expedition.pays_destination}
                     </span>
                 </div>
             </td>
 
             {/* Montant + Colis */}
-            <td className="px-5 py-4">
+            <td className="px-3 py-3 2xl:px-5 2xl:py-4">
                 <div className="flex flex-col gap-1">
                     <span className="text-sm font-bold text-slate-900 tabular-nums">
                         {formatPriceDual(expedition.montant_expedition)}
@@ -142,22 +143,94 @@ const ExpeditionRow = ({
             </td>
 
             {/* Statut (Timeline) */}
-            <td className="px-5 py-4">
-                <StatusTimeline currentStatus={expedition.statut_expedition} />
+            <td className="px-3 py-3 2xl:px-5 2xl:py-4">
+                {/* Version compacte (barre de progression) : < 1536px */}
+                <div className="w-32 2xl:hidden">
+                    <StatusTimeline currentStatus={expedition.statut_expedition} compact />
+                </div>
+                {/* Version complète (timeline visuelle) : ≥ 1536px */}
+                <div className="hidden 2xl:block">
+                    <StatusTimeline currentStatus={expedition.statut_expedition} />
+                </div>
             </td>
 
             {/* Paiement */}
-            <td className="px-5 py-4">
-                <PaymentBadge
-                    paymentStatus={expedition.statut_paiement_expedition}
-                    fraisAnnexes={expedition.frais_annexes}
-                    fraisStatus={expedition.statut_paiement_frais}
-                />
+            <td className="px-3 py-3 2xl:px-5 2xl:py-4">
+                {/* Version compacte (pastilles) : < 1536px */}
+                <div className="2xl:hidden">
+                    <PaymentBadge
+                        paymentStatus={expedition.statut_paiement_expedition}
+                        fraisAnnexes={expedition.frais_annexes}
+                        fraisStatus={expedition.statut_paiement_frais}
+                        compact
+                    />
+                </div>
+                {/* Version complète (badges) : ≥ 1536px */}
+                <div className="hidden 2xl:block">
+                    <PaymentBadge
+                        paymentStatus={expedition.statut_paiement_expedition}
+                        fraisAnnexes={expedition.frais_annexes}
+                        fraisStatus={expedition.statut_paiement_frais}
+                    />
+                </div>
             </td>
 
             {/* Actions */}
-            <td className="px-5 py-4">
-                <div className={`flex items-center gap-2 transition-all duration-200 ${showActions ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+            <td className="px-3 py-3 2xl:px-5 2xl:py-4">
+                {/* Version compacte : Voir + menu regroupant Imprimer/Modifier — < 1536px */}
+                <div className={`2xl:hidden flex items-center gap-2 transition-all duration-200 ${showActions ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/expeditions/${expedition.id}`);
+                        }}
+                        className="action-button p-2 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-100 transition-all hover:scale-110"
+                        title="Voir les détails"
+                    >
+                        <EyeIcon className="w-4 h-4" />
+                    </button>
+
+                    <div className="relative">
+                        <button
+                            onMouseEnter={() => setShowCompactMenu(true)}
+                            className="action-button p-2 rounded-lg bg-slate-50 text-slate-600 border border-slate-100 hover:bg-slate-100 transition-all hover:scale-110"
+                            title="Plus d'actions"
+                        >
+                            <EllipsisVerticalIcon className="w-4 h-4" />
+                        </button>
+
+                        {showCompactMenu && (
+                            <div
+                                onMouseLeave={() => setShowCompactMenu(false)}
+                                className="absolute right-0 top-full mt-2 w-44 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 py-1.5 animate-in fade-in slide-in-from-top-2 duration-200"
+                            >
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onPrint(expedition);
+                                    }}
+                                    className="action-button w-full flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+                                >
+                                    <PrinterIcon className="w-4 h-4" />
+                                    Imprimer
+                                </button>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        navigate(`/expeditions/${expedition.id}/edit`);
+                                    }}
+                                    className="action-button w-full flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-amber-50 hover:text-amber-700 transition-colors"
+                                >
+                                    <PencilIcon className="w-4 h-4" />
+                                    Modifier
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Version complète : 4 actions dédiées — ≥ 1536px */}
+                <div className={`hidden 2xl:flex items-center gap-2 transition-all duration-200 ${showActions ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                     <button
                         onClick={(e) => {
                             e.stopPropagation();

@@ -40,30 +40,30 @@ const StatCard = ({
         >
             {/* Gradient overlay */}
             <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-br ${bgColor}`}></div>
-            
-            <div className="relative p-5 sm:p-6">
-                <div className="flex items-start justify-between mb-4">
-                    <div className={`p-3 rounded-xl ${bgColor} ${borderColor} border group-hover:scale-110 transition-transform duration-300`}>
-                        <Icon className={`w-6 h-6 ${color}`} />
+
+            <div className="relative p-3 sm:p-4 lg:p-3 xl:p-4">
+                <div className="flex items-start justify-between mb-1.5 lg:mb-2">
+                    <div className={`p-1.5 lg:p-2 rounded-lg lg:rounded-xl ${bgColor} ${borderColor} border group-hover:scale-110 transition-transform duration-300`}>
+                        <Icon className={`w-4 h-4 lg:w-5 lg:h-5 ${color}`} />
                     </div>
-                    
+
                     {active && (
-                        <div className="flex items-center gap-1 px-2 py-1 bg-indigo-50 border border-indigo-100 rounded-full">
+                        <div className="flex items-center gap-1 px-1.5 py-0.5 lg:px-2 lg:py-1 bg-indigo-50 border border-indigo-100 rounded-full">
                             <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse"></div>
-                            <span className="text-[9px] font-bold text-indigo-600 uppercase tracking-wide">Actif</span>
+                            <span className="hidden xl:inline text-[9px] font-bold text-indigo-600 uppercase tracking-wide">Actif</span>
                         </div>
                     )}
                 </div>
 
-                <div className="space-y-1">
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                <div className="space-y-0.5">
+                    <p className="text-[10px] lg:text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">
                         {label}
                     </p>
-                    <p className="text-3xl font-bold text-slate-900 tracking-tight tabular-nums">
+                    <p className="text-lg lg:text-xl xl:text-2xl font-bold text-slate-900 tracking-tight tabular-nums truncate">
                         {value}
                     </p>
                     {subtitle && (
-                        <p className="text-xs text-slate-400 font-medium">
+                        <p className="text-[9px] lg:text-[10px] text-slate-400 font-medium truncate">
                             {subtitle}
                         </p>
                     )}
@@ -121,7 +121,7 @@ const StatsCards = ({ expeditions, onFilter, activeFilters = {} }) => {
     };
 
     return (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2 sm:gap-3">
             <StatCard
                 icon={CubeIcon}
                 label="Total"

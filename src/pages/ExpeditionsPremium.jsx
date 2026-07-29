@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { FunnelIcon } from '@heroicons/react/24/outline';
 
 import { useExpedition } from "../hooks/useExpedition";
 import { useAgency } from "../hooks/useAgency";
@@ -70,6 +71,7 @@ const ExpeditionsPremium = () => {
     const [quickFilterFn, setQuickFilterFn] = useState(null);
     const [activeKpiFilter, setActiveKpiFilter] = useState({});
     const [lastSync, setLastSync] = useState(new Date());
+    const [filtersOpen, setFiltersOpen] = useState(false);
 
     // ========== WEBSOCKET INTEGRATION ==========
     useWebSocket(
@@ -153,6 +155,12 @@ const ExpeditionsPremium = () => {
     useEffect(() => {
         fetchAgencyData();
     }, []);
+
+    // Empêche le scroll de la page pendant que le tiroir de filtres est ouvert
+    useEffect(() => {
+        document.body.style.overflow = filtersOpen ? 'hidden' : '';
+        return () => { document.body.style.overflow = ''; };
+    }, [filtersOpen]);
 
     // ========== UTILITY FUNCTIONS ==========
     const getAgencyCommission = (exp) => {
@@ -492,6 +500,34 @@ const ExpeditionsPremium = () => {
     };
 
     // ========== RENDER ==========
+    const activeFiltersCount = (selectedStatuses.length > 0 ? 1 : 0) + (type ? 1 : 0) + (searchQuery ? 1 : 0);
+
+    const filtersPanelProps = {
+        expeditions,
+        selectedStatuses,
+        onStatusChange: (v) => { setSelectedStatuses(v); setCurrentPage(1); },
+        type,
+        onTypeChange: (v) => { setType(v); setCurrentPage(1); },
+        dateDebut,
+        dateFin,
+        onDateDebutChange: (v) => { setDateDebut(v); setCurrentPage(1); },
+        onDateFinChange: (v) => { setDateFin(v); setCurrentPage(1); },
+        searchQuery,
+        onSearchChange: (v) => { setSearchQuery(v); setCurrentPage(1); },
+        onResetAll: () => {
+            setSelectedStatuses([]);
+            setSearchQuery('');
+            setType('');
+            setDateDebut(getFirstDayOfMonth());
+            setDateFin(getTodayDate());
+            setSortConfig({ key: null, direction: 'asc' });
+            setCurrentPage(1);
+            setQuickFilter('all');
+            setQuickFilterFn(null);
+            setActiveKpiFilter({});
+        }
+    };
+
     return (
         <>
             {/* Header Premium */}
@@ -506,7 +542,45 @@ const ExpeditionsPremium = () => {
                 onDateDebutChange={(v) => { setDateDebut(v); setCurrentPage(1); }}
                 onDateFinChange={(v) => { setDateFin(v); setCurrentPage(1); }}
                 canExport={filteredExpeditions.length > 0}
+                onOpenFilters={() => setFiltersOpen(true)}
+                activeFiltersCount={activeFiltersCount}
             />
+
+            {/* Tiroir de filtres (< 2xl : remplace la sidebar fixe) */}
+            {filtersOpen && (
+                <div className="fixed inset-0 z-50 2xl:hidden">
+                    {/* Pas de fond assombri : la liste des expéditions reste visible et lisible derrière le tiroir */}
+                    <div
+                        className="absolute inset-0"
+                        onClick={() => setFiltersOpen(false)}
+                    />
+                    <div className="absolute right-0 top-0 h-full w-[72vw] max-w-[300px] border-l border-slate-200 animate-in slide-in-from-right duration-300 ease-out">
+                        <FiltersPanel
+                            {...filtersPanelProps}
+                            variant="drawer"
+                            onClose={() => setFiltersOpen(false)}
+                            resultCount={filteredExpeditions.length}
+                        />
+                    </div>
+                </div>
+            )}
+
+            {/* Bouton flottant Filtres : reste accessible pendant le scroll (< 2xl) */}
+            <button
+                onClick={() => setFiltersOpen(true)}
+                className="fixed bottom-6 right-5 z-40 2xl:hidden inline-flex items-center gap-2 pl-4 pr-5 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg shadow-indigo-600/30 hover:shadow-xl transition-all active:scale-95"
+                title="Filtres"
+            >
+                <span className="relative">
+                    <FunnelIcon className="w-5 h-5" />
+                    {activeFiltersCount > 0 && (
+                        <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full bg-white text-indigo-600 text-[9px] font-bold">
+                            {activeFiltersCount}
+                        </span>
+                    )}
+                </span>
+                <span className="text-sm font-bold">Filtres</span>
+            </button>
 
             <div className="max-w-[1600px] mx-auto px-3 sm:px-4 lg:px-6 py-6 space-y-6">
 
@@ -517,35 +591,11 @@ const ExpeditionsPremium = () => {
                     activeFilters={activeKpiFilter}
                 />
 
-                {/* Layout avec filtres à gauche */}
+                {/* Layout avec filtres à gauche (sidebar fixe uniquement en très grand écran, sinon tiroir) */}
                 <div className="flex gap-5 items-start">
-                    {/* LEFT : Panneau de Filtres (sidebar gauche) */}
-                    <aside className="hidden lg:block w-72 xl:w-80 flex-shrink-0 sticky top-4">
-                        <FiltersPanel
-                            expeditions={expeditions}
-                            selectedStatuses={selectedStatuses}
-                            onStatusChange={(v) => { setSelectedStatuses(v); setCurrentPage(1); }}
-                            type={type}
-                            onTypeChange={(v) => { setType(v); setCurrentPage(1); }}
-                            dateDebut={dateDebut}
-                            dateFin={dateFin}
-                            onDateDebutChange={(v) => { setDateDebut(v); setCurrentPage(1); }}
-                            onDateFinChange={(v) => { setDateFin(v); setCurrentPage(1); }}
-                            searchQuery={searchQuery}
-                            onSearchChange={(v) => { setSearchQuery(v); setCurrentPage(1); }}
-                            onResetAll={() => {
-                                setSelectedStatuses([]);
-                                setSearchQuery('');
-                                setType('');
-                                setDateDebut(getFirstDayOfMonth());
-                                setDateFin(getTodayDate());
-                                setSortConfig({ key: null, direction: 'asc' });
-                                setCurrentPage(1);
-                                setQuickFilter('all');
-                                setQuickFilterFn(null);
-                                setActiveKpiFilter({});
-                            }}
-                        />
+                    {/* LEFT : Panneau de Filtres (sidebar gauche, ≥1536px) */}
+                    <aside className="hidden 2xl:block w-80 flex-shrink-0 sticky top-4">
+                        <FiltersPanel {...filtersPanelProps} />
                     </aside>
 
                     {/* RIGHT : Contenu principal */}
@@ -565,7 +615,7 @@ const ExpeditionsPremium = () => {
                         <table className="w-full">
                             <thead className="bg-slate-50 border-b-2 border-slate-100 sticky top-0 z-10">
                                 <tr>
-                                    <th className="px-5 py-4 text-left">
+                                    <th className="px-3 py-3 2xl:px-5 2xl:py-4 text-left">
                                         <SortableHeader 
                                             label="Référence" 
                                             sortKey="reference" 
@@ -574,13 +624,13 @@ const ExpeditionsPremium = () => {
                                             className="text-[10px] font-bold text-slate-400 uppercase tracking-widest"
                                         />
                                     </th>
-                                    <th className="px-5 py-4 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                    <th className="px-3 py-3 2xl:px-5 2xl:py-4 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                                         Expéditeur / Destinataire
                                     </th>
-                                    <th className="px-5 py-4 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                    <th className="px-3 py-3 2xl:px-5 2xl:py-4 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                                         Trajet
                                     </th>
-                                    <th className="px-5 py-4 text-left">
+                                    <th className="px-3 py-3 2xl:px-5 2xl:py-4 text-left">
                                         <SortableHeader 
                                             label="Montant" 
                                             sortKey="montant" 
@@ -589,7 +639,7 @@ const ExpeditionsPremium = () => {
                                             className="text-[10px] font-bold text-slate-400 uppercase tracking-widest"
                                         />
                                     </th>
-                                    <th className="px-5 py-4 text-left">
+                                    <th className="px-3 py-3 2xl:px-5 2xl:py-4 text-left">
                                         <SortableHeader 
                                             label="Statut" 
                                             sortKey="statut" 
@@ -598,10 +648,10 @@ const ExpeditionsPremium = () => {
                                             className="text-[10px] font-bold text-slate-400 uppercase tracking-widest"
                                         />
                                     </th>
-                                    <th className="px-5 py-4 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                    <th className="px-3 py-3 2xl:px-5 2xl:py-4 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                                         Paiement
                                     </th>
-                                    <th className="px-5 py-4 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                    <th className="px-3 py-3 2xl:px-5 2xl:py-4 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                                         Actions
                                     </th>
                                 </tr>
