@@ -4,10 +4,6 @@ import { useTarifs } from "../hooks/useTarifs";
 import { useAuth } from "../hooks/useAuth";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { showToast } from "../utils/toast";
-import {
-    Squares2X2Icon,
-    AdjustmentsHorizontalIcon
-} from "@heroicons/react/24/outline";
 
 const TarifsSimples = () => {
     const { currentUser } = useAuth();
@@ -45,21 +41,6 @@ const TarifsSimples = () => {
                     <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5 font-medium max-w-lg">
                         Gérez vos tarifs d'expédition standard par zones et indices
                     </p>
-                </div>
-            </div>
-
-            {/* --- ACTIONS HEADER - Responsive --- */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
-                <div className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-white border border-slate-200 rounded-lg sm:rounded-xl shadow-sm">
-                    <Squares2X2Icon className="w-4 sm:w-5 h-4 sm:h-5 text-indigo-600" />
-                    <span className="text-xs sm:text-sm font-bold text-slate-900 uppercase">Catalogue Simple</span>
-                </div>
-
-                <div className="flex items-center space-x-2 sm:space-x-3 text-slate-400 bg-white border border-slate-200 px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl">
-                    <AdjustmentsHorizontalIcon className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
-                    <span className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-wide italic">
-                        Configuration par Zones
-                    </span>
                 </div>
             </div>
 

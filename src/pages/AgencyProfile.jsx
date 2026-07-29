@@ -429,9 +429,11 @@ const AgencyProfile = () => {
         setNewPhotoFiles([]);
         setNewPhotoPreviews([]);
         await fetchAgencyData(true);
+      } else {
+        toast.error(result.payload || result.message || "Erreur lors de la sauvegarde.");
       }
-    } catch {
-      toast.error("Erreur lors de la sauvegarde.");
+    } catch (err) {
+      toast.error(err?.message || "Erreur lors de la sauvegarde.");
     } finally {
       setSaving(false);
     }

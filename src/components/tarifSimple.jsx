@@ -8,7 +8,6 @@ import {
   PlusIcon,
   CircleStackIcon,
   GlobeAltIcon,
-  ScaleIcon,
   PencilSquareIcon,
   DocumentDuplicateIcon,
   TrashIcon,
@@ -434,22 +433,35 @@ const TarifSimpleComponent = () => {
 
     const query = countrySearchQuery.toLowerCase();
     return baseData.filter(tarif => {
+      // Recherche dans le nom de la zone
+      const nomZone = tarif.zone?.nom || tarif.nom_zone;
+      if (nomZone && nomZone.toLowerCase().includes(query)) {
+        return true;
+      }
       // Recherche dans les pays de la zone
       if (tarif.zone?.pays && Array.isArray(tarif.zone.pays)) {
-        return tarif.zone.pays.some(country => 
+        return tarif.zone.pays.some(country =>
           country.toLowerCase().includes(query)
         );
-      }
-      // Fallback sur le nom de la zone
-      if (tarif.zone?.nom) {
-        return tarif.zone.nom.toLowerCase().includes(query);
       }
       return false;
     });
   }, [activeTab, flatExistingTarifs, flatTarifs, countrySearchQuery]);
 
+  // Répartition par zone de destination, pour la vue actuellement affichée
+  const nombreZonesCouvertes = useMemo(() => {
+    const baseData = activeTab === "agency" ? flatExistingTarifs : flatTarifs;
+    const zones = new Set();
+    (baseData || []).forEach(tarif => {
+      const nomZone = tarif.zone?.nom || tarif.nom_zone;
+      if (nomZone) zones.add(nomZone);
+    });
+    return zones.size;
+  }, [activeTab, flatExistingTarifs, flatTarifs]);
+
   return (
     <div className="space-y-4">
+      {/* KPI Section */}
       {/* Premium Action Bar */}
       <div className="flex flex-col sm:flex-row justify-between items-center bg-white p-2 rounded-xl border border-slate-200 shadow-sm gap-2">
         <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -458,13 +470,13 @@ const TarifSimpleComponent = () => {
               onClick={() => setActiveTab("agency")}
               className={`flex-1 sm:flex-none px-6 py-2 text-[11px] font-bold rounded-md transition-all ${activeTab === "agency" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
             >
-              Mes Tarifs Actifs
+              Tarif Agence
             </button>
             <button
               onClick={() => setActiveTab("base")}
               className={`flex-1 sm:flex-none px-6 py-2 text-[11px] font-bold rounded-md transition-all ${activeTab === "base" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
             >
-              Tous les Modèles
+              Tarif de Base
             </button>
           </div>
 
@@ -484,9 +496,40 @@ const TarifSimpleComponent = () => {
             className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-2.5 bg-slate-950 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition-all shadow-sm group active:scale-95"
           >
             <PlusIcon className="w-4 h-4 mr-2 transition-transform group-hover:rotate-90" />
-            Nouveau Tarif par Indice
+            Ajouter un tarif simple
           </button>
         )}
+      </div>
+
+      {/* KPI Section */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="bg-gradient-to-br from-indigo-50 to-white p-4 rounded-xl border border-indigo-100 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-semibold text-indigo-500/80 uppercase tracking-wide mb-1">Tarif Agence</p>
+            <p className="text-2xl font-bold text-slate-900">{flatExistingTarifs?.length || 0}</p>
+          </div>
+          <div className="p-2.5 rounded-lg bg-indigo-100 text-indigo-600">
+            <CircleStackIcon className="w-5 h-5" />
+          </div>
+        </div>
+        <div className="bg-gradient-to-br from-amber-50 to-white p-4 rounded-xl border border-amber-100 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-semibold text-amber-600/80 uppercase tracking-wide mb-1">Tarif de Base</p>
+            <p className="text-2xl font-bold text-slate-900">{flatTarifs?.length || 0}</p>
+          </div>
+          <div className="p-2.5 rounded-lg bg-amber-100 text-amber-600">
+            <DocumentDuplicateIcon className="w-5 h-5" />
+          </div>
+        </div>
+        <div className="bg-gradient-to-br from-emerald-50 to-white p-4 rounded-xl border border-emerald-100 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-semibold text-emerald-600/80 uppercase tracking-wide mb-1">Zones Couvertes</p>
+            <p className="text-2xl font-bold text-slate-900">{nombreZonesCouvertes}</p>
+          </div>
+          <div className="p-2.5 rounded-lg bg-emerald-100 text-emerald-600">
+            <GlobeAltIcon className="w-5 h-5" />
+          </div>
+        </div>
       </div>
 
       {/* Search Bar by Country */}

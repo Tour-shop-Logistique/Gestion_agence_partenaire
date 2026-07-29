@@ -315,6 +315,12 @@ const initialState = {
 
   existingGroupageTarifs: cachedData.existingGroupageTarifs || [], // tarifs groupage de l'agence
   loading: false,
+  // Flags "déjà chargé avec succès" pour éviter de re-fetcher à chaque
+  // changement de menu (ex: switch Tarifs Simples <-> Tarifs Groupage).
+  hasFetchedTarifs: false,
+  hasFetchedAgencyTarifs: false,
+  hasFetchedTarifsGroupage: false,
+  hasFetchedGroupageAgence: false,
   error: null,
   message: '',
   selectedIndex: null,
@@ -451,6 +457,7 @@ const tarifsSlice = createSlice({
       })
       .addCase(fetchTarifs.fulfilled, (state, action) => {
         state.loading = false;
+        state.hasFetchedTarifs = true;
 
         // Traiter et grouper les tarifs par indice
         const tarifs = action.payload.tarifs || action.payload;
@@ -485,6 +492,7 @@ const tarifsSlice = createSlice({
       })
       .addCase(fetchAgencyTarifs.fulfilled, (state, action) => {
         state.loading = false;
+        state.hasFetchedAgencyTarifs = true;
 
         // Grouper les tarifs agence par indice
         const tarifs = action.payload.tarifs || action.payload;
@@ -729,6 +737,7 @@ const tarifsSlice = createSlice({
       })
       .addCase(fetchTarifsGroupage.fulfilled, (state, action) => {
         state.loading = false;
+        state.hasFetchedTarifsGroupage = true;
         const tarifs = action.payload.tarifs || action.payload;
         state.groupageTarifs = tarifs;
         saveTarifsToCache({ groupageTarifs: tarifs });
@@ -747,6 +756,7 @@ const tarifsSlice = createSlice({
       })
       .addCase(fetchTarifGroupageAgence.fulfilled, (state, action) => {
         state.loading = false;
+        state.hasFetchedGroupageAgence = true;
         const tarifs = action.payload.tarifs || action.payload;
         state.existingGroupageTarifs = tarifs;
         saveTarifsToCache({ existingGroupageTarifs: tarifs });
