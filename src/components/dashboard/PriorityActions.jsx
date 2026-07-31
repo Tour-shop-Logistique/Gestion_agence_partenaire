@@ -77,7 +77,7 @@ const PriorityActions = ({ operational }) => {
             <div className="flex items-center gap-2.5">
                 <div className="w-1 h-5 sm:h-6 rounded-full bg-gradient-to-b from-red-400 to-red-600"></div>
                 <FireIcon className="w-4 h-4 text-red-600" />
-                <h2 className="text-sm font-bold text-slate-900">Actions prioritaires</h2>
+                <h2 className="text-sm sm:text-base font-semibold text-slate-900 flex items-center gap-1.5">Actions prioritaires</h2>
             </div>
 
             {/* Cartes horizontales, alignées avec le style des KPI */}

@@ -14,6 +14,7 @@ import {
   ArrowPathIcon,
   ChevronDownIcon,
   XMarkIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import SingleInitializeModal from "../components/SingleInitializeModal";
 import { toast } from "../utils/toast";
@@ -459,6 +460,36 @@ const TarifSimpleComponent = () => {
     return zones.size;
   }, [activeTab, flatExistingTarifs, flatTarifs]);
 
+  // Calcul des tarifs non configurés
+  const unconfiguredCount = useMemo(() => {
+    if (!flatTarifs || !Array.isArray(flatTarifs)) return 0;
+    if (!flatExistingTarifs || !Array.isArray(flatExistingTarifs)) return flatTarifs.length;
+    
+    const configuredKeys = new Set(
+      flatExistingTarifs
+        .filter(t => t.indice != null && t.zone_destination_id != null)
+        .map(t => `${t.indice}-${t.zone_destination_id}`)
+    );
+    
+    return flatTarifs.filter(
+      t => t.indice != null && t.zone_destination_id != null && 
+           !configuredKeys.has(`${t.indice}-${t.zone_destination_id}`)
+    ).length;
+  }, [flatTarifs, flatExistingTarifs]);
+
+  // Helper pour vérifier si un tarif est configuré
+  const isUnconfigured = useCallback((tarif) => {
+    if (activeTab !== "base") return false;
+    if (!tarif || !flatExistingTarifs || !Array.isArray(flatExistingTarifs)) return true;
+    if (tarif.indice == null || tarif.zone_destination_id == null) return false;
+    
+    const key = `${tarif.indice}-${tarif.zone_destination_id}`;
+    return !flatExistingTarifs.some(
+      t => t.indice != null && t.zone_destination_id != null && 
+           `${t.indice}-${t.zone_destination_id}` === key
+    );
+  }, [activeTab, flatExistingTarifs]);
+
   return (
     <div className="space-y-4">
       {/* KPI Section */}
@@ -502,7 +533,7 @@ const TarifSimpleComponent = () => {
       </div>
 
       {/* KPI Section */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="bg-gradient-to-br from-indigo-50 to-white p-4 rounded-xl border border-indigo-100 shadow-sm flex items-center justify-between">
           <div>
             <p className="text-[10px] font-semibold text-indigo-500/80 uppercase tracking-wide mb-1">Tarif Agence</p>
@@ -528,6 +559,15 @@ const TarifSimpleComponent = () => {
           </div>
           <div className="p-2.5 rounded-lg bg-emerald-100 text-emerald-600">
             <GlobeAltIcon className="w-5 h-5" />
+          </div>
+        </div>
+        <div className="bg-gradient-to-br from-rose-50 to-white p-4 rounded-xl border border-rose-100 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-semibold text-rose-600/80 uppercase tracking-wide mb-1">Tarifs Non Configurés</p>
+            <p className="text-2xl font-bold text-slate-900">{unconfiguredCount}</p>
+          </div>
+          <div className="p-2.5 rounded-lg bg-rose-100 text-rose-600">
+            <ExclamationTriangleIcon className="w-5 h-5" />
           </div>
         </div>
       </div>
@@ -607,33 +647,35 @@ const TarifSimpleComponent = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {currentData?.map((tarif) => (
-                    <tr key={tarif.id} className="hover:bg-slate-50/80 transition-all duration-200 group">
+                  {currentData?.map((tarif) => {
+                    const isNotConfigured = isUnconfigured(tarif);
+                    return (
+                    <tr key={tarif.id} className={`transition-all duration-200 group ${isNotConfigured ? 'bg-rose-50/50 hover:bg-rose-50/80 border-l-4 border-l-rose-500' : 'hover:bg-slate-50/80'}`}>
                       <td className="px-6 py-4 border-r border-slate-100/30">
-                        <span className="inline-flex items-center px-2 py-1 rounded bg-slate-900 text-white text-[11px] font-bold leading-none">
+                        <span className={`inline-flex items-center px-2 py-1 rounded text-[11px] font-bold leading-none ${isNotConfigured ? 'bg-rose-600 text-white' : 'bg-slate-900 text-white'}`}>
                           {tarif.indice}
                         </span>
                       </td>
                       <td className="px-6 py-4 border-r border-slate-100/30">
                         <div className="flex flex-col">
-                          <span className="text-[13px] font-bold text-slate-900">{tarif.zone?.nom || tarif.nom_zone}</span>
+                          <span className={`text-[13px] font-bold ${isNotConfigured ? 'text-rose-900' : 'text-slate-900'}`}>{tarif.zone?.nom || tarif.nom_zone}</span>
                           <CountriesDisplay 
                             countries={tarif.zone?.pays} 
                             zoneName={tarif.zone?.nom || tarif.nom_zone}
                           />
                         </div>
                       </td>
-                      <td className="px-6 py-4 border-r border-slate-100/30 font-medium text-slate-600 text-sm">
+                      <td className={`px-6 py-4 border-r border-slate-100/30 font-medium text-sm ${isNotConfigured ? 'text-rose-700' : 'text-slate-600'}`}>
                         {formatPrice(tarif.montant_base, "XOF")}
                       </td>
                       <td className="px-6 py-4 border-r border-slate-100/30">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-indigo-600">+{tarif.pourcentage_prestation}%</span>
+                          <span className={`text-xs font-bold ${isNotConfigured ? 'text-rose-700' : 'text-indigo-600'}`}>+{tarif.pourcentage_prestation}%</span>
                           <span className="text-[10px] text-slate-400 font-medium">{formatPrice(tarif.montant_prestation, "XOF")}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 border-r border-slate-200 bg-indigo-50/10 group-hover:bg-indigo-50/40 transition-colors">
-                        <span className="text-sm font-bold text-slate-950">
+                      <td className={`px-6 py-4 border-r border-slate-200 transition-colors ${isNotConfigured ? 'bg-rose-50/30 group-hover:bg-rose-100/50' : 'bg-indigo-50/10 group-hover:bg-indigo-50/40'}`}>
+                        <span className={`text-sm font-bold ${isNotConfigured ? 'text-rose-900' : 'text-slate-950'}`}>
                           {formatPrice(tarif.montant_expedition, "XOF")}
                         </span>
                       </td>
@@ -677,18 +719,21 @@ const TarifSimpleComponent = () => {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
 
             {/* Mobile View - Enhanced Card List */}
             <div className="lg:hidden divide-y divide-slate-100">
-              {currentData?.map((tarif) => (
-                <div key={tarif.id} className="p-4 space-y-4 hover:bg-slate-50 transition-colors">
+              {currentData?.map((tarif) => {
+                const isNotConfigured = isUnconfigured(tarif);
+                return (
+                <div key={tarif.id} className={`p-4 space-y-4 transition-colors ${isNotConfigured ? 'bg-rose-50/50 hover:bg-rose-50/80 border-l-4 border-l-rose-500' : 'hover:bg-slate-50'}`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-slate-950 flex items-center justify-center text-white font-bold text-sm shadow-md">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-md ${isNotConfigured ? 'bg-rose-600' : 'bg-slate-950'}`}>
                         {tarif.indice}
                       </div>
                       <div>
@@ -701,7 +746,7 @@ const TarifSimpleComponent = () => {
                           />
                         </div>
 
-                        <p className="text-[13px] font-bold text-slate-900">{tarif.zone?.nom || tarif.nom_zone}</p>
+                        <p className={`text-[13px] font-bold ${isNotConfigured ? 'text-rose-900' : 'text-slate-900'}`}>{tarif.zone?.nom || tarif.nom_zone}</p>
                         <CountriesDisplay 
                           countries={tarif.zone?.pays} 
                           zoneName={tarif.zone?.nom || tarif.nom_zone}
@@ -728,21 +773,22 @@ const TarifSimpleComponent = () => {
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 pt-2">
-                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Base</p>
-                      <p className="text-xs font-bold text-slate-900">{formatPrice(tarif.montant_base, "XOF")}</p>
+                    <div className={`p-3 rounded-xl border ${isNotConfigured ? 'bg-rose-50 border-rose-100' : 'bg-slate-50 border-slate-100'}`}>
+                      <p className={`text-[9px] font-bold uppercase tracking-wider mb-1 ${isNotConfigured ? 'text-rose-400' : 'text-slate-400'}`}>Base</p>
+                      <p className={`text-xs font-bold ${isNotConfigured ? 'text-rose-900' : 'text-slate-900'}`}>{formatPrice(tarif.montant_base, "XOF")}</p>
                     </div>
-                    <div className="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100">
-                      <p className="text-[9px] font-bold text-indigo-400 uppercase tracking-wider mb-1">Prestation</p>
-                      <p className="text-xs font-bold text-indigo-700">+{tarif.pourcentage_prestation}%</p>
+                    <div className={`p-3 rounded-xl border ${isNotConfigured ? 'bg-rose-50/50 border-rose-100' : 'bg-indigo-50/50 border-indigo-100'}`}>
+                      <p className={`text-[9px] font-bold uppercase tracking-wider mb-1 ${isNotConfigured ? 'text-rose-400' : 'text-indigo-400'}`}>Prestation</p>
+                      <p className={`text-xs font-bold ${isNotConfigured ? 'text-rose-700' : 'text-indigo-700'}`}>+{tarif.pourcentage_prestation}%</p>
                     </div>
-                    <div className="col-span-2 p-3 bg-indigo-600 rounded-xl flex items-center justify-between shadow-sm">
-                      <p className="text-[10px] font-semibold text-indigo-100 uppercase tracking-wide">Total Expédition</p>
+                    <div className={`col-span-2 p-3 rounded-xl flex items-center justify-between shadow-sm ${isNotConfigured ? 'bg-rose-600' : 'bg-indigo-600'}`}>
+                      <p className={`text-[10px] font-semibold uppercase tracking-wide ${isNotConfigured ? 'text-rose-100' : 'text-indigo-100'}`}>Total Expédition</p>
                       <p className="text-base font-bold text-white">{formatPrice(tarif.montant_expedition, "XOF")}</p>
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
 
             {(!loading && currentData?.length === 0) && (

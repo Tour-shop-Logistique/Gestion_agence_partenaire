@@ -97,7 +97,7 @@ const KPISection = ({ financial, operational }) => {
                 <div className="mb-3 sm:mb-4 flex items-center gap-2.5">
                     <div className="w-1 h-5 sm:h-6 rounded-full bg-gradient-to-b from-emerald-400 to-emerald-600"></div>
                     <div>
-                        <h2 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-1.5">
+                        <h2 className="text-sm sm:text-base font-semibold text-slate-900 flex items-center gap-1.5">
                             <span>💰</span>
                             Performance financière
                         </h2>
@@ -149,7 +149,7 @@ const KPISection = ({ financial, operational }) => {
                 <div className="mb-3 sm:mb-4 flex items-center gap-2.5">
                     <div className="w-1 h-5 sm:h-6 rounded-full bg-gradient-to-b from-blue-400 to-blue-600"></div>
                     <div>
-                        <h2 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-1.5">
+                        <h2 className="text-sm sm:text-base font-semibold text-slate-900 flex items-center gap-1.5">
                             <span>🚚</span>
                             Activité opérationnelle
                         </h2>

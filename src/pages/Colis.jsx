@@ -296,10 +296,10 @@ const Colis = () => {
             <div className="flex flex-col gap-3 sm:gap-4">
                 <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                        <h1 className="text-lg sm:text-xl font-black tracking-tight text-slate-900">
+                        <h1 className="text-lg sm:text-2xl font-semibold text-gray-900">
                             Gestion des Colis - À envoyer
                         </h1>
-                        <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5 line-clamp-2">
+                        <p className="text-sm text-slate-600">
                             Envoyez les colis reçus vers l'entrepôt
                         </p>
                         {selectedCodes.length > 0 && (

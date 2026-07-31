@@ -334,10 +334,10 @@ const ColisAReceptionner = () => {
                         <ArrowPathIcon className={`w-4 h-4 ${loading ? 'animate-spin text-indigo-600' : ''}`} />
                     </button>
                     <div>
-                        <h1 className="text-lg sm:text-xl font-black tracking-tight text-slate-900">
+                        <h1 className="text-lg sm:text-2xl font-semibold text-gray-900">
                             Colis à réceptionner
                         </h1>
-                        <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">
+                        <p className="text-sm text-slate-600">
                             Gérez les colis en transit vers votre agence
                         </p>
                     </div>

@@ -18,7 +18,7 @@ const DashboardHeader = ({ isRefreshing, lastUpdated, onRefresh }) => {
                     <ArrowPathIcon className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-indigo-600' : ''}`} />
                 </button>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-2">
-                    <h1 className="text-lg sm:text-xl font-black tracking-tight text-slate-900">
+                    <h1 className="text-lg sm:text-2xl font-semibold text-gray-900">
                         Dashboard
                     </h1>
                     {isRefreshing && (
