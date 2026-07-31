@@ -15,6 +15,7 @@ import { toast } from "../utils/toast";
 import { markAsRecentlyCreated } from "../hooks/useWebSocket";
 import { generateColisCode, parseColisCode } from "../utils/codeGenerator";
 import { expeditionsApi } from "../utils/api/expeditions";
+import { getCountryName } from "../utils/countries";
 
 // Correspondance entre la valeur de type_expedition du formulaire
 // et le type attendu par generateColisCode (préfixe du code colis)
@@ -40,6 +41,13 @@ const FORM_TYPE_TO_API_TYPE = {
 // une désignation et au moins un article
 const isColisComplete = (c) => Boolean(c.poids && c.designation && c.articles && c.articles.length > 0);
 
+// Les entrées Zone.pays sont au format "Nom(CODE)" (ex: "France(FR)") - on
+// n'affiche ce format qu'à l'écran (dropdown), jamais en base : pays_destination
+// doit rester un nom de pays "propre" ("France"), sinon les comparaisons
+// backend (recherche du backoffice/agence de destination par pays) échouent
+// silencieusement dès que le format diffère de celui stocké sur le backoffice.
+const extractCountryName = (label) => (label || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
+
 const CreateExpeditionV2 = () => {
     const navigate = useNavigate();
     const {
@@ -64,7 +72,16 @@ const CreateExpeditionV2 = () => {
         recordTransaction
     } = useExpedition();
 
-    const { existingGroupageTarifs, fetchTarifGroupageAgence, existingTarifs, flatExistingTarifs, fetchAgencyTarifs, loading: tarifsLoading } = useTarifs();
+    const {
+        existingGroupageTarifs, fetchTarifGroupageAgence, existingTarifs, flatExistingTarifs, fetchAgencyTarifs,
+        // Tarifs de base du backoffice - utilisés en complément des tarifs
+        // personnalisés de l'agence pour proposer aussi les destinations que
+        // l'agence n'a pas encore configurées elle-même (le calcul retombe
+        // automatiquement sur ces tarifs de base, voir resoudreTarif* côté backend).
+        tarifs: baseTarifs, fetchTarifs: fetchBaseTarifs,
+        groupageTarifs: baseGroupageTarifs, fetchTarifsGroupageBase: fetchBaseGroupageTarifs,
+        loading: tarifsLoading
+    } = useTarifs();
     const { data: agencyData, fetchAgencyData, status: agencyStatus } = useAgency();
     const { logistics, fetchDashboard, status: dashboardStatus } = useDashboard();
 
@@ -86,7 +103,9 @@ const CreateExpeditionV2 = () => {
     const [formData, setFormData] = useState({
         type_expedition: "SIMPLE",
         pays_depart: "Côte d'Ivoire",
+        code_pays_depart: "CI",
         pays_destination: "",
+        code_pays_destination: "",
         is_paiement_credit: false,
         is_livraison_domicile: true,
         statut_paiement: "paye",
@@ -97,7 +116,7 @@ const CreateExpeditionV2 = () => {
         expediteur_email: "",
         expediteur_adresse: "",
         expediteur_ville: "Abidjan",
-        expediteur_pays: "Côte d'Ivoire",
+        expediteur_pays: getCountryName("CI"),
 
         // Destinataire
         destinataire_nom_prenom: "",
@@ -105,7 +124,6 @@ const CreateExpeditionV2 = () => {
         destinataire_email: "",
         destinataire_adresse: "",
         destinataire_ville: "",
-        destinataire_pays: "",
         destinataire_code_postal: "",
 
         colis: [
@@ -135,6 +153,8 @@ const CreateExpeditionV2 = () => {
         loadCategories();
         fetchTarifGroupageAgence();
         fetchAgencyTarifs(); // Charger aussi les tarifs simples
+        fetchBaseTarifs(); // Tarifs de base backoffice (fallback destinations)
+        fetchBaseGroupageTarifs(); // Idem pour le groupage
         fetchAgencyData();
         fetchDashboard(); // Nécessaire pour déduire le prochain numéro de code colis
             }, []);
@@ -155,7 +175,7 @@ const CreateExpeditionV2 = () => {
             setFormData(prev => ({
                 ...prev,
                 pays_destination: "France",
-                destinataire_pays: "France",
+                code_pays_destination: "FR",
                 destinataire_ville: "",
                 expediteur_ville: "Abidjan"
             }));
@@ -163,7 +183,7 @@ const CreateExpeditionV2 = () => {
             setFormData(prev => ({
                 ...prev,
                 pays_destination: "",
-                destinataire_pays: "",
+                code_pays_destination: "",
                 destinataire_ville: "",
                 expediteur_ville: "Abidjan"
             }));
@@ -305,14 +325,22 @@ const CreateExpeditionV2 = () => {
     }, [step, simulationResult, simulating, status]);
 
 
-    // Liste des trajets configurés par l'agence pour le type sélectionné
+    // Liste des trajets disponibles pour le type sélectionné : tarifs
+    // personnalisés de l'agence en priorité, complétés par les trajets de
+    // base du backoffice (fallback) - évite les champs texte libre non
+    // validés qui échouaient tardivement à la simulation.
     const availableRoutes = useMemo(() => {
-        if (!existingGroupageTarifs || !Array.isArray(existingGroupageTarifs)) return [];
         const currentType = formData.type_expedition.toLowerCase();
-        
-        // Filtrer par type
-        const tarifsByType = existingGroupageTarifs.filter(t => t.type_expedition === currentType);
-        
+
+        const agenceTarifs = Array.isArray(existingGroupageTarifs) ? existingGroupageTarifs : [];
+        const backofficeTarifs = Array.isArray(baseGroupageTarifs) ? baseGroupageTarifs : [];
+
+        // Tarifs agence d'abord (priorité), puis tarifs backoffice en complément
+        const tarifsByType = [
+            ...agenceTarifs.filter(t => t.type_expedition === currentType),
+            ...backofficeTarifs.filter(t => t.type_expedition === currentType),
+        ];
+
         // Dédupliquer les trajets
         const uniqueRoutes = [];
         const seenKeys = new Set();
@@ -364,62 +392,127 @@ const CreateExpeditionV2 = () => {
         
         
         return uniqueRoutes;
-    }, [existingGroupageTarifs, formData.type_expedition]);
+    }, [existingGroupageTarifs, baseGroupageTarifs, formData.type_expedition]);
 
-    // Pays disponibles pour les tarifs simples (LD)
+    // Options formatées (id + label en majuscules) pour le SearchableDropdown
+    // de sélection de trajet (DHD Aérien/Maritime, Groupage Afrique).
+    const availableRouteOptions = useMemo(() => {
+        return availableRoutes.map(r => ({
+            id: r.id,
+            label: (
+                (formData.type_expedition === 'GROUPAGE_DHD_AERIEN' || formData.type_expedition === 'GROUPAGE_DHD_MARITIME')
+                    ? r.ligne
+                    : formData.type_expedition === 'GROUPAGE_AFRIQUE'
+                        ? r.pays
+                        : `${r.ligne} (${r.pays}) - ${r.mode}`
+            )?.toUpperCase() || '',
+        }));
+    }, [availableRoutes, formData.type_expedition]);
+
+    // Pays disponibles pour les tarifs simples (LD) : fusionne les tarifs
+    // personnalisés de l'agence (prioritaires, montant déjà connu) et les
+    // tarifs de base du backoffice (fallback - le montant sera obtenu via la
+    // simulation API classique, le calcul retombant automatiquement dessus
+    // côté backend si l'agence n'a pas de tarif personnalisé).
     const availableCountriesForLD = useMemo(() => {
         if (formData.type_expedition !== 'SIMPLE') {
             return [];
         }
-        
-        // Utiliser existingTarifs (groupés) car flatExistingTarifs peut être vide
-        const tarifsToUse = existingTarifs || [];
-        
-        if (!tarifsToUse || !Array.isArray(tarifsToUse) || tarifsToUse.length === 0) {
-            return [];
-        }
-        
-        // Extraire tous les pays depuis toutes les zones
-        const allCountries = new Set();
-        const countryToZoneMap = {}; // Map pour retrouver la zone depuis le pays
-        
-        tarifsToUse.forEach((tarif) => {
-            // Les tarifs groupés ont un tableau prix_zones
-            const prixZones = tarif.prix_zones;
-            
-            if (prixZones && Array.isArray(prixZones)) {
+
+        // Clé de dédoublonnage : le code ISO si connu, sinon le nom brut en
+        // repli (zones pas encore migrées) - évite d'afficher deux entrées
+        // ("France" et "France(FR)") pour un même pays selon l'écriture
+        // historique stockée dans zone.pays[].
+        const countryByKey = {};
+
+        // zone.pays[] (noms) et zone.pays_codes[] (codes ISO) sont deux
+        // tableaux parallèles de même longueur/ordre - on les zippe pour
+        // retrouver le code ISO exact de chaque pays affiché.
+        const addFromTarifs = (tarifs, tarifIsAgence) => {
+            (tarifs || []).forEach((tarif) => {
+                const prixZones = tarif.prix_zones;
+                if (!Array.isArray(prixZones)) return;
+
                 prixZones.forEach((prixZone) => {
                     const zone = prixZone.zone;
                     const paysZone = zone?.pays;
-                    
-                    if (paysZone && Array.isArray(paysZone) && paysZone.length > 0) {
-                        paysZone.forEach(pays => {
-                            if (pays) {
-                                allCountries.add(pays);
-                                // Stocker la relation pays -> zone/tarif
-                                if (!countryToZoneMap[pays]) {
-                                    countryToZoneMap[pays] = {
-                                        zone: zone,
-                                        tarif: prixZone, // Le tarif complet avec montants
-                                        tarifGroup: tarif // Le groupe de tarifs
-                                    };
-                                }
-                            }
-                        });
-                    }
+                    const codesZone = zone?.pays_codes;
+                    if (!Array.isArray(paysZone)) return;
+
+                    paysZone.forEach((pays, idx) => {
+                        if (!pays) return;
+                        const code = Array.isArray(codesZone) ? codesZone[idx] : null;
+                        const key = code || pays;
+                        if (tarifIsAgence || !countryByKey[key]) {
+                            countryByKey[key] = {
+                                zone,
+                                code,
+                                label: code ? getCountryName(code) : extractCountryName(pays),
+                                // Tarif complet avec montants si personnalisé par
+                                // l'agence, sinon null (passera par la simulation).
+                                tarif: tarifIsAgence ? prixZone : null,
+                                tarifGroup: tarifIsAgence ? tarif : null,
+                            };
+                        }
+                    });
                 });
-            }
-        });
-        
+            });
+        };
+
+        // 1. Tarifs personnalisés de l'agence (priorité - montant déjà connu)
+        addFromTarifs(existingTarifs, true);
+        // 2. Tarifs de base du backoffice (fallback - complète la liste avec
+        // les destinations que l'agence n'a pas encore personnalisées)
+        addFromTarifs(baseTarifs, false);
+
         // Convertir en tableau d'objets pour le SearchableDropdown
-        const countriesList = Array.from(allCountries).map(pays => ({
-            id: pays,
-            label: pays,
-            ...countryToZoneMap[pays]
+        const countriesList = Object.entries(countryByKey).map(([key, info]) => ({
+            id: key,
+            ...info,
         })).sort((a, b) => a.label.localeCompare(b.label));
-        
+
         return countriesList;
-    }, [existingTarifs, flatExistingTarifs, formData.type_expedition]);
+    }, [existingTarifs, flatExistingTarifs, baseTarifs, formData.type_expedition]);
+
+    // Liste de tous les pays connus (zones du backoffice + tarifs agence),
+    // indépendante du type d'expédition - utilisée pour les champs "Pays
+    // destination" (DHD/CA) et "Pays départ", qui étaient auparavant du texte
+    // libre non assisté.
+    const allKnownCountries = useMemo(() => {
+        // Même logique de dédoublonnage par code ISO que availableCountriesForLD
+        // ci-dessus (voir commentaire), avec libellé dérivé du référentiel.
+        const countryByKey = {};
+
+        const collectFrom = (tarifsList) => {
+            (tarifsList || []).forEach((tarif) => {
+                const prixZones = tarif.prix_zones;
+                if (!Array.isArray(prixZones)) return;
+                prixZones.forEach((prixZone) => {
+                    const paysZone = prixZone.zone?.pays;
+                    const codesZone = prixZone.zone?.pays_codes;
+                    if (!Array.isArray(paysZone)) return;
+                    paysZone.forEach((pays, idx) => {
+                        if (!pays) return;
+                        const code = Array.isArray(codesZone) ? codesZone[idx] : null;
+                        const key = code || pays;
+                        if (!countryByKey[key]) {
+                            countryByKey[key] = {
+                                code,
+                                label: code ? getCountryName(code) : extractCountryName(pays),
+                            };
+                        }
+                    });
+                });
+            });
+        };
+
+        collectFrom(existingTarifs);
+        collectFrom(baseTarifs);
+
+        return Object.entries(countryByKey)
+            .map(([key, info]) => ({ id: key, label: info.label, code: info.code }))
+            .sort((a, b) => a.label.localeCompare(b.label));
+    }, [existingTarifs, baseTarifs]);
 
     // Filtrage des catégories en fonction du type d'expédition ET de la ligne sélectionnée
     const filteredCategories = useMemo(() => {
@@ -478,19 +571,17 @@ const CreateExpeditionV2 = () => {
     }, [categories, existingGroupageTarifs, formData.type_expedition, selectedRoute]);
 
     // Sélection automatique des infos depuis un trajet configuré
-    const handleRouteSelect = (e) => {
-        const routeId = e.target.value;
-        
+    const handleRouteSelect = (routeId) => {
         // Mettre à jour l'ID de la route sélectionnée
         setSelectedRouteId(routeId);
-        
+
         if (!routeId) {
             setSelectedRoute(null);
             return;
         }
 
         const route = availableRoutes.find(r => String(r.id) === String(routeId));
-        
+
         if (route) {
             // Sauvegarder la route sélectionnée pour le filtrage des catégories
             setSelectedRoute(route);
@@ -508,10 +599,14 @@ const CreateExpeditionV2 = () => {
                 destVille = isDHD ? "" : (route.pays || "");
             }
 
+            const isSimpleType = formData.type_expedition === 'SIMPLE';
+            const paysDestination = isDHD || isSimpleType ? "France" : extractCountryName(route.pays || "");
+            const codePaysDestination = isDHD || isSimpleType ? "FR" : (route.code_pays || "");
+
             setFormData(prev => ({
                 ...prev,
-                pays_destination: isDHD || formData.type_expedition === 'SIMPLE' ? "France" : (route.pays || ""),
-                destinataire_pays: isDHD || formData.type_expedition === 'SIMPLE' ? "France" : (route.pays || ""),
+                pays_destination: paysDestination,
+                code_pays_destination: codePaysDestination,
                 destinataire_ville: destVille,
                 expediteur_ville: depVille,
             }));
@@ -520,13 +615,7 @@ const CreateExpeditionV2 = () => {
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
-        setFormData(prev => {
-            const newData = { ...prev, [name]: type === 'checkbox' ? checked : value };
-            if (name === "pays_destination") {
-                newData.destinataire_pays = value;
-            }
-            return newData;
-        });
+        setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
     };
 
     // Copie les coordonnées de l'expéditeur vers le destinataire (cas d'un envoi entre
@@ -641,6 +730,8 @@ const CreateExpeditionV2 = () => {
             type_expedition: formData.type_expedition.toLowerCase(),
             pays_depart: formData.pays_depart,
             pays_destination: formData.pays_destination,
+            code_pays_depart: formData.code_pays_depart || undefined,
+            code_pays_destination: formData.code_pays_destination || undefined,
             is_paiement_credit: formData.is_paiement_credit,
             is_livraison_domicile: formData.is_livraison_domicile,
             expediteur_ville: formData.expediteur_ville,
@@ -1053,24 +1144,16 @@ const CreateExpeditionV2 = () => {
                                                     Non applicable pour les Colis Accompagnés — renseignez directement le pays et la ville de destination ci-dessous.
                                                 </div>
                                             ) : (
-                                                <select
+                                                <SearchableDropdown
                                                     id="route-select"
-                                                    value={selectedRouteId}
-                                                    onChange={handleRouteSelect}
-                                                    className={`w-full rounded-lg text-sm font-medium h-11 px-3 outline-none transition-colors ${getInputBorderClass(selectedRouteId, false)}`}
-                                                >
-                                                    <option value="">Sélectionner un trajet</option>
-                                                    {availableRoutes.map(r => (
-                                                        <option key={r.id} value={r.id}>
-                                                            {(formData.type_expedition === 'GROUPAGE_DHD_AERIEN' || formData.type_expedition === 'GROUPAGE_DHD_MARITIME')
-                                                                ? r.ligne
-                                                                : formData.type_expedition === 'GROUPAGE_AFRIQUE'
-                                                                    ? r.pays
-                                                                    : `${r.ligne} (${r.pays}) - ${r.mode}`
-                                                            }
-                                                        </option>
-                                                    ))}
-                                                </select>
+                                                    options={availableRouteOptions}
+                                                    onSelect={(option) => handleRouteSelect(option.id)}
+                                                    placeholder={selectedRouteId
+                                                        ? availableRouteOptions.find(r => r.id === selectedRouteId)?.label || "Rechercher un trajet..."
+                                                        : "Rechercher un trajet..."}
+                                                    className="w-full"
+                                                    buttonClassName="h-11 text-sm font-medium"
+                                                />
                                             )}
                                         </div>
                                     )}
@@ -1089,25 +1172,33 @@ const CreateExpeditionV2 = () => {
                                                         options={availableCountriesForLD}
                                                         onSelect={(country) => {
                                                             setSelectedRouteId(country.id);
-                                                            
-                                                            if (country.zone && country.tarif) {
-                                                                setSelectedRoute(country.tarif);
-                                                                
-                                                                // Utiliser le label complet avec l'abréviation (ex: "Argentine (AR)")
-                                                                const paysNameComplet = country.label;
-                                                                
-                                                                setFormData(prev => ({
-                                                                    ...prev,
-                                                                    pays_destination: paysNameComplet,
-                                                                    destinataire_pays: paysNameComplet,
-                                                                    destinataire_ville: "",
-                                                                }));
-                                                            }
+
+                                                            if (!country.zone) return;
+
+                                                            // country.tarif peut être null si le pays n'est couvert
+                                                            // que par le tarif de base du backoffice (pas encore
+                                                            // personnalisé par l'agence) - le montant sera alors
+                                                            // obtenu via la simulation API, qui applique déjà le
+                                                            // même fallback côté backend.
+                                                            setSelectedRoute(country.tarif || null);
+
+                                                            // country.label garde l'abréviation pour l'affichage
+                                                            // (ex: "Argentine(AR)"), mais on stocke le nom de
+                                                            // pays propre - voir extractCountryName ci-dessus.
+                                                            const paysName = extractCountryName(country.label);
+
+                                                            setFormData(prev => ({
+                                                                ...prev,
+                                                                pays_destination: paysName,
+                                                                code_pays_destination: country.code || "",
+                                                                destinataire_ville: "",
+                                                            }));
                                                         }}
-                                                        placeholder={selectedRouteId ? 
-                                                            availableCountriesForLD.find(c => c.id === selectedRouteId)?.label || "Rechercher un pays..." 
+                                                        placeholder={selectedRouteId ?
+                                                            availableCountriesForLD.find(c => c.id === selectedRouteId)?.label || "Rechercher un pays..."
                                                             : "Rechercher un pays..."}
                                                         className="w-full"
+                                                        buttonClassName="h-11 text-sm font-medium"
                                                     />
                                                     
                                                     {availableCountriesForLD.length === 0 && (
@@ -1125,12 +1216,20 @@ const CreateExpeditionV2 = () => {
                                                     )}
                                                 </>
                                             ) : (
-                                                <input
+                                                <SearchableDropdown
                                                     id="pays_destination"
-                                                    type="text" name="pays_destination"
-                                                    value={formData.pays_destination} onChange={handleInputChange}
-                                                    placeholder="France…"
-                                                    className={inputCls(formData.pays_destination, true)}
+                                                    options={allKnownCountries}
+                                                    onSelect={(country) => {
+                                                        const paysName = extractCountryName(country.label);
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            pays_destination: paysName,
+                                                            code_pays_destination: country.code || "",
+                                                        }));
+                                                    }}
+                                                    placeholder={formData.pays_destination || "Rechercher un pays..."}
+                                                    className="w-full"
+                                                    buttonClassName="h-11 text-sm font-medium"
                                                 />
                                             )}
                                         </div>
@@ -1148,12 +1247,21 @@ const CreateExpeditionV2 = () => {
                                         </div>
                                         <div className="space-y-1.5">
                                             <label htmlFor="pays_depart" className="block text-xs font-semibold text-slate-600">Pays départ</label>
-                                            <input
+                                            <SearchableDropdown
                                                 id="pays_depart"
-                                                type="text" name="pays_depart"
-                                                value={formData.pays_depart} onChange={handleInputChange}
-                                                placeholder="Côte d'Ivoire…"
-                                                className={inputCls(formData.pays_depart)}
+                                                options={allKnownCountries}
+                                                onSelect={(country) => {
+                                                    const paysName = extractCountryName(country.label);
+                                                    setFormData(prev => ({
+                                                        ...prev,
+                                                        pays_depart: paysName,
+                                                        code_pays_depart: country.code || "",
+                                                        expediteur_pays: paysName,
+                                                    }));
+                                                }}
+                                                placeholder={formData.pays_depart || "Rechercher un pays..."}
+                                                className="w-full"
+                                                buttonClassName="h-11 text-sm font-medium"
                                             />
                                         </div>
                                         <div className="space-y-1.5">

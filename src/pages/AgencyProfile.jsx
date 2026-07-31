@@ -7,6 +7,8 @@ import { getLogoUrl } from "../utils/apiConfig";
 import { toast } from "../utils/toast";
 import ErrorBoundary from "../components/ErrorBoundary";
 import CoverageMap from "../components/CoverageMap";
+import SearchableDropdown from "../components/common/SearchableDropdown";
+import { COUNTRY_OPTIONS, getCountryName } from "../utils/countries";
 
 import {
   BuildingOffice2Icon,
@@ -32,38 +34,6 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
 } from "@heroicons/react/24/outline";
-
-/* ─────────────────────────────────────────────
-   Liste des pays
-───────────────────────────────────────────── */
-const PAYS_LISTE = [
-  "Afghanistan", "Afrique du Sud", "Albanie", "Algérie", "Allemagne", "Andorre", "Angola",
-  "Antigua-et-Barbuda", "Arabie Saoudite", "Argentine", "Arménie", "Australie", "Autriche",
-  "Azerbaïdjan", "Bahamas", "Bahreïn", "Bangladesh", "Barbade", "Belgique", "Belize", "Bénin",
-  "Bhoutan", "Biélorussie", "Birmanie", "Bolivie", "Bosnie-Herzégovine", "Botswana", "Brésil",
-  "Brunei", "Bulgarie", "Burkina Faso", "Burundi", "Cambodge", "Cameroun", "Canada", "Cap-Vert",
-  "Centrafrique", "Chili", "Chine", "Chypre", "Colombie", "Comores", "Congo", "Congo (RDC)",
-  "Corée du Nord", "Corée du Sud", "Costa Rica", "Côte d'Ivoire", "Croatie", "Cuba", "Danemark",
-  "Djibouti", "Dominique", "Égypte", "Émirats arabes unis", "Équateur", "Érythrée", "Espagne",
-  "Estonie", "Eswatini", "États-Unis", "Éthiopie", "Fidji", "Finlande", "France", "Gabon",
-  "Gambie", "Géorgie", "Ghana", "Grèce", "Grenade", "Guatemala", "Guinée", "Guinée équatoriale",
-  "Guinée-Bissau", "Guyana", "Haïti", "Honduras", "Hongrie", "Inde", "Indonésie", "Irak", "Iran",
-  "Irlande", "Islande", "Israël", "Italie", "Jamaïque", "Japon", "Jordanie", "Kazakhstan", "Kenya",
-  "Kirghizistan", "Kiribati", "Kosovo", "Koweït", "Laos", "Lesotho", "Lettonie", "Liban", "Liberia",
-  "Libye", "Liechtenstein", "Lituanie", "Luxembourg", "Macédoine du Nord", "Madagascar", "Malaisie",
-  "Malawi", "Maldives", "Mali", "Malte", "Maroc", "Marshall", "Maurice", "Mauritanie", "Mexique",
-  "Micronésie", "Moldavie", "Monaco", "Mongolie", "Monténégro", "Mozambique", "Namibie", "Nauru",
-  "Népal", "Nicaragua", "Niger", "Nigeria", "Norvège", "Nouvelle-Zélande", "Oman", "Ouganda",
-  "Ouzbékistan", "Pakistan", "Palaos", "Palestine", "Panama", "Papouasie-Nouvelle-Guinée", "Paraguay",
-  "Pays-Bas", "Pérou", "Philippines", "Pologne", "Portugal", "Qatar", "République dominicaine",
-  "République tchèque", "Roumanie", "Royaume-Uni", "Russie", "Rwanda", "Saint-Christophe-et-Niévès",
-  "Sainte-Lucie", "Saint-Marin", "Saint-Vincent-et-les-Grenadines", "Salomon", "Salvador", "Samoa",
-  "São Tomé-et-Príncipe", "Sénégal", "Serbie", "Seychelles", "Sierra Leone", "Singapour", "Slovaquie",
-  "Slovénie", "Somalie", "Soudan", "Soudan du Sud", "Sri Lanka", "Suède", "Suisse", "Suriname",
-  "Syrie", "Tadjikistan", "Tanzanie", "Tchad", "Thaïlande", "Timor oriental", "Togo", "Tonga",
-  "Trinité-et-Tobago", "Tunisie", "Turkménistan", "Turquie", "Tuvalu", "Ukraine", "Uruguay",
-  "Vanuatu", "Vatican", "Venezuela", "Viêt Nam", "Yémen", "Zambie", "Zimbabwe"
-];
 
 /* ─────────────────────────────────────────────
    Composants utilitaires
@@ -264,7 +234,7 @@ const AgencyProfile = () => {
 
   const [formData, setFormData] = useState({
     name: "", code_agence: "", address: "", ville: "",
-    pays: "Côte d'Ivoire", telephone: "", email: "", website: "",
+    code_pays: "CI", telephone: "", email: "", website: "",
     latitude: "", longitude: "", description: "", commune: "",
     horaires: defaultHoraires, logo: null, message_accueil: "", zone_couverture_km: "10",
   });
@@ -293,7 +263,7 @@ const AgencyProfile = () => {
       if (a.code_agence) next.code_agence = a.code_agence;
       if (a.adresse)     next.address     = a.adresse;
       if (a.ville)       next.ville       = a.ville;
-      if (a.pays)        next.pays        = a.pays;
+      if (a.code_pays)   next.code_pays   = a.code_pays;
       if (a.telephone)   next.telephone   = a.telephone;
       if (a.email)       next.email       = a.email;
       if (a.website)     next.website     = a.website;
@@ -409,7 +379,7 @@ const AgencyProfile = () => {
         adresse:     formData.address,
         ville:       formData.ville,
         commune:     formData.commune,
-        pays:        formData.pays,
+        code_pays:   formData.code_pays,
         latitude:    formData.latitude  === "" ? null : parseFloat(formData.latitude),
         longitude:   formData.longitude === "" ? null : parseFloat(formData.longitude),
         horaires:    formData.horaires.map((h) => ({ ...h, jour: h.jour.toLowerCase() })),
@@ -520,10 +490,10 @@ const AgencyProfile = () => {
                   {formData.code_agence}
                 </span>
               )}
-              {(formData.ville || formData.pays) && (
+              {(formData.ville || formData.code_pays) && (
                 <span className="flex items-center gap-1.5">
                   <MapPinIcon className="w-4 h-4" />
-                  {[formData.ville, formData.pays].filter(Boolean).join(", ")}
+                  {[formData.ville, getCountryName(formData.code_pays)].filter(Boolean).join(", ")}
                 </span>
               )}
             </div>
@@ -621,29 +591,14 @@ const AgencyProfile = () => {
                   <FieldLabel>Pays</FieldLabel>
                   <div className="relative">
                     <GlobeAltIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none z-10" />
-                    <select
-                      name="pays"
-                      value={formData.pays}
-                      onChange={handleChange}
+                    <SearchableDropdown
+                      options={COUNTRY_OPTIONS}
+                      onSelect={(pays) => setFormData((p) => ({ ...p, code_pays: pays.id }))}
+                      placeholder={getCountryName(formData.code_pays) || "Sélectionnez un pays"}
                       disabled={editingTab !== "identite"}
-                      className="w-full pl-9 pr-3 py-2.5 text-sm text-slate-800 bg-white border border-slate-200 rounded-lg
-                        focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400
-                        disabled:bg-slate-50 disabled:text-slate-900 disabled:cursor-default
-                        transition-colors appearance-none cursor-pointer"
-                    >
-                      <option value="">Sélectionnez un pays</option>
-                      {PAYS_LISTE.map((pays) => (
-                        <option key={pays} value={pays}>
-                          {pays}
-                        </option>
-                      ))}
-                    </select>
-                    {/* Flèche dropdown personnalisée */}
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                      <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
+                      className="w-full"
+                      buttonClassName="h-11 pl-9 pr-3 text-sm text-slate-800 rounded-lg"
+                    />
                   </div>
                 </div>
               </div>

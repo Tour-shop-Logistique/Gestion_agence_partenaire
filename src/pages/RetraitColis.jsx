@@ -16,6 +16,7 @@ import {
 import { useExpedition } from "../hooks/useExpedition";
 import { toast } from "../utils/toast";
 import ConfirmationModal from "../components/ConfirmationModal";
+import ColisDetailsDrawer from "../components/common/ColisDetailsDrawer";
 import useHasPermission from "../hooks/useHasPermission";
 
 const RetraitColis = () => {
@@ -31,6 +32,7 @@ const RetraitColis = () => {
     const [isPaid, setIsPaid] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState("cash");
     const [paymentReference, setPaymentReference] = useState("");
+    const [detailsColis, setDetailsColis] = useState(null);
 
     const hasPendingPayment = useMemo(() => {
         return searchResults.some(item => 
@@ -54,6 +56,15 @@ const RetraitColis = () => {
             }
         });
         return Array.from(uniqueExpeditions.values()).reduce((sum, amount) => sum + amount, 0);
+    }, [searchResults, selectedColis]);
+
+    // Coordonnées du destinataire qui reçoit le code OTP - dérivées des colis
+    // sélectionnés au moment de l'ouverture du modal (un seul destinataire
+    // dans l'usage normal, tous les colis d'un même retrait appartenant au
+    // même client).
+    const otpRecipient = useMemo(() => {
+        const first = searchResults.find(item => selectedColis.includes(item.code_colis));
+        return first?.expedition?.destinataire || null;
     }, [searchResults, selectedColis]);
 
     const {
@@ -240,10 +251,19 @@ const RetraitColis = () => {
                             <button
                                 onClick={handleInitiateRecup}
                                 disabled={isRefreshing}
-                                className="px-4 py-1.5 bg-slate-900 text-white text-xs font-semibold rounded hover:bg-slate-800 transition-colors flex items-center gap-2"
+                                className="px-4 py-1.5 bg-slate-900 text-white text-xs font-semibold rounded hover:bg-slate-800 transition-colors flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                             >
-                                Initier le retrait ({selectedColis.length})
-                                <ArrowRightCircleIcon className="w-4 h-4" />
+                                {isRefreshing ? (
+                                    <>
+                                        <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                                        Initiation en cours...
+                                    </>
+                                ) : (
+                                    <>
+                                        Initier le retrait ({selectedColis.length})
+                                        <ArrowRightCircleIcon className="w-4 h-4" />
+                                    </>
+                                )}
                             </button>
                         )}
                     </div>
@@ -347,7 +367,7 @@ const RetraitColis = () => {
                                                     {/* Colis Info */}
                                                     <div className="flex flex-col min-w-[140px] sm:min-w-[180px]">
                                                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight leading-none mb-0.5">Colis</span>
-                                                        <span className="text-xs sm:text-sm font-bold text-indigo-600 leading-tight">#{item.code_colis}</span>
+                                                        <span className="text-xs sm:text-sm font-bold text-indigo-600 leading-tight">{item.code_colis}</span>
                                                         <span className="text-[10px] sm:text-xs font-semibold text-slate-600 truncate mt-0.5">{item.designation || 'Sans désignation'}</span>
                                                     </div>
 
@@ -379,11 +399,40 @@ const RetraitColis = () => {
                                                     <div className="flex-shrink-0 flex items-center justify-center min-w-[80px]">
                                                         <span className={`px-2.5 py-1 text-[10px] font-bold uppercase rounded-full border-2 whitespace-nowrap ${
                                                             item.expedition?.statut_paiement === 'paye'
-                                                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-                                                                : 'bg-rose-50 text-rose-700 border-rose-200'
+                                                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                                : 'bg-amber-50 text-amber-700 border-amber-200'
                                                         }`}>
-                                                            {item.expedition?.statut_paiement === 'paye' ? 'OUVERT' : 'BLOCAGE'}
+                                                            {item.expedition?.statut_paiement === 'paye' ? 'PAYÉ' : 'IMPAYÉ'}
                                                         </span>
+                                                    </div>
+
+                                                    {/* Blocage physique (distinct du paiement) */}
+                                                    {item.is_blocked && (
+                                                        <div className="flex-shrink-0 flex items-center justify-center min-w-[80px]">
+                                                            <span
+                                                                className="px-2.5 py-1 text-[10px] font-bold uppercase rounded-full border-2 whitespace-nowrap bg-rose-50 text-rose-700 border-rose-200"
+                                                                title={item.motif_blocage || undefined}
+                                                            >
+                                                                BLOQUÉ
+                                                            </span>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Détails du colis seul (pas l'expédition entière) : ouvre un
+                                                        tiroir latéral pour identifier physiquement le bon carton à
+                                                        aller chercher en stock avant la remise au client. */}
+                                                    <div className="flex-shrink-0">
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setDetailsColis(item);
+                                                            }}
+                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 hover:border-slate-400 transition-colors whitespace-nowrap"
+                                                        >
+                                                            <InformationCircleIcon className="w-4 h-4" />
+                                                            Détails
+                                                        </button>
                                                     </div>
                                                 </div>
                                             );
@@ -428,8 +477,17 @@ const RetraitColis = () => {
                         
                         <div className="p-6 space-y-6">
                             <div className="text-xs text-slate-600 leading-relaxed font-medium">
-                                Un code OTP à 6 chiffres a été envoyé au client. Saisissez-le ci-dessous pour confirmer la remise physique des colis.
+                                Un code OTP à 6 chiffres a été envoyé au client par email{otpRecipient?.telephone ? ' et SMS' : ''}. Saisissez-le ci-dessous pour confirmer la remise physique des colis.
                             </div>
+
+                            {otpRecipient?.email && (
+                                <div className="flex items-center gap-2 px-3 py-2 bg-indigo-50 border border-indigo-100 rounded-lg">
+                                    <InformationCircleIcon className="w-4 h-4 text-indigo-500 shrink-0" />
+                                    <p className="text-xs text-indigo-700 font-medium">
+                                        Demandez au client de consulter <span className="font-bold">{otpRecipient.email}</span> pour retrouver le code.
+                                    </p>
+                                </div>
+                            )}
 
                             <div className="space-y-3">
                                 <label className="text-[10px] font-bold text-slate-400 uppercase">Code de validation (OTP)</label>
@@ -519,6 +577,8 @@ const RetraitColis = () => {
                     </div>
                 </div>
             )}
+
+            <ColisDetailsDrawer colis={detailsColis} onClose={() => setDetailsColis(null)} />
         </div>
     );
 };

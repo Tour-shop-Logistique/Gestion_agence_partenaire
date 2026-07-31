@@ -56,7 +56,8 @@ export const useExpedition = () => {
         const isSameParams = lastFilters &&
             String(params.page) === String(lastFilters.page) &&
             String(params.date_debut) === String(lastFilters.date_debut) &&
-            String(params.date_fin) === String(lastFilters.date_fin);
+            String(params.date_fin) === String(lastFilters.date_fin) &&
+            String(params.mode || '') === String(lastFilters.mode || '');
 
         if (!forceRefresh && lastFilters && isSameParams && status === 'succeeded') {
             return Promise.resolve();

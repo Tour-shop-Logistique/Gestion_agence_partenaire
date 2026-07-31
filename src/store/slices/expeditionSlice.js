@@ -165,6 +165,22 @@ export const confirmExpeditionReception = createAsyncThunk(
     }
 );
 
+// Choisir comment sont réglés les frais annexes (payé maintenant / à percevoir à l'arrivée)
+export const decisionFraisAnnexes = createAsyncThunk(
+    "expedition/decisionFraisAnnexes",
+    async ({ id, decision }, { rejectWithValue }) => {
+        try {
+            const result = await expeditionsApi.decisionFraisAnnexes(id, decision);
+            if (!result.success) {
+                return rejectWithValue(result.message);
+            }
+            return { id, decision, expedition: result.data, message: result.message };
+        } catch (error) {
+            return rejectWithValue(error.message || "Erreur lors de l'enregistrement de la décision");
+        }
+    }
+);
+
 // Marquer des colis comme reçus au départ
 export const receiveColisDepart = createAsyncThunk(
     "expedition/receiveColisDepart",
@@ -322,6 +338,10 @@ const expeditionSlice = createSlice({
             total: 0
         },
         lastReceptionFilters: null,
+        // Expédition(s) pour lesquelles le backoffice vient de fixer des
+        // frais annexes et pour lesquelles l'agence doit choisir un mode de
+        // règlement (écran de décision bloquant, voir FraisDecisionModal).
+        pendingFraisDecisions: [],
     },
     reducers: {
         clearExpeditionStatus: (state) => {
@@ -340,6 +360,39 @@ const expeditionSlice = createSlice({
         },
         clearCurrentExpedition: (state) => {
             state.currentExpedition = null;
+        },
+        fraisDecisionRequested: (state, action) => {
+            // action.payload : { id, reference, frais_annexes }
+            const { id } = action.payload;
+            if (!state.pendingFraisDecisions.some(e => e.id === id)) {
+                state.pendingFraisDecisions.push(action.payload);
+            }
+        },
+        fraisDecisionResolved: (state, action) => {
+            const id = action.payload;
+            state.pendingFraisDecisions = state.pendingFraisDecisions.filter(e => e.id !== id);
+        },
+        // Reçu via WebSocket (event universel "model.updated") sur les colis
+        // destinés à cette agence : patch local de state.reception sans
+        // refetch réseau, pour que le badge "En transit" -> "À réceptionner"
+        // (piloté par is_received_by_backoffice) change en direct dès que le
+        // backoffice marque le colis comme reçu, sans devoir tout recharger.
+        realtimeColisUpdated: (state, action) => {
+            const items = action.payload;
+            if (!Array.isArray(items) || items.length === 0) return;
+
+            items.forEach((updated) => {
+                const idx = state.reception.findIndex(
+                    (c) => c.id === updated.id || (updated.code_colis && c.code_colis === updated.code_colis)
+                );
+                if (idx !== -1) {
+                    state.reception[idx] = { ...state.reception[idx], ...updated };
+                } else {
+                    // Colis tout juste assigné à cette agence : pas encore dans
+                    // la liste, on l'ajoute (au lieu d'exiger un refetch réseau).
+                    state.reception.unshift(updated);
+                }
+            });
         }
     },
     extraReducers: (builder) => {
@@ -515,6 +568,28 @@ const expeditionSlice = createSlice({
                 state.error = action.payload;
             })
 
+            // Décision agence sur les frais annexes
+            .addCase(decisionFraisAnnexes.pending, (state) => {
+                state.status = "loading";
+            })
+            .addCase(decisionFraisAnnexes.fulfilled, (state, action) => {
+                state.status = "succeeded";
+                state.message = action.payload.message;
+                const { id, expedition } = action.payload;
+                state.pendingFraisDecisions = state.pendingFraisDecisions.filter(e => e.id !== id);
+
+                if (state.currentExpedition?.id === id && expedition) {
+                    state.currentExpedition = { ...state.currentExpedition, ...expedition };
+                }
+                state.expeditions = state.expeditions.map(exp =>
+                    exp.id === id && expedition ? { ...exp, ...expedition } : exp
+                );
+            })
+            .addCase(decisionFraisAnnexes.rejected, (state, action) => {
+                state.status = "failed";
+                state.error = action.payload;
+            })
+
             .addCase(receiveColisDepart.pending, (state) => {
                 state.status = "loading";
             })
@@ -674,6 +749,6 @@ const expeditionSlice = createSlice({
     },
 });
 
-export const { clearExpeditionStatus, setCurrentExpedition, clearSimulation, clearCurrentExpedition } = expeditionSlice.actions;
+export const { clearExpeditionStatus, setCurrentExpedition, clearSimulation, clearCurrentExpedition, fraisDecisionRequested, fraisDecisionResolved, realtimeColisUpdated } = expeditionSlice.actions;
 
 export default expeditionSlice.reducer;

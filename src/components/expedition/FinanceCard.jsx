@@ -1,11 +1,13 @@
 import React from 'react';
-import { DollarSign, CreditCard, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { DollarSign, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 /**
  * 💰 CARTE FINANCIÈRE
- * Résumé financier avec indicateurs de paiement
+ * Bandeau pleine largeur, compact : tous les indicateurs (montants, total,
+ * progression, statuts de paiement) alignés sur une seule rangée plutôt
+ * qu'empilés, pour minimiser la hauteur occupée.
  */
-const FinanceCard = ({ expedition, formatCurrency, onRecordTransaction }) => {
+const FinanceCard = ({ expedition, formatCurrency, onRecordTransaction, onOpenFraisDecision }) => {
     const montantExpedition = parseFloat(expedition.montant_expedition || 0);
     const fraisAnnexes = parseFloat(expedition.frais_annexes || 0);
     const totalAmount = montantExpedition + fraisAnnexes;
@@ -13,176 +15,144 @@ const FinanceCard = ({ expedition, formatCurrency, onRecordTransaction }) => {
     const expeditionPaid = expedition.statut_paiement_expedition === 'paye';
     const annexesPaid = expedition.statut_paiement_frais === 'paye';
     const isCredit = expedition.is_paiement_credit;
+    // Une fois la décision agence prise (payé maintenant OU à percevoir à
+    // l'arrivée), il n'y a plus d'urgence à signaler même si le montant n'est
+    // pas encore réellement encaissé - seule l'absence de décision est bloquante.
+    const decisionAgencePrise = expedition.frais_decision_agence_prise;
 
-    // Calcul du pourcentage payé
     const amountPaid = (expeditionPaid ? montantExpedition : 0) + (annexesPaid ? fraisAnnexes : 0);
     const percentPaid = totalAmount > 0 ? (amountPaid / totalAmount) * 100 : 0;
 
-    return (
-        <div className="bg-white border-2 border-slate-200 rounded-xl overflow-hidden shadow-sm">
-            {/* Header */}
-            <div className="px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-emerald-50 to-green-50">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center">
-                            <DollarSign className="w-6 h-6 text-white" />
-                        </div>
-                        <div>
-                            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">
-                                Résumé Financier
-                            </h2>
-                            <p className="text-xs text-slate-600 mt-0.5">État des paiements</p>
-                        </div>
-                    </div>
-                    {isCredit && (
-                        <span className="px-3 py-1 bg-rose-100 border border-rose-300 text-rose-700 text-xs font-bold uppercase rounded-lg">
-                            Crédit
-                        </span>
-                    )}
-                </div>
+    const StatusPill = ({ label, paid, urgent, decisionAttente, aPercevoirArrivee, onClick, buttonLabel = 'Encaisser' }) => (
+        <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border shrink-0 ${
+            paid
+                ? 'bg-emerald-50 border-emerald-200'
+                : decisionAttente
+                    ? 'bg-red-50 border-red-200'
+                    : aPercevoirArrivee
+                        ? 'bg-slate-50 border-slate-200'
+                        : 'bg-amber-50 border-amber-200'
+        }`}>
+            {paid ? (
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            ) : (
+                <AlertCircle className={`w-4 h-4 shrink-0 ${decisionAttente ? 'text-red-600 animate-pulse' : aPercevoirArrivee ? 'text-slate-400' : 'text-amber-600'}`} />
+            )}
+            <div className="min-w-0">
+                <p className="text-[10px] font-bold text-slate-500 uppercase leading-tight truncate">{label}</p>
+                <p className={`text-xs font-bold leading-tight ${
+                    paid ? 'text-emerald-700' : decisionAttente ? 'text-red-700' : aPercevoirArrivee ? 'text-slate-600' : 'text-amber-700'
+                }`}>
+                    {paid ? 'Payé' : decisionAttente ? 'Décision requise' : aPercevoirArrivee ? "À percevoir à l'arrivée" : 'En attente'}
+                </p>
             </div>
+            {/* Pas de bouton une fois "à percevoir à l'arrivée" décidé : c'est
+                l'agence de destination qui encaissera auprès du destinataire,
+                l'agence de départ n'a plus rien à faire ici. */}
+            {!paid && !aPercevoirArrivee && onClick && (
+                <button
+                    onClick={onClick}
+                    className={`ml-1 px-2.5 py-1 text-white text-[10px] font-bold uppercase rounded-md shrink-0 transition-all ${
+                        decisionAttente ? 'bg-red-600 hover:bg-red-700 animate-pulse' : 'bg-amber-600 hover:bg-amber-700'
+                    }`}
+                >
+                    {buttonLabel}
+                </button>
+            )}
+        </div>
+    );
 
-            <div className="p-6 space-y-6">
-                {/* Détail des montants */}
-                <div className="space-y-3">
-                    <div className="flex justify-between items-center text-sm">
-                        <span className="text-slate-600 font-medium">Frais de transport</span>
-                        <span className="font-bold text-slate-900">
-                            {new Intl.NumberFormat('fr-FR').format(montantExpedition)} CFA
-                        </span>
+    return (
+        <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4 sm:p-5">
+            <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+                {/* Icône + titre */}
+                <div className="flex items-center gap-3 shrink-0">
+                    <div className="w-9 h-9 rounded-lg bg-emerald-600 flex items-center justify-center shrink-0">
+                        <DollarSign className="w-4.5 h-4.5 text-white" />
+                    </div>
+                    <div>
+                        <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wide">Résumé Financier</h2>
+                        {isCredit && (
+                            <span className="inline-block mt-0.5 px-1.5 py-0.5 bg-rose-100 border border-rose-300 text-rose-700 text-[9px] font-bold uppercase rounded">
+                                Crédit
+                            </span>
+                        )}
+                    </div>
+                </div>
+
+                <div className="hidden sm:block w-px h-10 bg-slate-200 shrink-0" />
+
+                {/* Montants */}
+                <div className="flex items-center gap-4 shrink-0">
+                    <div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase">Frais expédition</p>
+                        <p className="text-sm font-bold text-slate-900 tabular-nums">
+                            {new Intl.NumberFormat('fr-FR').format(montantExpedition)} <span className="text-[10px] text-slate-500">CFA</span>
+                        </p>
                     </div>
                     {fraisAnnexes > 0 && (
-                        <div className="flex justify-between items-center text-sm">
-                            <span className="text-slate-600 font-medium">Frais annexes (HUB)</span>
-                            <span className="font-bold text-rose-600">
-                                +{new Intl.NumberFormat('fr-FR').format(fraisAnnexes)} CFA
-                            </span>
-                        </div>
-                    )}
-                </div>
-
-                <div className="h-px bg-slate-200"></div>
-
-                {/* Total */}
-                <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
-                    <div className="flex justify-between items-center mb-2">
-                        <span className="text-xs font-bold text-slate-500 uppercase">Total à encaisser</span>
-                        <div className="text-right">
-                            <div className="flex items-baseline gap-1">
-                                <span className="text-2xl font-bold text-slate-900">
-                                    {new Intl.NumberFormat('fr-FR').format(totalAmount)}
-                                </span>
-                                <span className="text-xs font-bold text-slate-600 uppercase">CFA</span>
-                            </div>
-                            <p className="text-xs text-slate-500 mt-1">
-                                ≈ {new Intl.NumberFormat('fr-FR', {
-                                    style: 'currency',
-                                    currency: 'EUR',
-                                    minimumFractionDigits: 2
-                                }).format(totalAmount / 655.957)}
+                        <div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase">Frais annexes</p>
+                            <p className="text-sm font-bold text-rose-600 tabular-nums">
+                                +{new Intl.NumberFormat('fr-FR').format(fraisAnnexes)} <span className="text-[10px] text-rose-400">CFA</span>
                             </p>
                         </div>
-                    </div>
-
-                    {/* Barre de progression */}
-                    <div className="mt-3">
-                        <div className="flex justify-between items-center mb-2">
-                            <span className="text-xs font-medium text-slate-600">Progression paiement</span>
-                            <span className="text-xs font-bold text-emerald-600">{percentPaid.toFixed(0)}%</span>
-                        </div>
-                        <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
-                            <div 
-                                className="h-full bg-gradient-to-r from-emerald-500 to-green-500 transition-all duration-500"
-                                style={{ width: `${percentPaid}%` }}
-                            ></div>
-                        </div>
+                    )}
+                    <div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase">Total</p>
+                        <p className="text-base font-bold text-slate-900 tabular-nums">
+                            {new Intl.NumberFormat('fr-FR').format(totalAmount)} <span className="text-[10px] text-slate-500">CFA</span>
+                        </p>
                     </div>
                 </div>
+
+                <div className="hidden sm:block w-px h-10 bg-slate-200 shrink-0" />
+
+                {/* Progression */}
+                <div className="flex-1 min-w-[140px]">
+                    <div className="flex justify-between items-center mb-1">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">Progression</span>
+                        <span className="text-[10px] font-bold text-emerald-600">{percentPaid.toFixed(0)}%</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                        <div
+                            className="h-full bg-gradient-to-r from-emerald-500 to-green-500 transition-all duration-500"
+                            style={{ width: `${percentPaid}%` }}
+                        />
+                    </div>
+                </div>
+
+                <div className="hidden sm:block w-px h-10 bg-slate-200 shrink-0" />
 
                 {/* Statuts de paiement */}
-                <div className="space-y-3">
-                    {/* Paiement Expédition */}
-                    <div className={`
-                        rounded-xl p-4 border-2 transition-all
-                        ${expeditionPaid 
-                            ? 'bg-emerald-50 border-emerald-200' 
-                            : 'bg-amber-50 border-amber-200'
-                        }
-                    `}>
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                {expeditionPaid ? (
-                                    <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                                ) : (
-                                    <AlertCircle className="w-5 h-5 text-amber-600" />
-                                )}
-                                <div>
-                                    <p className="text-xs font-bold text-slate-600 uppercase">
-                                        Frais de transport
-                                    </p>
-                                    <p className={`text-sm font-bold ${
-                                        expeditionPaid ? 'text-emerald-700' : 'text-amber-700'
-                                    }`}>
-                                        {expeditionPaid ? 'Payé' : 'En attente'}
-                                    </p>
-                                </div>
-                            </div>
-                            {!expeditionPaid && !isCredit && (
-                                <button
-                                    onClick={() => onRecordTransaction('montant_expedition')}
-                                    className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold uppercase rounded-lg shadow-md transition-all hover:shadow-lg"
-                                >
-                                    Encaisser
-                                </button>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Paiement Frais Annexes */}
+                <div className="flex flex-wrap items-center gap-2">
+                    <StatusPill
+                        label="Frais expédition"
+                        paid={expeditionPaid}
+                        onClick={!isCredit ? () => onRecordTransaction('montant_expedition') : null}
+                    />
                     {fraisAnnexes > 0 && (
-                        <div className={`
-                            rounded-xl p-4 border-2 transition-all
-                            ${annexesPaid 
-                                ? 'bg-emerald-50 border-emerald-200' 
-                                : 'bg-red-50 border-red-200'
-                            }
-                        `}>
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    {annexesPaid ? (
-                                        <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                                    ) : (
-                                        <AlertCircle className="w-5 h-5 text-red-600 animate-pulse" />
-                                    )}
-                                    <div>
-                                        <p className="text-xs font-bold text-slate-600 uppercase">
-                                            Frais annexes / Douane
-                                        </p>
-                                        <p className={`text-sm font-bold ${
-                                            annexesPaid ? 'text-emerald-700' : 'text-red-700'
-                                        }`}>
-                                            {annexesPaid ? 'Réglé' : '⚠️ Bloquant'}
-                                        </p>
-                                    </div>
-                                </div>
-                                {!annexesPaid && (
-                                    <button
-                                        onClick={() => onRecordTransaction('frais_annexes')}
-                                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold uppercase rounded-lg shadow-md transition-all hover:shadow-lg animate-pulse"
-                                    >
-                                        Régler
-                                    </button>
-                                )}
-                            </div>
-                        </div>
+                        <StatusPill
+                            label="Annexes"
+                            paid={annexesPaid}
+                            decisionAttente={!decisionAgencePrise}
+                            // Décision prise + pas payé + statut toujours
+                            // en_attente = "à percevoir à l'arrivée" (le
+                            // contrôleur backend passe directement
+                            // statut_paiement_frais à PAYE quand la décision
+                            // est "payé maintenant", donc en_attente ici ne
+                            // peut correspondre qu'à l'autre choix).
+                            aPercevoirArrivee={decisionAgencePrise && !annexesPaid}
+                            // Tant que l'agence n'a pas choisi entre "payé
+                            // maintenant" et "à percevoir à l'arrivée", on
+                            // ouvre l'écran de décision (pas directement
+                            // l'encaissement) - sinon l'agence n'a jamais
+                            // l'occasion de choisir "à percevoir à l'arrivée"
+                            // depuis cette page.
+                            buttonLabel="Décider"
+                            onClick={!decisionAgencePrise ? onOpenFraisDecision : null}
+                        />
                     )}
-                </div>
-
-                {/* Footer */}
-                <div className="pt-4 border-t border-slate-200 text-center">
-                    <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">
-                        Document certifié par Tous Shop
-                    </p>
                 </div>
             </div>
         </div>

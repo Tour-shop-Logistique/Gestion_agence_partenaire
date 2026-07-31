@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
+import { useDispatch } from "react-redux";
 import { useExpedition } from "../hooks/useExpedition";
 import { useAuth } from "../hooks/useAuth";
 import { useWebSocket } from "../hooks/useWebSocket";
+import { realtimeColisUpdated } from "../store/slices/expeditionSlice";
 import { Link } from "react-router-dom";
 import { toast, showToast } from "../utils/toast";
 import soundNotification from "../utils/soundNotification";
@@ -15,9 +17,11 @@ import {
     ChevronRightIcon
 } from "@heroicons/react/24/outline";
 import QRScanner from "../components/QRScanner";
+import ColisDetailsDrawer from "../components/common/ColisDetailsDrawer";
 import useHasPermission from "../hooks/useHasPermission";
 
 const ColisAReceptionner = () => {
+    const dispatch = useDispatch();
     const { currentUser } = useAuth();
     const canReceive = useHasPermission("colis_a_receptionner.receive_destination");
     const {
@@ -36,6 +40,7 @@ const ColisAReceptionner = () => {
     const [processing, setProcessing] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [scannerOpen, setScannerOpen] = useState(false);
+    const [detailsColis, setDetailsColis] = useState(null);
     
     // Suivre les colis déjà scannés pour éviter les messages en double
     const scannedCodesRef = useRef(new Set());
@@ -48,26 +53,26 @@ const ColisAReceptionner = () => {
                 console.log('📍 [Réception] Nouveau(x) colis à réceptionner:', meta.count);
                 showToast(`🎉 ${meta.count} nouveau(x) colis à réceptionner`, 'success');
                 soundNotification.playSuccess();
-                fetchReceptionData(true);
+                dispatch(realtimeColisUpdated(data));
             },
-            
+
             onColisReceivedByBackoffice: (data, meta) => {
                 console.log('📥 [Réception] Colis arrivé(s) au backoffice:', meta.references);
                 showToast(`Colis en transit: ${meta.references.join(', ')}`, 'info');
-                fetchReceptionData(true);
+                dispatch(realtimeColisUpdated(data));
             },
-            
+
             onColisBlocked: (data, meta) => {
                 console.log('🚫 [Réception] Colis bloqué(s):', meta.references);
                 showToast(`⚠️ Colis bloqué(s): ${meta.references.join(', ')}`, 'warning');
                 soundNotification.playAlert();
-                fetchReceptionData(true);
+                dispatch(realtimeColisUpdated(data));
             },
-            
+
             onColisUnblocked: (data, meta) => {
                 console.log('✅ [Réception] Colis débloqué(s):', meta.references);
                 showToast(`Colis débloqué(s): ${meta.references.join(', ')}`, 'success');
-                fetchReceptionData(true);
+                dispatch(realtimeColisUpdated(data));
             }
         },
         !!currentUser?.agence_id
@@ -104,7 +109,7 @@ const ColisAReceptionner = () => {
             return reception.map(item => ({
                 ...item,
                 is_received: item.is_received_by_agence_destination === true,
-                is_received_by_backoffice: item.isReceivedByBackoffice === true
+                is_received_by_backoffice: item.is_received_by_backoffice === true
             }));
         }
 
@@ -115,7 +120,7 @@ const ColisAReceptionner = () => {
                 expedition: exp,
                 expedition_id: exp.id,
                 is_received: item.is_received_by_agence_destination === true,
-                is_received_by_backoffice: item.isReceivedByBackoffice === true
+                is_received_by_backoffice: item.is_received_by_backoffice === true
             }))
         );
     }, [reception]);
@@ -144,7 +149,7 @@ const ColisAReceptionner = () => {
             }
             groups[expId].colis.push({
                 ...item,
-                is_received_by_backoffice: item.isReceivedByBackoffice === true
+                is_received_by_backoffice: item.is_received_by_backoffice === true
             });
         });
         return Object.values(groups);
@@ -320,7 +325,7 @@ const ColisAReceptionner = () => {
     };
 
     return (
-        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-1 space-y-3 sm:space-y-6 animate-fade-in">
+        <div className="max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-6 py-4 sm:py-1 space-y-3 sm:space-y-6 animate-fade-in">
             {/* Header Section - Responsive */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="flex items-center gap-2.5 sm:gap-3.5">
@@ -537,14 +542,16 @@ const ColisAReceptionner = () => {
                                             En cours d'acheminement
                                         </span>
                                     )}
-                                    <Link
-                                        to={`/expeditions/${item.expedition?.id || item.expedition_id}`}
+                                    <button
+                                        type="button"
+                                        onClick={() => setDetailsColis(item)}
                                         className="p-1.5 rounded-lg bg-slate-900 text-white"
+                                        title="Détails du colis"
                                     >
                                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                         </svg>
-                                    </Link>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -607,7 +614,7 @@ const ColisAReceptionner = () => {
                                 ...c,
                                 expedition: exp,
                                 is_received: c.is_received_by_agence_destination === true,
-                                is_received_by_backoffice: c.isReceivedByBackoffice === true || c.is_received_by_backoffice === true
+                                is_received_by_backoffice: c.is_received_by_backoffice === true
                             })).filter(c => {
                                 if (!searchQuery) return true;
                                 const lowQuery = searchQuery.toLowerCase();
@@ -764,11 +771,16 @@ const ColisAReceptionner = () => {
                                             </td>
                                             <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                 <div className="flex items-center justify-end gap-2">
-                                                    <Link to={`/expeditions/${exp.id}`}>
-                                                        <button className="text-slate-500 hover:text-slate-900 transition-colors font-semibold">
-                                                            Détails
-                                                        </button>
-                                                    </Link>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setDetailsColis(item);
+                                                        }}
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 hover:border-slate-400 transition-colors whitespace-nowrap"
+                                                    >
+                                                        Détails
+                                                    </button>
                                                     {/* Afficher le bouton uniquement si le colis est prêt à être réceptionné */}
                                                     {isReadyToReceive && (
                                                         <button
@@ -858,6 +870,8 @@ const ColisAReceptionner = () => {
                     </div>
                 </div>
             )}
+
+            <ColisDetailsDrawer colis={detailsColis} onClose={() => setDetailsColis(null)} />
         </div>
     );
 };

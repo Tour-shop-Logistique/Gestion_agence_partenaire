@@ -8,7 +8,7 @@ import { MagnifyingGlassIcon, ChevronDownIcon } from '@heroicons/react/24/outlin
  * @param {String} placeholder - Texte du placeholder
  * @param {String} className - Classes CSS additionnelles
  */
-const SearchableDropdown = ({ options = [], onSelect, placeholder = "Sélectionner...", className = "", id }) => {
+const SearchableDropdown = ({ options = [], onSelect, placeholder = "Sélectionner...", className = "", buttonClassName = "h-9 text-xs", id, disabled = false }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const dropdownRef = useRef(null);
@@ -51,17 +51,20 @@ const SearchableDropdown = ({ options = [], onSelect, placeholder = "Sélectionn
             <button
                 id={id}
                 type="button"
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={() => !disabled && setIsOpen(!isOpen)}
+                disabled={disabled}
                 aria-haspopup="listbox"
                 aria-expanded={isOpen}
-                className="w-full flex items-center justify-between px-3 py-2 bg-white border border-slate-300 rounded-md text-xs font-semibold text-slate-700 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-colors h-9"
+                className={`w-full flex items-center justify-between px-3 bg-white border border-slate-300 rounded-md font-semibold text-slate-700 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-colors disabled:bg-slate-50 disabled:text-slate-900 disabled:cursor-default disabled:hover:border-slate-300 ${buttonClassName}`}
             >
                 <span className="text-slate-500">{placeholder}</span>
-                <ChevronDownIcon className={`w-4 h-4 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                {!disabled && (
+                    <ChevronDownIcon className={`w-4 h-4 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                )}
             </button>
 
             {/* Dropdown menu - S'ouvre vers le HAUT */}
-            {isOpen && (
+            {isOpen && !disabled && (
                 <div className="absolute z-50 w-full bottom-full mb-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-80 overflow-hidden flex flex-col">
                     {/* Liste des options - EN HAUT */}
                     <div className="max-h-64 overflow-y-auto flex-1">
