@@ -4,6 +4,7 @@ import SaveTarifModal from "../components/SaveTarifModal";
 import { formatPrice } from "../utils/format";
 import { useTarifs } from "../hooks/useTarifs";
 import { useAuth } from "../hooks/useAuth";
+import { tarifsApi } from "../utils/api/tarifs";
 import {
   PlusIcon,
   CircleStackIcon,
@@ -384,25 +385,31 @@ const TarifSimpleComponent = () => {
   const handleConfirmSingle = useCallback(async (percentage) => {
     if (!selectedBaseTarif) return;
 
+    console.log("🔍 selectedBaseTarif:", selectedBaseTarif);
+    console.log("🔍 selectedBaseTarif.id:", selectedBaseTarif.id);
+
     try {
-      const result = await saveTarif({
-        indice: selectedBaseTarif.indice,
-        prix_zones: [{
-          tarif_simple_id: selectedBaseTarif.id,
-          pourcentage_prestation: percentage
-        }]
+      // Appel direct à l'API au lieu de passer par le thunk saveTarif
+      // car le thunk s'attend à une structure différente
+      const response = await tarifsApi.createTarifSimple({
+        tarif_simple_id: selectedBaseTarif.id,
+        pourcentage_prestation: percentage
       });
 
-      if (result?.success) {
+      if (response.success) {
         await fetchAgencyTarifs(true);
         setShowSingleModal(false);
         setSelectedBaseTarif(null);
         setActiveTab("agency");
+        toast.success("Tarif initialisé avec succès");
+      } else {
+        toast.error(response.message || "Erreur lors de l'initialisation");
       }
     } catch (err) {
       console.error("Erreur initialisation individuelle:", err);
+      toast.error("Erreur lors de l'initialisation du tarif");
     }
-  }, [selectedBaseTarif, saveTarif, fetchAgencyTarifs]);
+  }, [selectedBaseTarif, fetchAgencyTarifs]);
 
   const handleEditSingle = useCallback((tarif) => {
     setSelectedAgencyTarif(tarif);
