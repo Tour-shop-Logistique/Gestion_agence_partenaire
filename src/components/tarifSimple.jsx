@@ -465,23 +465,31 @@ const TarifSimpleComponent = () => {
     if (!flatTarifs || !Array.isArray(flatTarifs)) return 0;
     if (!flatExistingTarifs || !Array.isArray(flatExistingTarifs)) return flatTarifs.length;
     
+    // Si pas de tarifs d'agence, tous les tarifs de base sont non configurés
+    if (flatExistingTarifs.length === 0) return flatTarifs.length;
+    
     const configuredKeys = new Set(
       flatExistingTarifs
         .filter(t => t.indice != null && t.zone_destination_id != null)
         .map(t => `${t.indice}-${t.zone_destination_id}`)
     );
     
-    return flatTarifs.filter(
-      t => t.indice != null && t.zone_destination_id != null && 
-           !configuredKeys.has(`${t.indice}-${t.zone_destination_id}`)
-    ).length;
+    return flatTarifs.filter(t => {
+      // Si le tarif a des valeurs manquantes, on le compte comme non configuré
+      if (t.indice == null || t.zone_destination_id == null) return true;
+      
+      const key = `${t.indice}-${t.zone_destination_id}`;
+      return !configuredKeys.has(key);
+    }).length;
   }, [flatTarifs, flatExistingTarifs]);
 
   // Helper pour vérifier si un tarif est configuré
   const isUnconfigured = useCallback((tarif) => {
     if (activeTab !== "base") return false;
     if (!tarif || !flatExistingTarifs || !Array.isArray(flatExistingTarifs)) return true;
-    if (tarif.indice == null || tarif.zone_destination_id == null) return false;
+    
+    // Si le tarif a des valeurs manquantes, il est considéré comme non configuré
+    if (tarif.indice == null || tarif.zone_destination_id == null) return true;
     
     const key = `${tarif.indice}-${tarif.zone_destination_id}`;
     return !flatExistingTarifs.some(

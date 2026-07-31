@@ -198,23 +198,31 @@ const TarifGroupageComponent = () => {
     if (!flattenedBaseTarifs || !Array.isArray(flattenedBaseTarifs)) return 0;
     if (!flattenedAgencyTarifs || !Array.isArray(flattenedAgencyTarifs)) return flattenedBaseTarifs.length;
     
+    // Si pas de tarifs d'agence, tous les tarifs de base sont non configurés
+    if (flattenedAgencyTarifs.length === 0) return flattenedBaseTarifs.length;
+    
     const configuredKeys = new Set(
       flattenedAgencyTarifs
         .filter(t => t.pays != null && t.category_id != null && t.mode != null && t.ligne != null)
         .map(t => `${t.pays}-${t.category_id}-${t.mode}-${t.ligne}`)
     );
     
-    return flattenedBaseTarifs.filter(
-      t => t.pays != null && t.category_id != null && t.mode != null && t.ligne != null && 
-           !configuredKeys.has(`${t.pays}-${t.category_id}-${t.mode}-${t.ligne}`)
-    ).length;
+    return flattenedBaseTarifs.filter(t => {
+      // Si le tarif a des valeurs manquantes, on le compte comme non configuré
+      if (t.pays == null || t.category_id == null || t.mode == null || t.ligne == null) return true;
+      
+      const key = `${t.pays}-${t.category_id}-${t.mode}-${t.ligne}`;
+      return !configuredKeys.has(key);
+    }).length;
   }, [flattenedBaseTarifs, flattenedAgencyTarifs]);
 
   // Helper pour vérifier si un tarif de groupage est configuré
   const isUnconfigured = React.useCallback((tarif) => {
     if (activeTab !== "base") return false;
     if (!tarif || !flattenedAgencyTarifs || !Array.isArray(flattenedAgencyTarifs)) return true;
-    if (tarif.pays == null || tarif.category_id == null || tarif.mode == null || tarif.ligne == null) return false;
+    
+    // Si le tarif a des valeurs manquantes, il est considéré comme non configuré
+    if (tarif.pays == null || tarif.category_id == null || tarif.mode == null || tarif.ligne == null) return true;
     
     const key = `${tarif.pays}-${tarif.category_id}-${tarif.mode}-${tarif.ligne}`;
     return !flattenedAgencyTarifs.some(
