@@ -16,6 +16,7 @@ import {
     QrCodeIcon
 } from "@heroicons/react/24/outline";
 import QRScanner from "../components/QRScanner";
+import ColisDetailsDrawer from "../components/common/ColisDetailsDrawer";
 
 const Colis = () => {
     const { currentUser } = useAuth();
@@ -28,6 +29,7 @@ const Colis = () => {
     const [selectedCodes, setSelectedCodes] = useState([]);
     const [processing, setProcessing] = useState(false);
     const [scannerOpen, setScannerOpen] = useState(false);
+    const [detailsColis, setDetailsColis] = useState(null);
     
     // Suivre les colis déjà scannés pour éviter les messages en double
     const scannedCodesRef = useRef(new Set());
@@ -170,7 +172,10 @@ const Colis = () => {
             item.designation?.toLowerCase().includes(lowerQuery) ||
             item.expedition?.reference?.toLowerCase().includes(lowerQuery) ||
             item.category?.nom?.toLowerCase().includes(lowerQuery) ||
-            item.articles?.some(a => String(a).toLowerCase().includes(lowerQuery))
+            item.articles?.some(a => {
+                const designation = a.designation || a;
+                return String(designation).toLowerCase().includes(lowerQuery);
+            })
         );
     }, [tabColis, searchQuery]);
 
@@ -291,50 +296,35 @@ const Colis = () => {
     };
 
     return (
-        <div className="space-y-3 sm:space-y-4 max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-6">
+        <div className="max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-6 py-4 sm:py-1 space-y-3 sm:space-y-6 animate-fade-in">
             {/* Header Section - Responsive */}
-            <div className="flex flex-col gap-3 sm:gap-4">
-                <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="flex items-center gap-2.5 sm:gap-3.5">
+                    <button
+                        onClick={() => fetchColisData(true)}
+                        disabled={loadingColis}
+                        aria-label="Actualiser"
+                        className="p-2 bg-white border border-slate-200 rounded-lg text-slate-500 hover:text-indigo-600 hover:border-indigo-300 hover:shadow-sm active:scale-95 transition-all disabled:opacity-50"
+                        title="Actualiser"
+                    >
+                        <ArrowPathIcon className={`w-4 h-4 ${loadingColis ? 'animate-spin text-indigo-600' : ''}`} />
+                    </button>
+                    <div>
                         <h1 className="text-lg sm:text-2xl font-semibold text-gray-900">
                             Gestion des Colis - À envoyer
                         </h1>
                         <p className="text-sm text-slate-600">
                             Envoyez les colis reçus vers l'entrepôt
                         </p>
-                        {selectedCodes.length > 0 && (
-                            <span className="inline-block mt-1 sm:mt-2 text-indigo-600 font-medium text-xs sm:text-sm">
-                                {selectedCodes.length} colis sélectionné(s)
-                            </span>
-                        )}
                     </div>
                 </div>
-
-                {/* Scanner Row */}
-                <div className="flex items-center gap-2">
-                    {/* Search Bar */}
-                    <div className="relative group flex-1">
-                        <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
-                            <MagnifyingGlassIcon className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
-                        </div>
-                        <input
-                            type="text"
-                            className="block w-full pl-8 sm:pl-10 pr-2 sm:pr-3 py-1.5 sm:py-2 bg-white border border-gray-300 rounded-lg text-xs sm:text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                            placeholder="Rechercher..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </div>
-                    
-                    {/* Scanner Button */}
-                    <button
-                        onClick={() => setScannerOpen(true)}
-                        className="inline-flex items-center justify-center px-3 sm:px-4 py-1.5 sm:py-2 bg-indigo-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-indigo-700 transition-all gap-1.5 sm:gap-2 flex-shrink-0"
-                    >
-                        <QrCodeIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-                        <span className="hidden sm:inline">Scanner</span>
-                    </button>
-                </div>
+                <button
+                    onClick={() => setScannerOpen(true)}
+                    className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-transparent rounded-lg text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm hover:shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
+                >
+                    <QrCodeIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Scanner</span>
+                </button>
             </div>
 
             {/* QR Scanner Modal */}
@@ -344,15 +334,210 @@ const Colis = () => {
                 onScan={handleQRScan}
             />
 
+            {/* Search Bar - Responsive */}
+            <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
+                    <MagnifyingGlassIcon className="h-4 w-4 sm:h-5 sm:w-5 text-slate-400" />
+                </div>
+                <input
+                    type="text"
+                    className="block w-full pl-9 sm:pl-11 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm placeholder-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow"
+                    placeholder="Rechercher..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+            </div>
+
+            {/* Selection Bar - Responsive */}
+            {selectedCodes.length > 0 && (
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-0 px-3 sm:px-4 py-2 sm:py-3 bg-indigo-50 border border-indigo-200 rounded-2xl shadow-sm animate-fade-in-down">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        <span className="text-xs sm:text-sm font-bold text-slate-700">
+                            {selectedCodes.length} sélectionné{selectedCodes.length > 1 ? 's' : ''}
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={handleBulkAction}
+                            disabled={processing}
+                            className="flex-1 sm:flex-none inline-flex items-center justify-center px-3 sm:px-4 py-1.5 sm:py-2 border border-transparent rounded-lg text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm hover:shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-all"
+                        >
+                            {processing ? (
+                                <>
+                                    <ArrowPathIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2 animate-spin" />
+                                    <span className="hidden sm:inline">Traitement...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <IdentificationIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
+                                    Envoyer à l'entrepôt
+                                </>
+                            )}
+                        </button>
+                        <button
+                            onClick={() => setSelectedCodes([])}
+                            className="flex-1 sm:flex-none inline-flex items-center justify-center px-3 sm:px-4 py-1.5 sm:py-2 border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-600 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                        >
+                            Annuler
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Mobile Card View - Version Ultra-Compacte */}
+            <div className="lg:hidden space-y-2 pb-20">
+                {loadingColis && allColis.length === 0 ? (
+                    Array(3).fill(0).map((_, i) => (
+                        <div key={i} className="bg-white rounded-2xl p-3 border border-slate-100 shadow-sm animate-pulse space-y-2">
+                            <div className="h-4 bg-slate-100 rounded w-1/3"></div>
+                            <div className="h-3 bg-slate-100 rounded w-full"></div>
+                            <div className="h-3 bg-slate-100 rounded w-2/3"></div>
+                        </div>
+                    ))
+                ) : filteredColis.length > 0 ? (
+                    filteredColis.map((item) => (
+                        <div
+                            key={item.id}
+                            id={`colis-${item.code_colis}`}
+                            className={`bg-white rounded-2xl border transition-all active:scale-[0.98] overflow-hidden ${
+                                selectedCodes.includes(item.code_colis)
+                                    ? 'border-indigo-500 ring-2 ring-indigo-500/10 shadow-md'
+                                    : item.is_sent
+                                        ? 'border-emerald-200 bg-emerald-50/30 opacity-60'
+                                        : 'border-slate-100 shadow-sm hover:shadow-md'
+                            }`}
+                            onClick={() => !item.is_sent && toggleSelect(item.code_colis)}
+                        >
+                            {/* Header Compact */}
+                            <div className="p-3 border-b border-slate-100 flex items-start justify-between gap-2">
+                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                                    {/* Checkbox ou Icône de statut */}
+                                    <div onClick={(e) => e.stopPropagation()}>
+                                        {item.is_sent ? (
+                                            <div className="p-1 rounded-md bg-emerald-50 text-emerald-600 border border-emerald-100">
+                                                <IdentificationIcon className="w-4 h-4" />
+                                            </div>
+                                        ) : (
+                                            <input
+                                                type="checkbox"
+                                                className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                                checked={selectedCodes.includes(item.code_colis)}
+                                                onChange={() => toggleSelect(item.code_colis)}
+                                            />
+                                        )}
+                                    </div>
+                                    
+                                    {/* Code & Info */}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                            <span className="text-xs font-bold text-indigo-600 truncate">{item.code_colis}</span>
+                                            {item.is_sent ? (
+                                                <span className="px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[8px] font-bold uppercase border border-emerald-200">
+                                                    ✓ Envoyé
+                                                </span>
+                                            ) : (
+                                                <span className="px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[8px] font-bold uppercase border border-blue-200">
+                                                    → À envoyer
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="text-[10px] font-semibold text-slate-500 truncate mt-0.5">
+                                            {item.designation}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Expedition Badge */}
+                                <Link 
+                                    to={`/expeditions/${item.expedition_id}`}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="flex-shrink-0 px-2 py-1 bg-slate-100 rounded text-[9px] font-bold text-slate-700 hover:bg-indigo-600 hover:text-white transition-all"
+                                >
+                                    {item.expedition?.reference}
+                                </Link>
+                            </div>
+
+                            {/* Body Compact - Trajet & Poids */}
+                            <div className="p-3">
+                                <div className="flex items-center justify-between gap-2 mb-2">
+                                    <div className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 flex-1 min-w-0">
+                                        <span className="truncate max-w-[100px]">{item.expedition?.pays_depart}</span>
+                                        <svg className="w-3 h-3 text-indigo-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                        </svg>
+                                        <span className="truncate max-w-[100px] text-indigo-600">{item.expedition?.pays_destination}</span>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[9px] font-semibold text-slate-400 uppercase">Poids</p>
+                                        <p className="text-xs font-bold text-slate-900">{parseFloat(item.poids)} kg</p>
+                                    </div>
+                                </div>
+                                
+                                {/* Catégorie & Articles */}
+                                {item.category?.nom && (
+                                    <div className="flex flex-col gap-1">
+                                        <span className="inline-flex px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[9px] font-bold border border-indigo-100 uppercase w-fit">
+                                            {item.category.nom}
+                                        </span>
+                                        {item.articles?.length > 0 && (
+                                            <p className="text-[10px] text-slate-500 italic line-clamp-1">
+                                                {item.articles?.map(a => a.designation || a).join(', ')}
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Footer Actions */}
+                            {!item.is_sent && (
+                                <div className="p-3 pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setDetailsColis(item);
+                                        }}
+                                        className="px-2.5 py-1.5 bg-slate-900 text-white rounded text-[9px] font-bold uppercase hover:bg-slate-800 transition-all flex items-center gap-1"
+                                    >
+                                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                        </svg>
+                                        Détails
+                                    </button>
+                                    <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                                        <button
+                                            onClick={handleBulkAction}
+                                            disabled={processing || !selectedCodes.includes(item.code_colis)}
+                                            className="px-2.5 py-1.5 bg-indigo-600 text-white rounded text-[9px] font-bold uppercase hover:bg-indigo-700 transition-all disabled:opacity-50 flex items-center gap-1"
+                                        >
+                                            <IdentificationIcon className="w-3 h-3" />
+                                            Envoyer
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    ))
+                ) : (
+                    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm px-6 py-12 text-center">
+                        <div className="w-16 h-16 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 border-2 border-slate-200 flex items-center justify-center">
+                            <CubeIcon className="w-8 h-8 text-slate-400" />
+                        </div>
+                        <p className="text-sm font-semibold text-slate-600 mb-1">Aucun colis à envoyer</p>
+                        <p className="text-xs text-slate-400">Les colis prêts à être envoyés vers l'entrepôt apparaîtront ici</p>
+                    </div>
+                )}
+            </div>
+
             {/* Data Section */}
             <div className="relative">
                 {/* Desktop Table View */}
-                <div className="hidden lg:block bg-white rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-200/60 overflow-hidden">
+                <div className="hidden lg:block bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead>
-                                <tr className="bg-slate-50/80 border-b-2 border-slate-200">
-                                    <th className="px-4 py-5 w-10">
+                                <tr className="bg-gradient-to-r from-slate-50 to-white border-b border-slate-100">
+                                    <th className="px-4 py-3 w-12">
                                         <input
                                             type="checkbox"
                                             className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-all cursor-pointer"
@@ -360,23 +545,22 @@ const Colis = () => {
                                             onChange={toggleSelectAll}
                                         />
                                     </th>
-                                    <th className="px-6 py-5 text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Colis Info</th>
-                                    <th className="px-6 py-5 text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Catégorie & Détails</th>
-                                    <th className="px-6 py-5 text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Expédition</th>
-                                    <th className="px-6 py-5 text-[10px] font-semibold text-slate-500 uppercase tracking-wide text-center">Dimensions & Poids</th>
-                                    <th className="px-6 py-5 text-[10px] font-semibold text-slate-500 uppercase tracking-wide text-right">Montant Total</th>
-                                    <th className="px-6 py-5 text-[10px] font-semibold text-slate-500 uppercase tracking-wide text-right">Détails</th>
+                                    <th className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Colis</th>
+                                    <th className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Catégorie & Détails</th>
+                                    <th className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Expédition</th>
+                                    <th className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Poids & Dimensions</th>
+                                    <th className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Montant</th>
+                                    <th className="px-4 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y-0">
+                            <tbody className="bg-white divide-y divide-slate-100">
                                 {loadingColis && allColis.length === 0 ? (
-                                    Array(5).fill(0).map((_, i) => (
-                                        <tr key={i} className="animate-pulse">
-                                            <td className="px-6 py-6" colSpan="7">
-                                                <div className="h-12 bg-slate-50 rounded-xl w-full"></div>
-                                            </td>
-                                        </tr>
-                                    ))
+                                    <tr>
+                                        <td colSpan="7" className="px-4 py-12 text-center">
+                                            <ArrowPathIcon className="mx-auto h-8 w-8 text-indigo-400 animate-spin" />
+                                            <p className="mt-2 text-sm text-slate-500">Chargement...</p>
+                                        </td>
+                                    </tr>
                                 ) : groupedExpeditions.length > 0 ? (
                                     groupedExpeditions.map((exp) => {
                                         const expColis = exp.colis || [];
@@ -439,48 +623,56 @@ const Colis = () => {
                                                         id={`colis-${item.code_colis}`}
                                                         className={`
                                                             ${item.is_sent 
-                                                                ? 'bg-emerald-50/30' 
+                                                                ? 'bg-emerald-50/30 opacity-60' 
                                                                 : selectedCodes.includes(item.code_colis) 
                                                                     ? 'bg-indigo-50 ring-2 ring-inset ring-indigo-200' 
                                                                     : 'bg-white hover:bg-slate-50'
                                                             } 
                                                             ${idx !== expColis.length - 1 ? 'border-b border-slate-100' : 'border-b-2 border-slate-200'}
-                                                            cursor-pointer transition-all duration-150
+                                                            ${!item.is_sent ? 'cursor-pointer' : 'cursor-default'}
+                                                            transition-all duration-150
                                                         `}
                                                         onClick={() => !item.is_sent && toggleSelect(item.code_colis)}
                                                     >
-                                                        <td className="px-4 py-6" onClick={(e) => e.stopPropagation()}>
+                                                        <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
                                                             {item.is_sent ? (
-                                                                <div className="flex justify-center">
-                                                                    <div className="p-1 px-2 rounded-md bg-emerald-50 text-emerald-600 border border-emerald-100">
-                                                                        <IdentificationIcon className="w-4 h-4" />
-                                                                    </div>
-                                                                </div>
+                                                                <IdentificationIcon className="h-5 w-5 text-emerald-500" />
                                                             ) : (
                                                                 <input
                                                                     type="checkbox"
-                                                                    className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-all cursor-pointer"
+                                                                    className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                                                                     checked={selectedCodes.includes(item.code_colis)}
                                                                     onChange={() => toggleSelect(item.code_colis)}
                                                                 />
                                                             )}
                                                         </td>
-                                                        <td className="px-6 py-6 font-bold text-slate-900">
-                                                            <div className="flex flex-col">
-                                                                <span className="text-indigo-600">{item.code_colis}</span>
-                                                                <span className="text-xs font-semibold text-slate-500">{item.designation}</span>
-                                                                <span className="text-[10px] text-slate-400 mt-1">Le {formatDate(item.created_at)}</span>
+                                                        <td className="px-4 py-4">
+                                                            <div className="flex items-center">
+                                                                <div className={`flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-lg ${
+                                                                    item.is_sent ? 'bg-emerald-100' : 'bg-slate-100'
+                                                                }`}>
+                                                                    <CubeIcon className={`h-5 w-5 ${
+                                                                        item.is_sent ? 'text-emerald-600' : 'text-slate-500'
+                                                                    }`} />
+                                                                </div>
+                                                                <div className="ml-3">
+                                                                    <div className="text-sm font-bold text-indigo-600">{item.code_colis}</div>
+                                                                    <div className="text-sm text-slate-500">{item.designation}</div>
+                                                                    <div className="text-xs text-slate-400 mt-0.5">Le {formatDate(item.created_at)}</div>
+                                                                </div>
                                                             </div>
                                                         </td>
-                                                        <td className="px-6 py-6">
+                                                        <td className="px-4 py-4">
                                                             <div className="flex flex-col gap-1.5">
                                                                 <span className="inline-flex px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[10px] font-bold border border-indigo-100 uppercase w-fit">
                                                                     {item.category?.nom}
                                                                 </span>
-                                                                <p className="text-[11px] text-slate-600 line-clamp-1 italic">{item.articles?.join(', ')}</p>
+                                                                <p className="text-[11px] text-slate-600 line-clamp-1 italic">
+                                                                    {item.articles?.map(a => a.designation || a).join(', ')}
+                                                                </p>
                                                             </div>
                                                         </td>
-                                                        <td className="px-6 py-6">
+                                                        <td className="px-4 py-4">
                                                             <Link to={`/expeditions/${item.expedition_id}`} className="group/exp">
                                                                 <span className="text-xs font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg group-hover/exp:bg-indigo-600 group-hover/exp:text-white transition-all">
                                                                     {item.expedition?.reference}
@@ -492,31 +684,31 @@ const Colis = () => {
                                                                 </div>
                                                             </Link>
                                                         </td>
-                                                        <td className="px-6 py-6 text-center">
+                                                        <td className="px-4 py-4 text-center">
                                                             <div className="flex flex-col items-center gap-1">
-                                                                <span className="text-xs font-bold text-slate-900">{parseFloat(item.poids)} kg</span>
+                                                                <span className="text-sm font-bold text-slate-900">{parseFloat(item.poids)} kg</span>
                                                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
-                                                                    {parseFloat(item.longueur)}x{parseFloat(item.largeur)}x{parseFloat(item.hauteur)} cm
+                                                                    {parseFloat(item.longueur)}×{parseFloat(item.largeur)}×{parseFloat(item.hauteur)} cm
                                                                 </span>
                                                             </div>
                                                         </td>
-                                                        <td className="px-6 py-6 text-right">
-                                                            <div className="flex flex-col items-end">
-                                                                <span className="text-sm font-bold text-slate-900 tabular-nums">
-                                                                    {formatPriceDual(item.montant_colis_total)}
-                                                                </span>
-                                                                <span className="text-[9px] font-bold text-slate-400 uppercase italic">
-                                                                    Prestation: {formatPriceDual(item.montant_colis_prestation)}
-                                                                </span>
+                                                        <td className="px-4 py-4 text-right">
+                                                            <div className="text-sm font-bold text-slate-900">
+                                                                {formatPriceDual(item.montant_colis_total)}
                                                             </div>
                                                         </td>
-                                                        <td className="px-6 py-6 text-right">
-                                                            <Link
-                                                                to={`/expeditions/${item.expedition_id}`}
-                                                                className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-slate-900 text-white text-[10px] font-bold uppercase tracking-wide hover:bg-slate-800 transition-all shadow-lg shadow-slate-200"
+                                                        <td className="px-4 py-4 text-center" onClick={(e) => e.stopPropagation()}>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setDetailsColis(item)}
+                                                                className="inline-flex items-center px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition-colors"
+                                                                title="Voir les détails"
                                                             >
+                                                                <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                                </svg>
                                                                 Détails
-                                                            </Link>
+                                                            </button>
                                                         </td>
                                                     </tr>
                                                 ))}
@@ -675,14 +867,16 @@ const Colis = () => {
                                                     Envoyer
                                                 </button>
                                             )}
-                                            <Link
-                                                to={`/expeditions/${item.expedition_id}`}
+                                            <button
+                                                type="button"
+                                                onClick={() => setDetailsColis(item)}
                                                 className="p-1.5 rounded-lg bg-slate-900 text-white"
+                                                title="Détails du colis"
                                             >
                                                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                                 </svg>
-                                            </Link>
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -766,6 +960,9 @@ const Colis = () => {
                     </div>
                 )}
             </div>
+
+            {/* ColisDetailsDrawer */}
+            <ColisDetailsDrawer colis={detailsColis} onClose={() => setDetailsColis(null)} />
         </div>
     );
 };

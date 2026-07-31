@@ -432,7 +432,7 @@ const ReceptionColis = () => {
                                             {/* Contenu */}
                                             <td className="px-6 py-5">
                                                 <span className="text-xs font-medium text-slate-600 line-clamp-2">
-                                                    {Array.isArray(item.articles) ? item.articles.join(', ') : (item.articles || '-')}
+                                                    {Array.isArray(item.articles) ? item.articles.map(a => a.designation || a).join(', ') : (item.articles || '-')}
                                                 </span>
                                             </td>
 
