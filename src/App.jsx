@@ -22,6 +22,7 @@ import { autoCheckAndUpdate, handleChunkLoadError } from "./utils/versionChecker
 import { getEcho, disconnectEcho } from "./services/echo";
 import { fetchNotifications, announcementReceived } from "./store/slices/notificationsSlice";
 import { messageReceived, messageUpdated, messageDeleted } from "./store/slices/messagesSlice";
+import { fraisDecisionRequested, fraisDecisionResolved } from "./store/slices/expeditionSlice";
 import { useWebSocket } from "./hooks/useWebSocket";
 import { showToast } from "./utils/toast";
 import soundNotification from "./utils/soundNotification";
@@ -51,6 +52,7 @@ import TransactionsPro from "./pages/TransactionsPro";
 import Notifications from "./pages/Notifications";
 import Messages from "./pages/Messages";
 import ToastManager from "./components/ToastManager";
+import FraisDecisionModal from "./components/transaction/FraisDecisionModal";
 import DashboardLayout from "./components/DashboardLayout";
 import WebSocketDebugPanel from "./components/WebSocketDebugPanel";
 
@@ -129,6 +131,7 @@ function AppContent() {
   const { fetchAgencyData, fetchUsers } = useAgency();
   const { checkAuth, currentUser } = useAuth();
   const { isAuthenticated, status } = useSelector((state) => state.auth);
+  const pendingFraisDecisions = useSelector((state) => state.expedition?.pendingFraisDecisions || []);
   const { fetchDashboard } = useDashboard();
   const hasLoadedDataRef = useRef(false);
   const navigate = useNavigate();
@@ -236,6 +239,21 @@ function AppContent() {
         showToast("Vos permissions d'accès ont été mises à jour.", "info");
       }
     },
+    // Le backoffice vient de fixer/modifier des frais annexes sur une de nos
+    // expéditions de départ : déclenche l'écran de décision bloquant (voir
+    // FraisDecisionModal, monté globalement plus bas), peu importe la page
+    // consultée au moment de l'événement.
+    onExpeditionFraisUpdated: (data) => {
+      const expedition = Array.isArray(data) ? data[0] : data;
+      if (!expedition?.id) return;
+      dispatch(fraisDecisionRequested({
+        id: expedition.id,
+        reference: expedition.reference,
+        frais_annexes: expedition.frais_annexes,
+      }));
+      showToast(`💵 Frais annexes à confirmer pour ${expedition.reference}`, "warning");
+      soundNotification.playAlert();
+    },
   });
 
   useEffect(() => {
@@ -316,6 +334,15 @@ function AppContent() {
   return (
     <AutoRedirect>
       <ToastManager />
+      {/* Écran de décision bloquant sur les frais annexes - affiche la
+          première expédition en attente de décision, peu importe la page
+          consultée (voir onExpeditionFraisUpdated ci-dessus). */}
+      {pendingFraisDecisions.length > 0 && (
+        <FraisDecisionModal
+          expedition={pendingFraisDecisions[0]}
+          onClose={() => dispatch(fraisDecisionResolved(pendingFraisDecisions[0].id))}
+        />
+      )}
       {/* Debug Panel WebSocket (DEV ONLY - Ctrl+Shift+D pour ouvrir) */}
       {import.meta.env.DEV && <WebSocketDebugPanel />}
       <Routes>

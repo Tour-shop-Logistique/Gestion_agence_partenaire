@@ -59,7 +59,9 @@ export const expeditionsApi = {
 
     /**
      * Lister les expéditions de l'agence avec pagination et filtres
-     * @param {Object} params - Paramètres de filtrage (page, date_debut, date_fin)
+     * @param {Object} params - Paramètres de filtrage (page, date_debut, date_fin, mode)
+     *   mode: 'depart' (créées par l'agence) | 'reception' (agence destinataire) |
+     *         omis = toutes (union des deux, comportement par défaut du backend)
      * @returns {Promise<Object>}
      */
     async listExpeditions(params = {}) {
@@ -68,7 +70,7 @@ export const expeditionsApi = {
             if (params.page) queryParams.append('page', params.page);
             if (params.date_debut) queryParams.append('date_debut', params.date_debut);
             if (params.date_fin) queryParams.append('date_fin', params.date_fin);
-            queryParams.append('mode', 'depart');
+            if (params.mode) queryParams.append('mode', params.mode);
 
             const queryString = queryParams.toString();
             const url = `${API_ENDPOINTS.EXPEDITIONS.LIST}${queryString ? `?${queryString}` : ''}`;
@@ -261,6 +263,31 @@ export const expeditionsApi = {
             return {
                 success: false,
                 message: error.message || "Erreur lors de la confirmation de la réception",
+            };
+        }
+    },
+
+    /**
+     * Choisir comment les frais annexes (fixés par le backoffice) sont réglés :
+     * payés maintenant par le client, ou à percevoir à l'arrivée.
+     * @param {string} id - ID de l'expédition
+     * @param {'paye_maintenant'|'a_percevoir_arrivee'} decision
+     * @returns {Promise<Object>}
+     */
+    async decisionFraisAnnexes(id, decision) {
+        try {
+            const url = API_ENDPOINTS.EXPEDITIONS.DECISION_FRAIS.replace(':id', id);
+            const response = await apiService.put(url, { decision });
+
+            return {
+                success: response.success !== false,
+                data: response.expedition || response.data || response,
+                message: response.message || "Décision enregistrée avec succès"
+            };
+        } catch (error) {
+            return {
+                success: false,
+                message: error.message || "Erreur lors de l'enregistrement de la décision",
             };
         }
     },

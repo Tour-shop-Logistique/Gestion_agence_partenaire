@@ -29,15 +29,20 @@ const ParcelTable = ({ colis = [], formatCurrency }) => {
     return (
         <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
             {/* Header avec résumé */}
-            <div className="px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
+            <div className="px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-indigo-50 to-white">
                 <div className="flex items-center justify-between">
-                    <div>
-                        <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">
-                            Inventaire des Colis
-                        </h2>
-                        <p className="text-xs text-slate-500 mt-1">
-                            {colis.length} colis • {totalWeight.toFixed(1)} KG total
-                        </p>
+                    <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
+                            <Package className="w-4 h-4 text-white" />
+                        </div>
+                        <div>
+                            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">
+                                Inventaire des Colis
+                            </h2>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                                {colis.length} colis • {totalWeight.toFixed(1)} KG total
+                            </p>
+                        </div>
                     </div>
                     <div className="text-right">
                         <p className="text-xs text-slate-500 uppercase tracking-wide">Total frais</p>
@@ -96,8 +101,11 @@ const ParcelTable = ({ colis = [], formatCurrency }) => {
                                             {parcel.designation}
                                         </p>
                                         <p className="text-[10px] text-slate-500 mt-0.5 truncate">
-                                            {Array.isArray(parcel.articles) 
-                                                ? parcel.articles.join(', ') 
+                                            {Array.isArray(parcel.articles)
+                                                ? parcel.articles
+                                                    .map(a => (typeof a === 'string' ? a : a?.designation))
+                                                    .filter(Boolean)
+                                                    .join(', ') || 'N/A'
                                                 : parcel.articles || 'N/A'}
                                         </p>
                                     </div>

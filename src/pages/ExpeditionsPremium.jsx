@@ -62,6 +62,9 @@ const ExpeditionsPremium = () => {
         return saved || lastFilters?.date_fin || getTodayDate();
     });
     const [type, setType] = useState("");
+    // Toujours l'union (créées + reçues) - pas de filtre départ/réception,
+    // on affiche toutes les expéditions dans lesquelles l'agence intervient.
+    const expeditionMode = "";
     const [selectedExpedition, setSelectedExpedition] = useState(null);
     const [showPrintModal, setShowPrintModal] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
@@ -85,7 +88,8 @@ const ExpeditionsPremium = () => {
                         page: currentPage,
                         date_debut: dateDebut,
                         date_fin: dateFin,
-                        type: type
+                        type: type,
+                        mode: expeditionMode
                     }, true);
                 } else {
                     console.log('🎉 [Expeditions] Nouvelle(s) expédition(s):', meta.count);
@@ -94,12 +98,13 @@ const ExpeditionsPremium = () => {
                         page: currentPage,
                         date_debut: dateDebut,
                         date_fin: dateFin,
-                        type: type
+                        type: type,
+                        mode: expeditionMode
                     }, true);
                 }
             },
-            
-            
+
+
             onExpeditionStatusChanged: (data, meta) => {
                 setLastSync(new Date());
                 console.log('📦 [Expeditions] Statut changé:', meta.count);
@@ -108,10 +113,11 @@ const ExpeditionsPremium = () => {
                     page: currentPage,
                     date_debut: dateDebut,
                     date_fin: dateFin,
-                    type: type
+                    type: type,
+                    mode: expeditionMode
                 }, true);
             },
-            
+
             onExpeditionPaymentConfirmed: (data, meta) => {
                 setLastSync(new Date());
                 console.log('💰 [Expeditions] Paiement confirmé:', meta.references);
@@ -120,10 +126,11 @@ const ExpeditionsPremium = () => {
                     page: currentPage,
                     date_debut: dateDebut,
                     date_fin: dateFin,
-                    type: type
+                    type: type,
+                    mode: expeditionMode
                 }, true);
             },
-            
+
             onExpeditionFraisUpdated: (data, meta) => {
                 setLastSync(new Date());
                 console.log('💵 [Expeditions] Frais mis à jour:', meta.references);
@@ -132,7 +139,8 @@ const ExpeditionsPremium = () => {
                     page: currentPage,
                     date_debut: dateDebut,
                     date_fin: dateFin,
-                    type: type
+                    type: type,
+                    mode: expeditionMode
                 }, true);
             }
         },
@@ -143,14 +151,15 @@ const ExpeditionsPremium = () => {
     useEffect(() => {
         if (dateDebut) sessionStorage.setItem('expeditions_date_debut', dateDebut);
         if (dateFin) sessionStorage.setItem('expeditions_date_fin', dateFin);
-        
+
         loadExpeditions({
             page: currentPage,
             date_debut: dateDebut,
             date_fin: dateFin,
-            type: type
+            type: type,
+            mode: expeditionMode
         });
-    }, [currentPage, dateDebut, dateFin, type]);
+    }, [currentPage, dateDebut, dateFin, type, expeditionMode]);
 
     useEffect(() => {
         fetchAgencyData();

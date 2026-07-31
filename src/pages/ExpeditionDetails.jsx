@@ -1,5 +1,4 @@
-import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import React, { useEffect } from 'react';
 import Spinner from '../components/common/Spinner';
 import { useParams, useNavigate } from 'react-router-dom';
 import ConfirmationModal from '../components/ConfirmationModal';
@@ -8,29 +7,15 @@ import { useAgency } from '../hooks/useAgency';
 import PrintSuccessModal from '../components/Receipts/PrintSuccessModal';
 import { getLogoUrl } from '../utils/apiConfig';
 import { toast } from '../utils/toast';
-import { ArrowLeft, Copy, Receipt, Download, Mail, Link as LinkIcon, MessageCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, Copy, Loader2 } from 'lucide-react';
 import { Button } from "../components/ui";
-import { facturesApi } from '../utils/api/factures';
 import {
-    fetchFactureForExpedition,
-    generateFacture,
-    updateFactureStatut,
-    sendFactureEmail,
-} from '../store/slices/factureSlice';
-import {
-    OperationalSummary,
-    KPICards,
-    LogisticsFlow,
+    StatusOverview,
     ParcelTable,
     ContactCard,
     FinanceCard
 } from '../components/expedition';
-
-const FACTURE_STATUT_STYLES = {
-    emise: 'bg-blue-50 text-blue-700 border-blue-200',
-    payee: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    annulee: 'bg-rose-50 text-rose-700 border-rose-200',
-};
+import FraisDecisionModal from '../components/transaction/FraisDecisionModal';
 
 /**
  * 🚀 PAGE DÉTAIL EXPÉDITION - VERSION REFACTORISÉE
@@ -50,17 +35,12 @@ const ExpeditionDetails = () => {
         acceptDemande,
         refuseDemande,
         confirmReception,
-        status,
         message,
         error,
         resetStatus,
         recordTransaction
     } = useExpedition();
     const { data: agencyData, fetchAgencyData } = useAgency();
-    const dispatch = useDispatch();
-    const facture = useSelector((state) => state.factures.byExpedition[id]);
-    const isGeneratingFacture = useSelector((state) => state.factures.isGenerating);
-    const isSendingFacture = useSelector((state) => state.factures.isSending);
 
     // États des modales
     const [isRefuseModalOpen, setIsRefuseModalOpen] = React.useState(false);
@@ -73,81 +53,14 @@ const ExpeditionDetails = () => {
     const [paymentReference, setPaymentReference] = React.useState("");
     const [isProcessing, setIsProcessing] = React.useState(false);
     const [motifRefus, setMotifRefus] = React.useState("");
-    const [isDownloadingFacture, setIsDownloadingFacture] = useState(false);
+    const [isFraisDecisionModalOpen, setIsFraisDecisionModalOpen] = React.useState(false);
 
     // Chargement des données
     useEffect(() => {
         if (id) {
             getExpeditionDetails(id);
-            dispatch(fetchFactureForExpedition(id));
         }
-    }, [id, getExpeditionDetails, dispatch]);
-
-    // Facturation
-    const handleGenerateFacture = async () => {
-        try {
-            await dispatch(generateFacture(id)).unwrap();
-            toast.success('Facture générée avec succès.');
-        } catch (err) {
-            toast.error(err || 'Erreur lors de la génération de la facture');
-        }
-    };
-
-    const handleDownloadFacture = async () => {
-        if (!facture) return;
-        setIsDownloadingFacture(true);
-        try {
-            const blob = await facturesApi.downloadPdf(facture.id);
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', `${facture.numero}.pdf`);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-        } catch {
-            toast.error('Erreur lors du téléchargement de la facture');
-        } finally {
-            setIsDownloadingFacture(false);
-        }
-    };
-
-    const handleSendFactureEmail = async () => {
-        if (!facture) return;
-        try {
-            const msg = await dispatch(sendFactureEmail({ id: facture.id })).unwrap();
-            toast.success(msg);
-        } catch (err) {
-            toast.error(err || "Erreur lors de l'envoi de la facture");
-        }
-    };
-
-    const handleShareFactureWhatsApp = () => {
-        if (!facture) return;
-        const publicUrl = `${import.meta.env.VITE_API_URL}/api/factures/${facture.public_token}`;
-        const text = encodeURIComponent(`Voici votre facture ${facture.numero} : ${publicUrl}`);
-        window.open(`https://wa.me/?text=${text}`, '_blank');
-    };
-
-    const handleCopyFactureLink = async () => {
-        if (!facture) return;
-        const publicUrl = `${import.meta.env.VITE_API_URL}/api/factures/${facture.public_token}`;
-        try {
-            await navigator.clipboard.writeText(publicUrl);
-            toast.success('Lien copié dans le presse-papiers.');
-        } catch {
-            toast.error('Impossible de copier le lien.');
-        }
-    };
-
-    const handleFactureStatutChange = async (statut) => {
-        if (!facture) return;
-        try {
-            await dispatch(updateFactureStatut({ id: facture.id, statut })).unwrap();
-        } catch (err) {
-            toast.error(err || 'Erreur lors de la mise à jour du statut');
-        }
-    };
+    }, [id, getExpeditionDetails]);
 
     useEffect(() => {
         fetchAgencyData();
@@ -240,8 +153,12 @@ const ExpeditionDetails = () => {
         ville: expedition?.destinataire_ville
     };
 
-    // Loading state
-    if (status === 'loading' || !expedition) {
+    // Loading state : uniquement au tout premier chargement (pas d'expédition
+    // en mémoire). `status` est partagé par toutes les actions du slice
+    // (transaction, accept/refuse, etc.) - s'y fier ici ferait disparaître
+    // toute la page à chaque refetch silencieux déclenché après une action
+    // annexe (ex: enregistrement d'une transaction de paiement).
+    if (!expedition) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[400px]">
                 <Spinner size="xl" color="indigo" />
@@ -251,7 +168,7 @@ const ExpeditionDetails = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-transparent">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
 
                 {/* 🎯 HEADER COMPACT - Mobile Optimized */}
@@ -364,13 +281,23 @@ const ExpeditionDetails = () => {
                                     </button>
                                 )}
 
-                                {parseFloat(expedition.frais_annexes || 0) > 0 && expedition.statut_paiement_frais !== 'paye' && (
+                                {/* Décision non prise -> "Décider annexes". Une fois la décision
+                                    "à percevoir à l'arrivée" prise, statut_paiement_frais reste
+                                    en_attente mais il n'y a plus rien à encaisser ici : c'est
+                                    l'agence de destination qui règlera avec le destinataire.
+                                    Le bouton ne réapparaît donc que si aucune décision n'a
+                                    encore été prise (statut_paiement_frais passe directement à
+                                    "paye" côté backend pour le choix "payé maintenant", donc ce
+                                    cas ne peut plus se présenter une fois décidé). */}
+                                {parseFloat(expedition.frais_annexes || 0) > 0
+                                    && expedition.statut_paiement_frais !== 'paye'
+                                    && !expedition.frais_decision_agence_prise && (
                                     <button
-                                        onClick={() => handleRecordTransaction('frais_annexes')}
+                                        onClick={() => setIsFraisDecisionModalOpen(true)}
                                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors"
                                     >
                                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                        <span className="hidden sm:inline">Encaisser annexes</span>
+                                        <span className="hidden sm:inline">Décider annexes</span>
                                     </button>
                                 )}
                             </div>
@@ -378,193 +305,96 @@ const ExpeditionDetails = () => {
                     </div>
                 </div>
 
-                {/* 🔥 RÉSUMÉ OPÉRATIONNEL */}
-                <OperationalSummary 
-                    expedition={expedition} 
+                {/* 🧭 VUE D'ENSEMBLE (statut + timeline + chiffres clés) */}
+                <StatusOverview expedition={expedition} />
+
+                {/* 💰 FINANCE - pleine largeur */}
+                <FinanceCard
+                    expedition={expedition}
+                    formatCurrency={formatCurrency}
+                    onRecordTransaction={handleRecordTransaction}
+                    onOpenFraisDecision={() => setIsFraisDecisionModalOpen(true)}
+                />
+
+                {/* 📦 COLIS - pleine largeur */}
+                <ParcelTable
+                    colis={expedition.colis || []}
                     formatCurrency={formatCurrency}
                 />
 
-                {/* 📊 CARTES KPI */}
-                <KPICards 
-                    expedition={expedition} 
-                    formatCurrency={formatCurrency}
-                />
-
-                {/* LAYOUT PRINCIPAL - Mobile First */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-
-                    {/* COLONNE PRINCIPALE - Full width on mobile */}
-                    <div className="lg:col-span-2 space-y-4 sm:space-y-6">
-                        
-                        {/* 🔄 FLUX LOGISTIQUE */}
-                        <LogisticsFlow 
-                            expedition={expedition}
-                            formatDate={formatDate}
-                        />
-
-                        {/* 📦 TABLE DES COLIS */}
-                        <ParcelTable 
-                            colis={expedition.colis || []}
-                            formatCurrency={formatCurrency}
-                        />
-
-                    </div>
-
-                    {/* COLONNE LATÉRALE - Stack on mobile */}
-                    <div className="lg:col-span-1 space-y-4 sm:space-y-6">
-
-                        {/* 👤 CONTACTS */}
-                        <div className="space-y-3 sm:space-y-4">
-                            <ContactCard 
-                                type="shipper"
-                                contact={expediteur}
-                                country={expedition.pays_depart}
-                            />
-                            <ContactCard 
-                                type="receiver"
-                                contact={destinataire}
-                                country={expedition.pays_destination}
-                            />
+                {/* 💼 COMMISSIONS AGENCE (si disponible) */}
+                {expedition.commission_details && Object.keys(expedition.commission_details).length > 0 && (
+                    <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden shadow-sm">
+                        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-800 flex items-center justify-between">
+                            <h2 className="text-sm font-semibold text-indigo-400 uppercase">
+                                Ma Commission
+                            </h2>
+                            <span className="px-2 py-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-medium rounded">
+                                Interne
+                            </span>
                         </div>
-
-                        {/* 💰 FINANCE */}
-                        <FinanceCard
-                            expedition={expedition}
-                            formatCurrency={formatCurrency}
-                            onRecordTransaction={handleRecordTransaction}
-                        />
-
-                        {/* 🧾 FACTURATION */}
-                        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4 sm:p-5">
-                            <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center gap-2.5">
-                                    <div className="h-9 w-9 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600 shrink-0">
-                                        <Receipt size={17} />
-                                    </div>
-                                    <p className="text-sm font-semibold text-gray-900">Facturation</p>
+                        <div className="p-4 sm:p-6 space-y-4">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+                                <div className="p-3 sm:p-4 bg-white/5 rounded-lg border border-white/10">
+                                    <p className="text-xs font-medium text-gray-400 mb-1 sm:mb-2">Enlèvement</p>
+                                    <p className="text-base sm:text-lg font-semibold text-white">
+                                        {new Intl.NumberFormat('fr-FR').format(expedition.commission_details.enlevement?.agence || 0)}
+                                        <span className="text-xs text-indigo-400 ml-1">CFA</span>
+                                    </p>
                                 </div>
-                                {facture && (
-                                    <select
-                                        value={facture.statut}
-                                        onChange={(e) => handleFactureStatutChange(e.target.value)}
-                                        className={`text-xs font-bold uppercase tracking-wide px-2.5 py-1.5 rounded-lg border cursor-pointer ${FACTURE_STATUT_STYLES[facture.statut] || 'bg-gray-50 text-gray-600 border-gray-200'}`}
-                                    >
-                                        <option value="emise">Émise</option>
-                                        <option value="payee">Payée</option>
-                                        <option value="annulee">Annulée</option>
-                                    </select>
-                                )}
+                                <div className="p-3 sm:p-4 bg-white/5 rounded-lg border border-white/10">
+                                    <p className="text-xs font-medium text-gray-400 mb-1 sm:mb-2">Livraison</p>
+                                    <p className="text-base sm:text-lg font-semibold text-white">
+                                        {new Intl.NumberFormat('fr-FR').format(expedition.commission_details.livraison?.agence || 0)}
+                                        <span className="text-xs text-indigo-400 ml-1">CFA</span>
+                                    </p>
+                                </div>
+                                <div className="p-3 sm:p-4 bg-white/5 rounded-lg border border-white/10">
+                                    <p className="text-xs font-medium text-gray-400 mb-1 sm:mb-2">Emballage</p>
+                                    <p className="text-base sm:text-lg font-semibold text-white">
+                                        {new Intl.NumberFormat('fr-FR').format(expedition.commission_details.emballage?.agence || 0)}
+                                        <span className="text-xs text-indigo-400 ml-1">CFA</span>
+                                    </p>
+                                </div>
+                                <div className="p-3 sm:p-4 bg-white/5 rounded-lg border border-white/10">
+                                    <p className="text-xs font-medium text-gray-400 mb-1 sm:mb-2">Retards</p>
+                                    <p className="text-base sm:text-lg font-semibold text-white">
+                                        {new Intl.NumberFormat('fr-FR').format(expedition.commission_details.retard?.agence || 0)}
+                                        <span className="text-xs text-indigo-400 ml-1">CFA</span>
+                                    </p>
+                                </div>
                             </div>
 
-                            {!facture ? (
-                                <button
-                                    onClick={handleGenerateFacture}
-                                    disabled={isGeneratingFacture}
-                                    className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-gray-900 text-white rounded-lg text-sm font-semibold hover:bg-gray-800 transition-all active:scale-95 disabled:opacity-50"
-                                >
-                                    {isGeneratingFacture ? <Loader2 size={16} className="animate-spin" /> : <Receipt size={16} />}
-                                    {isGeneratingFacture ? 'Génération…' : 'Générer la facture'}
-                                </button>
-                            ) : (
-                                <div className="space-y-3">
-                                    <div className="flex items-center justify-between">
-                                        <p className="text-sm font-semibold text-gray-700">{facture.numero}</p>
-                                        <p className="text-sm font-semibold text-gray-900">{formatCurrency(facture.montant_total)}</p>
-                                    </div>
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <button
-                                            onClick={handleDownloadFacture}
-                                            disabled={isDownloadingFacture}
-                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-semibold hover:bg-gray-200 transition-colors disabled:opacity-50"
-                                        >
-                                            {isDownloadingFacture ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />} PDF
-                                        </button>
-                                        <button
-                                            onClick={handleSendFactureEmail}
-                                            disabled={isSendingFacture}
-                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-semibold hover:bg-gray-200 transition-colors disabled:opacity-50"
-                                        >
-                                            {isSendingFacture ? <Loader2 size={13} className="animate-spin" /> : <Mail size={13} />} Email
-                                        </button>
-                                        <button
-                                            onClick={handleShareFactureWhatsApp}
-                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-semibold hover:bg-emerald-100 transition-colors"
-                                        >
-                                            <MessageCircle size={13} /> WhatsApp
-                                        </button>
-                                        <button
-                                            onClick={handleCopyFactureLink}
-                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-semibold hover:bg-gray-200 transition-colors"
-                                        >
-                                            <LinkIcon size={13} /> Copier le lien
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+                            <div className="h-px bg-white/10"></div>
 
-                        {/* 💼 COMMISSIONS AGENCE (si disponible) */}
-                        {expedition.commission_details && Object.keys(expedition.commission_details).length > 0 && (
-                            <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden shadow-sm">
-                                <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-800 flex items-center justify-between">
-                                    <h2 className="text-sm font-semibold text-indigo-400 uppercase">
-                                        Ma Commission
-                                    </h2>
-                                    <span className="px-2 py-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-medium rounded">
-                                        Interne
-                                    </span>
-                                </div>
-                                <div className="p-4 sm:p-6 space-y-4">
-                                    <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                                        <div className="p-3 sm:p-4 bg-white/5 rounded-lg border border-white/10">
-                                            <p className="text-xs font-medium text-gray-400 mb-1 sm:mb-2">Enlèvement</p>
-                                            <p className="text-base sm:text-lg font-semibold text-white">
-                                                {new Intl.NumberFormat('fr-FR').format(expedition.commission_details.enlevement?.agence || 0)}
-                                                <span className="text-xs text-indigo-400 ml-1">CFA</span>
-                                            </p>
-                                        </div>
-                                        <div className="p-3 sm:p-4 bg-white/5 rounded-lg border border-white/10">
-                                            <p className="text-xs font-medium text-gray-400 mb-1 sm:mb-2">Livraison</p>
-                                            <p className="text-base sm:text-lg font-semibold text-white">
-                                                {new Intl.NumberFormat('fr-FR').format(expedition.commission_details.livraison?.agence || 0)}
-                                                <span className="text-xs text-indigo-400 ml-1">CFA</span>
-                                            </p>
-                                        </div>
-                                        <div className="p-3 sm:p-4 bg-white/5 rounded-lg border border-white/10">
-                                            <p className="text-xs font-medium text-gray-400 mb-1 sm:mb-2">Emballage</p>
-                                            <p className="text-base sm:text-lg font-semibold text-white">
-                                                {new Intl.NumberFormat('fr-FR').format(expedition.commission_details.emballage?.agence || 0)}
-                                                <span className="text-xs text-indigo-400 ml-1">CFA</span>
-                                            </p>
-                                        </div>
-                                        <div className="p-3 sm:p-4 bg-white/5 rounded-lg border border-white/10">
-                                            <p className="text-xs font-medium text-gray-400 mb-1 sm:mb-2">Retards</p>
-                                            <p className="text-base sm:text-lg font-semibold text-white">
-                                                {new Intl.NumberFormat('fr-FR').format(expedition.commission_details.retard?.agence || 0)}
-                                                <span className="text-xs text-indigo-400 ml-1">CFA</span>
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="h-px bg-white/10"></div>
-
-                                    <div className="text-right">
-                                        <p className="text-xs font-medium text-indigo-400 uppercase mb-2">Total Commission</p>
-                                        <p className="text-2xl sm:text-3xl font-bold text-white">
-                                            {new Intl.NumberFormat('fr-FR').format(
-                                                (expedition.commission_details.enlevement?.agence || 0) +
-                                                (expedition.commission_details.livraison?.agence || 0) +
-                                                (expedition.commission_details.emballage?.agence || 0) +
-                                                (expedition.commission_details.retard?.agence || 0)
-                                            )}
-                                            <span className="text-sm text-indigo-400 ml-2">CFA</span>
-                                        </p>
-                                    </div>
-                                </div>
+                            <div className="text-right">
+                                <p className="text-xs font-medium text-indigo-400 uppercase mb-2">Total Commission</p>
+                                <p className="text-2xl sm:text-3xl font-bold text-white">
+                                    {new Intl.NumberFormat('fr-FR').format(
+                                        (expedition.commission_details.enlevement?.agence || 0) +
+                                        (expedition.commission_details.livraison?.agence || 0) +
+                                        (expedition.commission_details.emballage?.agence || 0) +
+                                        (expedition.commission_details.retard?.agence || 0)
+                                    )}
+                                    <span className="text-sm text-indigo-400 ml-2">CFA</span>
+                                </p>
                             </div>
-                        )}
-
+                        </div>
                     </div>
+                )}
+
+                {/* 👤 CONTACTS - en fin de page, côte à côte sur toute la largeur */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                    <ContactCard
+                        type="shipper"
+                        contact={expediteur}
+                        country={expedition.pays_depart}
+                    />
+                    <ContactCard
+                        type="receiver"
+                        contact={destinataire}
+                        country={expedition.pays_destination}
+                    />
                 </div>
 
             </div>
@@ -722,6 +552,15 @@ const ExpeditionDetails = () => {
                         logo: getLogoUrl(agencyData?.agence?.logo || agencyData?.logo)
                     }}
                     onClose={() => setShowPrintModal(false)}
+                />
+            )}
+            {isFraisDecisionModalOpen && expedition && (
+                <FraisDecisionModal
+                    expedition={expedition}
+                    onClose={() => {
+                        setIsFraisDecisionModalOpen(false);
+                        getExpeditionDetails(expedition.id);
+                    }}
                 />
             )}
         </div>

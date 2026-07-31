@@ -16,13 +16,24 @@ export function classifyNotification(model, action, data, ctx = {}) {
     createdAt: new Date().toISOString(),
   };
 
-  if (model === 'Colis' && (action === 'assigned' || action === 'received_by_backoffice')) {
+  if (model === 'Colis' && action === 'assigned') {
     return {
       ...base,
       title: 'Colis à réceptionner',
       message: count > 1
         ? `${count} colis vous ont été assignés pour réception.`
         : `Le colis ${first.code_colis || ''} vous a été assigné pour réception.`,
+      link: '/colis-a-receptionner',
+    };
+  }
+
+  if (model === 'Colis' && action === 'received_by_backoffice') {
+    return {
+      ...base,
+      title: 'Colis arrivé au backoffice',
+      message: count > 1
+        ? `${count} colis destinés à votre agence sont arrivés au backoffice et vous seront livrés.`
+        : `Le colis ${first.code_colis || ''} est arrivé au backoffice et vous sera livré.`,
       link: '/colis-a-receptionner',
     };
   }
