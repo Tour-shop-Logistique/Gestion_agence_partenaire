@@ -4,6 +4,7 @@ import SaveTarifModal from "../components/SaveTarifModal";
 import { formatPrice } from "../utils/format";
 import { useTarifs } from "../hooks/useTarifs";
 import { useAuth } from "../hooks/useAuth";
+import { tarifsApi } from "../utils/api/tarifs";
 import {
   PlusIcon,
   CircleStackIcon,
@@ -383,25 +384,31 @@ const TarifSimpleComponent = () => {
   const handleConfirmSingle = useCallback(async (percentage) => {
     if (!selectedBaseTarif) return;
 
+    console.log("🔍 selectedBaseTarif:", selectedBaseTarif);
+    console.log("🔍 selectedBaseTarif.id:", selectedBaseTarif.id);
+
     try {
-      const result = await saveTarif({
-        indice: selectedBaseTarif.indice,
-        prix_zones: [{
-          tarif_simple_id: selectedBaseTarif.id,
-          pourcentage_prestation: percentage
-        }]
+      // Appel direct à l'API au lieu de passer par le thunk saveTarif
+      // car le thunk s'attend à une structure différente
+      const response = await tarifsApi.createTarifSimple({
+        tarif_simple_id: selectedBaseTarif.id,
+        pourcentage_prestation: percentage
       });
 
-      if (result?.success) {
+      if (response.success) {
         await fetchAgencyTarifs(true);
         setShowSingleModal(false);
         setSelectedBaseTarif(null);
         setActiveTab("agency");
+        toast.success("Tarif initialisé avec succès");
+      } else {
+        toast.error(response.message || "Erreur lors de l'initialisation");
       }
     } catch (err) {
       console.error("Erreur initialisation individuelle:", err);
+      toast.error("Erreur lors de l'initialisation du tarif");
     }
-  }, [selectedBaseTarif, saveTarif, fetchAgencyTarifs]);
+  }, [selectedBaseTarif, fetchAgencyTarifs]);
 
   const handleEditSingle = useCallback((tarif) => {
     setSelectedAgencyTarif(tarif);
@@ -502,7 +509,7 @@ const TarifSimpleComponent = () => {
       </div>
 
       {/* KPI Section */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         <div className="bg-gradient-to-br from-indigo-50 to-white p-4 rounded-xl border border-indigo-100 shadow-sm flex items-center justify-between">
           <div>
             <p className="text-[10px] font-semibold text-indigo-500/80 uppercase tracking-wide mb-1">Tarif Agence</p>
@@ -607,10 +614,11 @@ const TarifSimpleComponent = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {currentData?.map((tarif) => (
-                    <tr key={tarif.id} className="hover:bg-slate-50/80 transition-all duration-200 group">
+                  {currentData?.map((tarif) => {
+                    return (
+                    <tr key={tarif.id} className="transition-all duration-200 group hover:bg-slate-50/80">
                       <td className="px-6 py-4 border-r border-slate-100/30">
-                        <span className="inline-flex items-center px-2 py-1 rounded bg-slate-900 text-white text-[11px] font-bold leading-none">
+                        <span className="inline-flex items-center px-2 py-1 rounded text-[11px] font-bold leading-none bg-slate-900 text-white">
                           {tarif.indice}
                         </span>
                       </td>
@@ -623,7 +631,7 @@ const TarifSimpleComponent = () => {
                           />
                         </div>
                       </td>
-                      <td className="px-6 py-4 border-r border-slate-100/30 font-medium text-slate-600 text-sm">
+                      <td className="px-6 py-4 border-r border-slate-100/30 font-medium text-sm text-slate-600">
                         {formatPrice(tarif.montant_base, "XOF")}
                       </td>
                       <td className="px-6 py-4 border-r border-slate-100/30">
@@ -632,7 +640,7 @@ const TarifSimpleComponent = () => {
                           <span className="text-[10px] text-slate-400 font-medium">{formatPrice(tarif.montant_prestation, "XOF")}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 border-r border-slate-200 bg-indigo-50/10 group-hover:bg-indigo-50/40 transition-colors">
+                      <td className="px-6 py-4 border-r border-slate-200 transition-colors bg-indigo-50/10 group-hover:bg-indigo-50/40">
                         <span className="text-sm font-bold text-slate-950">
                           {formatPrice(tarif.montant_expedition, "XOF")}
                         </span>
@@ -677,18 +685,20 @@ const TarifSimpleComponent = () => {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
 
             {/* Mobile View - Enhanced Card List */}
             <div className="lg:hidden divide-y divide-slate-100">
-              {currentData?.map((tarif) => (
-                <div key={tarif.id} className="p-4 space-y-4 hover:bg-slate-50 transition-colors">
+              {currentData?.map((tarif) => {
+                return (
+                <div key={tarif.id} className="p-4 space-y-4 transition-colors hover:bg-slate-50">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-slate-950 flex items-center justify-center text-white font-bold text-sm shadow-md">
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-md bg-slate-950">
                         {tarif.indice}
                       </div>
                       <div>
@@ -728,21 +738,22 @@ const TarifSimpleComponent = () => {
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 pt-2">
-                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Base</p>
+                    <div className="p-3 rounded-xl border bg-slate-50 border-slate-100">
+                      <p className="text-[9px] font-bold uppercase tracking-wider mb-1 text-slate-400">Base</p>
                       <p className="text-xs font-bold text-slate-900">{formatPrice(tarif.montant_base, "XOF")}</p>
                     </div>
-                    <div className="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100">
-                      <p className="text-[9px] font-bold text-indigo-400 uppercase tracking-wider mb-1">Prestation</p>
+                    <div className="p-3 rounded-xl border bg-indigo-50/50 border-indigo-100">
+                      <p className="text-[9px] font-bold uppercase tracking-wider mb-1 text-indigo-400">Prestation</p>
                       <p className="text-xs font-bold text-indigo-700">+{tarif.pourcentage_prestation}%</p>
                     </div>
-                    <div className="col-span-2 p-3 bg-indigo-600 rounded-xl flex items-center justify-between shadow-sm">
-                      <p className="text-[10px] font-semibold text-indigo-100 uppercase tracking-wide">Total Expédition</p>
+                    <div className="col-span-2 p-3 rounded-xl flex items-center justify-between shadow-sm bg-indigo-600">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-indigo-100">Total Expédition</p>
                       <p className="text-base font-bold text-white">{formatPrice(tarif.montant_expedition, "XOF")}</p>
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
 
             {(!loading && currentData?.length === 0) && (

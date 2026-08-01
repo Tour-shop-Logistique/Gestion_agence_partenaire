@@ -7,7 +7,24 @@ import ExchangeRateWidget from "./ExchangeRateWidget";
 const DashboardHeader = ({ isRefreshing, lastUpdated, onRefresh }) => {
     return (
         <div className="flex items-center justify-between flex-wrap gap-3 pb-1">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-2">
+                <h1 className="text-lg sm:text-2xl font-semibold text-gray-900">
+                    Dashboard
+                </h1>
+                {isRefreshing && (
+                    <span className="text-[10px] sm:text-xs text-indigo-600 font-medium animate-pulse">
+                        Actualisation...
+                    </span>
+                )}
+                {lastUpdated && !isRefreshing && (
+                    <span className="text-[10px] sm:text-xs text-slate-400 hidden sm:inline">
+                        • Mis à jour {new Date(lastUpdated).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                )}
+            </div>
+
             <div className="flex items-center gap-2.5 sm:gap-3.5">
+                <ExchangeRateWidget />
                 <button
                     onClick={onRefresh}
                     disabled={isRefreshing}
@@ -17,24 +34,7 @@ const DashboardHeader = ({ isRefreshing, lastUpdated, onRefresh }) => {
                 >
                     <ArrowPathIcon className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-indigo-600' : ''}`} />
                 </button>
-                <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-2">
-                    <h1 className="text-lg sm:text-xl font-black tracking-tight text-slate-900">
-                        Dashboard
-                    </h1>
-                    {isRefreshing && (
-                        <span className="text-[10px] sm:text-xs text-indigo-600 font-medium animate-pulse">
-                            Actualisation...
-                        </span>
-                    )}
-                    {lastUpdated && !isRefreshing && (
-                        <span className="text-[10px] sm:text-xs text-slate-400 hidden sm:inline">
-                            • Mis à jour {new Date(lastUpdated).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                    )}
-                </div>
             </div>
-
-            <ExchangeRateWidget />
         </div>
     );
 };

@@ -234,7 +234,7 @@ const TarifGroupageComponent = () => {
       </div>
 
       {/* KPI Section */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         <div className="bg-gradient-to-br from-indigo-50 to-white p-4 rounded-xl border border-indigo-100 shadow-sm flex items-center justify-between">
           <div>
             <p className="text-[10px] font-semibold text-indigo-500/80 uppercase tracking-wide mb-1">Tarif Agence</p>
@@ -253,7 +253,7 @@ const TarifGroupageComponent = () => {
             <DocumentDuplicateIcon className="w-5 h-5" />
           </div>
         </div>
-        <div className="col-span-2 bg-gradient-to-br from-slate-50 to-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div className="bg-gradient-to-br from-slate-50 to-white p-4 rounded-xl border border-slate-200 shadow-sm">
           <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-2">
             Répartition par type ({activeTab === "agency" ? "Tarif Agence" : "Tarif de Base"})
           </p>
@@ -377,7 +377,7 @@ const TarifGroupageComponent = () => {
                     const total = activeTab === "agency" ? (tarif.montant_expedition || 0) : (montantBase + montantPrestation);
 
                     return (
-                      <tr key={`${activeTab}-tarif-${tarif.id || index}`} className="hover:bg-slate-50/80 transition-all duration-200 group">
+                      <tr key={`${activeTab}-tarif-${tarif.id || index}`} className="transition-all duration-200 group hover:bg-slate-50/80">
                         <td className="px-6 py-4 border-r border-slate-100/30">
                           <div className="flex flex-col gap-1">
                             <span className={`inline-flex w-fit items-center px-2 py-1 rounded text-[10px] font-bold uppercase tracking-tight ${typeBadgeClasses(tarif.type_expedition)}`}>
@@ -396,7 +396,7 @@ const TarifGroupageComponent = () => {
                             <span className="text-[9px] font-medium text-slate-400">{tarif.pays || 'N/A'}</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 border-r border-slate-100/30 font-medium text-slate-600 text-sm">
+                        <td className="px-6 py-4 border-r border-slate-100/30 font-medium text-sm text-slate-600">
                           {montantBase.toLocaleString()} FCFA
                         </td>
                         {activeTab === "agency" && (
@@ -468,7 +468,7 @@ const TarifGroupageComponent = () => {
                 const total = activeTab === "agency" ? (tarif.montant_expedition || 0) : (montantBase + montantPrestation);
 
                 return (
-                  <div key={`${activeTab}-mobile-${tarif.id || index}`} className="p-4 space-y-4 hover:bg-slate-50 transition-colors">
+                  <div key={`${activeTab}-mobile-${tarif.id || index}`} className="p-4 space-y-4 transition-colors hover:bg-slate-50">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="flex flex-col gap-1">
@@ -510,18 +510,18 @@ const TarifGroupageComponent = () => {
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 pt-2">
-                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Base</p>
+                      <div className="p-3 rounded-xl border bg-slate-50 border-slate-100">
+                        <p className="text-[9px] font-bold uppercase tracking-wider mb-1 text-slate-400">Base</p>
                         <p className="text-xs font-bold text-slate-900">{montantBase.toLocaleString()} FCFA</p>
                       </div>
                       {activeTab === "agency" && (
                         <>
-                          <div className="p-3 bg-indigo-50/50 rounded-xl border border-indigo-100">
-                            <p className="text-[9px] font-bold text-indigo-400 uppercase tracking-wider mb-1">Prestation</p>
+                          <div className="p-3 rounded-xl border bg-indigo-50/50 border-indigo-100">
+                            <p className="text-[9px] font-bold uppercase tracking-wider mb-1 text-indigo-400">Prestation</p>
                             <p className="text-xs font-bold text-indigo-700">+{pourcentage}%</p>
                           </div>
-                          <div className="col-span-2 p-3 bg-indigo-600 rounded-xl flex items-center justify-between shadow-sm">
-                            <p className="text-[10px] font-semibold text-indigo-100 uppercase tracking-wide">Total Expédition</p>
+                          <div className="col-span-2 p-3 rounded-xl flex items-center justify-between shadow-sm bg-indigo-600">
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-indigo-100">Total Expédition</p>
                             <p className="text-base font-bold text-white">{total.toLocaleString()} FCFA</p>
                           </div>
                           <div className="col-span-2 flex items-center justify-between pt-1">

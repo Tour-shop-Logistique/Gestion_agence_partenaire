@@ -199,10 +199,10 @@ const RetraitColis = () => {
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-slate-200 pb-8">
                 <div>
-                    <h1 className="text-lg sm:text-xl font-black tracking-tight text-slate-900">
+                    <h1 className="text-lg sm:text-2xl font-semibold text-gray-900">
                         Retrait Colis
                     </h1>
-                    <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">
+                    <p className="text-sm text-slate-600">
                         Validation de la remise physique des colis aux clients après authentification.
                     </p>
                 </div>

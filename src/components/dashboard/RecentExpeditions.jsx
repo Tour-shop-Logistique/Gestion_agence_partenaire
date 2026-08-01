@@ -143,7 +143,7 @@ const RecentExpeditions = ({ expeditions = [] }) => {
             {/* Header compact */}
             <div className="px-4 sm:px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-slate-50 to-white">
                 <div className="flex items-center gap-2">
-                    <h3 className="text-xs sm:text-sm font-bold text-slate-900">Dernières Expéditions</h3>
+                    <h3 className="text-sm sm:text-base font-semibold text-slate-900 flex items-center gap-1.5">Dernières Expéditions</h3>
                     <span className="hidden sm:inline text-xs text-slate-500">(5 plus récentes)</span>
                     {loadingDetails && (
                         <span className="text-xs text-indigo-600 animate-pulse">...</span>

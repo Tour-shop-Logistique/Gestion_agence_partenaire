@@ -168,7 +168,7 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
                                             <p className="text-slate-900 uppercase tracking-tight">{c.designation || 'Colis'}</p>
                                             {c.category?.nom && <p className="text-[9px] text-indigo-600 uppercase tracking-wide mt-0.5">{c.category.nom}</p>}
                                             {c.articles?.length > 0 && (
-                                                <p className="text-[10px] text-slate-400 font-medium italic mt-0.5 line-clamp-1">({c.articles.join(', ')})</p>
+                                                <p className="text-[10px] text-slate-400 font-medium italic mt-0.5 line-clamp-1">({c.articles.map(a => a.designation || a).join(', ')})</p>
                                             )}
                                         </td>
                                         <td className="px-4 py-2.5 text-center text-slate-500">1</td>

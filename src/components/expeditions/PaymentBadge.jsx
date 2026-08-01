@@ -69,25 +69,25 @@ const PaymentBadge = ({
     const FraisIcon = fraisStyle.icon;
 
     // Mode compact (pour mobile ou tableaux serrés)
-    if (compact) {
-        return (
-            <div className="flex items-center gap-1.5">
-                {/* Main payment dot */}
-                <div 
-                    className={`w-2 h-2 rounded-full ${isMainPaid ? 'bg-emerald-400' : 'bg-orange-400'}`}
-                    title={`Transport: ${mainStyle.label}`}
-                />
+    // if (compact) {
+    //     return (
+    //         <div className="flex items-center gap-1.5">
+    //             {/* Main payment dot */}
+    //             <div 
+    //                 className={`w-2 h-2 rounded-full ${isMainPaid ? 'bg-emerald-400' : 'bg-orange-400'}`}
+    //                 title={`Transport: ${mainStyle.label}`}
+    //             />
                 
-                {/* Frais dot if applicable */}
-                {hasFrais && (
-                    <div 
-                        className={`w-2 h-2 rounded-full ${isFraisPaid ? 'bg-emerald-400' : 'bg-rose-400'}`}
-                        title={`Frais annexes: ${fraisStyle.label}`}
-                    />
-                )}
-            </div>
-        );
-    }
+    //             {/* Frais dot if applicable */}
+    //             {hasFrais && (
+    //                 <div 
+    //                     className={`w-2 h-2 rounded-full ${isFraisPaid ? 'bg-emerald-400' : 'bg-rose-400'}`}
+    //                     title={`Frais annexes: ${fraisStyle.label}`}
+    //                 />
+    //             )}
+    //         </div>
+    //     );
+    // }
 
     // Mode normal (pour desktop)
     return (
