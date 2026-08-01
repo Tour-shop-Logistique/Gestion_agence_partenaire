@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo, useRef } from "react";
 import { useDispatch } from "react-redux";
 import { useExpedition } from "../hooks/useExpedition";
 import { useAuth } from "../hooks/useAuth";
+import { useAgency } from "../hooks/useAgency";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { realtimeColisUpdated } from "../store/slices/expeditionSlice";
 import { Link } from "react-router-dom";
@@ -14,15 +15,18 @@ import {
     QrCodeIcon,
     CheckCircleIcon,
     ChevronLeftIcon,
-    ChevronRightIcon
+    ChevronRightIcon,
+    ArrowDownTrayIcon
 } from "@heroicons/react/24/outline";
 import QRScanner from "../components/QRScanner";
 import ColisDetailsDrawer from "../components/common/ColisDetailsDrawer";
 import useHasPermission from "../hooks/useHasPermission";
+import { exportColisAReceptionnerPDF, exportBonReceptionPDF } from "../utils/pdfExport";
 
 const ColisAReceptionner = () => {
     const dispatch = useDispatch();
     const { currentUser } = useAuth();
+    const { data: agencyData } = useAgency();
     const canReceive = useHasPermission("colis_a_receptionner.receive_destination");
     const {
         reception = [],
@@ -248,6 +252,55 @@ const ColisAReceptionner = () => {
         setProcessing(false);
     };
 
+    const handleExportPDF = () => {
+        try {
+            const agenceName = agencyData?.agence?.nom_agence || 
+                              currentUser?.agence?.nom || 
+                              'Agence Partenaire';
+            
+            const result = exportColisAReceptionnerPDF(flatColis, {
+                agenceName: agenceName,
+                title: 'Liste des colis à réceptionner',
+                includeReceivedColis: false // Exporter uniquement les colis à récupérer
+            });
+            
+            toast.success(`PDF exporté : ${result.count} colis (${result.totalPoids.toFixed(2)} kg)`);
+            soundNotification.playSuccess();
+        } catch (error) {
+            console.error('Erreur lors de l\'export PDF:', error);
+            toast.error(error.message || 'Erreur lors de l\'export PDF');
+            soundNotification.playErrorSound();
+        }
+    };
+
+    const handleExportBonReception = () => {
+        try {
+            if (selectedCodes.length === 0) {
+                toast.warning('Veuillez sélectionner au moins un colis');
+                return;
+            }
+
+            const colisToExport = flatColis.filter(c => selectedCodes.includes(c.code_colis));
+            
+            const agenceName = agencyData?.agence?.nom_agence || 
+                              currentUser?.agence?.nom || 
+                              'Agence Partenaire';
+            
+            const result = exportBonReceptionPDF(colisToExport, {
+                agenceName: agenceName,
+                receiverName: currentUser?.nom || '',
+                receiverSignature: true
+            });
+            
+            toast.success(`Bon de réception généré : ${result.count} colis`);
+            soundNotification.playSuccess();
+        } catch (error) {
+            console.error('Erreur lors de l\'export du bon:', error);
+            toast.error(error.message || 'Erreur lors de l\'export du bon');
+            soundNotification.playErrorSound();
+        }
+    };
+
     const handleQRScan = (scannedData) => {
         // Le QR code peut contenir soit le code_colis directement, soit l'ID de l'expédition
         // On va chercher dans la liste des colis
@@ -328,32 +381,39 @@ const ColisAReceptionner = () => {
         <div className="max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-6 py-4 sm:py-1 space-y-3 sm:space-y-6 animate-fade-in">
             {/* Header Section - Responsive */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                    <h1 className="text-lg sm:text-2xl font-semibold text-gray-900">
+                        Colis à réceptionner
+                    </h1>
+                    <p className="text-sm text-slate-600">
+                        Gérez les colis en transit vers votre agence
+                    </p>
+                </div>
                 <div className="flex items-center gap-2.5 sm:gap-3.5">
+                    <button
+                        onClick={handleExportPDF}
+                        className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-slate-300 rounded-lg text-xs sm:text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50 hover:border-indigo-400 shadow-sm hover:shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
+                        title="Exporter la liste des colis à réceptionner en PDF"
+                    >
+                        <ArrowDownTrayIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Export PDF</span>
+                    </button>
+                    <button
+                        onClick={() => setScannerOpen(true)}
+                        className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-transparent rounded-lg text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm hover:shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
+                    >
+                        <QrCodeIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Scanner</span>
+                    </button>
                     <button
                         onClick={() => fetchReceptionData(true)}
                         disabled={loading}
-                        aria-label="Actualiser"
-                        className="p-2 bg-white border border-slate-200 rounded-lg text-slate-500 hover:text-indigo-600 hover:border-indigo-300 hover:shadow-sm active:scale-95 transition-all disabled:opacity-50"
-                        title="Actualiser"
+                        className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white border-2 border-slate-300 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 hover:border-indigo-400 shadow-sm hover:shadow-md active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <ArrowPathIcon className={`w-4 h-4 ${loading ? 'animate-spin text-indigo-600' : ''}`} />
+                        <ArrowPathIcon className={`w-5 h-5 ${loading ? 'animate-spin text-indigo-600' : 'text-slate-600'}`} />
+                        <span className="uppercase tracking-wide">Actualiser</span>
                     </button>
-                    <div>
-                        <h1 className="text-lg sm:text-2xl font-semibold text-gray-900">
-                            Colis à réceptionner
-                        </h1>
-                        <p className="text-sm text-slate-600">
-                            Gérez les colis en transit vers votre agence
-                        </p>
-                    </div>
                 </div>
-                <button
-                    onClick={() => setScannerOpen(true)}
-                    className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-transparent rounded-lg text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm hover:shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
-                >
-                    <QrCodeIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
-                    <span className="hidden sm:inline">Scanner</span>
-                </button>
             </div>
 
             {/* QR Scanner Modal */}
@@ -386,6 +446,15 @@ const ColisAReceptionner = () => {
                         </span>
                     </div>
                     <div className="flex items-center gap-2">
+                        <button
+                            onClick={handleExportBonReception}
+                            className="flex-1 sm:flex-none inline-flex items-center justify-center px-3 sm:px-4 py-1.5 sm:py-2 border border-indigo-300 rounded-lg text-xs sm:text-sm font-semibold text-indigo-700 bg-white hover:bg-indigo-50 shadow-sm hover:shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
+                            title="Générer un bon de réception PDF"
+                        >
+                            <ArrowDownTrayIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-1.5" />
+                            <span className="hidden sm:inline">Bon PDF</span>
+                            <span className="sm:hidden">PDF</span>
+                        </button>
                         <button
                             onClick={handleReceiveSelected}
                             disabled={processing || !canReceive}

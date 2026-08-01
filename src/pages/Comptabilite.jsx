@@ -695,89 +695,82 @@ const Comptabilite = () => {
     <div className="max-w-[1600px] mx-auto px-3 sm:px-6 py-1 sm:py-6 space-y-4 sm:space-y-6">
       
       {/* Page Header - Responsive */}
-      <div className="flex flex-col gap-3 sm:gap-4 border-b border-slate-200 pb-4 sm:pb-6">
-        <div>
-          <h1 className="text-lg sm:text-2xl font-semibold text-gray-900">Comptabilité & Flux</h1>
-          <p className="text-sm text-slate-600">Tableau de bord financier professionnel - Analyse des revenus et répartition des commissions</p>
-        </div>
-        
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setIsExportDropdownOpen(!isExportDropdownOpen)}
-              className={`h-8 sm:h-9 px-3 sm:px-4 flex items-center gap-1.5 sm:gap-2 border rounded-md text-xs font-semibold transition-all shadow-sm active:scale-95 ${
-                isExportDropdownOpen 
-                ? 'bg-slate-100 border-slate-300 text-slate-900' 
-                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
-              }`}
-              disabled={!filteredData || filteredData.length === 0}
-            >
-              <ArrowDownLeftIcon className={`w-3 sm:w-3.5 h-3 sm:h-3.5 rotate-45 transition-transform ${isExportDropdownOpen ? 'scale-110' : ''}`} />
-              <span className="hidden sm:inline">Exporter</span>
-              <ChevronDownIcon className={`w-3 h-3 ml-1 transition-transform ${isExportDropdownOpen ? 'rotate-180' : ''}`} />
-            </button>
-
-            {isExportDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-lg shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                <div className="p-1">
-                  <button
-                    onClick={handleExportExcel}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 rounded-md transition-colors"
-                  >
-                    <div className="w-7 h-7 flex items-center justify-center bg-emerald-50 text-emerald-600 rounded-md">
-                      <TableCellsIcon className="w-4 h-4" />
-                    </div>
-                    <span>Format Excel (.xlsx)</span>
-                  </button>
-                  <button
-                    onClick={handleExportPDF}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 rounded-md transition-colors"
-                  >
-                    <div className="w-7 h-7 flex items-center justify-center bg-red-50 text-red-600 rounded-md">
-                      <DocumentArrowDownIcon className="w-4 h-4" />
-                    </div>
-                    <span>Rapport PDF (.pdf)</span>
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <button
-            onClick={() => navigate("/transactions")}
-            className="h-8 sm:h-9 px-3 sm:px-4 flex items-center gap-1.5 sm:gap-2 bg-slate-900 text-white rounded-md text-xs font-semibold hover:bg-slate-800 transition-all shadow-sm active:scale-95"
-          >
-            <BanknotesIcon className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
-            <span className="hidden sm:inline">Historique</span>
-          </button>
-
-          <div className="flex items-center bg-white border border-slate-200 rounded-md overflow-hidden flex-1 sm:flex-none">
-            <div className="flex items-center px-2 sm:px-3 py-1.5 gap-1 sm:gap-2 border-r border-slate-100">
-              <input
-                type="date"
-                className="text-[11px] sm:text-xs font-medium text-slate-700 bg-transparent border-none focus:ring-0 p-0 cursor-pointer w-full"
-                value={dateDebut}
-                onChange={(e) => setDateDebut(e.target.value)}
-              />
-            </div>
-            <div className="flex items-center px-2 sm:px-3 py-1.5 gap-1 sm:gap-2">
-              <input
-                type="date"
-                className="text-[11px] sm:text-xs font-medium text-slate-700 bg-transparent border-none focus:ring-0 p-0 cursor-pointer w-full"
-                value={dateFin}
-                onChange={(e) => setDateFin(e.target.value)}
-              />
-            </div>
+      <div className="border-b border-slate-200 pb-4 sm:pb-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-lg sm:text-2xl font-semibold text-gray-900">Comptabilité & Flux</h1>
+            <p className="text-sm text-slate-600">Tableau de bord financier professionnel - Analyse des revenus et répartition des commissions</p>
           </div>
           
-          <button
-            onClick={() => loadAccounting({ date_debut: dateDebut, date_fin: dateFin }, true)}
-            disabled={status === 'loading'}
-            className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 bg-white border border-slate-200 text-slate-500 rounded-md hover:bg-slate-50 hover:text-slate-900 transition-colors disabled:opacity-50"
-            title="Actualiser les données"
-          >
-            <ArrowPathIcon className={`w-3.5 sm:w-4 h-3.5 sm:h-4 ${status === 'loading' ? 'animate-spin' : ''}`} />
-          </button>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex items-center bg-white border border-slate-200 rounded-md overflow-hidden">
+              <div className="flex items-center px-2 sm:px-3 py-1.5 gap-1 sm:gap-2 border-r border-slate-100">
+                <input
+                  type="date"
+                  className="text-[11px] sm:text-xs font-medium text-slate-700 bg-transparent border-none focus:ring-0 p-0 cursor-pointer w-full"
+                  value={dateDebut}
+                  onChange={(e) => setDateDebut(e.target.value)}
+                />
+              </div>
+              <div className="flex items-center px-2 sm:px-3 py-1.5 gap-1 sm:gap-2">
+                <input
+                  type="date"
+                  className="text-[11px] sm:text-xs font-medium text-slate-700 bg-transparent border-none focus:ring-0 p-0 cursor-pointer w-full"
+                  value={dateFin}
+                  onChange={(e) => setDateFin(e.target.value)}
+                />
+              </div>
+            </div>
+            
+            <button
+              onClick={() => loadAccounting({ date_debut: dateDebut, date_fin: dateFin }, true)}
+              disabled={status === 'loading'}
+              className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 bg-white border border-slate-200 text-slate-500 rounded-md hover:bg-slate-50 hover:text-slate-900 transition-colors disabled:opacity-50"
+              title="Actualiser les données"
+            >
+              <ArrowPathIcon className={`w-3.5 sm:w-4 h-3.5 sm:h-4 ${status === 'loading' ? 'animate-spin' : ''}`} />
+            </button>
+
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setIsExportDropdownOpen(!isExportDropdownOpen)}
+                className={`h-8 sm:h-9 px-3 sm:px-4 flex items-center gap-1.5 sm:gap-2 border rounded-md text-xs font-semibold transition-all shadow-sm active:scale-95 ${
+                  isExportDropdownOpen 
+                  ? 'bg-slate-100 border-slate-300 text-slate-900' 
+                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                }`}
+                disabled={!filteredData || filteredData.length === 0}
+              >
+                <span className="hidden sm:inline">Exporter</span>
+                <ChevronDownIcon className={`w-3 h-3 ml-1 transition-transform ${isExportDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isExportDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-lg shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="p-1">
+                    <button
+                      onClick={handleExportExcel}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 rounded-md transition-colors"
+                    >
+                      <div className="w-7 h-7 flex items-center justify-center bg-emerald-50 text-emerald-600 rounded-md">
+                        <TableCellsIcon className="w-4 h-4" />
+                      </div>
+                      <span>Format Excel (.xlsx)</span>
+                    </button>
+                    <button
+                      onClick={handleExportPDF}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 rounded-md transition-colors"
+                    >
+                      <div className="w-7 h-7 flex items-center justify-center bg-red-50 text-red-600 rounded-md">
+                        <DocumentArrowDownIcon className="w-4 h-4" />
+                      </div>
+                      <span>Rapport PDF (.pdf)</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
