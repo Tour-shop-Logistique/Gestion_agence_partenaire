@@ -453,5 +453,32 @@ export const expeditionsApi = {
                 message: error.message || "Erreur lors de la validation du retrait",
             };
         }
+    },
+
+    /**
+     * Envoie par email le reçu PDF (déjà généré côté frontend, identique à
+     * celui imprimé) au destinataire d'une expédition.
+     * @param {string} expeditionId
+     * @param {Blob} pdfBlob - Le PDF généré via utils/domToPdf.js
+     * @returns {Promise<Object>}
+     */
+    async sendReceiptPdf(expeditionId, pdfBlob) {
+        try {
+            const formData = new FormData();
+            formData.append('pdf', pdfBlob, 'recu.pdf');
+
+            const url = API_ENDPOINTS.EXPEDITIONS.SEND_RECEIPT_PDF.replace(':expeditionId', expeditionId);
+            const response = await apiService.post(url, formData);
+
+            return {
+                success: response.success !== false,
+                message: response.message || "Reçu envoyé par email",
+            };
+        } catch (error) {
+            return {
+                success: false,
+                message: error.message || "Erreur lors de l'envoi du reçu par email",
+            };
+        }
     }
 };
