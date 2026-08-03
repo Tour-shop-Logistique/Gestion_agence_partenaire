@@ -565,14 +565,15 @@ const RetraitColis = () => {
                             >
                                 Annuler
                             </button>
-                            <button
-                                onClick={handleVerifyOtp}
-                                disabled={isRefreshing || !otp || !canValidate}
-                                title={!canValidate ? "Permission requise" : undefined}
-                                className="px-5 py-2 bg-slate-900 text-white rounded-md text-xs font-bold uppercase tracking-wider hover:bg-slate-800 disabled:opacity-50"
-                            >
-                                {isRefreshing ? "Validation..." : "Confirmer le retrait"}
-                            </button>
+                            {canValidate && (
+                                <button
+                                    onClick={handleVerifyOtp}
+                                    disabled={isRefreshing || !otp}
+                                    className="px-5 py-2 bg-slate-900 text-white rounded-md text-xs font-bold uppercase tracking-wider hover:bg-slate-800 disabled:opacity-50"
+                                >
+                                    {isRefreshing ? "Validation..." : "Confirmer le retrait"}
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>

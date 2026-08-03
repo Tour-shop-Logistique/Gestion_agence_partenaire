@@ -455,24 +455,25 @@ const ColisAReceptionner = () => {
                             <span className="hidden sm:inline">Bon PDF</span>
                             <span className="sm:hidden">PDF</span>
                         </button>
-                        <button
-                            onClick={handleReceiveSelected}
-                            disabled={processing || !canReceive}
-                            title={!canReceive ? "Permission requise" : undefined}
-                            className="flex-1 sm:flex-none inline-flex items-center justify-center px-3 sm:px-4 py-1.5 sm:py-2 border border-transparent rounded-lg text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm hover:shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-all"
-                        >
-                            {processing ? (
-                                <>
-                                    <ArrowPathIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2 animate-spin" />
-                                    <span className="hidden sm:inline">Traitement...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <CheckCircleIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
-                                    Réceptionner
-                                </>
-                            )}
-                        </button>
+                        {canReceive && (
+                            <button
+                                onClick={handleReceiveSelected}
+                                disabled={processing}
+                                className="flex-1 sm:flex-none inline-flex items-center justify-center px-3 sm:px-4 py-1.5 sm:py-2 border border-transparent rounded-lg text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm hover:shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-all"
+                            >
+                                {processing ? (
+                                    <>
+                                        <ArrowPathIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2 animate-spin" />
+                                        <span className="hidden sm:inline">Traitement...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <CheckCircleIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
+                                        Réceptionner
+                                    </>
+                                )}
+                            </button>
+                        )}
                         <button
                             onClick={() => setSelectedCodes([])}
                             className="flex-1 sm:flex-none inline-flex items-center justify-center px-3 sm:px-4 py-1.5 sm:py-2 border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-600 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
@@ -851,7 +852,7 @@ const ColisAReceptionner = () => {
                                                         Détails
                                                     </button>
                                                     {/* Afficher le bouton uniquement si le colis est prêt à être réceptionné */}
-                                                    {isReadyToReceive && (
+                                                    {isReadyToReceive && canReceive && (
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
