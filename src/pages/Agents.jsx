@@ -58,6 +58,10 @@ const Agents = () => {
   const [expandedRoleId, setExpandedRoleId] = useState(null);
   const [expandedRoleSearch, setExpandedRoleSearch] = useState("");
   const [updatingRoleAgent, setUpdatingRoleAgent] = useState(null);
+  const [addAgentsRole, setAddAgentsRole] = useState(null);
+  const [addAgentsSelection, setAddAgentsSelection] = useState([]);
+  const [addAgentsSearch, setAddAgentsSearch] = useState("");
+  const [isSubmittingAddAgents, setIsSubmittingAddAgents] = useState(false);
 
   useEffect(() => {
     if (rolesStatus === "idle") {
@@ -137,28 +141,65 @@ const Agents = () => {
     }
   };
 
-  // Bascule immédiate depuis la carte dépliée d'un rôle : assigne le rôle si
-  // l'agent ne l'a pas, le retire s'il l'a déjà - un agent ne portant qu'un
-  // seul rôle à la fois.
-  const toggleAgentRoleAssignment = async (agent, role) => {
-    const hasRole = agent.role_id === role.id;
+  // Retrait immédiat depuis la carte dépliée d'un rôle (décocher un agent
+  // déjà assigné le remet sans rôle - accès complet par défaut).
+  const removeAgentFromRole = async (agent, role) => {
     setUpdatingRoleAgent(agent.id);
     try {
-      const result = await editUser(agent.id, { role_id: hasRole ? null : role.id });
+      const result = await editUser(agent.id, { role_id: null });
       if (!result.payload.success) {
         throw new Error(result.error || "Erreur lors de la mise à jour de l'agent");
       }
       await fetchUsers();
       dispatch(fetchRoles());
-      toast.success(
-        hasRole
-          ? `${agent.nom} ${agent.prenoms} retiré du rôle ${role.nom}.`
-          : `${agent.nom} ${agent.prenoms} assigné au rôle ${role.nom}.`
-      );
+      toast.success(`${agent.nom} ${agent.prenoms} retiré du rôle ${role.nom}.`);
     } catch (error) {
       toast.error(error.message || "Erreur lors de la mise à jour de l'agent");
     } finally {
       setUpdatingRoleAgent(null);
+    }
+  };
+
+  // ── Modal "Ajouter des agents" à un rôle ──
+  const openAddAgentsModal = (role) => {
+    setAddAgentsRole(role);
+    setAddAgentsSelection([]);
+    setAddAgentsSearch("");
+  };
+
+  const closeAddAgentsModal = () => {
+    setAddAgentsRole(null);
+    setAddAgentsSelection([]);
+    setAddAgentsSearch("");
+  };
+
+  const toggleAddAgentsSelection = (agentId) => {
+    setAddAgentsSelection((prev) =>
+      prev.includes(agentId) ? prev.filter((id) => id !== agentId) : [...prev, agentId]
+    );
+  };
+
+  const handleConfirmAddAgents = async () => {
+    if (!addAgentsRole || addAgentsSelection.length === 0) return;
+    setIsSubmittingAddAgents(true);
+    try {
+      const results = await Promise.all(
+        addAgentsSelection.map((agentId) => editUser(agentId, { role_id: addAgentsRole.id }))
+      );
+      const failed = results.find((r) => !r.payload.success);
+      if (failed) {
+        throw new Error(failed.error || "Erreur lors de l'assignation des agents");
+      }
+      await fetchUsers();
+      dispatch(fetchRoles());
+      toast.success(
+        `${addAgentsSelection.length} agent${addAgentsSelection.length > 1 ? "s" : ""} assigné${addAgentsSelection.length > 1 ? "s" : ""} au rôle ${addAgentsRole.nom}.`
+      );
+      closeAddAgentsModal();
+    } catch (error) {
+      toast.error(error.message || "Erreur lors de l'assignation des agents");
+    } finally {
+      setIsSubmittingAddAgents(false);
     }
   };
 
@@ -601,7 +642,7 @@ const Agents = () => {
               {roles.map((role) => {
                 const isExpanded = expandedRoleId === role.id;
                 const roleAgents = (agencyUsers || []).filter((a) => a.role_id === role.id);
-                const visibleAgents = (agencyUsers || []).filter((a) => {
+                const visibleRoleAgents = roleAgents.filter((a) => {
                   const term = expandedRoleSearch.trim().toLowerCase();
                   if (!term) return true;
                   return `${a.nom} ${a.prenoms} ${a.email}`.toLowerCase().includes(term);
@@ -666,23 +707,35 @@ const Agents = () => {
 
                     {isExpanded && (
                       <div className="px-4 sm:px-5 pb-5 pl-11 space-y-3">
-                        <div className="relative">
-                          <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
-                          <input
-                            type="text"
-                            value={expandedRoleSearch}
-                            onChange={(e) => setExpandedRoleSearch(e.target.value)}
-                            placeholder="Rechercher un agent à assigner/retirer..."
-                            className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                          />
+                        <div className="flex items-center gap-2">
+                          <div className="relative flex-1">
+                            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                            <input
+                              type="text"
+                              value={expandedRoleSearch}
+                              onChange={(e) => setExpandedRoleSearch(e.target.value)}
+                              placeholder="Rechercher parmi les agents de ce rôle..."
+                              className="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => openAddAgentsModal(role)}
+                            className="shrink-0 flex items-center gap-1.5 px-3 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-xs font-bold uppercase tracking-wide transition-colors"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                            Ajouter
+                          </button>
                         </div>
                         <div className="border border-gray-200 rounded-lg max-h-72 overflow-y-auto divide-y divide-gray-100 bg-white">
-                          {visibleAgents.length === 0 && (
-                            <p className="text-xs text-gray-400 text-center py-4">Aucun agent trouvé.</p>
+                          {visibleRoleAgents.length === 0 && (
+                            <p className="text-xs text-gray-400 text-center py-4">
+                              {roleAgents.length === 0 ? "Aucun agent assigné à ce rôle." : "Aucun agent trouvé."}
+                            </p>
                           )}
-                          {visibleAgents.map((agent) => {
-                            const hasRole = agent.role_id === role.id;
-                            const belongsToOtherRole = agent.role_id && !hasRole;
+                          {visibleRoleAgents.map((agent) => {
                             const isUpdating = updatingRoleAgent === agent.id;
                             return (
                               <label
@@ -695,8 +748,8 @@ const Agents = () => {
                                   ) : (
                                     <input
                                       type="checkbox"
-                                      checked={hasRole}
-                                      onChange={() => toggleAgentRoleAssignment(agent, role)}
+                                      checked
+                                      onChange={() => removeAgentFromRole(agent, role)}
                                       className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 cursor-pointer"
                                     />
                                   )}
@@ -705,11 +758,6 @@ const Agents = () => {
                                     <p className="text-xs text-gray-500 truncate">{agent.email}</p>
                                   </div>
                                 </div>
-                                {belongsToOtherRole && (
-                                  <span className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-100 px-1.5 py-0.5 rounded whitespace-nowrap">
-                                    {agent.custom_role?.nom || "Autre rôle"}
-                                  </span>
-                                )}
                               </label>
                             );
                           })}
@@ -1278,6 +1326,113 @@ const Agents = () => {
                   className="flex-1 px-4 py-2.5 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
                 >
                   {deletingRole ? "Suppression..." : "Supprimer"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Ajouter des agents à un rôle */}
+      {addAgentsRole && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-screen items-center justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+              onClick={closeAddAgentsModal}
+            ></div>
+            <span className="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">
+              &#8203;
+            </span>
+            <div className="inline-block w-full max-w-lg mx-4 sm:mx-auto transform overflow-hidden rounded-xl bg-white text-left align-bottom shadow-2xl transition-all sm:my-8 sm:align-middle">
+              <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">
+                      Ajouter des agents au rôle {addAgentsRole.nom}
+                    </h3>
+                    <p className="text-blue-100 text-xs">Cochez les agents à assigner à ce rôle</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="rounded-full p-1.5 bg-white/20 text-white hover:bg-white/30 transition-colors"
+                    onClick={closeAddAgentsModal}
+                  >
+                    <span className="sr-only">Fermer</span>
+                    <XMarkIcon className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="px-6 py-4 space-y-3">
+                <div className="relative">
+                  <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                  <input
+                    type="text"
+                    value={addAgentsSearch}
+                    onChange={(e) => setAddAgentsSearch(e.target.value)}
+                    placeholder="Rechercher un agent..."
+                    className="w-full pl-9 pr-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  />
+                </div>
+                <div className="border border-gray-200 rounded-lg max-h-72 overflow-y-auto divide-y divide-gray-100">
+                  {(agencyUsers || [])
+                    .filter((a) => a.role_id !== addAgentsRole.id)
+                    .filter((a) => {
+                      const term = addAgentsSearch.trim().toLowerCase();
+                      if (!term) return true;
+                      return `${a.nom} ${a.prenoms} ${a.email}`.toLowerCase().includes(term);
+                    })
+                    .map((agent) => {
+                      const checked = addAgentsSelection.includes(agent.id);
+                      return (
+                        <label
+                          key={agent.id}
+                          className="flex items-center justify-between gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => toggleAddAgentsSelection(agent.id)}
+                              className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600 cursor-pointer"
+                            />
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-gray-900 truncate">{agent.nom} {agent.prenoms}</p>
+                              <p className="text-xs text-gray-500 truncate">{agent.email}</p>
+                            </div>
+                          </div>
+                          {agent.role_id && (
+                            <span className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-100 px-1.5 py-0.5 rounded whitespace-nowrap">
+                              {agent.custom_role?.nom || "Autre rôle"}
+                            </span>
+                          )}
+                        </label>
+                      );
+                    })}
+                  {(agencyUsers || []).filter((a) => a.role_id !== addAgentsRole.id).length === 0 && (
+                    <p className="text-xs text-gray-400 text-center py-4">Tous les agents sont déjà assignés à ce rôle.</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-3 rounded-b-xl">
+                <button
+                  type="button"
+                  onClick={closeAddAgentsModal}
+                  className="px-6 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmAddAgents}
+                  disabled={isSubmittingAddAgents || addAgentsSelection.length === 0}
+                  className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 border border-transparent rounded-lg text-sm font-medium text-white hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                >
+                  {isSubmittingAddAgents
+                    ? "Assignation..."
+                    : `Assigner${addAgentsSelection.length > 0 ? ` (${addAgentsSelection.length})` : ""}`}
                 </button>
               </div>
             </div>
