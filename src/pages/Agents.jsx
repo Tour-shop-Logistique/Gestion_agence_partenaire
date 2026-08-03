@@ -609,9 +609,9 @@ const Agents = () => {
 
       {/* Liste des rôles - Design responsive */}
       {activeTab === "roles" && (
-        <div className="bg-white shadow-sm rounded-lg border border-gray-100 overflow-hidden mx-3 sm:mx-0">
+        <div className="mx-3 sm:mx-0">
           {rolesStatus === "loading" && roles.length === 0 ? (
-            <div className="p-6">
+            <div className="bg-white shadow-sm rounded-lg border border-gray-100 p-6">
               <div className="animate-pulse space-y-4">
                 {Array.from({ length: 3 }).map((_, index) => (
                   <div key={index} className="h-20 bg-gray-50 rounded-lg" />
@@ -619,7 +619,7 @@ const Agents = () => {
               </div>
             </div>
           ) : roles.length === 0 ? (
-            <div className="p-8 text-center">
+            <div className="bg-white shadow-sm rounded-lg border border-gray-100 p-8 text-center">
               <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center shadow-lg">
                 <KeyIcon className="w-10 h-10 text-gray-400" />
               </div>
@@ -638,7 +638,7 @@ const Agents = () => {
               </button>
             </div>
           ) : (
-            <div className="divide-y divide-gray-100">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
               {roles.map((role) => {
                 const isExpanded = expandedRoleId === role.id;
                 const roleAgents = (agencyUsers || []).filter((a) => a.role_id === role.id);
@@ -649,7 +649,7 @@ const Agents = () => {
                 });
 
                 return (
-                  <div key={role.id}>
+                  <div key={role.id} className="bg-white shadow-sm rounded-lg border border-gray-100 overflow-hidden self-start">
                     <div className="p-4 sm:p-5 flex items-start justify-between gap-4">
                       <button
                         type="button"
@@ -706,7 +706,7 @@ const Agents = () => {
                     </div>
 
                     {isExpanded && (
-                      <div className="px-4 sm:px-5 pb-5 pl-11 space-y-3">
+                      <div className="px-4 sm:px-5 pb-5 pl-11 space-y-3 border-t border-gray-100 pt-4">
                         <div className="flex items-center gap-2">
                           <div className="relative flex-1">
                             <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
