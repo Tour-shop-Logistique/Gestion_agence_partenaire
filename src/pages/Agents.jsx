@@ -45,6 +45,7 @@ const Agents = () => {
   const [loading, setLoading] = useState(false);
   const [updatingAgent, setUpdatingAgent] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [refreshingRoles, setRefreshingRoles] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [agentToDelete, setAgentToDelete] = useState(null);
 
@@ -378,6 +379,19 @@ const Agents = () => {
     }
   };
 
+  const handleRefreshRoles = async () => {
+    setRefreshingRoles(true);
+    try {
+      const result = await dispatch(fetchRoles());
+      if (result.error) throw new Error(result.payload || "Erreur lors de l'actualisation");
+      toast.info("Liste des rôles actualisée");
+    } catch (error) {
+      toast.error(error.message || "Erreur lors de l'actualisation");
+    } finally {
+      setRefreshingRoles(false);
+    }
+  };
+
   if (!isAdmin) {
     return (
       <div className="text-center py-12">
@@ -407,37 +421,35 @@ const Agents = () => {
             </p>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
-            {activeTab === "agents" && (
-              <button
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className="inline-flex items-center px-3 sm:px-4 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
-              >
-                {refreshing ? (
-                  <>
-                    <Spinner size="sm" color="current" className="sm:mr-2" />
-                    <span className="hidden sm:inline">Actualisation...</span>
-                  </>
-                ) : (
-                  <>
-                    <svg
-                      className="w-3.5 sm:w-4 h-3.5 sm:h-4 sm:mr-2"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                      ></path>
-                    </svg>
-                    <span className="hidden sm:inline">Actualiser</span>
-                  </>
-                )}
-              </button>
-            )}
+            <button
+              onClick={activeTab === "agents" ? handleRefresh : handleRefreshRoles}
+              disabled={activeTab === "agents" ? refreshing : refreshingRoles}
+              className="inline-flex items-center px-3 sm:px-4 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
+            >
+              {(activeTab === "agents" ? refreshing : refreshingRoles) ? (
+                <>
+                  <Spinner size="sm" color="current" className="sm:mr-2" />
+                  <span className="hidden sm:inline">Actualisation...</span>
+                </>
+              ) : (
+                <>
+                  <svg
+                    className="w-3.5 sm:w-4 h-3.5 sm:h-4 sm:mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    ></path>
+                  </svg>
+                  <span className="hidden sm:inline">Actualiser</span>
+                </>
+              )}
+            </button>
             <button
               onClick={activeTab === "agents" ? openAddModal : openAddRoleModal}
               className="bg-green-600 hover:bg-green-700 text-white px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center justify-center transition-colors"
