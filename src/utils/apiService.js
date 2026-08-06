@@ -44,6 +44,22 @@ class ApiService {
   }
 
   /**
+   * Construit le message d'erreur le plus précis possible à partir d'une
+   * réponse Laravel : privilégie le premier message de champ de la
+   * validation (data.errors, ex. {telephone: ["The telephone has already
+   * been taken."]}) plutôt que le message générique ("Erreur de validation
+   * des données.") qui masque la vraie raison à l'utilisateur.
+   */
+  extractErrorMessage(data) {
+    if (data?.errors && typeof data.errors === "object") {
+      const firstField = Object.values(data.errors)[0];
+      const firstMessage = Array.isArray(firstField) ? firstField[0] : firstField;
+      if (firstMessage) return firstMessage;
+    }
+    return data?.message || data?.error;
+  }
+
+  /**
    * Gérer les erreurs de réponse
    */
   async handleResponse(response) {
@@ -66,7 +82,7 @@ class ApiService {
     // Si la réponse n'est pas OK (status 4xx ou 5xx)
     if (!response.ok) {
       console.error(`❌ Erreur API ${response.status}:`, data);
-      
+
       // Gestion spécifique des erreurs 520 (problème de serveur backend)
       if (response.status === 520) {
         const error = new Error(
@@ -77,9 +93,9 @@ class ApiService {
         error.success = false;
         throw error;
       }
-      
+
       const error = new Error(
-        data?.message || data?.error || `Erreur HTTP: ${response.status}`
+        this.extractErrorMessage(data) || `Erreur HTTP: ${response.status}`
       );
       error.status = response.status;
       error.data = data;
@@ -89,7 +105,7 @@ class ApiService {
 
     // Si la réponse contient success: false
     if (data && typeof data === "object" && data.success === false) {
-      const error = new Error(data.message || "Une erreur est survenue");
+      const error = new Error(this.extractErrorMessage(data) || "Une erreur est survenue");
       error.status = response.status;
       error.data = data;
       error.success = false;
