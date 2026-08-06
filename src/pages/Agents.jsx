@@ -148,8 +148,8 @@ const Agents = () => {
     setUpdatingRoleAgent(agent.id);
     try {
       const result = await editUser(agent.id, { role_id: null });
-      if (!result.payload.success) {
-        throw new Error(result.error || "Erreur lors de la mise à jour de l'agent");
+      if (result.meta.requestStatus !== "fulfilled") {
+        throw new Error(result.payload || "Erreur lors de la mise à jour de l'agent");
       }
       await fetchUsers();
       dispatch(fetchRoles());
@@ -187,9 +187,9 @@ const Agents = () => {
       const results = await Promise.all(
         addAgentsSelection.map((agentId) => editUser(agentId, { role_id: addAgentsRole.id }))
       );
-      const failed = results.find((r) => !r.payload.success);
+      const failed = results.find((r) => r.meta.requestStatus !== "fulfilled");
       if (failed) {
-        throw new Error(failed.error || "Erreur lors de l'assignation des agents");
+        throw new Error(failed.payload || "Erreur lors de l'assignation des agents");
       }
       await fetchUsers();
       dispatch(fetchRoles());
@@ -212,12 +212,10 @@ const Agents = () => {
 
     try {
       const result = await toggleUserStatus(agent.id);
-      if (result.payload.success) {
+      if (result.meta.requestStatus === "fulfilled") {
         toast.success(`Agent ${!agent.actif ? "activé" : "désactivé"} avec succès`);
       } else {
-        throw new Error(
-          result.error || "Erreur lors de la mise à jour du statut"
-        );
+        throw new Error(result.payload || "Erreur lors de la mise à jour du statut");
       }
     } catch (error) {
       toast.error(`Erreur: ${error.message}`);
@@ -252,14 +250,13 @@ const Agents = () => {
 
         const result = await editUser(editingAgent.id, payload);
 
-        if (result.payload.success) {
+        if (result.meta.requestStatus === "fulfilled") {
           await fetchUsers();
           dispatch(fetchRoles());
           toast.success("Agent mis à jour avec succès");
           closeModal();
         } else {
-          closeModal();
-          throw new Error(result.error || "Erreur lors de la mise à jour");
+          throw new Error(result.payload || "Erreur lors de la mise à jour");
         }
       } else {
         const payload = {
@@ -267,22 +264,21 @@ const Agents = () => {
           prenoms: (formData.prenoms || "").trim(),
           telephone: formData.phone || "",
           email: formData.email || "",
-          password: formData.password || "123456",
-          password_confirmation: formData.password || "123456",
+          password: formData.password || "12345678",
+          password_confirmation: formData.password || "12345678",
           type: formData.type || "agence",
           role_id: formData.role_id || null,
         };
 
         const result = await createUser(payload);
 
-        if (result.payload.success) {
+        if (result.meta.requestStatus === "fulfilled") {
           await fetchUsers();
           dispatch(fetchRoles());
           toast.success("Agent créé avec succès");
           closeModal();
         } else {
-          closeModal();
-          throw new Error(result.error || "Erreur lors de la création");
+          throw new Error(result.payload || "Erreur lors de la création");
         }
       }
     } catch (error) {
@@ -321,12 +317,12 @@ const Agents = () => {
     try {
       const result = await deleteUser(agentToDelete.id);
 
-      if (result.payload.success) {
-        toast.success(result.message || "Agent supprimé avec succès");
+      if (result.meta.requestStatus === "fulfilled") {
+        toast.success("Agent supprimé avec succès");
         setShowDeleteModal(false);
         await fetchUsers();
       } else {
-        throw new Error(result.error || "Erreur lors de la suppression");
+        throw new Error(result.payload || "Erreur lors de la suppression");
       }
     } catch (error) {
       toast.error(error.message || "Erreur lors de la suppression");
@@ -1024,6 +1020,7 @@ const Agents = () => {
                             value={formData.password}
                             onChange={handleChange}
                             required={!editingAgent}
+                            minLength={8}
                             className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
                             placeholder={
                               editingAgent
@@ -1034,7 +1031,7 @@ const Agents = () => {
                         </div>
                         {!editingAgent && (
                           <p className="text-xs text-gray-500">
-                            Minimum 6 caractères
+                            Minimum 8 caractères
                           </p>
                         )}
                       </div>
