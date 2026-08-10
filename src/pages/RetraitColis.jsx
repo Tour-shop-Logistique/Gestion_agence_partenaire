@@ -18,6 +18,7 @@ import { toast } from "../utils/toast";
 import ConfirmationModal from "../components/ConfirmationModal";
 import ColisDetailsDrawer from "../components/common/ColisDetailsDrawer";
 import useHasPermission from "../hooks/useHasPermission";
+import PageHeader from "../components/ui/PageHeader";
 
 const RetraitColis = () => {
     const canInitiate = useHasPermission("retrait_colis.initiate");
@@ -197,38 +198,35 @@ const RetraitColis = () => {
     return (
         <div className="max-w-[1700px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
             {/* Header Section */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-slate-200 pb-8">
-                <div>
-                    <h1 className="text-lg sm:text-2xl font-semibold text-gray-900">
-                        Retrait Colis
-                    </h1>
-                    <p className="text-sm text-slate-600">
-                        Validation de la remise physique des colis aux clients après authentification.
-                    </p>
-                </div>
-
-                <form onSubmit={handleSearch} className="flex items-center gap-3 w-full md:w-auto">
-                    <div className="relative flex-1 md:w-80">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <MagnifyingGlassIcon className="h-4 w-4 text-slate-400" />
-                        </div>
-                        <input
-                            type="text"
-                            className="block w-full pl-9 pr-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400"
-                            placeholder="Rechercher (Tél ou Code)..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </div>
-                    <button
-                        type="submit"
-                        disabled={isRefreshing || !searchQuery}
-                        className="inline-flex items-center justify-center px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-semibold hover:bg-slate-800 transition-colors disabled:opacity-50"
-                    >
-                         {isRefreshing ? <ArrowPathIcon className="w-4 h-4 animate-spin mr-2" /> : <ArrowPathIcon className="w-4 h-4 mr-2" />}
-                        Actualiser
-                    </button>
-                </form>
+            <div className="border-b border-slate-200 pb-8">
+                <PageHeader
+                    title="Retrait Colis"
+                    subtitle="Validation de la remise physique des colis aux clients après authentification."
+                    actions={
+                        <form onSubmit={handleSearch} className="flex items-center gap-3 w-full md:w-auto">
+                            <div className="relative flex-1 md:w-80">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <MagnifyingGlassIcon className="h-4 w-4 text-slate-400" />
+                                </div>
+                                <input
+                                    type="text"
+                                    className="block w-full pl-9 pr-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400"
+                                    placeholder="Rechercher (Tél ou Code)..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                            </div>
+                            <button
+                                type="submit"
+                                disabled={isRefreshing || !searchQuery}
+                                className="inline-flex items-center justify-center px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-semibold hover:bg-slate-800 transition-colors disabled:opacity-50"
+                            >
+                                {isRefreshing ? <ArrowPathIcon className="w-4 h-4 animate-spin mr-2" /> : <ArrowPathIcon className="w-4 h-4 mr-2" />}
+                                Actualiser
+                            </button>
+                        </form>
+                    }
+                />
             </div>
 
             {/* Results Section */}

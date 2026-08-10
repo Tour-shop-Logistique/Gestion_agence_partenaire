@@ -11,6 +11,7 @@ import { Check, X, Eye, Package, Calendar, MapPin, User, ArrowRight, Loader2, Re
 import ConfirmationModal from "../components/ConfirmationModal";
 import Spinner from '../components/common/Spinner';
 import useHasPermission from "../hooks/useHasPermission";
+import PageHeader from "../components/ui/PageHeader";
 
 const Demandes = () => {
     const navigate = useNavigate();
@@ -252,39 +253,34 @@ const Demandes = () => {
     return (
         <div className="space-y-4 sm:space-y-8 max-w-[1600px] mx-auto px-3 sm:px-6 pb-6 sm:pb-10">
             {/* Header Section - Responsive */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0">
-                <div>
-                    <h1 className="text-lg sm:text-2xl font-semibold text-gray-900">
-                        Demandes Clients
-                    </h1>
-                    <p className="text-sm text-slate-600">
-                        Gérez les demandes d'expédition effectuées par les clients
-                    </p>
-                </div>
-
-                <div className="flex items-center gap-2 sm:gap-3">
-                    <button
-                        onClick={handleRefresh}
-                        disabled={status === 'loading'}
-                        className="inline-flex items-center px-3 sm:px-4 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
-                    >
-                        <RefreshCw className={`w-3.5 sm:w-4 h-3.5 sm:h-4 sm:mr-2 ${status === 'loading' ? 'animate-spin' : ''}`} />
-                        <span className="hidden sm:inline">Actualiser</span>
-                    </button>
-                    <div className="bg-white px-3 sm:px-5 py-2 sm:py-3 rounded-lg border border-gray-200 shadow-sm">
-                        <div className="flex items-center gap-2 sm:gap-3">
-                            <span className="relative flex h-2 w-2 sm:h-2.5 sm:w-2.5">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 sm:h-2.5 sm:w-2.5 bg-amber-500"></span>
-                            </span>
-                            <div className="flex flex-col">
-                                <span className="text-[10px] sm:text-xs font-medium text-gray-500">En attente</span>
-                                <span className="text-base sm:text-lg font-semibold text-gray-900">{demandesMeta?.total || 0}</span>
+            <PageHeader
+                title="Demandes Clients"
+                subtitle="Gérez les demandes d'expédition effectuées par les clients"
+                actions={
+                    <>
+                        <button
+                            onClick={handleRefresh}
+                            disabled={status === 'loading'}
+                            className="inline-flex items-center px-3 sm:px-4 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
+                        >
+                            <RefreshCw className={`w-3.5 sm:w-4 h-3.5 sm:h-4 sm:mr-2 ${status === 'loading' ? 'animate-spin' : ''}`} />
+                            <span className="hidden sm:inline">Actualiser</span>
+                        </button>
+                        <div className="bg-white px-3 sm:px-5 py-2 sm:py-3 rounded-lg border border-gray-200 shadow-sm">
+                            <div className="flex items-center gap-2 sm:gap-3">
+                                <span className="relative flex h-2 w-2 sm:h-2.5 sm:w-2.5">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 sm:h-2.5 sm:w-2.5 bg-amber-500"></span>
+                                </span>
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] sm:text-xs font-medium text-gray-500">En attente</span>
+                                    <span className="text-base sm:text-lg font-semibold text-gray-900">{demandesMeta?.total || 0}</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-            </div>
+                    </>
+                }
+            />
 
             {/* Search Filter */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">

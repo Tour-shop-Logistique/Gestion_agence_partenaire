@@ -7,8 +7,8 @@ import { useAgency } from '../hooks/useAgency';
 import PrintSuccessModal from '../components/Receipts/PrintSuccessModal';
 import { getLogoUrl } from '../utils/apiConfig';
 import { toast } from '../utils/toast';
-import { ArrowLeft, Copy, Loader2 } from 'lucide-react';
-import { Button } from "../components/ui";
+import { Copy, Loader2 } from 'lucide-react';
+import { Button, PageHeader } from "../components/ui";
 import {
     StatusOverview,
     ParcelTable,
@@ -175,59 +175,47 @@ const ExpeditionDetails = () => {
                 <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
                     <div className="px-4 sm:px-6 py-3 sm:py-4">
                         <div className="flex items-start gap-3 sm:gap-4">
-                            <button
-                                onClick={() => navigate(-1)}
-                                className="flex-shrink-0 p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                            >
-                                <ArrowLeft className="w-5 h-5 text-gray-600" />
-                            </button>
-
-                            {/* Infos expédition */}
-                            <div className="flex-1 min-w-0">
-                                <div className="flex flex-wrap items-center gap-2 mb-1">
-                                    <span className="text-xs font-medium text-indigo-600 uppercase">
-                                        Expédition
-                                    </span>
-                                    <span className="text-gray-300">•</span>
-                                    <span className="text-xs text-gray-500 truncate">
-                                        {expedition.type_expedition?.replace(/_/g, ' ')}
-                                    </span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <h1 className="text-lg sm:text-xl font-black tracking-tight text-slate-900 truncate">
+                            <PageHeader
+                                className="flex-1 min-w-0"
+                                onBack={() => navigate(-1)}
+                                eyebrow={`Expédition • ${expedition.type_expedition?.replace(/_/g, ' ') || ''}`}
+                                title={
+                                    <span className="inline-flex items-center gap-2">
                                         {expedition.reference}
-                                    </h1>
-                                    <button
-                                        className="flex-shrink-0 text-gray-400 hover:text-indigo-600 transition-colors p-1"
-                                        onClick={() => {
-                                            navigator.clipboard.writeText(expedition.reference);
-                                            toast.success('Référence copiée');
-                                        }}
-                                    >
-                                        <Copy className="w-4 h-4" />
-                                    </button>
-                                </div>
-                                {expedition.code_suivi_expedition && (
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <span className="text-xs text-gray-500">Code de suivi:</span>
-                                        <span className="text-xs font-mono font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                                            {expedition.code_suivi_expedition}
-                                        </span>
                                         <button
-                                            className="flex-shrink-0 text-gray-400 hover:text-emerald-600 transition-colors p-1"
+                                            className="flex-shrink-0 text-gray-400 hover:text-indigo-600 transition-colors p-1"
                                             onClick={() => {
-                                                navigator.clipboard.writeText(expedition.code_suivi_expedition);
-                                                toast.success('Code de suivi copié');
+                                                navigator.clipboard.writeText(expedition.reference);
+                                                toast.success('Référence copiée');
                                             }}
                                         >
-                                            <Copy className="w-3 h-3" />
+                                            <Copy className="w-4 h-4" />
                                         </button>
-                                    </div>
-                                )}
-                                <div className="text-xs sm:text-sm text-gray-500 mt-1">
-                                    Créé le {formatDate(expedition.created_at)}
-                                </div>
-                            </div>
+                                    </span>
+                                }
+                                subtitle={
+                                    <>
+                                        {expedition.code_suivi_expedition && (
+                                            <div className="flex items-center gap-2">
+                                                <span>Code de suivi:</span>
+                                                <span className="text-xs font-mono font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                                                    {expedition.code_suivi_expedition}
+                                                </span>
+                                                <button
+                                                    className="flex-shrink-0 text-gray-400 hover:text-emerald-600 transition-colors p-1"
+                                                    onClick={() => {
+                                                        navigator.clipboard.writeText(expedition.code_suivi_expedition);
+                                                        toast.success('Code de suivi copié');
+                                                    }}
+                                                >
+                                                    <Copy className="w-3 h-3" />
+                                                </button>
+                                            </div>
+                                        )}
+                                        <div className="mt-1">Créé le {formatDate(expedition.created_at)}</div>
+                                    </>
+                                }
+                            />
 
                             {/* Actions rapides inline */}
                             <div className="flex-shrink-0 flex flex-wrap items-center gap-2">

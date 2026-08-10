@@ -13,6 +13,7 @@ import {
   CalendarDaysIcon,
 } from "@heroicons/react/24/outline";
 import { Loader2 } from "lucide-react";
+import PageHeader from "../components/ui/PageHeader";
 import {
   fetchPromotions,
   createPromotion,
@@ -122,22 +123,20 @@ const Promotions = () => {
 
   return (
     <div className="space-y-4 sm:space-y-8 px-3 sm:px-6 animate-in fade-in duration-700">
-      <div className="flex flex-col gap-3 sm:gap-0 sm:flex-row sm:items-end justify-between border-b border-slate-200 pb-4 sm:pb-6">
-        <div>
-          <h1 className="text-xl sm:text-3xl font-bold text-slate-900 tracking-tight mb-1 sm:mb-2">
-            Promotions
-          </h1>
-          <p className="text-xs sm:text-sm font-medium text-slate-500 max-w-lg">
-            Mettez en avant vos offres spéciales auprès des clients
-          </p>
-        </div>
-        <button
-          onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-indigo-700 transition-all active:scale-95 shadow-md shadow-indigo-600/20"
-        >
-          <PlusIcon className="w-4 h-4" />
-          Nouvelle promotion
-        </button>
+      <div className="border-b border-slate-200 pb-4 sm:pb-6">
+        <PageHeader
+          title="Promotions"
+          subtitle="Mettez en avant vos offres spéciales auprès des clients"
+          actions={
+            <button
+              onClick={openCreate}
+              className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-indigo-700 transition-all active:scale-95 shadow-md shadow-indigo-600/20"
+            >
+              <PlusIcon className="w-4 h-4" />
+              Nouvelle promotion
+            </button>
+          }
+        />
       </div>
 
       {status === "loading" && promotions.length === 0 ? (

@@ -16,6 +16,7 @@ import { markAsRecentlyCreated } from "../hooks/useWebSocket";
 import { generateColisCode, parseColisCode } from "../utils/codeGenerator";
 import { expeditionsApi } from "../utils/api/expeditions";
 import { getCountryName } from "../utils/countries";
+import PageHeader from "../components/ui/PageHeader";
 
 // Correspondance entre la valeur de type_expedition du formulaire
 // et le type attendu par generateColisCode (préfixe du code colis)
@@ -1021,53 +1022,56 @@ const CreateExpeditionV2 = () => {
                 <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
 
                     {/* ── Header ── */}
-                    <div className="flex items-center justify-between mb-4 sm:mb-8 gap-3">
-                        <div>
-                            <h1 className="text-lg sm:text-xl font-black tracking-tight text-slate-900">Nouvelle expédition</h1>
-                            <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5 hidden sm:block">
-                                Enregistrement et tarification des envois clients
-                            </p>
-                            <p className="text-[11px] text-slate-400 mt-1 hidden lg:block" aria-hidden="true">
-                                Raccourcis : <kbd className="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-500">Ctrl+S</kbd> simuler ·{' '}
-                                <kbd className="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-500">Ctrl+↵</kbd> valider ·{' '}
-                                <kbd className="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-500">Ctrl+←/→</kbd> naviguer
-                            </p>
-                        </div>
-
-                        {/* Stepper — compact sur mobile, complet sur desktop */}
-                        <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
-                            {steps.map((s, idx) => (
-                                <React.Fragment key={s.num}>
-                                    <button
-                                        type="button"
-                                        onClick={() => { if (step > s.num) setStep(s.num); }}
-                                        className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs font-semibold transition-all ${
-                                            step === s.num
-                                                ? 'bg-slate-800 text-white'
-                                                : step > s.num
-                                                    ? 'text-emerald-600 hover:bg-emerald-50 cursor-pointer'
-                                                    : 'text-slate-400 cursor-default'
-                                        }`}
-                                    >
-                                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold border flex-shrink-0 ${
-                                            step === s.num
-                                                ? 'border-white/30 bg-white/10'
-                                                : step > s.num
-                                                    ? 'border-emerald-500 bg-emerald-100 text-emerald-700'
-                                                    : 'border-slate-300 text-slate-400'
-                                        }`}>
-                                            {step > s.num ? '✓' : s.num}
-                                        </span>
-                                        <span className="hidden sm:inline">{s.label}</span>
-                                    </button>
-                                    {idx < 3 && (
-                                        <svg className="w-3 h-3 text-slate-300 mx-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                        </svg>
-                                    )}
-                                </React.Fragment>
-                            ))}
-                        </div>
+                    <div className="mb-4 sm:mb-8">
+                        <PageHeader
+                            title="Nouvelle expédition"
+                            subtitle={
+                                <>
+                                    <p className="hidden sm:block">Enregistrement et tarification des envois clients</p>
+                                    <p className="text-[11px] text-slate-400 mt-1 hidden lg:block" aria-hidden="true">
+                                        Raccourcis : <kbd className="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-500">Ctrl+S</kbd> simuler ·{' '}
+                                        <kbd className="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-500">Ctrl+↵</kbd> valider ·{' '}
+                                        <kbd className="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-500">Ctrl+←/→</kbd> naviguer
+                                    </p>
+                                </>
+                            }
+                            actions={
+                                /* Stepper — compact sur mobile, complet sur desktop */
+                                <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+                                    {steps.map((s, idx) => (
+                                        <React.Fragment key={s.num}>
+                                            <button
+                                                type="button"
+                                                onClick={() => { if (step > s.num) setStep(s.num); }}
+                                                className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs font-semibold transition-all ${
+                                                    step === s.num
+                                                        ? 'bg-slate-800 text-white'
+                                                        : step > s.num
+                                                            ? 'text-emerald-600 hover:bg-emerald-50 cursor-pointer'
+                                                            : 'text-slate-400 cursor-default'
+                                                }`}
+                                            >
+                                                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold border flex-shrink-0 ${
+                                                    step === s.num
+                                                        ? 'border-white/30 bg-white/10'
+                                                        : step > s.num
+                                                            ? 'border-emerald-500 bg-emerald-100 text-emerald-700'
+                                                            : 'border-slate-300 text-slate-400'
+                                                }`}>
+                                                    {step > s.num ? '✓' : s.num}
+                                                </span>
+                                                <span className="hidden sm:inline">{s.label}</span>
+                                            </button>
+                                            {idx < 3 && (
+                                                <svg className="w-3 h-3 text-slate-300 mx-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                </svg>
+                                            )}
+                                        </React.Fragment>
+                                    ))}
+                                </div>
+                            }
+                        />
                     </div>
 
                     <div className="space-y-4 sm:space-y-6">

@@ -3,7 +3,6 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import CompanyLogo from '../../assets/logo_transparent.png';
 import AppLogo from '../../assets/logo_blanc_shop.jpg';
-import { formatColisCodeDisplay } from '../../utils/codeGenerator';
 
 const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
     if (!expedition) return null;
@@ -161,7 +160,7 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
                                     <tr key={i} className={`border-b border-slate-100 ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
                                         <td className="px-4 py-2.5">
                                             <div className="font-mono text-[10px] text-slate-900 bg-slate-100 px-2 py-1 rounded border border-slate-200 inline-block">
-                                                {c.code_colis ? formatColisCodeDisplay(c.code_colis) : `C-${i + 1}`}
+                                                {c.code_colis || `C-${i + 1}`}
                                             </div>
                                         </td>
                                         <td className="px-4 py-2.5">

@@ -5,6 +5,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { showToast } from "../utils/toast";
 import ErrorBoundary from "../components/ErrorBoundary";
+import PageHeader from "../components/ui/PageHeader";
 
 const TarifsGroupes = () => {
     const { currentUser } = useAuth();
@@ -35,15 +36,11 @@ const TarifsGroupes = () => {
         <div className="space-y-4 sm:space-y-8 px-3 sm:px-6 animate-in fade-in duration-700">
 
             {/* --- SIMPLE HEADER - Responsive --- */}
-            <div className="flex flex-col gap-3 sm:gap-0 sm:flex-row sm:items-end justify-between border-b border-slate-200 pb-4 sm:pb-6">
-                <div>
-                    <h1 className="text-lg sm:text-2xl font-semibold text-gray-900">
-                        Tarifs Groupage
-                    </h1>
-                    <p className="text-sm text-slate-600">
-                        Optimisez vos expéditions groupées par type et mode de transport
-                    </p>
-                </div>
+            <div className="border-b border-slate-200 pb-4 sm:pb-6">
+                <PageHeader
+                    title="Tarifs Groupage"
+                    subtitle="Optimisez vos expéditions groupées par type et mode de transport"
+                />
             </div>
 
             {/* --- DYNAMIC CONTENT --- */}

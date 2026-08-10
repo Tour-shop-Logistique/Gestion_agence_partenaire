@@ -8,6 +8,7 @@ import { useAgency } from "../hooks/useAgency";
 import { useAuth } from "../hooks/useAuth";
 import { useWebSocket } from "../hooks/useWebSocket";
 import PrintSuccessModal from "../components/Receipts/PrintSuccessModal";
+import ColisDetailsDrawer from "../components/common/ColisDetailsDrawer";
 import { getLogoUrl } from "../utils/apiConfig";
 import { formatPriceDual } from "../utils/format";
 import { showToast } from "../utils/toast";
@@ -17,7 +18,7 @@ import { getStatusLabel } from "../utils/expeditionHelpers";
 import {
     ExpeditionHeader,
     StatsCards,
-    ExpeditionRow,
+    ExpeditionListItem,
     ExpeditionMobileCard,
     FilteredStats,
     SortableHeader,
@@ -67,6 +68,7 @@ const ExpeditionsPremium = () => {
     const expeditionMode = "";
     const [selectedExpedition, setSelectedExpedition] = useState(null);
     const [showPrintModal, setShowPrintModal] = useState(false);
+    const [detailsColis, setDetailsColis] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedStatuses, setSelectedStatuses] = useState([]);
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
@@ -344,7 +346,8 @@ const ExpeditionsPremium = () => {
                 exp.ville_destination?.toLowerCase().includes(lowerQuery) ||
                 exp.type_expedition?.toLowerCase().includes(lowerQuery) ||
                 exp.numero_colis?.toLowerCase().includes(lowerQuery) ||
-                exp.statut_paiement_expedition?.toLowerCase().includes(lowerQuery)
+                exp.statut_paiement_expedition?.toLowerCase().includes(lowerQuery) ||
+                exp.colis?.some(c => c.code_colis?.toLowerCase().includes(lowerQuery))
             );
         }
         
@@ -619,92 +622,81 @@ const ExpeditionsPremium = () => {
 
                         {/* Table Container */}
                         <div className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden">
-                            {/* Desktop Table */}
-                            <div className="hidden lg:block overflow-x-auto">
-                        <table className="w-full">
-                            <thead className="bg-slate-50 border-b-2 border-slate-100 sticky top-0 z-10">
-                                <tr>
-                                    <th className="px-3 py-3 2xl:px-5 2xl:py-4 text-left">
-                                        <SortableHeader 
-                                            label="Référence" 
-                                            sortKey="reference" 
-                                            currentSort={sortConfig} 
+                            {/* Desktop List */}
+                            <div className="hidden lg:block">
+                                {/* Barre d'en-tête avec tri */}
+                                <div className="flex items-center gap-4 px-4 py-3 bg-slate-50 border-b-2 border-slate-100 sticky top-0 z-10">
+                                    <div className="flex-1">
+                                        <SortableHeader
+                                            label="Référence"
+                                            sortKey="reference"
+                                            currentSort={sortConfig}
                                             onSort={handleSort}
                                             className="text-[10px] font-bold text-slate-400 uppercase tracking-widest"
                                         />
-                                    </th>
-                                    <th className="px-3 py-3 2xl:px-5 2xl:py-4 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                        Expéditeur / Destinataire
-                                    </th>
-                                    <th className="px-3 py-3 2xl:px-5 2xl:py-4 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                        Trajet
-                                    </th>
-                                    <th className="px-3 py-3 2xl:px-5 2xl:py-4 text-left">
-                                        <SortableHeader 
-                                            label="Montant" 
-                                            sortKey="montant" 
-                                            currentSort={sortConfig} 
+                                    </div>
+                                    <div className="hidden md:block w-28 flex-shrink-0 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                        Pays
+                                    </div>
+                                    <div className="hidden lg:block w-[110px] flex-shrink-0 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                        Type
+                                    </div>
+                                    <div className="w-24 flex-shrink-0">
+                                        <SortableHeader
+                                            label="Montant"
+                                            sortKey="montant"
+                                            currentSort={sortConfig}
                                             onSort={handleSort}
                                             className="text-[10px] font-bold text-slate-400 uppercase tracking-widest"
                                         />
-                                    </th>
-                                    <th className="px-3 py-3 2xl:px-5 2xl:py-4 text-left">
-                                        <SortableHeader 
-                                            label="Statut" 
-                                            sortKey="statut" 
-                                            currentSort={sortConfig} 
+                                    </div>
+                                    <div className="w-[150px] flex-shrink-0">
+                                        <SortableHeader
+                                            label="Statut"
+                                            sortKey="statut"
+                                            currentSort={sortConfig}
                                             onSort={handleSort}
                                             className="text-[10px] font-bold text-slate-400 uppercase tracking-widest"
                                         />
-                                    </th>
-                                    <th className="px-3 py-3 2xl:px-5 2xl:py-4 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                        Paiement
-                                    </th>
-                                    <th className="px-3 py-3 2xl:px-5 2xl:py-4 text-left text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                        Actions
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
+                                    </div>
+                                    <div className="w-8 flex-shrink-0" />
+                                </div>
+
                                 {status === 'loading' && expeditions.length === 0 ? (
-                                    Array(5).fill(0).map((_, i) => (
-                                        <tr key={i} className="animate-pulse">
-                                            <td className="px-5 py-4" colSpan="8">
+                                    <div className="divide-y divide-slate-100">
+                                        {Array(5).fill(0).map((_, i) => (
+                                            <div key={i} className="px-5 py-4 animate-pulse">
                                                 <div className="h-16 bg-slate-100 rounded"></div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                ) : filteredExpeditions.length > 0 ? (
-                                    filteredExpeditions.map((exp) => (
-                                        <ExpeditionRow
-                                            key={exp.id}
-                                            expedition={exp}
-                                            onPrint={handlePrintReceipt}
-                                            getStatusBorderColor={getStatusBorderColor}
-                                            getTypeStyle={getTypeStyle}
-                                            getTypeLabel={getTypeLabel}
-                                            formatPriceDual={formatPriceDual}
-                                            getAgencyCommission={getAgencyCommission}
-                                        />
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td colSpan="7" className="px-5 py-16 text-center">
-                                            <div className="flex flex-col items-center">
-                                                <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mb-4">
-                                                    <svg className="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                                                    </svg>
-                                                </div>
-                                                <h3 className="text-sm font-bold text-slate-700 mb-1">Aucune expédition</h3>
-                                                <p className="text-xs text-slate-400">Aucun résultat ne correspond à vos critères.</p>
                                             </div>
-                                        </td>
-                                    </tr>
+                                        ))}
+                                    </div>
+                                ) : filteredExpeditions.length > 0 ? (
+                                    <div className="divide-y divide-slate-100">
+                                        {filteredExpeditions.map((exp) => (
+                                            <ExpeditionListItem
+                                                key={exp.id}
+                                                expedition={exp}
+                                                getTypeStyle={getTypeStyle}
+                                                getTypeLabel={getTypeLabel}
+                                                formatPriceDual={formatPriceDual}
+                                                onSelectColis={setDetailsColis}
+                                            />
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="px-5 py-16 text-center">
+                                        <div className="flex flex-col items-center">
+                                            <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mb-4">
+                                                <svg className="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                                                </svg>
+                                            </div>
+                                            <h3 className="text-sm font-bold text-slate-700 mb-1">Aucune expédition</h3>
+                                            <p className="text-xs text-slate-400">Aucun résultat ne correspond à vos critères.</p>
+                                        </div>
+                                    </div>
                                 )}
-                            </tbody>
-                        </table>
-                    </div>
+                            </div>
 
                     {/* Mobile Cards */}
                     <div className="block lg:hidden space-y-3 p-3">
@@ -810,6 +802,9 @@ const ExpeditionsPremium = () => {
                     }}
                 />
             )}
+
+            {/* Détails d'un colis (accessible depuis les sous-lignes de la liste) */}
+            <ColisDetailsDrawer colis={detailsColis} onClose={() => setDetailsColis(null)} />
         </>
     );
 };

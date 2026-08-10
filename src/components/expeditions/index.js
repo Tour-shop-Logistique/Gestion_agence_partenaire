@@ -12,6 +12,7 @@ export { default as QuickFiltersChips } from './QuickFiltersChips';
 export { default as StatusTimeline } from './StatusTimeline';
 export { default as PaymentBadge } from './PaymentBadge';
 export { default as ExpeditionRow } from './ExpeditionRow';
+export { default as ExpeditionListItem } from './ExpeditionListItem';
 export { default as ExpeditionMobileCard } from './ExpeditionMobileCard';
 export { default as SelectionToolbar } from './SelectionToolbar';
 export { default as FilteredStats } from './FilteredStats';

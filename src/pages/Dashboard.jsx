@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { ArrowPathIcon } from "@heroicons/react/24/outline";
 
 import { useAuth } from "../hooks/useAuth";
 import { useAgency } from "../hooks/useAgency";
@@ -8,7 +9,8 @@ import { useDashboard } from "../hooks/useDashboard";
 import { useDashboardWebSocket } from "../hooks/useDashboardWebSocket";
 
 // Composants modulaires
-import DashboardHeader from "../components/dashboard/DashboardHeader";
+import PageHeader from "../components/ui/PageHeader";
+import ExchangeRateWidget from "../components/dashboard/ExchangeRateWidget";
 import DemandesAlert from "../components/dashboard/DemandesAlert";
 import PriorityActions from "../components/dashboard/PriorityActions";
 import KPISection from "../components/dashboard/KPISection";
@@ -138,10 +140,29 @@ const Dashboard = () => {
     return (
         <div className="relative max-w-[1600px] mx-auto space-y-5 sm:space-y-7 pb-8 sm:pb-12 px-3 sm:px-4 lg:px-6 pt-1 animate-fade-in">
 
-            <DashboardHeader
-                isRefreshing={isRefreshing}
-                lastUpdated={lastUpdated}
-                onRefresh={refreshAll}
+            <PageHeader
+                title="Dashboard"
+                subtitle={
+                    isRefreshing
+                        ? "Actualisation..."
+                        : lastUpdated
+                            ? `Mis à jour ${new Date(lastUpdated).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`
+                            : undefined
+                }
+                actions={
+                    <>
+                        <ExchangeRateWidget />
+                        <button
+                            onClick={refreshAll}
+                            disabled={isRefreshing}
+                            aria-label="Actualiser le dashboard"
+                            className="p-2 bg-white border border-slate-200 rounded-lg text-slate-500 hover:text-indigo-600 hover:border-indigo-300 hover:shadow-sm active:scale-95 transition-all disabled:opacity-50"
+                            title="Actualiser"
+                        >
+                            <ArrowPathIcon className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-indigo-600' : ''}`} />
+                        </button>
+                    </>
+                }
             />
 
             {showDemandesAlert && (

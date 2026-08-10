@@ -13,7 +13,6 @@ import {
   AlertCircle,
   CheckCircle,
   X,
-  ArrowLeft,
   RefreshCw,
   ChevronRight,
   Calendar,
@@ -22,6 +21,7 @@ import {
 } from "lucide-react";
 import { getProfile, updateProfile, changePassword, deleteAccount, verifyEmailCode } from "../utils/api/profile";
 import { showToast } from "../utils/toast";
+import PageHeader from "../components/ui/PageHeader";
 
 const AgentProfile = () => {
   const navigate = useNavigate();
@@ -306,28 +306,24 @@ const AgentProfile = () => {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <div className="flex items-center justify-between mb-5">
-            <button
-              onClick={() => navigate(-1)}
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Retour
-            </button>
-            <button
-              onClick={() => {
-                console.log("🔄 Rechargement manuel du profil...");
-                loadProfile();
-              }}
-              disabled={loading}
-              className="inline-flex items-center gap-2 px-3.5 py-2 bg-white text-slate-600 border border-slate-200 rounded-lg hover:border-slate-300 hover:text-slate-900 transition text-sm font-medium disabled:opacity-50 shadow-sm"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Actualiser
-            </button>
-          </div>
-          <h1 className="text-lg sm:text-xl font-black tracking-tight text-slate-900">Mon profil</h1>
-          <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">Gérez vos informations personnelles et les paramètres de votre compte</p>
+          <PageHeader
+            onBack={() => navigate(-1)}
+            title="Mon profil"
+            subtitle="Gérez vos informations personnelles et les paramètres de votre compte"
+            actions={
+              <button
+                onClick={() => {
+                  console.log("🔄 Rechargement manuel du profil...");
+                  loadProfile();
+                }}
+                disabled={loading}
+                className="inline-flex items-center gap-2 px-3.5 py-2 bg-white text-slate-600 border border-slate-200 rounded-lg hover:border-slate-300 hover:text-slate-900 transition text-sm font-medium disabled:opacity-50 shadow-sm"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Actualiser
+              </button>
+            }
+          />
         </div>
 
         {/* Card principale */}

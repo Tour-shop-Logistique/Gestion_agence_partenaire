@@ -45,6 +45,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { RecordTransactionModal } from '../components/transaction';
+import PageHeader from '../components/ui/PageHeader';
 
 const TransactionsPro = () => {
   const dispatch = useDispatch();
@@ -565,28 +566,13 @@ const TransactionsPro = () => {
   return (
     <div className="max-w-[1800px] mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6 bg-slate-50/30 min-h-screen">
       
-      {/* Breadcrumbs */}
-      <div className="flex items-center gap-2 text-xs text-slate-500">
-        <button onClick={() => navigate('/dashboard')} className="hover:text-slate-900 transition-colors">
-          Tableau de bord
-        </button>
-        <ChevronRightIcon className="w-3 h-3" />
-        <span className="text-slate-900 font-medium">Transactions Professionnelles</span>
-      </div>
-
       {/* Header */}
       <div className="flex flex-col gap-3 sm:gap-4 border-b border-slate-200 pb-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-lg sm:text-2xl font-semibold text-gray-900">
-              Gestion Financière
-            </h1>
-            <p className="text-sm text-slate-600">
-              Journal de trésorerie et analyses financières professionnelles
-            </p>
-          </div>
-        </div>
-        
+        <PageHeader
+          title="Gestion Financière"
+          subtitle="Journal de trésorerie et analyses financières professionnelles"
+        />
+
         {/* Barre d'actions */}
         <div className="flex flex-wrap items-center gap-2">
           <button

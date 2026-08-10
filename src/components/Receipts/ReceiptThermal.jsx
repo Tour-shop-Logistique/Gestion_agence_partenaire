@@ -1,7 +1,6 @@
 import React from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import CompanyLogo from '../../assets/logo_transparent.png';
-import { formatColisCodeDisplay } from '../../utils/codeGenerator';
 
 const ReceiptThermal = React.forwardRef(({ expedition, colis, agency }, ref) => {
     if (!expedition || !colis) return null;
@@ -33,7 +32,7 @@ const ReceiptThermal = React.forwardRef(({ expedition, colis, agency }, ref) => 
                 <div className="flex justify-between items-center">
                     <span className="font-bold text-sm"> {expedition.reference}</span>
                     <span className="text-xs font-bold bg-white text-black px-2 py-0.5 rounded">
-                        {colis.code_colis ? formatColisCodeDisplay(colis.code_colis) : 'P-1'}
+                        {colis.code_colis || 'P-1'}
                     </span>
                 </div>
                 <p className="text-[10px] mt-1 text-white">Date: {new Date(expedition.created_at || Date.now()).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })} à {new Date(expedition.created_at || Date.now()).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
@@ -94,7 +93,7 @@ const ReceiptThermal = React.forwardRef(({ expedition, colis, agency }, ref) => 
                 <QRCodeSVG value={colis.code_colis || String(expedition.id || '0000')} size={140} level="H" />
                 <p className="text-xs font-bold mt-3 tracking-wider uppercase">SCAN POUR SUIVRE</p>
                 <p className="text-base font-bold mt-1.5 tracking-wide">
-                    {colis.code_colis ? formatColisCodeDisplay(colis.code_colis) : colis.code_colis}
+                    {colis.code_colis}
                 </p>
                 <p className="text-[10px] mt-2 italic font-semibold">Tous Shop Logistics</p>
             </div>

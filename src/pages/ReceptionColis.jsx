@@ -13,6 +13,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { useExpedition } from "../hooks/useExpedition";
 import { toast } from "../utils/toast";
+import PageHeader from "../components/ui/PageHeader";
 import soundNotification from "../utils/soundNotification";
 import QRScanner from "../components/QRScanner";
 
@@ -216,51 +217,48 @@ const ReceptionColis = () => {
     return (
         <div className="space-y-6 sm:space-y-8 max-w-[1800px] mx-auto px-4 sm:px-6">
             {/* Premium Header */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-gradient-to-r from-indigo-50 to-white p-6 rounded-3xl border border-indigo-100">
-                <div className="space-y-2">
-                    <div className="flex items-center gap-3">
+            <div className="bg-gradient-to-r from-indigo-50 to-white p-6 rounded-3xl border border-indigo-100">
+                <PageHeader
+                    icon={
                         <div className="p-3 bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-2xl shadow-lg shadow-indigo-300/50">
                             <InboxArrowDownIcon className="w-7 h-7 text-white" />
                         </div>
-                        <h1 className="text-lg sm:text-xl font-black tracking-tight text-slate-900">
-                            Réception des Colis 📦 [NOUVEAU]
-                        </h1>
-                    </div>
-                    <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5 ml-14">
-                        Gérez l'arrivée des colis à votre agence (Destination)
-                    </p>
-                </div>
+                    }
+                    title="Réception des Colis"
+                    subtitle="Gérez l'arrivée des colis à votre agence (Destination)"
+                    actions={
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full lg:w-auto">
+                            {/* Search Bar */}
+                            <div className="relative group flex-1 sm:w-80 lg:w-96">
+                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <MagnifyingGlassIcon className="h-5 w-5 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
+                                </div>
+                                <input
+                                    type="text"
+                                    className="block w-full pl-11 pr-4 py-3.5 bg-white border-2 border-slate-200 rounded-2xl text-sm font-semibold placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm hover:border-slate-300"
+                                    placeholder="Rechercher par code, pays, expédition..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                            </div>
 
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full lg:w-auto">
-                    {/* Search Bar */}
-                    <div className="relative group flex-1 sm:w-80 lg:w-96">
-                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <MagnifyingGlassIcon className="h-5 w-5 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
+                            <button
+                                onClick={() => loadReception({ page: 1 }, true)}
+                                disabled={isRefreshing}
+                                className="p-3.5 bg-white border-2 border-slate-200 rounded-2xl text-slate-600 hover:text-indigo-600 hover:border-indigo-300 hover:shadow-lg hover:bg-indigo-50 transition-all active:scale-95 disabled:opacity-50"
+                            >
+                                <ArrowPathIcon className={`w-5 h-5 ${isRefreshing ? 'animate-spin text-indigo-600' : ''}`} />
+                            </button>
+
+                            <button
+                                onClick={() => setScannerOpen(true)}
+                                className="p-3.5 bg-indigo-600 border-2 border-indigo-600 rounded-2xl text-white hover:bg-indigo-700 hover:border-indigo-700 hover:shadow-lg transition-all active:scale-95"
+                            >
+                                <QrCodeIcon className="w-5 h-5" />
+                            </button>
                         </div>
-                        <input
-                            type="text"
-                            className="block w-full pl-11 pr-4 py-3.5 bg-white border-2 border-slate-200 rounded-2xl text-sm font-semibold placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm hover:border-slate-300"
-                            placeholder="Rechercher par code, pays, expédition..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </div>
-
-                    <button
-                        onClick={() => loadReception({ page: 1 }, true)}
-                        disabled={isRefreshing}
-                        className="p-3.5 bg-white border-2 border-slate-200 rounded-2xl text-slate-600 hover:text-indigo-600 hover:border-indigo-300 hover:shadow-lg hover:bg-indigo-50 transition-all active:scale-95 disabled:opacity-50"
-                    >
-                        <ArrowPathIcon className={`w-5 h-5 ${isRefreshing ? 'animate-spin text-indigo-600' : ''}`} />
-                    </button>
-                    
-                    <button 
-                        onClick={() => setScannerOpen(true)}
-                        className="p-3.5 bg-indigo-600 border-2 border-indigo-600 rounded-2xl text-white hover:bg-indigo-700 hover:border-indigo-700 hover:shadow-lg transition-all active:scale-95"
-                    >
-                        <QrCodeIcon className="w-5 h-5" />
-                    </button>
-                </div>
+                    }
+                />
             </div>
 
             {/* QR Scanner Modal */}

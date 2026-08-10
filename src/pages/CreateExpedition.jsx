@@ -10,6 +10,7 @@ import SearchableDropdown from "../components/common/SearchableDropdown";
 import { getLogoUrl } from "../utils/apiConfig";
 import { toast } from "../utils/toast";
 import { markAsRecentlyCreated } from "../hooks/useWebSocket";
+import PageHeader from "../components/ui/PageHeader";
 
 const CreateExpedition = () => {
     console.log("🚀 CreateExpedition.jsx chargé - Version avec déduplication");
@@ -731,25 +732,24 @@ const CreateExpedition = () => {
             <div className="min-h-screen bg-slate-100">
                 <div className="max-w-7xl mx-auto px-4 py-8">
                     {/* Header */}
-                    <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-                        <div>
-                            <h1 className="text-lg sm:text-xl font-black tracking-tight text-slate-900">Nouvelle expédition</h1>
-                            <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">
-                                Enregistrement et tarification des envois clients
-                            </p>
-                        </div>
-                        {/* Step indicator */}
-                        <div className="flex items-center gap-0 bg-white border border-slate-200 rounded-xl p-1 shadow-sm self-start md:self-auto">
-                            <div className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${step === 1 ? 'bg-slate-800 text-white' : 'text-slate-400'}`}>
-                                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold border ${step === 1 ? 'border-white/30 bg-white/10' : 'border-slate-300 text-slate-400'}`}>1</span>
-                                Config & Colis
-                            </div>
-                            <svg className="w-4 h-4 text-slate-300 mx-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                            <div className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${step === 2 ? 'bg-slate-800 text-white' : 'text-slate-400'}`}>
-                                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold border ${step === 2 ? 'border-white/30 bg-white/10' : 'border-slate-300 text-slate-400'}`}>2</span>
-                                Contacts & Finalisation
-                            </div>
-                        </div>
+                    <div className="mb-8">
+                        <PageHeader
+                            title="Nouvelle expédition"
+                            subtitle="Enregistrement et tarification des envois clients"
+                            actions={
+                                <div className="flex items-center gap-0 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+                                    <div className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${step === 1 ? 'bg-slate-800 text-white' : 'text-slate-400'}`}>
+                                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold border ${step === 1 ? 'border-white/30 bg-white/10' : 'border-slate-300 text-slate-400'}`}>1</span>
+                                        Config & Colis
+                                    </div>
+                                    <svg className="w-4 h-4 text-slate-300 mx-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                                    <div className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all ${step === 2 ? 'bg-slate-800 text-white' : 'text-slate-400'}`}>
+                                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold border ${step === 2 ? 'border-white/30 bg-white/10' : 'border-slate-300 text-slate-400'}`}>2</span>
+                                        Contacts & Finalisation
+                                    </div>
+                                </div>
+                            }
+                        />
                     </div>
 
 

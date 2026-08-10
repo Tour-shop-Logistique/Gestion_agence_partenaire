@@ -14,6 +14,7 @@ import {
   selectMessagesStatus,
 } from "../store/slices/messagesSlice";
 import { showToast } from "../utils/toast";
+import PageHeader from "../components/ui/PageHeader";
 
 const formatSize = (bytes) => {
   if (bytes < 1024) return `${bytes} o`;
@@ -164,6 +165,11 @@ const Messages = () => {
 
   return (
     <div className="max-w-[1400px] mx-auto px-3 sm:px-6 pb-6 sm:pb-10">
+      <PageHeader
+        title="Messages"
+        subtitle="Échangez avec l'équipe backoffice Tour Shop Express"
+        className="mb-4 sm:mb-6"
+      />
       <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4 sm:gap-6" style={{ height: "min(720px, calc(100vh - 180px))", minHeight: 420 }}>
 
         {/* ── Colonne latérale : fiche backoffice ── */}

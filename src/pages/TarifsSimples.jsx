@@ -4,6 +4,7 @@ import { useTarifs } from "../hooks/useTarifs";
 import { useAuth } from "../hooks/useAuth";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { showToast } from "../utils/toast";
+import PageHeader from "../components/ui/PageHeader";
 
 const TarifsSimples = () => {
     const { currentUser } = useAuth();
@@ -33,15 +34,11 @@ const TarifsSimples = () => {
         <div className="space-y-4 sm:space-y-8 px-3 sm:px-6 animate-in fade-in duration-700">
 
             {/* --- SIMPLE HEADER - Responsive --- */}
-            <div className="flex flex-col gap-3 sm:gap-0 sm:flex-row sm:items-end justify-between border-b border-slate-200 pb-4 sm:pb-6">
-                <div>
-                    <h1 className="text-lg sm:text-2xl font-semibold text-gray-900">
-                        Tarifs Simples
-                    </h1>
-                    <p className="text-sm text-slate-600">
-                        Gérez vos tarifs d'expédition standard par zones et indices
-                    </p>
-                </div>
+            <div className="border-b border-slate-200 pb-4 sm:pb-6">
+                <PageHeader
+                    title="Tarifs Simples"
+                    subtitle="Gérez vos tarifs d'expédition standard par zones et indices"
+                />
             </div>
 
             {/* --- DYNAMIC CONTENT --- */}

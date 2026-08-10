@@ -151,7 +151,7 @@ const FiltersPanel = ({
                     <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
                         type="text"
-                        placeholder="Référence, nom, pays..."
+                        placeholder="Référence, code colis, nom, pays..."
                         value={searchQuery}
                         onChange={(e) => onSearchChange(e.target.value)}
                         className="w-full pl-10 pr-10 py-2.5 text-sm bg-slate-50 border-2 border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 placeholder-slate-400 transition-all hover:border-slate-400"

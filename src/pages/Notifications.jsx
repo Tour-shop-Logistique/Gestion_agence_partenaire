@@ -11,6 +11,7 @@ import {
   selectUnreadCount,
   selectNotificationsStatus,
 } from "../store/slices/notificationsSlice";
+import PageHeader from "../components/ui/PageHeader";
 
 const Notifications = () => {
   const dispatch = useDispatch();
@@ -37,15 +38,10 @@ const Notifications = () => {
   return (
     <div className="space-y-4 sm:space-y-8 max-w-[1600px] mx-auto px-3 sm:px-6 pb-6 sm:pb-10">
       {/* Header Section */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0">
-        <div>
-          <h1 className="text-lg sm:text-xl font-black tracking-tight text-slate-900">Annonces</h1>
-          <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">
-            Communications officielles envoyées par le backoffice
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 sm:gap-3">
+      <PageHeader
+        title="Annonces"
+        subtitle="Communications officielles envoyées par le backoffice"
+        actions={
           <button
             onClick={() => dispatch(fetchNotifications())}
             disabled={status === "loading"}
@@ -54,8 +50,8 @@ const Notifications = () => {
             <RefreshCw className={`w-3.5 sm:w-4 h-3.5 sm:h-4 sm:mr-2 ${status === "loading" ? "animate-spin" : ""}`} />
             <span className="hidden sm:inline">Actualiser</span>
           </button>
-        </div>
-      </div>
+        }
+      />
 
       {unreadCount > 0 && (
         <div className="flex justify-end">

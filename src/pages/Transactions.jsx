@@ -18,11 +18,11 @@ import {
   BanknotesIcon,
   CalendarIcon,
   InboxIcon,
-  ChevronLeftIcon,
   ChevronRightIcon,
   PlusIcon
 } from '@heroicons/react/24/outline';
 import { RecordTransactionModal } from '../components/transaction';
+import PageHeader from '../components/ui/PageHeader';
 
 const Transactions = () => {
   const dispatch = useDispatch();
@@ -170,24 +170,16 @@ const Transactions = () => {
   return (
     <div className="max-w-[1600px] mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6 bg-slate-50/30 min-h-screen">
       
-      {/* Breadcrumbs / Back - Responsive */}
-      <div className="flex items-center gap-2 text-xs text-slate-500 mb-2">
-        <button onClick={() => navigate('/dashboard')} className="hover:text-slate-900 transition-colors hidden sm:inline">Tableau de bord</button>
-        <ChevronRightIcon className="w-3 h-3 hidden sm:inline" />
-        <span className="text-slate-900 font-medium">Transactions</span>
-      </div>
-
       {/* Header - Responsive */}
       <div className="flex flex-col gap-3 sm:gap-4">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <button 
-            onClick={() => navigate(-1)}
-            className="p-1.5 rounded-md text-slate-400 hover:text-slate-900 hover:bg-white border border-transparent hover:border-slate-200 transition-all"
-          >
-            <ChevronLeftIcon className="w-4 h-4" />
-          </button>
-          <h1 className="text-lg sm:text-xl font-black tracking-tight text-slate-900">Historique financier</h1>
-        </div>
+        <PageHeader
+          breadcrumb={[
+            { label: 'Tableau de bord', to: '/dashboard' },
+            { label: 'Transactions' }
+          ]}
+          onBack={() => navigate(-1)}
+          title="Historique financier"
+        />
 
         <div className="flex flex-wrap items-center gap-2">
           {/* Nouvelle Transaction Button */}

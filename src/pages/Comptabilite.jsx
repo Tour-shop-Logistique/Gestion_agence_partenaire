@@ -36,6 +36,7 @@ import {
   BellAlertIcon
 } from "@heroicons/react/24/outline";
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import PageHeader from "../components/ui/PageHeader";
 
 const Comptabilite = () => {
   const navigate = useNavigate();
@@ -696,13 +697,11 @@ const Comptabilite = () => {
       
       {/* Page Header - Responsive */}
       <div className="border-b border-slate-200 pb-4 sm:pb-6">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-lg sm:text-2xl font-semibold text-gray-900">Comptabilité & Flux</h1>
-            <p className="text-sm text-slate-600">Tableau de bord financier professionnel - Analyse des revenus et répartition des commissions</p>
-          </div>
-          
-          <div className="flex items-center gap-2 flex-shrink-0">
+        <PageHeader
+          title="Comptabilité & Flux"
+          subtitle="Tableau de bord financier professionnel - Analyse des revenus et répartition des commissions"
+          actions={
+            <>
             <div className="flex items-center bg-white border border-slate-200 rounded-md overflow-hidden">
               <div className="flex items-center px-2 sm:px-3 py-1.5 gap-1 sm:gap-2 border-r border-slate-100">
                 <input
@@ -770,8 +769,9 @@ const Comptabilite = () => {
                 </div>
               )}
             </div>
-          </div>
-        </div>
+            </>
+          }
+        />
       </div>
 
       {/* NOUVEAUX KPI FINANCIERS */}

@@ -10,6 +10,7 @@ import { toast } from "../utils/toast";
 import { fetchRoles, createRole, updateRole, deleteRole, selectRoles, selectRolesStatus } from "../store/slices/rolesSlice";
 import { fetchAvailablePermissions, selectAvailablePermissions, selectPermissionsHasLoaded } from "../store/slices/permissionsSlice";
 import PermissionMatrix from "../components/roles/PermissionMatrix";
+import PageHeader from "../components/ui/PageHeader";
 
 const Agents = () => {
   const { isAdmin } = useAuth();
@@ -326,74 +327,72 @@ const Agents = () => {
   return (
     <>
       <div className="mb-4 sm:mb-6 px-3 sm:px-0">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0">
-          <div>
-            <h1 className="text-lg sm:text-2xl font-semibold text-gray-900">
-              {activeTab === "agents" ? "Gestion des agents" : "Rôles & Permissions"}
-            </h1>
-            <p className="mt-1 text-xs sm:text-sm text-gray-500">
-              {activeTab === "agents"
-                ? "Administrez votre équipe d'agents"
-                : "Définissez les pages accessibles pour chaque rôle"}
-            </p>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-3">
-            {activeTab === "agents" && (
+        <PageHeader
+          title={activeTab === "agents" ? "Gestion des agents" : "Rôles & Permissions"}
+          subtitle={
+            activeTab === "agents"
+              ? "Administrez votre équipe d'agents"
+              : "Définissez les pages accessibles pour chaque rôle"
+          }
+          actions={
+            <>
+              {activeTab === "agents" && (
+                <button
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  className="inline-flex items-center px-3 sm:px-4 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
+                >
+                  {refreshing ? (
+                    <>
+                      <Spinner size="sm" color="current" className="sm:mr-2" />
+                      <span className="hidden sm:inline">Actualisation...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        className="w-3.5 sm:w-4 h-3.5 sm:h-4 sm:mr-2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                        ></path>
+                      </svg>
+                      <span className="hidden sm:inline">Actualiser</span>
+                    </>
+                  )}
+                </button>
+              )}
               <button
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className="inline-flex items-center px-3 sm:px-4 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
+                onClick={activeTab === "agents" ? openAddModal : openAddRoleModal}
+                className="bg-green-600 hover:bg-green-700 text-white px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center justify-center transition-colors"
               >
-                {refreshing ? (
-                  <>
-                    <Spinner size="sm" color="current" className="sm:mr-2" />
-                    <span className="hidden sm:inline">Actualisation...</span>
-                  </>
-                ) : (
-                  <>
-                    <svg
-                      className="w-3.5 sm:w-4 h-3.5 sm:h-4 sm:mr-2"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                      ></path>
-                    </svg>
-                    <span className="hidden sm:inline">Actualiser</span>
-                  </>
-                )}
+                <svg
+                  className="w-3.5 sm:w-4 h-3.5 sm:h-4 sm:mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                  ></path>
+                </svg>
+                <span className="hidden sm:inline">
+                  {activeTab === "agents" ? "Ajouter un agent" : "Nouveau rôle"}
+                </span>
+                <span className="sm:hidden">Ajouter</span>
               </button>
-            )}
-            <button
-              onClick={activeTab === "agents" ? openAddModal : openAddRoleModal}
-              className="bg-green-600 hover:bg-green-700 text-white px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center justify-center transition-colors"
-            >
-              <svg
-                className="w-3.5 sm:w-4 h-3.5 sm:h-4 sm:mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                ></path>
-              </svg>
-              <span className="hidden sm:inline">
-                {activeTab === "agents" ? "Ajouter un agent" : "Nouveau rôle"}
-              </span>
-              <span className="sm:hidden">Ajouter</span>
-            </button>
-          </div>
-        </div>
+            </>
+          }
+        />
 
         {/* Onglets Agents / Rôles */}
         <div className="mt-4 flex items-center gap-1 bg-white border border-gray-200 rounded-xl p-1.5 w-fit shadow-sm">
@@ -1024,112 +1023,107 @@ const Agents = () => {
 
       {/* Modal Ajout / Edition Rôle */}
       {showRoleForm && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex min-h-screen items-center justify-center px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-            <div
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
-              onClick={closeRoleModal}
-            ></div>
-            <span className="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">
-              &#8203;
-            </span>
-            <div className="inline-block w-full max-w-2xl mx-4 sm:mx-auto transform overflow-hidden rounded-xl bg-white text-left align-bottom shadow-2xl transition-all sm:my-8 sm:align-middle">
-              <form onSubmit={handleSubmitRole}>
-                <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                        <KeyIcon className="w-4 h-4 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-white">
-                          {editingRole ? `Modifier ${editingRole.nom}` : "Nouveau rôle"}
-                        </h3>
-                        <p className="text-blue-100 text-xs">
-                          Définissez les pages accessibles pour ce rôle
-                        </p>
-                      </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+            onClick={closeRoleModal}
+          ></div>
+          <div className="relative flex flex-col w-full max-w-2xl max-h-[90vh] transform overflow-hidden rounded-xl bg-white text-left shadow-2xl transition-all">
+            <form onSubmit={handleSubmitRole} className="flex flex-col min-h-0">
+              <div className="shrink-0 bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                      <KeyIcon className="w-4 h-4 text-white" />
                     </div>
-                    <button
-                      type="button"
-                      className="rounded-full p-1.5 bg-white/20 text-white hover:bg-white/30 transition-colors"
-                      onClick={closeRoleModal}
-                    >
-                      <span className="sr-only">Fermer</span>
-                      <XMarkIcon className="h-4 w-4" />
-                    </button>
+                    <div>
+                      <h3 className="text-lg font-semibold text-white">
+                        {editingRole ? `Modifier ${editingRole.nom}` : "Nouveau rôle"}
+                      </h3>
+                      <p className="text-blue-100 text-xs">
+                        Définissez les pages accessibles pour ce rôle
+                      </p>
+                    </div>
                   </div>
-                </div>
-
-                <div className="px-6 py-4 space-y-4">
-                  <div className="space-y-2">
-                    <label htmlFor="role_nom" className="block text-sm font-medium text-gray-700">
-                      Nom du rôle <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      id="role_nom"
-                      value={roleFormData.nom}
-                      onChange={(e) => setRoleFormData((p) => ({ ...p, nom: e.target.value }))}
-                      required
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                      placeholder="Ex: Comptable"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label htmlFor="role_description" className="block text-sm font-medium text-gray-700">
-                      Description
-                    </label>
-                    <textarea
-                      id="role_description"
-                      value={roleFormData.description}
-                      onChange={(e) => setRoleFormData((p) => ({ ...p, description: e.target.value }))}
-                      rows={2}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors resize-none"
-                      placeholder="Description facultative du rôle..."
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Permissions <span className="text-red-500">*</span>
-                    </label>
-                    <PermissionMatrix
-                      resources={availablePermissions}
-                      value={roleFormData.permissions}
-                      onChange={(next) => setRoleFormData((p) => ({ ...p, permissions: next }))}
-                    />
-                  </div>
-                </div>
-
-                <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-3 rounded-b-xl">
                   <button
                     type="button"
+                    className="rounded-full p-1.5 bg-white/20 text-white hover:bg-white/30 transition-colors"
                     onClick={closeRoleModal}
-                    className="px-6 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                   >
-                    Annuler
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={savingRole}
-                    className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 border border-transparent rounded-lg text-sm font-medium text-white hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-                  >
-                    {savingRole ? (
-                      <span className="flex items-center">
-                        <Spinner size="sm" color="white" className="-ml-1 mr-2" />
-                        Enregistrement...
-                      </span>
-                    ) : editingRole ? (
-                      "Mettre à jour le rôle"
-                    ) : (
-                      "Enregistrer le rôle"
-                    )}
+                    <span className="sr-only">Fermer</span>
+                    <XMarkIcon className="h-4 w-4" />
                   </button>
                 </div>
-              </form>
-            </div>
+              </div>
+
+              <div className="px-6 py-4 space-y-4 overflow-y-auto">
+                <div className="space-y-2">
+                  <label htmlFor="role_nom" className="block text-sm font-medium text-gray-700">
+                    Nom du rôle <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="role_nom"
+                    value={roleFormData.nom}
+                    onChange={(e) => setRoleFormData((p) => ({ ...p, nom: e.target.value }))}
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    placeholder="Ex: Comptable"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="role_description" className="block text-sm font-medium text-gray-700">
+                    Description
+                  </label>
+                  <textarea
+                    id="role_description"
+                    value={roleFormData.description}
+                    onChange={(e) => setRoleFormData((p) => ({ ...p, description: e.target.value }))}
+                    rows={2}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors resize-none"
+                    placeholder="Description facultative du rôle..."
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Permissions <span className="text-red-500">*</span>
+                  </label>
+                  <PermissionMatrix
+                    resources={availablePermissions}
+                    value={roleFormData.permissions}
+                    onChange={(next) => setRoleFormData((p) => ({ ...p, permissions: next }))}
+                  />
+                </div>
+              </div>
+
+              <div className="shrink-0 bg-gray-50 px-6 py-4 flex justify-end space-x-3 rounded-b-xl">
+                <button
+                  type="button"
+                  onClick={closeRoleModal}
+                  className="px-6 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingRole}
+                  className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 border border-transparent rounded-lg text-sm font-medium text-white hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+                >
+                  {savingRole ? (
+                    <span className="flex items-center">
+                      <Spinner size="sm" color="white" className="-ml-1 mr-2" />
+                      Enregistrement...
+                    </span>
+                  ) : editingRole ? (
+                    "Mettre à jour le rôle"
+                  ) : (
+                    "Enregistrer le rôle"
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
