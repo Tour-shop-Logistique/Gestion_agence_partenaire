@@ -107,6 +107,7 @@ export const API_ENDPOINTS = {
     VERIFY_RECUP: "/agence/valider-retrait-colis",
     SHOW: "/expedition/agence/show/:id",
     DECISION_FRAIS: "/expedition/agence/decision-frais/:id",
+    SEND_RECEIPT_PDF: "/agence/factures/expedition/:expeditionId/send-receipt-pdf",
   },
 
   // Produits

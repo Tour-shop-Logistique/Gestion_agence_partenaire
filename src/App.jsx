@@ -246,6 +246,15 @@ function AppContent() {
     onExpeditionFraisUpdated: (data) => {
       const expedition = Array.isArray(data) ? data[0] : data;
       if (!expedition?.id) return;
+      // Le backoffice peut sauvegarder ce formulaire avec un montant à 0
+      // (ex: confirmation de départ sans frais à saisir) - dans ce cas il
+      // n'y a rien à décider. Si une décision était déjà en attente pour
+      // cette expédition (montant positif d'une précédente sauvegarde), on
+      // la retire au lieu de laisser l'écran bloquant affiché à tort.
+      if (!(Number(expedition.frais_annexes) > 0)) {
+        dispatch(fraisDecisionResolved(expedition.id));
+        return;
+      }
       dispatch(fraisDecisionRequested({
         id: expedition.id,
         reference: expedition.reference,

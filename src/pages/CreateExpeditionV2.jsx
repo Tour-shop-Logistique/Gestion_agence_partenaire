@@ -169,6 +169,24 @@ const CreateExpeditionV2 = () => {
         };
     }, []);
 
+    // Le pays de départ est toujours celui de l'agence connectée (verrouillé
+    // en lecture seule côté UI - voir le champ correspondant) : les tarifs
+    // LD sont configurés par le backoffice de rattachement de l'agence, une
+    // expédition "depuis" un autre pays n'aurait pas de tarif cohérent.
+    useEffect(() => {
+        const agence = agencyData?.agence || agencyData;
+        const codePays = agence?.code_pays;
+        if (!codePays) return;
+
+        const paysName = getCountryName(codePays) || agence?.pays || codePays;
+        setFormData(prev => ({
+            ...prev,
+            pays_depart: paysName,
+            code_pays_depart: codePays,
+            expediteur_pays: paysName,
+        }));
+    }, [agencyData]);
+
     // Gestion des pays par défaut selon le type
     useEffect(() => {
         const type = formData.type_expedition;
@@ -1251,22 +1269,13 @@ const CreateExpeditionV2 = () => {
                                         </div>
                                         <div className="space-y-1.5">
                                             <label htmlFor="pays_depart" className="block text-xs font-semibold text-slate-600">Pays départ</label>
-                                            <SearchableDropdown
+                                            <div
                                                 id="pays_depart"
-                                                options={allKnownCountries}
-                                                onSelect={(country) => {
-                                                    const paysName = extractCountryName(country.label);
-                                                    setFormData(prev => ({
-                                                        ...prev,
-                                                        pays_depart: paysName,
-                                                        code_pays_depart: country.code || "",
-                                                        expediteur_pays: paysName,
-                                                    }));
-                                                }}
-                                                placeholder={formData.pays_depart || "Rechercher un pays..."}
-                                                className="w-full"
-                                                buttonClassName="h-11 text-sm font-medium"
-                                            />
+                                                className="w-full h-11 px-3 flex items-center rounded-lg border border-slate-200 bg-slate-50 text-sm font-medium text-slate-600 cursor-not-allowed"
+                                                title="Le pays de départ correspond au pays de votre agence et ne peut pas être modifié"
+                                            >
+                                                {formData.pays_depart || "—"}
+                                            </div>
                                         </div>
                                         <div className="space-y-1.5">
                                             <label htmlFor="expediteur_ville" className="block text-xs font-semibold text-slate-600">Ville départ</label>

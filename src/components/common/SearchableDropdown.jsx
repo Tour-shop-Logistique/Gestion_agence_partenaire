@@ -1,6 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MagnifyingGlassIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 
+// Retire les accents pour que "suede" trouve "Suède" - NFD decompose les
+// caracteres accentues en (lettre de base + marque diacritique), qu'on
+// supprime ensuite via la plage Unicode des marques combinantes.
+const stripAccents = (value) => value.normalize('NFD').replace(/[̀-ͯ]/g, '');
+
 /**
  * Composant Dropdown avec recherche
  * @param {Array} options - Liste des options [{id, label}]
@@ -14,9 +19,10 @@ const SearchableDropdown = ({ options = [], onSelect, placeholder = "Sélectionn
     const dropdownRef = useRef(null);
     const searchInputRef = useRef(null);
 
-    // Filtrer les options selon le terme de recherche
+    // Filtrer les options selon le terme de recherche, insensible aux
+    // accents (ex: "suede" doit trouver "Suède").
     const filteredOptions = options.filter(option =>
-        option.label.toLowerCase().includes(searchTerm.toLowerCase())
+        stripAccents(option.label.toLowerCase()).includes(stripAccents(searchTerm.toLowerCase()))
     );
 
     // Fermer le dropdown quand on clique à l'extérieur

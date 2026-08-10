@@ -1,9 +1,13 @@
 import React, { useEffect } from 'react';
+import { useDispatch } from 'react-redux';
 import Spinner from '../components/common/Spinner';
 import { useParams, useNavigate } from 'react-router-dom';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { useExpedition } from '../hooks/useExpedition';
 import { useAgency } from '../hooks/useAgency';
+import { useAuth } from '../hooks/useAuth';
+import { useWebSocket } from '../hooks/useWebSocket';
+import { realtimeExpeditionPatched } from '../store/slices/expeditionSlice';
 import PrintSuccessModal from '../components/Receipts/PrintSuccessModal';
 import { getLogoUrl } from '../utils/apiConfig';
 import { toast } from '../utils/toast';
@@ -16,6 +20,7 @@ import {
     FinanceCard
 } from '../components/expedition';
 import FraisDecisionModal from '../components/transaction/FraisDecisionModal';
+import useHasPermission from '../hooks/useHasPermission';
 
 /**
  * 🚀 PAGE DÉTAIL EXPÉDITION - VERSION REFACTORISÉE
@@ -29,6 +34,10 @@ import FraisDecisionModal from '../components/transaction/FraisDecisionModal';
 const ExpeditionDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const dispatch = useDispatch();
+    const { currentUser } = useAuth();
+    const canAccept = useHasPermission("demandes.accept");
+    const canRefuse = useHasPermission("demandes.refuse");
     const {
         currentExpedition: expedition,
         getExpeditionDetails,
@@ -41,6 +50,29 @@ const ExpeditionDetails = () => {
         recordTransaction
     } = useExpedition();
     const { data: agencyData, fetchAgencyData } = useAgency();
+
+    // Cette page affiche state.expedition.currentExpedition, un state distinct
+    // de celui patché par le hook websocket global (App.jsx) - sans cette
+    // écoute dédiée, les frais annexes/statut/paiement affichés ici restaient
+    // figés sur l'ancienne valeur tant que la page n'était pas rechargée.
+    useWebSocket(
+        currentUser?.agence_id,
+        {
+            onExpeditionFraisUpdated: (data) => {
+                const updated = Array.isArray(data) ? data[0] : data;
+                if (updated) dispatch(realtimeExpeditionPatched(updated));
+            },
+            onExpeditionStatusChanged: (data) => {
+                const updated = Array.isArray(data) ? data[0] : data;
+                if (updated) dispatch(realtimeExpeditionPatched(updated));
+            },
+            onExpeditionPaymentConfirmed: (data) => {
+                const updated = Array.isArray(data) ? data[0] : data;
+                if (updated) dispatch(realtimeExpeditionPatched(updated));
+            },
+        },
+        !!currentUser?.agence_id
+    );
 
     // États des modales
     const [isRefuseModalOpen, setIsRefuseModalOpen] = React.useState(false);
@@ -232,20 +264,24 @@ const ExpeditionDetails = () => {
                                 </button>
                                 {expedition.statut_expedition === 'en_attente' && (
                                     <>
-                                        <button
-                                            onClick={() => setIsRefuseModalOpen(true)}
-                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-colors"
-                                        >
-                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                                            <span className="hidden sm:inline">Refuser</span>
-                                        </button>
-                                        <button
-                                            onClick={() => setIsAcceptModalOpen(true)}
-                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm transition-colors"
-                                        >
-                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                                            <span className="hidden sm:inline">Accepter</span>
-                                        </button>
+                                        {canRefuse && (
+                                            <button
+                                                onClick={() => setIsRefuseModalOpen(true)}
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-colors"
+                                            >
+                                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                                <span className="hidden sm:inline">Refuser</span>
+                                            </button>
+                                        )}
+                                        {canAccept && (
+                                            <button
+                                                onClick={() => setIsAcceptModalOpen(true)}
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm transition-colors"
+                                            >
+                                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                                                <span className="hidden sm:inline">Accepter</span>
+                                            </button>
+                                        )}
                                     </>
                                 )}
 

@@ -1,13 +1,16 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import ReceiptA4 from './ReceiptA4';
 import ReceiptThermal from './ReceiptThermal';
+import { domNodeToPdfBlob } from '../../utils/domToPdf';
+import { expeditionsApi } from '../../utils/api/expeditions';
 import {
     PrinterIcon,
     DocumentTextIcon,
     Squares2X2Icon,
     CheckCircleIcon,
-    XMarkIcon
+    XMarkIcon,
+    EnvelopeIcon
 } from '@heroicons/react/24/outline';
 
 const PrintSuccessModal = ({ expedition, agency, onClose }) => {
@@ -15,6 +18,43 @@ const PrintSuccessModal = ({ expedition, agency, onClose }) => {
     const labelsRef = useRef(null);
     const labelsA4Ref = useRef(null);
     const [labelFormat, setLabelFormat] = React.useState('thermal'); // 'thermal' or 'a4'
+    // 'idle' | 'sending' | 'sent' | 'error' | 'skipped' (pas d'email destinataire)
+    const [emailStatus, setEmailStatus] = useState('idle');
+
+    // Envoie automatiquement le reçu (même document que celui imprimé) par
+    // email au destinataire dès que le modal s'affiche - une seule fois par
+    // expédition créée, pas à chaque re-render.
+    useEffect(() => {
+        if (!expedition?.destinataire?.email) {
+            setEmailStatus('skipped');
+            return;
+        }
+
+        let cancelled = false;
+
+        const sendReceipt = async () => {
+            setEmailStatus('sending');
+            try {
+                // Laisse le temps au composant caché (ReceiptA4) de terminer
+                // son premier rendu avant de le capturer.
+                await new Promise((resolve) => setTimeout(resolve, 300));
+                if (cancelled || !componentRefA4.current) return;
+
+                const pdfBlob = await domNodeToPdfBlob(componentRefA4.current);
+                if (cancelled) return;
+
+                const result = await expeditionsApi.sendReceiptPdf(expedition.id, pdfBlob);
+                if (!cancelled) setEmailStatus(result.success ? 'sent' : 'error');
+            } catch (err) {
+                console.error('Erreur envoi reçu par email:', err);
+                if (!cancelled) setEmailStatus('error');
+            }
+        };
+
+        sendReceipt();
+        return () => { cancelled = true; };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [expedition?.id]);
 
     const handlePrintA4 = useReactToPrint({
         contentRef: componentRefA4,
@@ -241,9 +281,19 @@ const PrintSuccessModal = ({ expedition, agency, onClose }) => {
 
                 {/* Professional Footer */}
                 <div className="px-6 py-3 bg-white border-t border-slate-200 flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs text-slate-500">
-                        <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                        <span className="font-medium">Expédition enregistrée</span>
+                    <div className="flex items-center gap-4 text-xs text-slate-500">
+                        <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                            <span className="font-medium">Expédition enregistrée</span>
+                        </div>
+                        {emailStatus !== 'skipped' && (
+                            <div className="flex items-center gap-1.5 font-medium">
+                                <EnvelopeIcon className="w-3.5 h-3.5" />
+                                {emailStatus === 'sending' && <span>Envoi du reçu par email…</span>}
+                                {emailStatus === 'sent' && <span className="text-emerald-600">Reçu envoyé au destinataire</span>}
+                                {emailStatus === 'error' && <span className="text-rose-600">Échec de l'envoi du reçu par email</span>}
+                            </div>
+                        )}
                     </div>
                     
                     <div className="flex items-center gap-3">

@@ -16,8 +16,10 @@ import { toast } from "../utils/toast";
 import PageHeader from "../components/ui/PageHeader";
 import soundNotification from "../utils/soundNotification";
 import QRScanner from "../components/QRScanner";
+import useHasPermission from "../hooks/useHasPermission";
 
 const ReceptionColis = () => {
+    const canReceive = useHasPermission("colis_a_receptionner.receive_destination");
     // Version: 2.0 - Tableau avec tri automatique
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedColis, setSelectedColis] = useState([]);
@@ -304,7 +306,7 @@ const ReceptionColis = () => {
                             {selectedColis.length} colis sélectionné{selectedColis.length > 1 ? 's' : ''}
                         </span>
                     </div>
-                    {selectedColis.length > 0 && (
+                    {selectedColis.length > 0 && canReceive && (
                         <button
                             onClick={handleValidateMultiple}
                             disabled={isRefreshing}
@@ -451,13 +453,15 @@ const ReceptionColis = () => {
                                             {/* Action */}
                                             <td className="px-6 py-5 text-center">
                                                 {!isReceived ? (
-                                                    <button
-                                                        onClick={() => handleValidateReception(item.code_colis)}
-                                                        disabled={isRefreshing}
-                                                        className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white text-xs font-bold rounded-xl hover:from-indigo-700 hover:to-indigo-800 transition-all shadow-md shadow-indigo-300/50 active:scale-95 disabled:opacity-50"
-                                                    >
-                                                        Valider
-                                                    </button>
+                                                    canReceive && (
+                                                        <button
+                                                            onClick={() => handleValidateReception(item.code_colis)}
+                                                            disabled={isRefreshing}
+                                                            className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white text-xs font-bold rounded-xl hover:from-indigo-700 hover:to-indigo-800 transition-all shadow-md shadow-indigo-300/50 active:scale-95 disabled:opacity-50"
+                                                        >
+                                                            Valider
+                                                        </button>
+                                                    )
                                                 ) : (
                                                     <span className="text-xs font-semibold text-green-600">✓ Validé</span>
                                                 )}

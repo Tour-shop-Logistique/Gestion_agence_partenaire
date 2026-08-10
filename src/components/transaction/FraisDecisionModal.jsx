@@ -27,9 +27,11 @@ const FraisDecisionModal = ({ expedition, onClose }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showTransactionModal, setShowTransactionModal] = useState(false);
 
-  if (!expedition) return null;
+  const montant = Number(expedition?.frais_annexes || 0);
 
-  const montant = Number(expedition.frais_annexes || 0);
+  // Défense en profondeur : rien à décider si le montant est nul, même si
+  // l'appelant a poussé cette expédition dans la file par erreur.
+  if (!expedition || montant <= 0) return null;
 
   const handleAPercevoirArrivee = async () => {
     setIsSubmitting(true);

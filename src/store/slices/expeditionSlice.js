@@ -372,6 +372,19 @@ const expeditionSlice = createSlice({
             const id = action.payload;
             state.pendingFraisDecisions = state.pendingFraisDecisions.filter(e => e.id !== id);
         },
+        // Reçu via WebSocket (frais_annexes_updated, frais_decision_agence,
+        // status_changed...) : patch local de state.currentExpedition si
+        // c'est bien l'expédition actuellement affichée sur ExpeditionDetails,
+        // sans quoi la page reste figée sur l'ancienne valeur tant qu'elle
+        // n'est pas rechargée manuellement (le modal de décision global
+        // s'affiche bien, mais les champs de la page elle-même ne suivent pas).
+        realtimeExpeditionPatched: (state, action) => {
+            const updated = action.payload;
+            if (!updated?.id) return;
+            if (state.currentExpedition && state.currentExpedition.id === updated.id) {
+                state.currentExpedition = { ...state.currentExpedition, ...updated };
+            }
+        },
         // Reçu via WebSocket (event universel "model.updated") sur les colis
         // destinés à cette agence : patch local de state.reception sans
         // refetch réseau, pour que le badge "En transit" -> "À réceptionner"
@@ -749,6 +762,6 @@ const expeditionSlice = createSlice({
     },
 });
 
-export const { clearExpeditionStatus, setCurrentExpedition, clearSimulation, clearCurrentExpedition, fraisDecisionRequested, fraisDecisionResolved, realtimeColisUpdated } = expeditionSlice.actions;
+export const { clearExpeditionStatus, setCurrentExpedition, clearSimulation, clearCurrentExpedition, fraisDecisionRequested, fraisDecisionResolved, realtimeColisUpdated, realtimeExpeditionPatched } = expeditionSlice.actions;
 
 export default expeditionSlice.reducer;

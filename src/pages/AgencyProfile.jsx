@@ -369,6 +369,13 @@ const AgencyProfile = () => {
   const handleSubmit = async (e) => {
     if (e?.preventDefault) e.preventDefault();
     if (!isAdmin) return;
+
+    const hasIdCheck = !!(agencyData?.agence?.id || agencyData?.id);
+    if (!hasIdCheck && !formData.code_agence.trim()) {
+      toast.error("Veuillez renseigner un code agence.");
+      return;
+    }
+
     setSaving(true);
     try {
       const payload = {
@@ -390,6 +397,11 @@ const AgencyProfile = () => {
       if (photosToRemove.length) payload.photos_to_remove = photosToRemove;
 
       const hasId = !!(agencyData?.agence?.id || agencyData?.id);
+      // code_agence n'est envoyé qu'à la création : choisi une seule fois
+      // par l'agence, immuable ensuite (le backend l'ignore de toute façon
+      // sur une mise à jour, mais on évite même de l'envoyer).
+      if (!hasId) payload.code_agence = formData.code_agence.trim();
+
       const result = hasId ? await updateAgencyData(payload) : await setupAgency(payload);
 
       if (result.type?.includes("fulfilled") || result.success) {
@@ -565,7 +577,18 @@ const AgencyProfile = () => {
                 </div>
                 <div>
                   <FieldLabel>Code agence</FieldLabel>
-                  <Field name="code_agence" value={formData.code_agence} disabled placeholder="Ex : AGC-001" />
+                  <Field
+                    name="code_agence"
+                    value={formData.code_agence}
+                    onChange={handleChange}
+                    disabled={agencyConfigured}
+                    placeholder="Ex : AGC-001"
+                  />
+                  {!agencyConfigured && (
+                    <p className="mt-1 text-xs text-slate-400">
+                      Choisissez librement ce code : il ne pourra plus être modifié après la création de l'agence.
+                    </p>
+                  )}
                 </div>
                 <div className="sm:col-span-2">
                   <FieldLabel>Adresse</FieldLabel>
