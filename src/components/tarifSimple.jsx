@@ -451,10 +451,13 @@ const TarifSimpleComponent = () => {
       if (nomZone && nomZone.toLowerCase().includes(query)) {
         return true;
       }
-      // Recherche dans les pays de la zone
+      // Recherche dans les pays de la zone (texte brut legacy + nom
+      // francais derive du code ISO, les deux pouvant diverger)
       if (tarif.zone?.pays && Array.isArray(tarif.zone.pays)) {
-        return tarif.zone.pays.some(country =>
-          country.toLowerCase().includes(query)
+        const codes = Array.isArray(tarif.zone.pays_codes) ? tarif.zone.pays_codes : [];
+        return tarif.zone.pays.some((country, index) =>
+          country.toLowerCase().includes(query) ||
+          getCountryName(codes[index])?.toLowerCase().includes(query)
         );
       }
       return false;
