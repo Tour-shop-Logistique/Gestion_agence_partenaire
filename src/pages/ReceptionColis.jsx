@@ -17,6 +17,7 @@ import PageHeader from "../components/ui/PageHeader";
 import soundNotification from "../utils/soundNotification";
 import QRScanner from "../components/QRScanner";
 import useHasPermission from "../hooks/useHasPermission";
+import { getCountryName } from "../utils/countries";
 
 const ReceptionColis = () => {
     const canReceive = useHasPermission("colis_a_receptionner.receive_destination");
@@ -73,6 +74,7 @@ const ReceptionColis = () => {
                 item.code_colis?.toLowerCase().includes(lowQuery) ||
                 item.expedition?.reference?.toLowerCase().includes(lowQuery) ||
                 item.expedition?.pays_depart?.toLowerCase().includes(lowQuery) ||
+                getCountryName(item.expedition?.code_pays_depart)?.toLowerCase().includes(lowQuery) ||
                 item.designation?.toLowerCase().includes(lowQuery)
             );
         }
@@ -416,7 +418,7 @@ const ReceptionColis = () => {
                                                 <div className="flex items-center gap-2">
                                                     <MapPinIcon className="w-4 h-4 text-slate-400" />
                                                     <span className="text-sm font-semibold text-slate-700">
-                                                        {item.expedition?.pays_depart || '-'} → {item.expedition?.pays_destination || '-'}
+                                                        {getCountryName(item.expedition?.code_pays_depart) || item.expedition?.pays_depart || '-'} → {getCountryName(item.expedition?.code_pays_destination) || item.expedition?.pays_destination || '-'}
                                                     </span>
                                                 </div>
                                             </td>

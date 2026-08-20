@@ -36,6 +36,7 @@ import {
   BellAlertIcon
 } from "@heroicons/react/24/outline";
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { getCountryName } from "../utils/countries";
 import PageHeader from "../components/ui/PageHeader";
 
 const Comptabilite = () => {
@@ -327,7 +328,7 @@ const Comptabilite = () => {
   const destinationStats = useMemo(() => {
     const stats = {};
     filteredData.forEach(exp => {
-      const dest = exp.pays_destination || 'Inconnu';
+      const dest = getCountryName(exp.code_pays_destination) || exp.pays_destination || 'Inconnu';
       if (!stats[dest]) {
         stats[dest] = {
           destination: dest,
@@ -1375,7 +1376,7 @@ const Comptabilite = () => {
                    <UserIcon className="w-3 h-3" /> Expéditeur: <span className="text-slate-700 ml-1">{selectedExpedition.expediteur?.nom_prenom}</span>
                  </div>
                  <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase">
-                   <MapPinIcon className="w-3 h-3" /> Destination: <span className="text-slate-700 ml-1">{selectedExpedition.pays_destination}</span>
+                   <MapPinIcon className="w-3 h-3" /> Destination: <span className="text-slate-700 ml-1">{getCountryName(selectedExpedition.code_pays_destination) || selectedExpedition.pays_destination}</span>
                  </div>
               </div>
 

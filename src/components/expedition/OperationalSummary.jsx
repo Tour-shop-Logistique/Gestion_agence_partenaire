@@ -1,5 +1,6 @@
 import React from 'react';
 import { MapPin, Package, Weight, Calendar, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { getCountryName } from '../../utils/countries';
 
 /**
  * 🔥 RÉSUMÉ OPÉRATIONNEL
@@ -8,6 +9,8 @@ import { MapPin, Package, Weight, Calendar, AlertCircle, CheckCircle2 } from 'lu
 const OperationalSummary = ({ expedition, formatCurrency }) => {
     const totalWeight = expedition.colis?.reduce((sum, c) => sum + parseFloat(c.poids || 0), 0) || 0;
     const totalParcels = expedition.colis?.length || 0;
+    const paysDepart = getCountryName(expedition.code_pays_depart) || expedition.pays_depart || '';
+    const paysDestination = getCountryName(expedition.code_pays_destination) || expedition.pays_destination || '';
 
     // Déterminer le statut visuel
     const getStatusConfig = (status) => {
@@ -98,7 +101,7 @@ const OperationalSummary = ({ expedition, formatCurrency }) => {
                         <p className="text-xs font-bold text-slate-500 uppercase">Destination</p>
                     </div>
                     <p className="text-sm font-bold text-slate-900">
-                        {expedition.pays_depart} → {expedition.pays_destination}
+                        {paysDepart} → {paysDestination}
                     </p>
                 </div>
 

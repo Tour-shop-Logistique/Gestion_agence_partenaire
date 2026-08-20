@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import StatusTimeline from './StatusTimeline';
 import PaymentBadge from './PaymentBadge';
+import { getCountryName } from '../../utils/countries';
 
 /**
  * 📱 CARTE MOBILE EXPEDITIONS
@@ -48,13 +49,13 @@ const ExpeditionMobileCard = ({
             {/* Trajet */}
             <div className="flex items-center gap-2 mb-3 text-xs font-semibold">
                 <span className="truncate max-w-[40%] text-slate-600">
-                    {expedition.pays_depart}
+                    {getCountryName(expedition.code_pays_depart) || expedition.pays_depart}
                 </span>
                 <svg className="w-4 h-4 text-indigo-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
                 <span className="truncate max-w-[40%] text-indigo-600">
-                    {expedition.pays_destination}
+                    {getCountryName(expedition.code_pays_destination) || expedition.pays_destination}
                 </span>
             </div>
 

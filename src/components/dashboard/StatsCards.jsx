@@ -1,5 +1,6 @@
 import React from "react";
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
+import { getCountryName } from "../../utils/countries";
 
 /**
  * Cartes de statistiques (Top Destinations, Volume par Type, Autres indicateurs)
@@ -30,7 +31,7 @@ const StatsCards = ({ logistics, operational }) => {
                                             <span className="text-xs sm:text-sm font-black text-white">{index + 1}</span>
                                         </div>
                                         <span className="text-xs sm:text-sm font-bold text-slate-700 truncate group-hover:text-slate-900 transition-colors">
-                                            {dest.pays}
+                                            {getCountryName(dest.code_pays) || dest.pays}
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-1 sm:gap-2">

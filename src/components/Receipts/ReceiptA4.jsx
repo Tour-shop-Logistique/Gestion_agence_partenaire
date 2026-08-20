@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import CompanyLogo from '../../assets/logo_transparent.png';
 import AppLogo from '../../assets/logo_blanc_shop.jpg';
+import { getCountryName } from '../../utils/countries';
 
 const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
     if (!expedition) return null;
@@ -22,8 +23,13 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
     // Calculer le total
     const totalAPayer = montantExpedition + fraisAnnexes + fraisEmballage + fraisEnlevement + fraisLivraison + fraisRetard;
 
-    // Vérifier si la destination est la France
-    const paysDestination = expedition.destinataire?.pays || expedition.destinataire_pays || expedition.pays_destination || '';
+    // Noms de pays dérivés du code ISO (français, cohérent avec le
+    // backoffice) - repli sur le texte brut saisi si le code est absent
+    // (anciennes expéditions créées avant l'ajout des codes ISO).
+    const paysDepart = getCountryName(expedition.code_pays_depart)
+        || expedition.expediteur?.pays || expedition.expediteur_pays || expedition.pays_depart || '';
+    const paysDestination = getCountryName(expedition.code_pays_destination)
+        || expedition.destinataire?.pays || expedition.destinataire_pays || expedition.pays_destination || '';
     const isFrance = paysDestination.toLowerCase().includes('france');
     
     // Taux de conversion CFA vers EUR (1 EUR = 655.957 CFA)
@@ -117,7 +123,7 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
                         <p className="text-sm font-bold uppercase tracking-tight text-slate-800">{expedition.expediteur?.nom_prenom || expedition.expediteur_nom_prenom}</p>
                         <p className="text-xs font-bold text-slate-600 mt-1">{expedition.expediteur?.telephone || expedition.expediteur_telephone}</p>
                         <p className="text-xs font-medium text-slate-500 mt-2">{expedition.expediteur?.adresse || expedition.expediteur_adresse}</p>
-                        <p className="text-xs font-bold text-slate-500 mt-1 uppercase tracking-wider">{expedition.expediteur?.ville || expedition.expediteur_ville}, {expedition.expediteur?.pays || expedition.expediteur_pays || expedition.pays_depart}</p>
+                        <p className="text-xs font-bold text-slate-500 mt-1 uppercase tracking-wider">{expedition.expediteur?.ville || expedition.expediteur_ville}, {paysDepart}</p>
                     </div>
                     <div className="p-4 bg-slate-50/80 border border-slate-200 rounded-2xl shadow-sm">
                         <div className="flex items-center mb-3 border-b border-slate-200 pb-2">
@@ -132,7 +138,7 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
                             {(expedition.destinataire?.code_postal || expedition.destinataire_code_postal) && 
                                 <span className="ml-1 text-indigo-600">({expedition.destinataire?.code_postal || expedition.destinataire_code_postal})</span>
                             }
-                            , {expedition.destinataire?.pays || expedition.destinataire_pays || expedition.pays_destination}
+                            , {paysDestination}
                         </p>
                     </div>
                 </div>

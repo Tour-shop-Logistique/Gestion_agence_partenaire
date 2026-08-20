@@ -13,6 +13,7 @@ import { getLogoUrl } from "../utils/apiConfig";
 import { formatPriceDual } from "../utils/format";
 import { showToast } from "../utils/toast";
 import { getStatusLabel } from "../utils/expeditionHelpers";
+import { getCountryName } from "../utils/countries";
 
 // Import des nouveaux composants premium
 import {
@@ -343,6 +344,8 @@ const ExpeditionsPremium = () => {
                 exp.destinataire?.telephone?.toLowerCase().includes(lowerQuery) ||
                 exp.pays_depart?.toLowerCase().includes(lowerQuery) ||
                 exp.pays_destination?.toLowerCase().includes(lowerQuery) ||
+                getCountryName(exp.code_pays_depart)?.toLowerCase().includes(lowerQuery) ||
+                getCountryName(exp.code_pays_destination)?.toLowerCase().includes(lowerQuery) ||
                 exp.ville_destination?.toLowerCase().includes(lowerQuery) ||
                 exp.type_expedition?.toLowerCase().includes(lowerQuery) ||
                 exp.numero_colis?.toLowerCase().includes(lowerQuery) ||
@@ -473,7 +476,7 @@ const ExpeditionsPremium = () => {
         const tableData = filteredExpeditions.map(exp => ([
             exp.reference,
             getTypeLabel(exp.type_expedition),
-            `${exp.pays_depart || 'N/A'}\n↓\n${exp.pays_destination || 'N/A'}`,
+            `${getCountryName(exp.code_pays_depart) || exp.pays_depart || 'N/A'}\n↓\n${getCountryName(exp.code_pays_destination) || exp.pays_destination || 'N/A'}`,
             exp.expediteur?.nom_prenom || "---",
             exp.destinataire?.nom_prenom || "---",
             formatCurrencyForPDF(exp.montant_expedition),

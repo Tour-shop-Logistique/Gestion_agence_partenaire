@@ -9,6 +9,7 @@ import {
 } from '@heroicons/react/24/outline';
 import StatusTimeline from './StatusTimeline';
 import PaymentBadge from './PaymentBadge';
+import { getCountryName } from '../../utils/countries';
 
 /**
  * 📋 LIGNE D'EXPÉDITION (DESKTOP)
@@ -109,13 +110,13 @@ const ExpeditionRow = ({
             <td className="px-3 py-3 2xl:px-5 2xl:py-4">
                 <div className="flex items-center gap-2">
                     <span className="text-xs font-semibold text-slate-600 px-2.5 py-1 bg-slate-100 rounded-lg truncate max-w-[90px] 2xl:max-w-none 2xl:whitespace-nowrap">
-                        {expedition.pays_depart}
+                        {getCountryName(expedition.code_pays_depart) || expedition.pays_depart}
                     </span>
                     <svg className="w-4 h-4 text-indigo-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                     </svg>
                     <span className="text-xs font-semibold text-indigo-600 px-2.5 py-1 bg-indigo-50 border border-indigo-100 rounded-lg truncate max-w-[90px] 2xl:max-w-none 2xl:whitespace-nowrap">
-                        {expedition.pays_destination}
+                        {getCountryName(expedition.code_pays_destination) || expedition.pays_destination}
                     </span>
                 </div>
             </td>

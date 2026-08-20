@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useTarifs } from "../hooks/useTarifs";
+import { getCountryName } from "../utils/countries";
 import {
   XMarkIcon,
   InformationCircleIcon,
@@ -30,7 +31,7 @@ const AddAgencyTarifModal = ({ show, onClose, editingTarif, selectedBaseRate }) 
       setTarifData({
         id: editingTarif.id,
         categoryName: editingTarif.category?.nom || (editingTarif.type_expedition === 'groupage_afrique' ? 'Expédition Afrique' : (editingTarif.type_expedition === 'groupage_ca' ? 'Expédition CA' : 'Général')),
-        pays: editingTarif.pays,
+        pays: getCountryName(editingTarif.code_pays) || editingTarif.pays,
         mode: editingTarif.mode,
         ligne: editingTarif.ligne,
         montant_base: editingTarif.montant_base,
@@ -48,7 +49,7 @@ const AddAgencyTarifModal = ({ show, onClose, editingTarif, selectedBaseRate }) 
       setTarifData({
         tarif_groupage_id: selectedBaseRate.id,
         categoryName: selectedBaseRate.category?.nom || (selectedBaseRate.type_expedition === 'groupage_afrique' ? 'Expédition Afrique' : (selectedBaseRate.type_expedition === 'groupage_ca' ? 'Expédition CA' : 'Général')),
-        pays: selectedBaseRate.pays,
+        pays: getCountryName(selectedBaseRate.code_pays) || selectedBaseRate.pays,
         mode: selectedBaseRate.mode,
         ligne: selectedBaseRate.ligne,
         montant_base: base,
@@ -72,7 +73,7 @@ const AddAgencyTarifModal = ({ show, onClose, editingTarif, selectedBaseRate }) 
     setTarifData({
       tarif_groupage_id: baseRate.id,
       categoryName: baseRate.category?.nom || (baseRate.type_expedition === 'groupage_afrique' ? 'Expédition Afrique' : (baseRate.type_expedition === 'groupage_ca' ? 'Expédition CA' : 'Général')),
-      pays: baseRate.pays,
+      pays: getCountryName(baseRate.code_pays) || baseRate.pays,
       mode: baseRate.mode,
       ligne: baseRate.ligne,
       montant_base: base,
@@ -183,7 +184,7 @@ const AddAgencyTarifModal = ({ show, onClose, editingTarif, selectedBaseRate }) 
                   <option value="">-- Sélectionner un modèle --</option>
                   {groupageTarifs.map((t) => (
                     <option key={t.id} value={t.id}>
-                      [{t.type_expedition?.replace('groupage_', '').toUpperCase()}] {t.category?.nom || t.pays} - {t.mode}
+                      [{t.type_expedition?.replace('groupage_', '').toUpperCase()}] {t.category?.nom || getCountryName(t.code_pays) || t.pays} - {t.mode}
                     </option>
                   ))}
                 </select>

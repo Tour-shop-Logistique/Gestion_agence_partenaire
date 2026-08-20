@@ -23,6 +23,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { RecordTransactionModal } from '../components/transaction';
 import PageHeader from '../components/ui/PageHeader';
+import { getCountryName } from '../utils/countries';
 
 const Transactions = () => {
   const dispatch = useDispatch();
@@ -357,7 +358,7 @@ const Transactions = () => {
                       {t.expedition?.expediteur?.nom_prenom || t.user?.nom || '---'}
                     </span>
                     <span className="text-[9px] text-slate-400 truncate">
-                      {t.expedition?.pays_destination || 'N/A'}
+                      {getCountryName(t.expedition?.code_pays_destination) || t.expedition?.pays_destination || 'N/A'}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
@@ -447,7 +448,7 @@ const Transactions = () => {
                           {t.expedition?.expediteur?.nom_prenom || t.user?.nom || '---'}
                         </span>
                         <span className="text-[11px] text-slate-400 mt-0.5">
-                          {t.expedition?.pays_destination || 'Destination non spécifiée'}
+                          {getCountryName(t.expedition?.code_pays_destination) || t.expedition?.pays_destination || 'Destination non spécifiée'}
                         </span>
                       </div>
                     </td>

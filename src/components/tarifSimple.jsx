@@ -5,6 +5,7 @@ import { formatPrice } from "../utils/format";
 import { useTarifs } from "../hooks/useTarifs";
 import { useAuth } from "../hooks/useAuth";
 import { tarifsApi } from "../utils/api/tarifs";
+import { getCountryName } from "../utils/countries";
 import {
   PlusIcon,
   CircleStackIcon,
@@ -35,7 +36,7 @@ const TableSkeleton = () => (
   </div>
 );
 
-const CountriesDisplay = ({ countries, zoneName }) => {
+const CountriesDisplay = ({ countries, countryCodes, zoneName }) => {
   const [showPopover, setShowPopover] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -43,12 +44,17 @@ const CountriesDisplay = ({ countries, zoneName }) => {
     return <span className="text-[9px] font-medium text-slate-400 italic">Aucun pays</span>;
   }
 
+  // Noms dérivés du code ISO (français, cohérent avec le backoffice) -
+  // repli sur le texte brut par index si le code est absent à cette position.
+  const codes = Array.isArray(countryCodes) ? countryCodes : [];
+  const countryNames = countries.map((raw, index) => getCountryName(codes[index]) || raw);
+
   const visibleCount = 2;
-  const visibleCountries = countries.slice(0, visibleCount);
-  const remainingCount = countries.length - visibleCount;
+  const visibleCountries = countryNames.slice(0, visibleCount);
+  const remainingCount = countryNames.length - visibleCount;
 
   // Filtrer les pays selon la recherche
-  const filteredCountries = countries.filter(country =>
+  const filteredCountries = countryNames.filter(country =>
     country.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -626,7 +632,8 @@ const TarifSimpleComponent = () => {
                         <div className="flex flex-col">
                           <span className="text-[13px] font-bold text-slate-900">{tarif.zone?.nom || tarif.nom_zone}</span>
                           <CountriesDisplay 
-                            countries={tarif.zone?.pays} 
+                            countries={tarif.zone?.pays}
+                            countryCodes={tarif.zone?.pays_codes}
                             zoneName={tarif.zone?.nom || tarif.nom_zone}
                           />
                         </div>
@@ -712,8 +719,9 @@ const TarifSimpleComponent = () => {
                         </div>
 
                         <p className="text-[13px] font-bold text-slate-900">{tarif.zone?.nom || tarif.nom_zone}</p>
-                        <CountriesDisplay 
-                          countries={tarif.zone?.pays} 
+                        <CountriesDisplay
+                          countries={tarif.zone?.pays}
+                          countryCodes={tarif.zone?.pays_codes}
                           zoneName={tarif.zone?.nom || tarif.nom_zone}
                         />
                       </div>

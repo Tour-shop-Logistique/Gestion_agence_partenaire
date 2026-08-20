@@ -1,16 +1,24 @@
 import React from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import CompanyLogo from '../../assets/logo_transparent.png';
+import { getCountryName } from '../../utils/countries';
 
 const ReceiptThermal = React.forwardRef(({ expedition, colis, agency }, ref) => {
     if (!expedition || !colis) return null;
-    
+
     // Extraction intelligente des informations de l'agence
     const agencyName = agency?.nom_agence || agency?.name || agency?.nom || 'AGENCE';
     const agencyAddress = agency?.adresse || agency?.address || '';
     const agencyPhone = agency?.telephone || agency?.telephone_agence || agency?.phone || agency?.agence?.telephone || 'Non renseigné';
     const agencyEmail = agency?.email || '';
     const logoSrc = agency?.logo || CompanyLogo;
+
+    // Noms de pays dérivés du code ISO (français, cohérent avec le
+    // backoffice) - repli sur le texte brut saisi si le code est absent.
+    const paysDepart = getCountryName(expedition.code_pays_depart)
+        || expedition.expediteur?.pays || expedition.expediteur_pays || expedition.pays_depart || '';
+    const paysDestination = getCountryName(expedition.code_pays_destination)
+        || expedition.destinataire?.pays || expedition.destinataire_pays || expedition.pays_destination || '';
 
     return (
         <div ref={ref} className="bg-white text-black font-mono p-3" style={{ width: '88mm', fontSize: '12px', lineHeight: '1.4' }}>
@@ -47,7 +55,7 @@ const ReceiptThermal = React.forwardRef(({ expedition, colis, agency }, ref) => 
             <div className="border-y-2 border-black py-3 mb-3 text-[11px]">
                 <div className="bg-blue-50 p-2 rounded mb-2">
                     <p className="text-[10px] uppercase font-bold text-blue-900 mb-1">📤 DÉPART</p>
-                    <p className="font-bold text-xs uppercase">📍 {expedition.expediteur?.ville || expedition.expediteur_ville}, {expedition.expediteur?.pays || expedition.expediteur_pays || expedition.pays_depart}</p>
+                    <p className="font-bold text-xs uppercase">📍 {expedition.expediteur?.ville || expedition.expediteur_ville}, {paysDepart}</p>
                 </div>
                 <div className="bg-green-50 p-2 rounded">
                     <p className="text-[10px] uppercase font-bold text-green-900 mb-1">📥 DESTINATION</p>
@@ -56,7 +64,7 @@ const ReceiptThermal = React.forwardRef(({ expedition, colis, agency }, ref) => 
                         {(expedition.destinataire?.code_postal || expedition.destinataire_code_postal) && 
                             <span className="ml-1">({expedition.destinataire?.code_postal || expedition.destinataire_code_postal})</span>
                         }
-                        , {expedition.destinataire?.pays || expedition.destinataire_pays || expedition.pays_destination}
+                        , {paysDestination}
                     </p>
                 </div>
             </div>

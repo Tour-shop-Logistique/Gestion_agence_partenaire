@@ -18,6 +18,7 @@ import {
 import QRScanner from "../components/QRScanner";
 import ColisDetailsDrawer from "../components/common/ColisDetailsDrawer";
 import PageHeader from "../components/ui/PageHeader";
+import { getCountryName } from "../utils/countries";
 
 const Colis = () => {
     const { currentUser } = useAuth();
@@ -457,11 +458,11 @@ const Colis = () => {
                             <div className="p-3">
                                 <div className="flex items-center justify-between gap-2 mb-2">
                                     <div className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 flex-1 min-w-0">
-                                        <span className="truncate max-w-[100px]">{item.expedition?.pays_depart}</span>
+                                        <span className="truncate max-w-[100px]">{getCountryName(item.expedition?.code_pays_depart) || item.expedition?.pays_depart}</span>
                                         <svg className="w-3 h-3 text-indigo-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                                         </svg>
-                                        <span className="truncate max-w-[100px] text-indigo-600">{item.expedition?.pays_destination}</span>
+                                        <span className="truncate max-w-[100px] text-indigo-600">{getCountryName(item.expedition?.code_pays_destination) || item.expedition?.pays_destination}</span>
                                     </div>
                                     <div className="text-right">
                                         <p className="text-[9px] font-semibold text-slate-400 uppercase">Poids</p>
@@ -587,11 +588,11 @@ const Colis = () => {
                                                                 
                                                                 {/* Trajet */}
                                                                 <div className="flex items-center gap-2">
-                                                                    <span className="text-xs font-medium text-white/90">{exp.pays_depart}</span>
+                                                                    <span className="text-xs font-medium text-white/90">{getCountryName(exp.code_pays_depart) || exp.pays_depart}</span>
                                                                     <svg className="w-4 h-4 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                                                                     </svg>
-                                                                    <span className="text-xs font-medium text-white">{exp.pays_destination}</span>
+                                                                    <span className="text-xs font-medium text-white">{getCountryName(exp.code_pays_destination) || exp.pays_destination}</span>
                                                                 </div>
                                                             </div>
 
@@ -674,9 +675,9 @@ const Colis = () => {
                                                                     {item.expedition?.reference}
                                                                 </span>
                                                                 <div className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 mt-1">
-                                                                    <span>{item.expedition?.pays_depart}</span>
+                                                                    <span>{getCountryName(item.expedition?.code_pays_depart) || item.expedition?.pays_depart}</span>
                                                                     <ArrowPathIcon className="w-2.5 h-2.5" />
-                                                                    <span className="text-indigo-600">{item.expedition?.pays_destination}</span>
+                                                                    <span className="text-indigo-600">{getCountryName(item.expedition?.code_pays_destination) || item.expedition?.pays_destination}</span>
                                                                 </div>
                                                             </Link>
                                                         </td>
@@ -839,11 +840,11 @@ const Colis = () => {
                                     {/* Footer Actions */}
                                     <div className="p-3 pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
                                         <div className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500">
-                                            <span className="truncate max-w-[80px]">{item.expedition?.pays_depart}</span>
+                                            <span className="truncate max-w-[80px]">{getCountryName(item.expedition?.code_pays_depart) || item.expedition?.pays_depart}</span>
                                             <svg className="w-3 h-3 text-indigo-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                                             </svg>
-                                            <span className="truncate max-w-[80px] text-indigo-600">{item.expedition?.pays_destination}</span>
+                                            <span className="truncate max-w-[80px] text-indigo-600">{getCountryName(item.expedition?.code_pays_destination) || item.expedition?.pays_destination}</span>
                                         </div>
 
                                         <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>

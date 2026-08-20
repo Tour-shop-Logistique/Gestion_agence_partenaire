@@ -12,6 +12,7 @@ import ConfirmationModal from "../components/ConfirmationModal";
 import Spinner from '../components/common/Spinner';
 import useHasPermission from "../hooks/useHasPermission";
 import PageHeader from "../components/ui/PageHeader";
+import { getCountryName } from "../utils/countries";
 
 const Demandes = () => {
     const navigate = useNavigate();
@@ -212,12 +213,12 @@ const Demandes = () => {
         
         const query = searchQuery.toLowerCase();
         const clientName = demande.expediteur?.nom_prenom?.toLowerCase() || '';
-        const destination = demande.pays_destination?.toLowerCase() || '';
-        const origin = demande.pays_depart?.toLowerCase() || '';
+        const destination = (getCountryName(demande.code_pays_destination) || demande.pays_destination || '').toLowerCase();
+        const origin = (getCountryName(demande.code_pays_depart) || demande.pays_depart || '').toLowerCase();
         const type = getTypeLabel(demande.type_expedition).toLowerCase();
-        
-        return clientName.includes(query) || 
-               destination.includes(query) || 
+
+        return clientName.includes(query) ||
+               destination.includes(query) ||
                origin.includes(query) ||
                type.includes(query);
     });
@@ -242,7 +243,7 @@ const Demandes = () => {
         const code = colis.code_colis?.toLowerCase() || '';
         const reference = colis.expedition?.reference?.toLowerCase() || '';
         const produit = colis.produit_nom?.toLowerCase() || '';
-        const destination = colis.expedition?.pays_destination?.toLowerCase() || '';
+        const destination = (getCountryName(colis.expedition?.code_pays_destination) || colis.expedition?.pays_destination || '').toLowerCase();
         
         return code.includes(query) || 
                reference.includes(query) || 
@@ -420,7 +421,7 @@ const Demandes = () => {
 
                                         <div className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-600 bg-slate-50 px-2 py-1.5 rounded-lg">
                                             <MapPin className="w-3 h-3 text-slate-400 flex-shrink-0" />
-                                            <span className="text-indigo-600">{demande.pays_destination}</span>
+                                            <span className="text-indigo-600">{getCountryName(demande.code_pays_destination) || demande.pays_destination}</span>
                                         </div>
                                     </div>
 
@@ -545,7 +546,7 @@ const Demandes = () => {
                                                 </span>
                                                 <div className="flex items-center gap-1.5 text-[11px] font-bold text-indigo-600">
                                                     <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                                                    <span className="py-0.5">{demande.pays_destination}</span>
+                                                    <span className="py-0.5">{getCountryName(demande.code_pays_destination) || demande.pays_destination}</span>
                                                 </div>
                                             </div>
                                         </td>
@@ -701,7 +702,7 @@ const Demandes = () => {
                                         </div>
                                         <div>
                                             <p className="text-[9px] font-semibold text-slate-400 uppercase mb-0.5">Destination</p>
-                                            <p className="text-xs font-bold text-indigo-600 truncate">{colis.expedition?.pays_destination}</p>
+                                            <p className="text-xs font-bold text-indigo-600 truncate">{getCountryName(colis.expedition?.code_pays_destination) || colis.expedition?.pays_destination}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -762,7 +763,7 @@ const Demandes = () => {
                                         <td className="px-4 py-4">
                                             <div className="flex items-center gap-1.5">
                                                 <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                                                <span className="text-sm font-semibold text-indigo-600">{colis.expedition?.pays_destination}</span>
+                                                <span className="text-sm font-semibold text-indigo-600">{getCountryName(colis.expedition?.code_pays_destination) || colis.expedition?.pays_destination}</span>
                                             </div>
                                         </td>
                                     </tr>

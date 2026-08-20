@@ -46,6 +46,7 @@ import {
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { RecordTransactionModal } from '../components/transaction';
 import PageHeader from '../components/ui/PageHeader';
+import { getCountryName } from '../utils/countries';
 
 const TransactionsPro = () => {
   const dispatch = useDispatch();
@@ -388,7 +389,7 @@ const TransactionsPro = () => {
       "Devise": t.currency || 'CFA',
       "Référence Expédition": t.expedition?.reference || '---',
       "Client": t.expedition?.expediteur?.nom_prenom || '---',
-      "Destination": t.expedition?.pays_destination || '---'
+      "Destination": getCountryName(t.expedition?.code_pays_destination) || t.expedition?.pays_destination || '---'
     }));
 
     // Ajouter une ligne de synthèse

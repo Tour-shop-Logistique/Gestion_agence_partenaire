@@ -422,8 +422,8 @@ const CreateExpeditionV2 = () => {
                 (formData.type_expedition === 'GROUPAGE_DHD_AERIEN' || formData.type_expedition === 'GROUPAGE_DHD_MARITIME')
                     ? r.ligne
                     : formData.type_expedition === 'GROUPAGE_AFRIQUE'
-                        ? r.pays
-                        : `${r.ligne} (${r.pays}) - ${r.mode}`
+                        ? (getCountryName(r.code_pays) || r.pays)
+                        : `${r.ligne} (${getCountryName(r.code_pays) || r.pays}) - ${r.mode}`
             )?.toUpperCase() || '',
         }));
     }, [availableRoutes, formData.type_expedition]);

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { EyeIcon, MapPinIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { STATUS_CONFIG } from './StatusFilter';
 import { getStatusLabel, formatRelativeDate } from '../../utils/expeditionHelpers';
+import { getCountryName } from '../../utils/countries';
 
 /**
  * 📋 LIGNE DE LISTE EXPÉDITION + COLIS
@@ -70,7 +71,7 @@ const ExpeditionListItem = ({
                 {/* Pays */}
                 <div className="hidden md:flex items-center gap-1.5 text-xs font-semibold text-slate-600 w-28 flex-shrink-0">
                     <MapPinIcon className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                    <span className="truncate">{expedition.pays_destination || expedition.pays_depart || '—'}</span>
+                    <span className="truncate">{getCountryName(expedition.code_pays_destination) || getCountryName(expedition.code_pays_depart) || expedition.pays_destination || expedition.pays_depart || '—'}</span>
                 </div>
 
                 {/* Badge type */}

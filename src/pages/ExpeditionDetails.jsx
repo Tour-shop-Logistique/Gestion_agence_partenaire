@@ -13,6 +13,7 @@ import { getLogoUrl } from '../utils/apiConfig';
 import { toast } from '../utils/toast';
 import { Copy, Loader2 } from 'lucide-react';
 import { Button, PageHeader } from "../components/ui";
+import { getCountryName } from '../utils/countries';
 import {
     StatusOverview,
     ParcelTable,
@@ -412,12 +413,12 @@ const ExpeditionDetails = () => {
                     <ContactCard
                         type="shipper"
                         contact={expediteur}
-                        country={expedition.pays_depart}
+                        country={getCountryName(expedition.code_pays_depart) || expedition.pays_depart}
                     />
                     <ContactCard
                         type="receiver"
                         contact={destinataire}
-                        country={expedition.pays_destination}
+                        country={getCountryName(expedition.code_pays_destination) || expedition.pays_destination}
                     />
                 </div>
 

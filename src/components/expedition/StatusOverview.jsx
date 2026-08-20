@@ -9,6 +9,7 @@ import {
     AlertCircle,
     Weight,
 } from 'lucide-react';
+import { getCountryName } from '../../utils/countries';
 
 /**
  * 🧭 VUE D'ENSEMBLE DU STATUT
@@ -106,7 +107,7 @@ const StatusOverview = ({ expedition }) => {
         {
             icon: MapPin,
             label: 'Trajet',
-            value: `${expedition.pays_depart} → ${expedition.pays_destination}`,
+            value: `${getCountryName(expedition.code_pays_depart) || expedition.pays_depart || ''} → ${getCountryName(expedition.code_pays_destination) || expedition.pays_destination || ''}`,
             unit: '',
             color: 'purple',
         },

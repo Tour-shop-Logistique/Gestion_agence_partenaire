@@ -23,6 +23,7 @@ import ColisDetailsDrawer from "../components/common/ColisDetailsDrawer";
 import useHasPermission from "../hooks/useHasPermission";
 import { exportColisAReceptionnerPDF, exportBonReceptionPDF } from "../utils/pdfExport";
 import PageHeader from "../components/ui/PageHeader";
+import { getCountryName } from "../utils/countries";
 
 const ColisAReceptionner = () => {
     const dispatch = useDispatch();
@@ -171,7 +172,8 @@ const ColisAReceptionner = () => {
                 item.code_colis?.toLowerCase().includes(lowQuery) ||
                 item.designation?.toLowerCase().includes(lowQuery) ||
                 item.expedition?.reference?.toLowerCase().includes(lowQuery) ||
-                item.expedition?.pays_depart?.toLowerCase().includes(lowQuery)
+                item.expedition?.pays_depart?.toLowerCase().includes(lowQuery) ||
+                getCountryName(item.expedition?.code_pays_depart)?.toLowerCase().includes(lowQuery)
             );
         }
         
@@ -576,11 +578,11 @@ const ColisAReceptionner = () => {
                             <div className="p-3">
                                 <div className="flex items-center justify-between gap-2 mb-2">
                                     <div className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 flex-1 min-w-0">
-                                        <span className="truncate max-w-[100px]">{item.expedition?.pays_depart}</span>
+                                        <span className="truncate max-w-[100px]">{getCountryName(item.expedition?.code_pays_depart) || item.expedition?.pays_depart}</span>
                                         <svg className="w-3 h-3 text-indigo-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                                         </svg>
-                                        <span className="truncate max-w-[100px] text-indigo-600">{item.expedition?.pays_destination}</span>
+                                        <span className="truncate max-w-[100px] text-indigo-600">{getCountryName(item.expedition?.code_pays_destination) || item.expedition?.pays_destination}</span>
                                     </div>
                                     <div className="text-right">
                                         <p className="text-[9px] font-semibold text-slate-400 uppercase">Poids</p>
@@ -726,11 +728,11 @@ const ColisAReceptionner = () => {
                                                     
                                                     {/* Trajet */}
                                                     <div className="flex items-center gap-2">
-                                                        <span className="text-xs font-medium text-white/90">{exp.pays_depart}</span>
+                                                        <span className="text-xs font-medium text-white/90">{getCountryName(exp.code_pays_depart) || exp.pays_depart}</span>
                                                         <svg className="w-4 h-4 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                                                         </svg>
-                                                        <span className="text-xs font-medium text-white">{exp.pays_destination}</span>
+                                                        <span className="text-xs font-medium text-white">{getCountryName(exp.code_pays_destination) || exp.pays_destination}</span>
                                                     </div>
                                                 </div>
 
@@ -813,10 +815,10 @@ const ColisAReceptionner = () => {
                                                 </div>
                                             </td>
                                             <td className="px-4 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-slate-700">{exp.pays_depart}</div>
+                                                <div className="text-sm text-slate-700">{getCountryName(exp.code_pays_depart) || exp.pays_depart}</div>
                                             </td>
                                             <td className="px-4 py-4 whitespace-nowrap">
-                                                <div className="text-sm text-slate-700">{exp.pays_destination}</div>
+                                                <div className="text-sm text-slate-700">{getCountryName(exp.code_pays_destination) || exp.pays_destination}</div>
                                             </td>
                                             <td className="px-4 py-4 whitespace-nowrap">
                                                 <div className="text-sm font-semibold text-slate-900">{parseFloat(item.poids).toFixed(2)} kg</div>

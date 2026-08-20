@@ -12,6 +12,7 @@ import { formatPriceDual } from "../../utils/format";
 import { expeditionsApi } from "../../utils/api/expeditions";
 import { expeditionsCache } from "../../utils/expeditionsCache";
 import Spinner from '../common/Spinner';
+import { getCountryName } from "../../utils/countries";
 
 /**
  * Liste des dernières expéditions avec leurs colis (style groupé comme page Colis à Envoyer)
@@ -171,6 +172,8 @@ const RecentExpeditions = ({ expeditions = [] }) => {
                         // S'assurer que exp.colis existe et est un tableau
                         const colisList = Array.isArray(exp.colis) ? exp.colis : [];
                         const isExpanded = expandedExpeditions[exp.id] || false;
+                        const paysDepart = getCountryName(exp.code_pays_depart) || exp.pays_depart || '';
+                        const paysDestination = getCountryName(exp.code_pays_destination) || exp.pays_destination || '';
                         
                         return (
                             <React.Fragment key={exp.id || `exp-${expIndex}`}>
@@ -215,11 +218,11 @@ const RecentExpeditions = ({ expeditions = [] }) => {
                                             
                                             {/* Trajet - Responsive */}
                                             <div className="hidden sm:flex items-center gap-1.5 flex-shrink-0">
-                                                <span className="text-xs font-medium text-white/90">{exp.pays_depart}</span>
+                                                <span className="text-xs font-medium text-white/90">{paysDepart}</span>
                                                 <svg className="w-3.5 h-3.5 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                                                 </svg>
-                                                <span className="text-xs font-medium text-white">{exp.pays_destination}</span>
+                                                <span className="text-xs font-medium text-white">{paysDestination}</span>
                                             </div>
 
                                             {/* Type - Desktop uniquement */}
@@ -266,9 +269,9 @@ const RecentExpeditions = ({ expeditions = [] }) => {
                                     {/* Informations supplémentaires - Mobile uniquement */}
                                     <div className="flex sm:hidden items-center gap-2 mt-2 pt-2 border-t border-white/20">
                                         <div className="flex items-center gap-1 text-[10px] text-white/90">
-                                            <span>{exp.pays_depart}</span>
+                                            <span>{paysDepart}</span>
                                             <ArrowRightIcon className="w-2.5 h-2.5" />
-                                            <span>{exp.pays_destination}</span>
+                                            <span>{paysDestination}</span>
                                         </div>
                                         <span className="px-1.5 py-0.5 bg-white/20 rounded text-[8px] font-bold text-white uppercase">
                                             {getTypeLabel(exp.type_expedition || exp.type)}

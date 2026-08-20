@@ -13,6 +13,7 @@ import {
   TableCellsIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "../utils/toast";
+import { getCountryName } from "../utils/countries";
 
 const TableSkeleton = () => (
   <div className="divide-y divide-slate-100">
@@ -160,6 +161,7 @@ const TarifGroupageComponent = () => {
       const query = searchQuery.toLowerCase();
       result = result.filter(t =>
         t.pays?.toLowerCase().includes(query) ||
+        getCountryName(t.code_pays)?.toLowerCase().includes(query) ||
         t.category?.nom?.toLowerCase().includes(query) ||
         t.mode?.toLowerCase().includes(query) ||
         t.ligne?.toLowerCase().includes(query) ||
@@ -393,7 +395,7 @@ const TarifGroupageComponent = () => {
                         <td className="px-6 py-4 border-r border-slate-100/30">
                           <div className="flex flex-col">
                             <span className="text-[13px] font-bold text-slate-900">{tarif.category?.nom || 'N/A'}</span>
-                            <span className="text-[9px] font-medium text-slate-400">{tarif.pays || 'N/A'}</span>
+                            <span className="text-[9px] font-medium text-slate-400">{getCountryName(tarif.code_pays) || tarif.pays || 'N/A'}</span>
                           </div>
                         </td>
                         <td className="px-6 py-4 border-r border-slate-100/30 font-medium text-sm text-slate-600">
@@ -476,7 +478,7 @@ const TarifGroupageComponent = () => {
                             {tarif.type_expedition?.replace('groupage_', '').replace('_', ' ').toUpperCase() || 'N/A'}
                           </span>
                           <p className="text-[13px] font-bold text-slate-900">{tarif.category?.nom || 'N/A'}</p>
-                          <span className="text-[9px] font-medium text-slate-400">{tarif.pays || 'N/A'}</span>
+                          <span className="text-[9px] font-medium text-slate-400">{getCountryName(tarif.code_pays) || tarif.pays || 'N/A'}</span>
                           {tarif.mode && (
                             <span className="text-[11px] font-medium text-slate-500">
                               {tarif.mode?.toUpperCase()} {tarif.ligne ? `→ ${tarif.ligne.toUpperCase()}` : ''}
