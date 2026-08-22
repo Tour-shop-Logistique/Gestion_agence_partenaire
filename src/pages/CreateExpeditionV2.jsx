@@ -539,12 +539,20 @@ const CreateExpeditionV2 = () => {
         
         const currentType = formData.type_expedition.toLowerCase();
         const isDHD = currentType.includes('dhd');
-        
-        // Pour les types NON-DHD (SIMPLE, AFRIQUE, CA), retourner toutes les catégories SANS filtrage
+        const isCA = currentType === 'groupage_ca';
+
+        // Pour CA (Colis Accompagné), seule la catégorie système "Colis
+        // Accompagnés" est proposée - c'est sur elle que reposent les
+        // tarifs/calculs CA, jamais sur une catégorie quelconque.
+        if (isCA) {
+            return categories.filter(cat => cat.is_default);
+        }
+
+        // Pour SIMPLE et AFRIQUE, retourner toutes les catégories SANS filtrage
         if (!isDHD) {
             return categories;
         }
-        
+
         // === À partir d'ici, uniquement pour DHD (AERIEN et MARITIME) ===
         
         // Pour les autres types, filtrer par les category_id présents dans les tarifs groupage
