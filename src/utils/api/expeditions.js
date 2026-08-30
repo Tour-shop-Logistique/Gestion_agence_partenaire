@@ -480,5 +480,84 @@ export const expeditionsApi = {
                 message: error.message || "Erreur lors de l'envoi du reçu par email",
             };
         }
+    },
+
+    /**
+     * Modifier poids/dimensions/frais d'emballage d'un colis (contrôle physique)
+     * @param {string} expeditionId
+     * @param {string} colisId
+     * @param {Object} data - champs a modifier (poids, longueur, largeur, hauteur, prix_emballage, designation, category_id)
+     * @returns {Promise<Object>}
+     */
+    async updateColis(expeditionId, colisId, data) {
+        try {
+            const url = API_ENDPOINTS.EXPEDITIONS.UPDATE_COLIS
+                .replace(':expeditionId', expeditionId)
+                .replace(':colisId', colisId);
+            const response = await apiService.put(url, data);
+
+            return {
+                success: response.success !== false,
+                data: response.colis || response.data || response,
+                message: response.message || "Colis mis à jour",
+            };
+        } catch (error) {
+            return {
+                success: false,
+                message: error.message || "Erreur lors de la mise à jour du colis",
+            };
+        }
+    },
+
+    /**
+     * Scinder un colis en plusieurs colis distincts
+     * @param {string} expeditionId
+     * @param {string} colisId
+     * @param {Array<Object>} colis - liste des nouveaux colis (poids, longueur, largeur, hauteur, prix_emballage, designation)
+     * @returns {Promise<Object>}
+     */
+    async splitColis(expeditionId, colisId, colis) {
+        try {
+            const url = API_ENDPOINTS.EXPEDITIONS.SPLIT_COLIS
+                .replace(':expeditionId', expeditionId)
+                .replace(':colisId', colisId);
+            const response = await apiService.post(url, { colis });
+
+            return {
+                success: response.success !== false,
+                data: response.colis || response.data || response,
+                message: response.message || "Colis scindé avec succès",
+            };
+        } catch (error) {
+            return {
+                success: false,
+                message: error.message || "Erreur lors de la scission du colis",
+            };
+        }
+    },
+
+    /**
+     * Recalculer le tarif de l'expédition après contrôle des colis
+     * @param {string} expeditionId
+     * @returns {Promise<Object>}
+     */
+    async recalculateTarif(expeditionId) {
+        try {
+            const url = API_ENDPOINTS.EXPEDITIONS.RECALCULATE_TARIF.replace(':expeditionId', expeditionId);
+            const response = await apiService.post(url, {});
+
+            return {
+                success: response.success !== false,
+                data: response.expedition || response.data || response,
+                montantAvant: response.montant_avant,
+                montantApres: response.montant_apres,
+                message: response.message || "Tarif recalculé",
+            };
+        } catch (error) {
+            return {
+                success: false,
+                message: error.message || "Erreur lors du recalcul du tarif",
+            };
+        }
     }
 };

@@ -54,7 +54,9 @@ function shouldIgnoreNotification(references) {
  * @param {Function} handlers.onExpeditionStatusChanged - Gestionnaire pour les changements de statut d'expédition
  * @param {Function} handlers.onExpeditionPaymentConfirmed - Gestionnaire pour les paiements d'expédition
  * @param {Function} handlers.onExpeditionFraisUpdated - Gestionnaire pour la mise à jour des frais
+ * @param {Function} handlers.onExpeditionTarifRecalculated - Gestionnaire pour le recalcul du tarif (contrôle avant départ)
  * @param {Function} handlers.onColisControlled - Gestionnaire pour les colis contrôlés
+ * @param {Function} handlers.onColisSplit - Gestionnaire pour les colis scindés
  * @param {Function} handlers.onColisBlocked - Gestionnaire pour les colis bloqués
  * @param {Function} handlers.onColisUnblocked - Gestionnaire pour les colis débloqués
  * @param {Function} handlers.onColisAssigned - Gestionnaire pour les colis assignés
@@ -105,6 +107,9 @@ export function useWebSocket(agenceId, handlers = {}, enabled = true) {
         } else if (action === 'frais_annexes_updated' && handlersRef.current.onExpeditionFraisUpdated) {
           console.log('✅ [WebSocket] Handler onExpeditionFraisUpdated appelé');
           handlersRef.current.onExpeditionFraisUpdated(data, { ids, references, changes, count, at });
+        } else if (action === 'tarif_recalculated' && handlersRef.current.onExpeditionTarifRecalculated) {
+          console.log('✅ [WebSocket] Handler onExpeditionTarifRecalculated appelé');
+          handlersRef.current.onExpeditionTarifRecalculated(data, { ids, references, changes, count, at });
         } else if (action === 'created' && handlersRef.current.onExpeditionCreated) {
           if (isSelfCreated) {
             // C'est moi qui ai créé → Ignorer complètement (j'ai déjà ma notification de succès)
@@ -124,6 +129,9 @@ export function useWebSocket(agenceId, handlers = {}, enabled = true) {
         if (action === 'controlled' && handlersRef.current.onColisControlled) {
           console.log('✅ [WebSocket] Handler onColisControlled appelé');
           handlersRef.current.onColisControlled(data, { ids, references, changes, count, at });
+        } else if (action === 'split' && handlersRef.current.onColisSplit) {
+          console.log('✅ [WebSocket] Handler onColisSplit appelé');
+          handlersRef.current.onColisSplit(data, { ids, references, changes, count, at });
         } else if (action === 'blocked' && handlersRef.current.onColisBlocked) {
           console.log('✅ [WebSocket] Handler onColisBlocked appelé');
           handlersRef.current.onColisBlocked(data, { ids, references, changes, count, at });

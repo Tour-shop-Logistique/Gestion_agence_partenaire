@@ -43,6 +43,7 @@ import Comptabilite from "./pages/Comptabilite";
 import Expeditions from "./pages/Expeditions";
 import Demandes from "./pages/Demandes";
 import ExpeditionDetails from "./pages/ExpeditionDetails";
+import ExpeditionControl from "./pages/ExpeditionControl";
 import Colis from "./pages/Colis";
 import ReceptionColis from "./pages/ReceptionColis";
 import ColisAReceptionner from "./pages/ColisAReceptionner";
@@ -380,6 +381,7 @@ function AppContent() {
           <Route path="/reception-colis" element={<AgencySetupGuard><PageGuard pageKey="colis"><ReceptionColis /></PageGuard></AgencySetupGuard>} />
           <Route path="/colis-a-receptionner" element={<AgencySetupGuard><PageGuard pageKey="colis_a_receptionner"><ColisAReceptionner /></PageGuard></AgencySetupGuard>} />
           <Route path="/expeditions/:id" element={<AgencySetupGuard><PageGuard pageKey="expeditions"><ExpeditionDetails /></PageGuard></AgencySetupGuard>} />
+          <Route path="/expeditions/:id/controle" element={<AgencySetupGuard><PageGuard pageKey="expeditions"><ExpeditionControl /></PageGuard></AgencySetupGuard>} />
           <Route path="/create-expedition" element={<AgencySetupGuard><PageGuard pageKey="expeditions"><CreateExpeditionV2 /></PageGuard></AgencySetupGuard>} />
           <Route path="/retrait-colis" element={<AgencySetupGuard><PageGuard pageKey="retrait_colis"><RetraitColis /></PageGuard></AgencySetupGuard>} />
           <Route path="/transactions" element={<AgencySetupGuard><PageGuard pageKey="transactions"><TransactionsPro /></PageGuard></AgencySetupGuard>} />

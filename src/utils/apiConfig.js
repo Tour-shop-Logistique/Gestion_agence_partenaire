@@ -108,6 +108,9 @@ export const API_ENDPOINTS = {
     SHOW: "/expedition/agence/show/:id",
     DECISION_FRAIS: "/expedition/agence/decision-frais/:id",
     SEND_RECEIPT_PDF: "/agence/factures/expedition/:expeditionId/send-receipt-pdf",
+    UPDATE_COLIS: "/expedition/agence/:expeditionId/colis/:colisId",
+    SPLIT_COLIS: "/expedition/agence/:expeditionId/colis/:colisId/split",
+    RECALCULATE_TARIF: "/expedition/agence/:expeditionId/recalculer-tarif",
   },
 
   // Produits

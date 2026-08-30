@@ -181,6 +181,60 @@ export const decisionFraisAnnexes = createAsyncThunk(
     }
 );
 
+// Contrôle physique : corriger poids/dimensions/frais d'un colis
+export const updateColisControl = createAsyncThunk(
+    "expedition/updateColisControl",
+    async ({ expeditionId, colisId, data }, { rejectWithValue }) => {
+        try {
+            const result = await expeditionsApi.updateColis(expeditionId, colisId, data);
+            if (!result.success) {
+                return rejectWithValue(result.message);
+            }
+            return { expeditionId, colisId, colis: result.data, message: result.message };
+        } catch (error) {
+            return rejectWithValue(error.message || "Erreur lors de la mise à jour du colis");
+        }
+    }
+);
+
+// Contrôle physique : scinder un colis en plusieurs
+export const splitColisControl = createAsyncThunk(
+    "expedition/splitColisControl",
+    async ({ expeditionId, colisId, colis }, { rejectWithValue }) => {
+        try {
+            const result = await expeditionsApi.splitColis(expeditionId, colisId, colis);
+            if (!result.success) {
+                return rejectWithValue(result.message);
+            }
+            return { expeditionId, colisId, colis: result.data, message: result.message };
+        } catch (error) {
+            return rejectWithValue(error.message || "Erreur lors de la scission du colis");
+        }
+    }
+);
+
+// Contrôle physique : recalculer le tarif de l'expédition
+export const recalculateExpeditionTarif = createAsyncThunk(
+    "expedition/recalculateTarif",
+    async (expeditionId, { rejectWithValue }) => {
+        try {
+            const result = await expeditionsApi.recalculateTarif(expeditionId);
+            if (!result.success) {
+                return rejectWithValue(result.message);
+            }
+            return {
+                expeditionId,
+                expedition: result.data,
+                montantAvant: result.montantAvant,
+                montantApres: result.montantApres,
+                message: result.message,
+            };
+        } catch (error) {
+            return rejectWithValue(error.message || "Erreur lors du recalcul du tarif");
+        }
+    }
+);
+
 // Marquer des colis comme reçus au départ
 export const receiveColisDepart = createAsyncThunk(
     "expedition/receiveColisDepart",
@@ -406,6 +460,25 @@ const expeditionSlice = createSlice({
                     state.reception.unshift(updated);
                 }
             });
+        },
+        // Reçu via WebSocket sur l'écran de contrôle (Colis.controlled) :
+        // patch local de state.currentExpedition.colis, pour qu'un agent
+        // voie en direct les corrections faites par un collègue sur un
+        // autre poste, sans recharger la page. Ne gère que la correction
+        // d'un colis existant (id inchangé) - un split fait par un collègue
+        // (colis remplacés, pas juste modifiés) déclenche un refetch complet
+        // côté composant plutôt qu'un patch partiel ici, plus sûr.
+        realtimeCurrentExpeditionColisPatched: (state, action) => {
+            const items = action.payload;
+            if (!Array.isArray(items) || items.length === 0 || !state.currentExpedition) return;
+
+            items.forEach((updated) => {
+                if (!updated?.id) return;
+                const idx = state.currentExpedition.colis?.findIndex((c) => c.id === updated.id);
+                if (idx !== undefined && idx !== -1) {
+                    state.currentExpedition.colis[idx] = { ...state.currentExpedition.colis[idx], ...updated };
+                }
+            });
         }
     },
     extraReducers: (builder) => {
@@ -598,6 +671,45 @@ const expeditionSlice = createSlice({
                     exp.id === id && expedition ? { ...exp, ...expedition } : exp
                 );
             })
+            .addCase(updateColisControl.fulfilled, (state, action) => {
+                state.status = "succeeded";
+                state.message = action.payload.message;
+                const { expeditionId, colisId, colis } = action.payload;
+                if (state.currentExpedition?.id === expeditionId && colis) {
+                    state.currentExpedition = {
+                        ...state.currentExpedition,
+                        colis: (state.currentExpedition.colis || []).map(c => c.id === colisId ? { ...c, ...colis } : c),
+                    };
+                }
+            })
+            .addCase(updateColisControl.rejected, (state, action) => {
+                state.status = "failed";
+                state.error = action.payload;
+            })
+            .addCase(splitColisControl.fulfilled, (state, action) => {
+                state.status = "succeeded";
+                state.message = action.payload.message;
+                const { expeditionId, colis } = action.payload;
+                if (state.currentExpedition?.id === expeditionId && Array.isArray(colis)) {
+                    state.currentExpedition = { ...state.currentExpedition, colis };
+                }
+            })
+            .addCase(splitColisControl.rejected, (state, action) => {
+                state.status = "failed";
+                state.error = action.payload;
+            })
+            .addCase(recalculateExpeditionTarif.fulfilled, (state, action) => {
+                state.status = "succeeded";
+                state.message = action.payload.message;
+                const { expeditionId, expedition } = action.payload;
+                if (state.currentExpedition?.id === expeditionId && expedition) {
+                    state.currentExpedition = { ...state.currentExpedition, ...expedition };
+                }
+            })
+            .addCase(recalculateExpeditionTarif.rejected, (state, action) => {
+                state.status = "failed";
+                state.error = action.payload;
+            })
             .addCase(decisionFraisAnnexes.rejected, (state, action) => {
                 state.status = "failed";
                 state.error = action.payload;
@@ -762,6 +874,6 @@ const expeditionSlice = createSlice({
     },
 });
 
-export const { clearExpeditionStatus, setCurrentExpedition, clearSimulation, clearCurrentExpedition, fraisDecisionRequested, fraisDecisionResolved, realtimeColisUpdated, realtimeExpeditionPatched } = expeditionSlice.actions;
+export const { clearExpeditionStatus, setCurrentExpedition, clearSimulation, clearCurrentExpedition, fraisDecisionRequested, fraisDecisionResolved, realtimeColisUpdated, realtimeExpeditionPatched, realtimeCurrentExpeditionColisPatched } = expeditionSlice.actions;
 
 export default expeditionSlice.reducer;
