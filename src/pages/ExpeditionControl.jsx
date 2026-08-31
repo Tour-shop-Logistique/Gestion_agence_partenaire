@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { Package, Scissors, Calculator, Loader2, Plus, Trash2, ArrowLeft } from 'lucide-react';
+import { Package, Scissors, Calculator, Loader2, Plus, Trash2, ArrowLeft, Pencil, ChevronDown, ChevronUp } from 'lucide-react';
 import Spinner from '../components/common/Spinner';
 import { Button, PageHeader } from '../components/ui';
 import { useExpedition } from '../hooks/useExpedition';
@@ -19,6 +19,30 @@ import {
 
 const formatCFA = (amount) => new Intl.NumberFormat('fr-FR').format(amount || 0) + ' CFA';
 
+// Types nécessitant une category_id par colis pour le calcul du tarif
+// (voir ExpeditionTarificationService côté backend) - si l'expédition change
+// vers l'un de ces types et qu'un colis existant n'a pas de catégorie, le
+// recalcul échoue sans ce champ.
+const TYPES_REQUERANT_CATEGORIE = ['groupage_dhd_aerien', 'groupage_dhd_maritime', 'groupage_ca', 'groupage_afrique'];
+
+const TYPE_LABELS = {
+    simple: 'Livraison directe (LD)',
+    groupage_dhd_aerien: 'Groupage DHD Aérien',
+    groupage_dhd_maritime: 'Groupage DHD Maritime',
+    groupage_afrique: 'Groupage Afrique',
+    groupage_ca: 'Groupage CA',
+};
+
+const STATUT_PAIEMENT_LABELS = {
+    paye: 'Payé',
+    en_attente: 'En attente',
+};
+
+const emptyPersonForm = () => ({
+    nom_prenom: '', telephone: '', email: '', adresse: '', ville: '',
+    societe: '', code_postal: '', etat: '', quartier: '',
+});
+
 /**
  * 🔍 CONTRÔLE PHYSIQUE D'UNE EXPÉDITION
  * Écran dédié pour corriger poids/dimensions/frais des colis d'une demande
@@ -33,7 +57,10 @@ const ExpeditionControl = () => {
     const canControl = useHasPermission('expeditions.control');
     const { currentUser } = useAuth();
 
-    const { currentExpedition: expedition, getExpeditionDetails, message, error, resetStatus } = useExpedition();
+    const {
+        currentExpedition: expedition, getExpeditionDetails, message, error, resetStatus,
+        categories, loadCategories, updateExpedition,
+    } = useExpedition();
 
     const [editingColisId, setEditingColisId] = useState(null);
     const [editForm, setEditForm] = useState({});
@@ -42,9 +69,18 @@ const ExpeditionControl = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isRecalculating, setIsRecalculating] = useState(false);
 
+    const [isEditingExpedition, setIsEditingExpedition] = useState(false);
+    const [expeditionForm, setExpeditionForm] = useState(null);
+    const [colisCategories, setColisCategories] = useState({});
+    const [isSavingExpedition, setIsSavingExpedition] = useState(false);
+
     useEffect(() => {
         if (id) getExpeditionDetails(id);
     }, [id, getExpeditionDetails]);
+
+    useEffect(() => {
+        loadCategories();
+    }, [loadCategories]);
 
     // Temps réel : un collègue sur un autre poste peut contrôler la même
     // expédition en parallèle - patch local pour Colis.controlled et
@@ -195,6 +231,81 @@ const ExpeditionControl = () => {
         }
     };
 
+    const startEditExpedition = () => {
+        setExpeditionForm({
+            type_expedition: expedition.type_expedition || 'simple',
+            pays_depart: expedition.pays_depart || '',
+            pays_destination: expedition.pays_destination || '',
+            code_pays_depart: expedition.code_pays_depart || '',
+            code_pays_destination: expedition.code_pays_destination || '',
+            is_paiement_credit: !!expedition.is_paiement_credit,
+            is_livraison_domicile: !!expedition.is_livraison_domicile,
+            statut_paiement: expedition.statut_paiement || 'en_attente',
+            expediteur: { ...emptyPersonForm(), ...(expedition.expediteur || {}) },
+            destinataire: { ...emptyPersonForm(), ...(expedition.destinataire || {}) },
+        });
+        // Pré-remplir avec les category_id déjà présentes, pour ne
+        // redemander que celles qui manquent réellement.
+        const initialCategories = {};
+        (expedition.colis || []).forEach((c) => {
+            if (c.category_id) initialCategories[c.id] = c.category_id;
+        });
+        setColisCategories(initialCategories);
+        setIsEditingExpedition(true);
+    };
+
+    const cancelEditExpedition = () => {
+        setIsEditingExpedition(false);
+        setExpeditionForm(null);
+        setColisCategories({});
+    };
+
+    const typeRequiresCategorie = TYPES_REQUERANT_CATEGORIE.includes(expeditionForm?.type_expedition);
+    const colisSansCategorie = typeRequiresCategorie
+        ? colisList.filter((c) => !colisCategories[c.id])
+        : [];
+
+    const saveExpedition = async () => {
+        if (!expeditionForm) return;
+        if (typeRequiresCategorie && colisSansCategorie.length > 0) {
+            toast.error('Sélectionnez une catégorie pour chaque colis avant de continuer.');
+            return;
+        }
+
+        setIsSavingExpedition(true);
+        try {
+            const payload = {
+                type_expedition: expeditionForm.type_expedition,
+                pays_depart: expeditionForm.pays_depart,
+                pays_destination: expeditionForm.pays_destination,
+                code_pays_depart: expeditionForm.code_pays_depart || null,
+                code_pays_destination: expeditionForm.code_pays_destination || null,
+                is_paiement_credit: expeditionForm.is_paiement_credit,
+                is_livraison_domicile: expeditionForm.is_livraison_domicile,
+                statut_paiement: expeditionForm.statut_paiement,
+            };
+            Object.entries(expeditionForm.expediteur).forEach(([k, v]) => {
+                payload[`expediteur_${k}`] = v || null;
+            });
+            Object.entries(expeditionForm.destinataire).forEach(([k, v]) => {
+                payload[`destinataire_${k}`] = v || null;
+            });
+            if (typeRequiresCategorie && Object.keys(colisCategories).length > 0) {
+                payload.colis_categories = colisCategories;
+            }
+
+            const result = await updateExpedition(expedition.id, payload);
+            if (!result.error) {
+                cancelEditExpedition();
+                if (result.payload?.montantAvant !== undefined && result.payload?.montantAvant !== result.payload?.montantApres) {
+                    toast.success(`Nouveau montant : ${formatCFA(result.payload.montantApres)} (avant : ${formatCFA(result.payload.montantAvant)})`);
+                }
+            }
+        } finally {
+            setIsSavingExpedition(false);
+        }
+    };
+
     const handleRecalculate = async () => {
         setIsRecalculating(true);
         try {
@@ -227,6 +338,189 @@ const ExpeditionControl = () => {
                 {!canControl && (
                     <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800">
                         Vous n'avez pas la permission de contrôler les expéditions. Contactez l'administrateur de votre agence.
+                    </div>
+                )}
+
+                {/* Édition complète de l'expédition : type, expéditeur, destinataire, pays, paiement/livraison */}
+                {canControl && (
+                    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+                        <button
+                            onClick={() => isEditingExpedition ? cancelEditExpedition() : startEditExpedition()}
+                            className="w-full px-4 sm:px-5 py-3 sm:py-4 flex items-center justify-between gap-3 bg-gradient-to-r from-slate-50 to-white"
+                        >
+                            <div className="flex items-center gap-2">
+                                <Pencil className="w-4 h-4 text-indigo-600" />
+                                <span className="text-sm font-bold text-slate-800">Modifier l'expédition</span>
+                                <span className="text-xs text-slate-400 hidden sm:inline">(type, expéditeur, destinataire, pays, paiement)</span>
+                            </div>
+                            {isEditingExpedition ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                        </button>
+
+                        {isEditingExpedition && expeditionForm && (
+                            <div className="px-4 sm:px-5 py-4 space-y-5 bg-indigo-50/30 border-t border-slate-100">
+                                {/* Type d'expédition */}
+                                <div>
+                                    <label className="text-[10px] font-bold text-slate-500 uppercase">Type d'expédition</label>
+                                    <select
+                                        value={expeditionForm.type_expedition}
+                                        onChange={(e) => setExpeditionForm({ ...expeditionForm, type_expedition: e.target.value })}
+                                        className="w-full mt-1 px-2.5 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none bg-white"
+                                    >
+                                        {Object.entries(TYPE_LABELS).map(([value, label]) => (
+                                            <option key={value} value={value}>{label}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* Catégories manquantes si le type l'exige */}
+                                {typeRequiresCategorie && (
+                                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-2">
+                                        <p className="text-xs font-semibold text-amber-800">
+                                            Ce type d'expédition nécessite une catégorie par colis pour calculer le tarif.
+                                        </p>
+                                        {colisList.map((colis) => (
+                                            <div key={colis.id} className="flex items-center gap-2">
+                                                <span className="text-xs font-mono text-slate-600 w-32 truncate flex-shrink-0">{colis.code_colis}</span>
+                                                <select
+                                                    value={colisCategories[colis.id] || ''}
+                                                    onChange={(e) => setColisCategories({ ...colisCategories, [colis.id]: e.target.value })}
+                                                    className={`flex-1 px-2.5 py-1.5 text-xs border rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none bg-white ${!colisCategories[colis.id] ? 'border-amber-300' : 'border-slate-200'}`}
+                                                >
+                                                    <option value="">Sélectionner une catégorie...</option>
+                                                    {(categories || []).map((cat) => (
+                                                        <option key={cat.id} value={cat.id}>{cat.nom}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Pays */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase">Pays de départ</label>
+                                        <input
+                                            type="text"
+                                            value={expeditionForm.pays_depart}
+                                            onChange={(e) => setExpeditionForm({ ...expeditionForm, pays_depart: e.target.value })}
+                                            className="w-full mt-1 px-2.5 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase">Pays de destination</label>
+                                        <input
+                                            type="text"
+                                            value={expeditionForm.pays_destination}
+                                            onChange={(e) => setExpeditionForm({ ...expeditionForm, pays_destination: e.target.value })}
+                                            className="w-full mt-1 px-2.5 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Expéditeur */}
+                                <div>
+                                    <p className="text-xs font-bold text-slate-700 mb-2">Expéditeur</p>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        {[
+                                            ['nom_prenom', 'Nom et prénom'], ['telephone', 'Téléphone'], ['email', 'Email'],
+                                            ['adresse', 'Adresse'], ['ville', 'Ville'], ['societe', 'Société'],
+                                            ['code_postal', 'Code postal'], ['etat', 'État / Région'], ['quartier', 'Quartier'],
+                                        ].map(([field, label]) => (
+                                            <div key={field}>
+                                                <label className="text-[10px] font-bold text-slate-500 uppercase">{label}</label>
+                                                <input
+                                                    type="text"
+                                                    value={expeditionForm.expediteur[field] || ''}
+                                                    onChange={(e) => setExpeditionForm({
+                                                        ...expeditionForm,
+                                                        expediteur: { ...expeditionForm.expediteur, [field]: e.target.value },
+                                                    })}
+                                                    className="w-full mt-1 px-2.5 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Destinataire */}
+                                <div>
+                                    <p className="text-xs font-bold text-slate-700 mb-2">Destinataire</p>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        {[
+                                            ['nom_prenom', 'Nom et prénom'], ['telephone', 'Téléphone'], ['email', 'Email'],
+                                            ['adresse', 'Adresse'], ['ville', 'Ville'], ['societe', 'Société'],
+                                            ['code_postal', 'Code postal'], ['etat', 'État / Région'], ['quartier', 'Quartier'],
+                                        ].map(([field, label]) => (
+                                            <div key={field}>
+                                                <label className="text-[10px] font-bold text-slate-500 uppercase">{label}</label>
+                                                <input
+                                                    type="text"
+                                                    value={expeditionForm.destinataire[field] || ''}
+                                                    onChange={(e) => setExpeditionForm({
+                                                        ...expeditionForm,
+                                                        destinataire: { ...expeditionForm.destinataire, [field]: e.target.value },
+                                                    })}
+                                                    className="w-full mt-1 px-2.5 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Paiement / livraison */}
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <div>
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase">Statut de paiement</label>
+                                        <select
+                                            value={expeditionForm.statut_paiement}
+                                            onChange={(e) => setExpeditionForm({ ...expeditionForm, statut_paiement: e.target.value })}
+                                            className="w-full mt-1 px-2.5 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none bg-white"
+                                        >
+                                            {Object.entries(STATUT_PAIEMENT_LABELS).map(([value, label]) => (
+                                                <option key={value} value={value}>{label}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <label className="flex items-center gap-2 mt-1 sm:mt-5 text-sm text-slate-700">
+                                        <input
+                                            type="checkbox"
+                                            checked={expeditionForm.is_paiement_credit}
+                                            onChange={(e) => setExpeditionForm({ ...expeditionForm, is_paiement_credit: e.target.checked })}
+                                            className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                        />
+                                        Paiement à crédit
+                                    </label>
+                                    <label className="flex items-center gap-2 mt-1 sm:mt-5 text-sm text-slate-700">
+                                        <input
+                                            type="checkbox"
+                                            checked={expeditionForm.is_livraison_domicile}
+                                            onChange={(e) => setExpeditionForm({ ...expeditionForm, is_livraison_domicile: e.target.checked })}
+                                            className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                        />
+                                        Livraison à domicile
+                                    </label>
+                                </div>
+
+                                <div className="flex justify-end gap-2 pt-1">
+                                    <button
+                                        onClick={cancelEditExpedition}
+                                        disabled={isSavingExpedition}
+                                        className="px-4 py-1.5 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
+                                    >
+                                        Annuler
+                                    </button>
+                                    <button
+                                        onClick={saveExpedition}
+                                        disabled={isSavingExpedition || (typeRequiresCategorie && colisSansCategorie.length > 0)}
+                                        className="px-4 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                                    >
+                                        {isSavingExpedition && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                                        Enregistrer et recalculer le tarif
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 

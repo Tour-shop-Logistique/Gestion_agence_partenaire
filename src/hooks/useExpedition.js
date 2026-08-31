@@ -15,6 +15,7 @@ import {
     clearCurrentExpedition,
     confirmExpeditionReception,
     receiveColisDepart as receiveColisDepartThunk,
+    updateExpeditionControl as updateExpeditionControlThunk,
     fetchExpeditionsReception,
     receiveColisDestination as receiveColisDestinationThunk,
     sendColisToEntrepot as sendColisToEntrepotThunk,
@@ -170,6 +171,7 @@ export const useExpedition = () => {
         refuseDemande: useCallback((id, data) => dispatch(refuseDemandeClient({ id, data })), [dispatch]),
         confirmReception: useCallback((id) => dispatch(confirmExpeditionReception(id)), [dispatch]),
         receiveColisDepart: useCallback((codes) => dispatch(receiveColisDepartThunk(codes)), [dispatch]),
+        updateExpedition: useCallback((expeditionId, data) => dispatch(updateExpeditionControlThunk({ expeditionId, data })), [dispatch]),
         loadReception: useCallback((params = { page: 1 }, forceRefresh = false) => {
             if (!forceRefresh && status === 'loading') {
                 return;

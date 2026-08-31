@@ -559,5 +559,35 @@ export const expeditionsApi = {
                 message: error.message || "Erreur lors du recalcul du tarif",
             };
         }
+    },
+
+    /**
+     * Modifier l'expédition complète (type, expéditeur, destinataire, pays,
+     * paiement/livraison) avec recalcul automatique du tarif dans le même appel.
+     * @param {string} expeditionId
+     * @param {Object} data - champs à modifier (voir formulaire de création),
+     *   plus éventuellement colis_categories: { [colisId]: categoryId } pour
+     *   renseigner la catégorie d'un colis existant si le nouveau type l'exige.
+     * @returns {Promise<Object>}
+     */
+    async updateExpedition(expeditionId, data) {
+        try {
+            const url = API_ENDPOINTS.EXPEDITIONS.UPDATE_EXPEDITION_CONTROL.replace(':id', expeditionId);
+            const response = await apiService.put(url, data);
+
+            return {
+                success: response.success !== false,
+                data: response.expedition || response.data || response,
+                montantAvant: response.montant_avant,
+                montantApres: response.montant_apres,
+                message: response.message || "Expédition mise à jour",
+            };
+        } catch (error) {
+            return {
+                success: false,
+                message: error.message || "Erreur lors de la mise à jour de l'expédition",
+                errors: error.errors || error.response?.data?.errors,
+            };
+        }
     }
 };

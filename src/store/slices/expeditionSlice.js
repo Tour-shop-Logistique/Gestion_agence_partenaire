@@ -235,6 +235,30 @@ export const recalculateExpeditionTarif = createAsyncThunk(
     }
 );
 
+// Contrôle : édition complète de l'expédition (type, expéditeur,
+// destinataire, pays, paiement/livraison) avec recalcul automatique du
+// tarif dans le même appel.
+export const updateExpeditionControl = createAsyncThunk(
+    "expedition/updateExpeditionControl",
+    async ({ expeditionId, data }, { rejectWithValue }) => {
+        try {
+            const result = await expeditionsApi.updateExpedition(expeditionId, data);
+            if (!result.success) {
+                return rejectWithValue({ message: result.message, errors: result.errors });
+            }
+            return {
+                expeditionId,
+                expedition: result.data,
+                montantAvant: result.montantAvant,
+                montantApres: result.montantApres,
+                message: result.message,
+            };
+        } catch (error) {
+            return rejectWithValue({ message: error.message || "Erreur lors de la mise à jour de l'expédition" });
+        }
+    }
+);
+
 // Marquer des colis comme reçus au départ
 export const receiveColisDepart = createAsyncThunk(
     "expedition/receiveColisDepart",
@@ -709,6 +733,22 @@ const expeditionSlice = createSlice({
             .addCase(recalculateExpeditionTarif.rejected, (state, action) => {
                 state.status = "failed";
                 state.error = action.payload;
+            })
+            .addCase(updateExpeditionControl.pending, (state) => {
+                state.status = "loading";
+                state.error = null;
+            })
+            .addCase(updateExpeditionControl.fulfilled, (state, action) => {
+                state.status = "succeeded";
+                state.message = action.payload.message;
+                const { expeditionId, expedition } = action.payload;
+                if (state.currentExpedition?.id === expeditionId && expedition) {
+                    state.currentExpedition = { ...state.currentExpedition, ...expedition };
+                }
+            })
+            .addCase(updateExpeditionControl.rejected, (state, action) => {
+                state.status = "failed";
+                state.error = action.payload?.message || action.payload;
             })
             .addCase(decisionFraisAnnexes.rejected, (state, action) => {
                 state.status = "failed";

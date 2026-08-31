@@ -111,6 +111,7 @@ export const API_ENDPOINTS = {
     UPDATE_COLIS: "/expedition/agence/:expeditionId/colis/:colisId",
     SPLIT_COLIS: "/expedition/agence/:expeditionId/colis/:colisId/split",
     RECALCULATE_TARIF: "/expedition/agence/:expeditionId/recalculer-tarif",
+    UPDATE_EXPEDITION_CONTROL: "/expedition/agence/:id/controle",
   },
 
   // Produits
