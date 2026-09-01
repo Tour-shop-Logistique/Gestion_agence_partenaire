@@ -282,6 +282,23 @@ export const toggleTarifGroupageStatus = createAsyncThunk(
 
 
 
+// Consultation en lecture seule des tarifs interville concernant l'agence
+// (aucune mutation possible - les commissions sont fixées par le back-office).
+export const fetchTarifsInterville = createAsyncThunk(
+  'tarifs/fetchTarifsInterville',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await tarifsApi.getTarifsInterville();
+      if (response.success) {
+        return response.data || [];
+      }
+      return rejectWithValue(response.message || 'Erreur lors du chargement des tarifs interville');
+    } catch (error) {
+      return rejectWithValue(error.message || 'Erreur lors du chargement des tarifs interville');
+    }
+  }
+);
+
 // Helpers pour le LocalStorage
 const saveTarifsToCache = (data) => {
   try {
@@ -314,6 +331,8 @@ const initialState = {
   groupageTarifs: cachedData.groupageTarifs || [], // tarifs groupage
 
   existingGroupageTarifs: cachedData.existingGroupageTarifs || [], // tarifs groupage de l'agence
+  intervilleTarifs: [], // tarifs interville concernant l'agence, lecture seule
+  loadingInterville: false,
   loading: false,
   error: null,
   message: '',
@@ -838,6 +857,21 @@ const tarifsSlice = createSlice({
         );
         state.error = action.payload || "Une erreur est survenue";
         state.message = "Désolé, impossible de modifier le statut. Veuillez réessayer.";
+      });
+
+    builder
+      // === Interville (lecture seule) ===
+      .addCase(fetchTarifsInterville.pending, (state) => {
+        state.loadingInterville = true;
+        state.error = null;
+      })
+      .addCase(fetchTarifsInterville.fulfilled, (state, action) => {
+        state.loadingInterville = false;
+        state.intervilleTarifs = action.payload;
+      })
+      .addCase(fetchTarifsInterville.rejected, (state, action) => {
+        state.loadingInterville = false;
+        state.error = action.payload;
       });
 
   }

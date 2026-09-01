@@ -19,7 +19,8 @@ import {
   updateSingleTarifZone,
   deleteTarifSimple,
   toggleTarifSimpleStatus,
-  toggleTarifGroupageStatus
+  toggleTarifGroupageStatus,
+  fetchTarifsInterville
 } from '../store/slices/tarifsSlice';
 
 export const useTarifs = () => {
@@ -33,6 +34,8 @@ export const useTarifs = () => {
     flatExistingTarifs,
     groupageTarifs,
     existingGroupageTarifs,
+    intervilleTarifs,
+    loadingInterville,
     selectedIndex,
     editingZones,
     isSaving,
@@ -192,6 +195,15 @@ export const useTarifs = () => {
     }
   }, [dispatch]);
 
+  const fetchTarifsIntervilleData = useCallback(async () => {
+    try {
+      return await dispatch(fetchTarifsInterville()).unwrap();
+    } catch (error) {
+      console.error('Erreur lors du chargement des tarifs interville:', error);
+      return { success: false, error };
+    }
+  }, [dispatch]);
+
 
   return {
     // État
@@ -206,6 +218,8 @@ export const useTarifs = () => {
     groupageTarifs,
 
     existingGroupageTarifs,
+    intervilleTarifs,
+    loadingInterville,
     selectedIndex,
     editingZones,
     isSaving,
@@ -227,6 +241,7 @@ export const useTarifs = () => {
     deleteTarifSimple: deleteTarifSimpleData,
     toggleTarifSimpleStatus: toggleTarifSimpleStatusData,
     toggleTarifGroupageStatus: toggleTarifGroupageStatusData,
+    fetchTarifsInterville: fetchTarifsIntervilleData,
 
     // Selecteurs
     getCurrentTarif,

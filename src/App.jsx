@@ -36,6 +36,7 @@ import Agents from "./pages/Agents";
 import AgentProfile from "./pages/AgentProfile";
 import CreateExpeditionV2 from "./pages/CreateExpeditionV2";
 import TarifsSimples from "./pages/TarifsSimples";
+import TarifsInterville from "./pages/TarifsInterville";
 import TarifsGroupes from "./pages/TarifsGroupes";
 import Comptabilite from "./pages/Comptabilite";
 
@@ -371,6 +372,7 @@ function AppContent() {
           <Route path="/dashboard" element={<AgencySetupGuard><PageGuard pageKey="dashboard"><Dashboard /></PageGuard></AgencySetupGuard>} />
           <Route path="/tarifs-simples" element={<AgencySetupGuard><PageGuard pageKey="tarifs_simples"><TarifsSimples /></PageGuard></AgencySetupGuard>} />
           <Route path="/tarifs-groupage" element={<AgencySetupGuard><PageGuard pageKey="tarifs_groupage"><TarifsGroupes /></PageGuard></AgencySetupGuard>} />
+          <Route path="/tarifs-interville" element={<AgencySetupGuard><PageGuard pageKey="tarifs_interville"><TarifsInterville /></PageGuard></AgencySetupGuard>} />
           <Route path="/agency-profile" element={<PageGuard pageKey="agency_profile"><AgencyProfile /></PageGuard>} />
           <Route path="/agent-profile" element={<AgentProfile />} />
           <Route path="/comptabilite" element={<AgencySetupGuard><PageGuard pageKey="comptabilite"><Comptabilite /></PageGuard></AgencySetupGuard>} />

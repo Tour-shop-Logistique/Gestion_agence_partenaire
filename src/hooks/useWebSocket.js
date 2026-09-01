@@ -161,6 +161,7 @@ export function useWebSocket(agenceId, handlers = {}, enabled = true) {
 
       case 'TarifSimple':
       case 'TarifGroupage':
+      case 'TarifInterville':
         console.log(`💰 [WebSocket] Tarif - Model: ${model}, Action: ${action}`);
         if (action === 'updated' && handlersRef.current.onTarifsUpdated) {
           console.log('✅ [WebSocket] Handler onTarifsUpdated appelé');

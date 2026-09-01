@@ -9,6 +9,7 @@ import ErrorBoundary from "../components/ErrorBoundary";
 import CoverageMap from "../components/CoverageMap";
 import SearchableDropdown from "../components/common/SearchableDropdown";
 import { COUNTRY_OPTIONS, getCountryName } from "../utils/countries";
+import { communesApi } from "../utils/api/communes";
 
 import {
   BuildingOffice2Icon,
@@ -235,9 +236,18 @@ const AgencyProfile = () => {
   const [formData, setFormData] = useState({
     name: "", code_agence: "", address: "", ville: "",
     code_pays: "CI", telephone: "", email: "", website: "",
-    latitude: "", longitude: "", description: "", commune: "",
+    latitude: "", longitude: "", description: "", commune: "", commune_id: "",
     horaires: defaultHoraires, logo: null, message_accueil: "", zone_couverture_km: "10",
   });
+
+  // Communes du backoffice du pays de l'agence, pour le select "Commune"
+  // (référentiel utilisé par la tarification interville).
+  const [communes, setCommunes] = useState([]);
+  useEffect(() => {
+    communesApi.getCommunes().then((res) => {
+      if (res.success) setCommunes(res.data || []);
+    });
+  }, []);
 
   const [logoFile, setLogoFile]       = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
@@ -269,6 +279,7 @@ const AgencyProfile = () => {
       if (a.website)     next.website     = a.website;
       if (a.description) next.description = a.description;
       if (a.commune)     next.commune     = a.commune;
+      if (a.commune_id)  next.commune_id  = a.commune_id;
       if (a.logo)        next.logo        = a.logo;
       if (a.message_accueil != null) next.message_accueil = a.message_accueil;
       if (a.zone_couverture_km != null) next.zone_couverture_km = String(a.zone_couverture_km);
@@ -386,6 +397,7 @@ const AgencyProfile = () => {
         adresse:     formData.address,
         ville:       formData.ville,
         commune:     formData.commune,
+        commune_id:  formData.commune_id || null,
         code_pays:   formData.code_pays,
         latitude:    formData.latitude  === "" ? null : parseFloat(formData.latitude),
         longitude:   formData.longitude === "" ? null : parseFloat(formData.longitude),
@@ -600,7 +612,18 @@ const AgencyProfile = () => {
                 </div>
                 <div>
                   <FieldLabel>Commune</FieldLabel>
-                  <Field name="commune" value={formData.commune} onChange={handleChange} disabled={editingTab !== "identite"} placeholder="Ex : Cocody" />
+                  <SearchableDropdown
+                    options={communes.map((c) => ({ id: c.id, label: c.nom }))}
+                    onSelect={(commune) => setFormData((p) => ({ ...p, commune_id: commune.id, commune: commune.label }))}
+                    placeholder={
+                      communes.find((c) => String(c.id) === String(formData.commune_id))?.nom
+                      || formData.commune
+                      || "Sélectionnez une commune"
+                    }
+                    disabled={editingTab !== "identite"}
+                    className="w-full"
+                    buttonClassName="h-11 pl-3 pr-3 text-sm text-slate-800 rounded-lg"
+                  />
                 </div>
                 <div>
                   <FieldLabel>Téléphone</FieldLabel>

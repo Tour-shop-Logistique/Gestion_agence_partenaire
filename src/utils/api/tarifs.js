@@ -329,4 +329,27 @@ export const tarifsApi = {
       };
     }
   },
+
+  /**
+   * Consultation en lecture seule des tarifs interville concernant l'agence
+   * (où sa commune apparaît comme point de départ ou d'arrivée). Aucune
+   * action de modification n'est exposée : les commissions sont fixées
+   * uniquement par le back-office.
+   * @returns {Promise<Object>}
+   */
+  async getTarifsInterville() {
+    try {
+      const response = await apiService.get(API_ENDPOINTS.TARIFS.LIST_INTERVILLE);
+      return {
+        success: response.success !== false,
+        data: response.tarifs || response.data || response,
+        message: response.message || "Tarifs interville récupérés avec succès",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || "Impossible de récupérer les tarifs interville",
+      };
+    }
+  },
 };

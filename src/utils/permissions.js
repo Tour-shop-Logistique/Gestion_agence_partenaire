@@ -15,6 +15,7 @@ export const PAGE_RESOURCE_MAP = {
   transactions: ["transactions"],
   tarifs_simples: ["tarifs_simples"],
   tarifs_groupage: ["tarifs_groupage"],
+  tarifs_interville: ["tarifs_interville"],
   communication: ["communication"],
   agents: ["agents"],
   agency_profile: ["agency_profile"],

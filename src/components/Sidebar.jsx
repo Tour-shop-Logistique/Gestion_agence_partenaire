@@ -36,6 +36,7 @@ const PAGE_KEY_BY_PATH = {
   "/transactions": "transactions",
   "/tarifs-simples": "tarifs_simples",
   "/tarifs-groupage": "tarifs_groupage",
+  "/tarifs-interville": "tarifs_interville",
   "/messages": "communication",
   "/agents": "agents",
   "/agency-profile": "agency_profile",
@@ -91,6 +92,7 @@ const Sidebar = ({ onClose }) => {
       items: [
         { path: "/tarifs-simples",  name: "Simples",  icon: CurrencyDollarIcon },
         { path: "/tarifs-groupage", name: "Groupage", icon: TableCellsIcon },
+        { path: "/tarifs-interville", name: "Interville", icon: TruckIcon },
       ],
     },
     {
@@ -137,6 +139,7 @@ const Sidebar = ({ onClose }) => {
       items: [
         { path: "/tarifs-simples",  name: "Simples",  icon: CurrencyDollarIcon },
         { path: "/tarifs-groupage", name: "Groupage", icon: TableCellsIcon },
+        { path: "/tarifs-interville", name: "Interville", icon: TruckIcon },
       ],
     },
     {
@@ -180,6 +183,7 @@ const Sidebar = ({ onClose }) => {
     "/transactions":           { icon: "#c4b5fd", chip: "rgba(139,92,246,0.16)",  ring: "rgba(139,92,246,0.35)",  accent: "#a78bfa" },
     "/tarifs-simples":         { icon: "#86efac", chip: "rgba(34,197,94,0.16)",   ring: "rgba(34,197,94,0.35)",   accent: "#4ade80" },
     "/tarifs-groupage":        { icon: "#7dd3fc", chip: "rgba(2,132,199,0.18)",   ring: "rgba(2,132,199,0.35)",   accent: "#38bdf8" },
+    "/tarifs-interville":      { icon: "#fdba74", chip: "rgba(234,88,12,0.16)",   ring: "rgba(234,88,12,0.35)",   accent: "#fb923c" },
     "/agents":                 { icon: "#fda4af", chip: "rgba(244,63,94,0.16)",   ring: "rgba(244,63,94,0.35)",   accent: "#fb7185" },
     "/agency-profile":         { icon: "#67e8f9", chip: "rgba(6,182,212,0.16)",   ring: "rgba(6,182,212,0.35)",   accent: "#22d3ee" },
     "/messages":               { icon: "#fdba74", chip: "rgba(249,115,22,0.16)",  ring: "rgba(249,115,22,0.35)",  accent: "#fb923c" },

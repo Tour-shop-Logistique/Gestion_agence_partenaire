@@ -88,6 +88,14 @@ export const API_ENDPOINTS = {
     Show_GROUPAGE: "/agence/show-tarif-groupage/:tarif",
     Delete_GROUPAGE: "/agence/delete-tarif-groupage/:tarif",
     Status_GROUPAGE: "/agence/status-tarif-groupage/:tarif",
+    // Interville : lecture seule, aucune action de modification côté agence
+    // (les commissions départ/arrivée sont fixées uniquement par le backoffice).
+    LIST_INTERVILLE: "/agence/list-tarifs-interville",
+  },
+
+  // Communes (référentiel géographique, lecture seule côté agence)
+  COMMUNES: {
+    LIST: "/communes/list",
   },
 
   EXPEDITIONS: {
