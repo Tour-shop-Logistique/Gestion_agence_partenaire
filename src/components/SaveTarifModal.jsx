@@ -244,6 +244,8 @@ const SaveTarifModal = ({
                         value={globalPercentage}
                         onChange={(e) => setGlobalPercentage(e.target.value)}
                         placeholder="Ex: 10"
+                        min="0"
+                        max="100"
                         className="w-20 px-3 py-1.5 text-xs font-bold border-2 border-indigo-200 rounded-lg shadow-sm focus:border-indigo-500 outline-none"
                         disabled={isSavingLocal}
                       />
@@ -309,6 +311,8 @@ const SaveTarifModal = ({
                                   type="number"
                                   value={zone.pourcentage_prestation || ""}
                                   onChange={(e) => handlePercentageChange(zone.zone_destination_id, e.target.value)}
+                                  min="0"
+                                  max="100"
                                   className="w-16 px-2 py-1.5 text-xs font-bold text-center border-2 border-slate-200 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
                                   disabled={isSavingLocal}
                                   placeholder="0"

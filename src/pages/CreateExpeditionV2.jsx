@@ -94,6 +94,9 @@ const CreateExpeditionV2 = () => {
     const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
     const [selectedRouteId, setSelectedRouteId] = useState("");
     const [selectedRoute, setSelectedRoute] = useState(null);
+    // Pays choisi en amont pour DHD (couvre desormais tous les pays hors
+    // Afrique) - filtre ensuite les trajets proposes a ceux de ce pays.
+    const [selectedDhdCountryCode, setSelectedDhdCountryCode] = useState("");
     // Snapshot des colis au moment de la dernière simulation, pour détecter
     // si le tarif affiché est devenu obsolète suite à une modification
     const lastSimulatedColisRef = useRef(null);
@@ -190,7 +193,11 @@ const CreateExpeditionV2 = () => {
     // Gestion des pays par défaut selon le type
     useEffect(() => {
         const type = formData.type_expedition;
-        if (type === "GROUPAGE_DHD_AERIEN" || type === "GROUPAGE_DHD_MARITIME" || type === "SIMPLE") {
+        // SIMPLE (LD) reste forcé sur la France (comportement existant,
+        // hors scope de la règle géographique DHD/CA/Afrique). DHD couvre
+        // désormais tous les pays hors Afrique : plus de valeur par défaut,
+        // le pays est choisi explicitement via le nouveau dropdown dédié.
+        if (type === "SIMPLE") {
             setFormData(prev => ({
                 ...prev,
                 pays_destination: "France",
@@ -210,6 +217,7 @@ const CreateExpeditionV2 = () => {
         // Réinitialiser la route sélectionnée lorsque le type change
         setSelectedRoute(null);
         setSelectedRouteId(""); // Réinitialiser aussi l'ID pour le select
+        setSelectedDhdCountryCode(""); // Réinitialiser le pays DHD choisi
         cleanSimulation();
     }, [formData.type_expedition]);
 
@@ -355,10 +363,19 @@ const CreateExpeditionV2 = () => {
         const backofficeTarifs = Array.isArray(baseGroupageTarifs) ? baseGroupageTarifs : [];
 
         // Tarifs agence d'abord (priorité), puis tarifs backoffice en complément
-        const tarifsByType = [
+        let tarifsByType = [
             ...agenceTarifs.filter(t => t.type_expedition === currentType),
             ...backofficeTarifs.filter(t => t.type_expedition === currentType),
         ];
+
+        // DHD couvre desormais plusieurs pays (hors Afrique) : une fois un
+        // pays choisi en amont (selectedDhdCountryCode), ne proposer que les
+        // lignes de ce pays precis.
+        if (currentType.includes('dhd') && selectedDhdCountryCode) {
+            tarifsByType = tarifsByType.filter(
+                t => (t.code_pays || '').toUpperCase() === selectedDhdCountryCode.toUpperCase()
+            );
+        }
 
         // Dédupliquer les trajets
         const uniqueRoutes = [];
@@ -411,7 +428,7 @@ const CreateExpeditionV2 = () => {
         
         
         return uniqueRoutes;
-    }, [existingGroupageTarifs, baseGroupageTarifs, formData.type_expedition]);
+    }, [existingGroupageTarifs, baseGroupageTarifs, formData.type_expedition, selectedDhdCountryCode]);
 
     // Options formatées (id + label en majuscules) pour le SearchableDropdown
     // de sélection de trajet (DHD Aérien/Maritime, Groupage Afrique).
@@ -493,45 +510,74 @@ const CreateExpeditionV2 = () => {
         return countriesList;
     }, [existingTarifs, flatExistingTarifs, baseTarifs, formData.type_expedition]);
 
-    // Liste de tous les pays connus (zones du backoffice + tarifs agence),
-    // indépendante du type d'expédition - utilisée pour les champs "Pays
-    // destination" (DHD/CA) et "Pays départ", qui étaient auparavant du texte
-    // libre non assisté.
-    const allKnownCountries = useMemo(() => {
-        // Même logique de dédoublonnage par code ISO que availableCountriesForLD
-        // ci-dessus (voir commentaire), avec libellé dérivé du référentiel.
-        const countryByKey = {};
+    // Pays réellement couverts par des tarifs DHD configurés (agence ou
+    // backoffice) pour le type courant - contrairement à allKnownCountries
+    // (dérivé des zones LD), on ne veut proposer que des pays où une ligne
+    // DHD existe vraiment, pour ensuite filtrer availableRoutes par ce pays.
+    const dhdAvailableCountries = useMemo(() => {
+        const currentType = formData.type_expedition.toLowerCase();
+        if (!currentType.includes('dhd')) return [];
 
-        const collectFrom = (tarifsList) => {
-            (tarifsList || []).forEach((tarif) => {
-                const prixZones = tarif.prix_zones;
-                if (!Array.isArray(prixZones)) return;
-                prixZones.forEach((prixZone) => {
-                    const paysZone = prixZone.zone?.pays;
-                    const codesZone = prixZone.zone?.pays_codes;
-                    if (!Array.isArray(paysZone)) return;
-                    paysZone.forEach((pays, idx) => {
-                        if (!pays) return;
-                        const code = Array.isArray(codesZone) ? codesZone[idx] : null;
-                        const key = code || pays;
-                        if (!countryByKey[key]) {
-                            countryByKey[key] = {
-                                code,
-                                label: code ? getCountryName(code) : extractCountryName(pays),
-                            };
-                        }
-                    });
-                });
-            });
-        };
+        const agenceTarifs = Array.isArray(existingGroupageTarifs) ? existingGroupageTarifs : [];
+        const backofficeTarifs = Array.isArray(baseGroupageTarifs) ? baseGroupageTarifs : [];
+        const all = [...agenceTarifs, ...backofficeTarifs].filter(t => t.type_expedition === currentType);
 
-        collectFrom(existingTarifs);
-        collectFrom(baseTarifs);
+        const byCode = {};
+        all.forEach((t) => {
+            if (!t.code_pays) return;
+            const code = t.code_pays.toUpperCase();
+            if (!byCode[code]) {
+                byCode[code] = { id: code, code, label: (getCountryName(code) || t.pays || code).toUpperCase() };
+            }
+        });
+        return Object.values(byCode).sort((a, b) => a.label.localeCompare(b.label));
+    }, [existingGroupageTarifs, baseGroupageTarifs, formData.type_expedition]);
 
-        return Object.entries(countryByKey)
-            .map(([key, info]) => ({ id: key, label: info.label, code: info.code }))
-            .sort((a, b) => a.label.localeCompare(b.label));
-    }, [existingTarifs, baseTarifs]);
+    // Pays réellement couverts par des tarifs CA configurés (agence ou
+    // backoffice) - même logique que dhdAvailableCountries : on ne propose
+    // que les pays où un tarif CA existe vraiment, jamais tous les pays hors
+    // Afrique.
+    const caAvailableCountries = useMemo(() => {
+        const currentType = formData.type_expedition.toLowerCase();
+        if (currentType !== 'groupage_ca') return [];
+
+        const agenceTarifs = Array.isArray(existingGroupageTarifs) ? existingGroupageTarifs : [];
+        const backofficeTarifs = Array.isArray(baseGroupageTarifs) ? baseGroupageTarifs : [];
+        const all = [...agenceTarifs, ...backofficeTarifs].filter(t => t.type_expedition === currentType);
+
+        const byCode = {};
+        all.forEach((t) => {
+            if (!t.code_pays) return;
+            const code = t.code_pays.toUpperCase();
+            if (!byCode[code]) {
+                byCode[code] = { id: code, code, label: (getCountryName(code) || t.pays || code).toUpperCase() };
+            }
+        });
+        return Object.values(byCode).sort((a, b) => a.label.localeCompare(b.label));
+    }, [existingGroupageTarifs, baseGroupageTarifs, formData.type_expedition]);
+
+    // Pays réellement couverts par des tarifs Afrique configurés (agence ou
+    // backoffice) - Afrique n'est pas basé sur des lignes ville-à-ville, donc
+    // ce filtre remplace directement le dropdown "Trajet" par un dropdown
+    // "Pays destination" filtré aux seuls pays africains configurés.
+    const afriqueAvailableCountries = useMemo(() => {
+        const currentType = formData.type_expedition.toLowerCase();
+        if (currentType !== 'groupage_afrique') return [];
+
+        const agenceTarifs = Array.isArray(existingGroupageTarifs) ? existingGroupageTarifs : [];
+        const backofficeTarifs = Array.isArray(baseGroupageTarifs) ? baseGroupageTarifs : [];
+        const all = [...agenceTarifs, ...backofficeTarifs].filter(t => t.type_expedition === currentType);
+
+        const byCode = {};
+        all.forEach((t) => {
+            if (!t.code_pays) return;
+            const code = t.code_pays.toUpperCase();
+            if (!byCode[code]) {
+                byCode[code] = { id: code, code, label: (getCountryName(code) || t.pays || code).toUpperCase() };
+            }
+        });
+        return Object.values(byCode).sort((a, b) => a.label.localeCompare(b.label));
+    }, [existingGroupageTarifs, baseGroupageTarifs, formData.type_expedition]);
 
     // Filtrage des catégories en fonction du type d'expédition ET de la ligne sélectionnée
     const filteredCategories = useMemo(() => {
@@ -626,9 +672,12 @@ const CreateExpeditionV2 = () => {
                 destVille = isDHD ? "" : (route.pays || "");
             }
 
+            // DHD couvre tous les pays hors Afrique (pas seulement la
+            // France) - le pays vient donc du tarif de la ligne choisie,
+            // comme pour CA et Afrique, et non plus force en dur.
             const isSimpleType = formData.type_expedition === 'SIMPLE';
-            const paysDestination = isDHD || isSimpleType ? "France" : extractCountryName(route.pays || "");
-            const codePaysDestination = isDHD || isSimpleType ? "FR" : (route.code_pays || "");
+            const paysDestination = isSimpleType ? "France" : extractCountryName(route.pays || "");
+            const codePaysDestination = isSimpleType ? "FR" : (route.code_pays || "");
 
             setFormData(prev => ({
                 ...prev,
@@ -1161,40 +1210,112 @@ const CreateExpeditionV2 = () => {
 
                                     {/* Trajet/Pays disponible - Uniquement pour les types NON-SIMPLE */}
                                     {formData.type_expedition !== 'SIMPLE' && (
-                                        <div className="space-y-1.5">
-                                            <label htmlFor="route-select" className="block text-xs font-semibold text-slate-600">
-                                                Trajet disponible
-                                            </label>
-
+                                        <div className="space-y-3">
                                             {formData.type_expedition === 'GROUPAGE_CA' ? (
-                                                <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-500">
-                                                    <svg className="w-4 h-4 flex-shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                    </svg>
-                                                    Non applicable pour les Colis Accompagnés — renseignez directement le pays et la ville de destination ci-dessous.
+                                                <div className="space-y-1.5">
+                                                    <label className="block text-xs font-semibold text-slate-600">
+                                                        Trajet disponible
+                                                    </label>
+                                                    <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-500">
+                                                        <svg className="w-4 h-4 flex-shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
+                                                        Non applicable pour les Colis Accompagnés — renseignez directement le pays et la ville de destination ci-dessous.
+                                                    </div>
                                                 </div>
+                                            ) : formData.type_expedition === 'GROUPAGE_AFRIQUE' ? (
+                                                <div className="space-y-1.5">
+                                                    <label className="block text-xs font-semibold text-slate-600">
+                                                        Trajet disponible
+                                                    </label>
+                                                    <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-500">
+                                                        <svg className="w-4 h-4 flex-shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
+                                                        Non applicable pour l'Afrique — renseignez directement le pays de destination ci-dessous.
+                                                    </div>
+                                                </div>
+                                            ) : (formData.type_expedition === 'GROUPAGE_DHD_AERIEN' || formData.type_expedition === 'GROUPAGE_DHD_MARITIME') ? (
+                                                <>
+                                                    {/* DHD couvre tous les pays hors Afrique, par ligne
+                                                        ville-à-ville : on choisit d'abord le pays, puis un
+                                                        trajet parmi ceux configurés pour ce pays. */}
+                                                    <div className="space-y-1.5">
+                                                        <label htmlFor="dhd-country-select" className="block text-xs font-semibold text-slate-600">
+                                                            Pays de destination <span className="text-amber-600">*</span>
+                                                        </label>
+                                                        <SearchableDropdown
+                                                            id="dhd-country-select"
+                                                            options={dhdAvailableCountries}
+                                                            onSelect={(country) => {
+                                                                setSelectedDhdCountryCode(country.code || country.id);
+                                                                setSelectedRouteId("");
+                                                                setSelectedRoute(null);
+                                                            }}
+                                                            placeholder={selectedDhdCountryCode
+                                                                ? dhdAvailableCountries.find(c => c.code === selectedDhdCountryCode)?.label || "Rechercher un pays..."
+                                                                : "Rechercher un pays..."}
+                                                            className="w-full"
+                                                            buttonClassName="h-11 text-sm font-medium"
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-1.5">
+                                                        <label htmlFor="route-select" className="block text-xs font-semibold text-slate-600">
+                                                            Trajet disponible
+                                                        </label>
+                                                        <SearchableDropdown
+                                                            id="route-select"
+                                                            options={availableRouteOptions}
+                                                            onSelect={(option) => handleRouteSelect(option.id)}
+                                                            disabled={!selectedDhdCountryCode}
+                                                            placeholder={!selectedDhdCountryCode
+                                                                ? "Choisissez d'abord un pays"
+                                                                : selectedRouteId
+                                                                    ? availableRouteOptions.find(r => r.id === selectedRouteId)?.label || "Rechercher un trajet..."
+                                                                    : "Rechercher un trajet..."}
+                                                            className="w-full"
+                                                            buttonClassName="h-11 text-sm font-medium"
+                                                        />
+                                                    </div>
+                                                </>
                                             ) : (
-                                                <SearchableDropdown
-                                                    id="route-select"
-                                                    options={availableRouteOptions}
-                                                    onSelect={(option) => handleRouteSelect(option.id)}
-                                                    placeholder={selectedRouteId
-                                                        ? availableRouteOptions.find(r => r.id === selectedRouteId)?.label || "Rechercher un trajet..."
-                                                        : "Rechercher un trajet..."}
-                                                    className="w-full"
-                                                    buttonClassName="h-11 text-sm font-medium"
-                                                />
+                                                <div className="space-y-1.5">
+                                                    <label htmlFor="route-select" className="block text-xs font-semibold text-slate-600">
+                                                        Trajet disponible
+                                                    </label>
+                                                    <SearchableDropdown
+                                                        id="route-select"
+                                                        options={availableRouteOptions}
+                                                        onSelect={(option) => handleRouteSelect(option.id)}
+                                                        placeholder={selectedRouteId
+                                                            ? availableRouteOptions.find(r => r.id === selectedRouteId)?.label || "Rechercher un trajet..."
+                                                            : "Rechercher un trajet..."}
+                                                        className="w-full"
+                                                        buttonClassName="h-11 text-sm font-medium"
+                                                    />
+                                                </div>
                                             )}
                                         </div>
                                     )}
 
                                     {/* Destination + Départ — 2 colonnes sur mobile */}
                                     <div className="grid grid-cols-2 gap-3 p-4 bg-slate-50/80 rounded-lg border border-slate-200">
-                                        <div className="space-y-1.5">
-                                            <label htmlFor="pays_destination" className="block text-xs font-semibold text-slate-600">
-                                                Pays destination <span className="text-amber-600">*</span>
-                                            </label>
-                                            {formData.type_expedition === 'SIMPLE' ? (
+                                        {/* Pour DHD, le pays est déjà choisi juste au-dessus (dropdown
+                                            pays-puis-trajet) : ce second champ générique serait redondant
+                                            et pourrait le contredire, donc masqué pour ce type. */}
+                                        {(formData.type_expedition === 'GROUPAGE_DHD_AERIEN' || formData.type_expedition === 'GROUPAGE_DHD_MARITIME') ? (
+                                            <div className="space-y-1.5">
+                                                <label className="block text-xs font-semibold text-slate-600">Pays destination</label>
+                                                <div className="w-full h-11 px-3 flex items-center rounded-lg border border-slate-200 bg-slate-50 text-sm font-medium text-slate-600">
+                                                    {formData.pays_destination || "—"}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-1.5">
+                                                <label htmlFor="pays_destination" className="block text-xs font-semibold text-slate-600">
+                                                    Pays destination <span className="text-amber-600">*</span>
+                                                </label>
+                                                {formData.type_expedition === 'SIMPLE' ? (
                                                 <>
                                                     {/* Sélecteur de pays pour LD avec recherche */}
                                                     <SearchableDropdown
@@ -1245,10 +1366,32 @@ const CreateExpeditionV2 = () => {
                                                         </p>
                                                     )}
                                                 </>
-                                            ) : (
+                                            ) : formData.type_expedition === 'GROUPAGE_AFRIQUE' ? (
+                                                // Afrique n'a pas de notion de trajet ville-à-ville : le pays
+                                                // se choisit directement ici, filtré aux seuls pays africains
+                                                // réellement configurés (agence ou backoffice).
                                                 <SearchableDropdown
                                                     id="pays_destination"
-                                                    options={allKnownCountries}
+                                                    options={afriqueAvailableCountries}
+                                                    onSelect={(country) => {
+                                                        const paysName = extractCountryName(country.label);
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            pays_destination: paysName,
+                                                            code_pays_destination: country.code || "",
+                                                        }));
+                                                    }}
+                                                    placeholder={formData.pays_destination || "Rechercher un pays..."}
+                                                    className="w-full"
+                                                    buttonClassName="h-11 text-sm font-medium"
+                                                />
+                                            ) : (
+                                                // Atteint uniquement par CA à ce stade (DHD et Afrique sont
+                                                // masqués ci-dessus, SIMPLE prend la branche précédente) - CA
+                                                // n'affiche que les pays où un tarif CA est réellement configuré.
+                                                <SearchableDropdown
+                                                    id="pays_destination"
+                                                    options={caAvailableCountries}
                                                     onSelect={(country) => {
                                                         const paysName = extractCountryName(country.label);
                                                         setFormData(prev => ({
@@ -1263,6 +1406,7 @@ const CreateExpeditionV2 = () => {
                                                 />
                                             )}
                                         </div>
+                                        )}
                                         <div className="space-y-1.5">
                                             <label htmlFor="destinataire_ville" className="block text-xs font-semibold text-slate-600">
                                                 Ville destination <span className="text-amber-600">*</span>

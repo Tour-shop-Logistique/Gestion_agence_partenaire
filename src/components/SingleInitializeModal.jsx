@@ -95,6 +95,8 @@ const SingleInitializeModal = ({
                                         type="number"
                                         value={percentage}
                                         onChange={(e) => setPercentage(parseFloat(e.target.value) || 0)}
+                                        min="0"
+                                        max="100"
                                         className="w-full h-12 px-4 bg-white border-2 border-slate-100 rounded-xl text-lg font-bold text-slate-900 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
                                         placeholder="15"
                                         autoFocus

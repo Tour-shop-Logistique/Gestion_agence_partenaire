@@ -218,6 +218,8 @@ const AddAgencyTarifModal = ({ show, onClose, editingTarif, selectedBaseRate }) 
                           className="w-full px-3 py-2 text-sm font-bold text-indigo-600 border border-slate-200 rounded-lg focus:border-indigo-500 outline-none"
                           value={tarifData.pourcentage_prestation}
                           onChange={(e) => handlePercentageChange(e.target.value)}
+                          min="0"
+                          max="100"
                         />
                         <span className="ml-2 font-bold text-slate-400">%</span>
                       </div>
