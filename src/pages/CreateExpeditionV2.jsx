@@ -26,6 +26,7 @@ const CODE_COLIS_TYPE_MAP = {
     GROUPAGE_DHD_MARITIME: "MARITIME",
     GROUPAGE_AFRIQUE: "AFRIQUE",
     GROUPAGE_CA: "CA",
+    INTERVILLE: "INTERVILLE",
 };
 
 // Correspondance entre la valeur de type_expedition du formulaire
@@ -36,6 +37,7 @@ const FORM_TYPE_TO_API_TYPE = {
     GROUPAGE_DHD_MARITIME: "groupage_dhd_maritime",
     GROUPAGE_AFRIQUE: "groupage_afrique",
     GROUPAGE_CA: "groupage_ca",
+    INTERVILLE: "interville",
 };
 
 // Un colis est valide pour la simulation/soumission s'il a un poids,
@@ -81,6 +83,10 @@ const CreateExpeditionV2 = () => {
         // automatiquement sur ces tarifs de base, voir resoudreTarif* côté backend).
         tarifs: baseTarifs, fetchTarifs: fetchBaseTarifs,
         groupageTarifs: baseGroupageTarifs, fetchTarifsGroupageBase: fetchBaseGroupageTarifs,
+        // Tarifs interville (trajet commune à commune, intra-pays) - lecture
+        // seule, déjà filtrés par le backend aux lignes concernant la
+        // commune de l'agence connectée (départ ou arrivée).
+        intervilleTarifs, fetchTarifsInterville,
         loading: tarifsLoading
     } = useTarifs();
     const { data: agencyData, fetchAgencyData, status: agencyStatus } = useAgency();
@@ -129,6 +135,9 @@ const CreateExpeditionV2 = () => {
         destinataire_adresse: "",
         destinataire_ville: "",
         destinataire_code_postal: "",
+        // Commune de destination (interville uniquement) - remplace la
+        // notion de pays/trajet pour ce type, intra-pays par nature.
+        destinataire_commune_id: "",
 
         colis: [
             {
@@ -159,6 +168,7 @@ const CreateExpeditionV2 = () => {
         fetchAgencyTarifs(); // Charger aussi les tarifs simples
         fetchBaseTarifs(); // Tarifs de base backoffice (fallback destinations)
         fetchBaseGroupageTarifs(); // Idem pour le groupage
+        fetchTarifsInterville(); // Trajets interville concernant la commune de l'agence
         fetchAgencyData();
         fetchDashboard(); // Nécessaire pour déduire le prochain numéro de code colis
             }, []);
@@ -203,6 +213,19 @@ const CreateExpeditionV2 = () => {
                 pays_destination: "France",
                 code_pays_destination: "FR",
                 destinataire_ville: "",
+                destinataire_commune_id: "",
+                expediteur_ville: "Abidjan"
+            }));
+        } else if (type === "INTERVILLE") {
+            // Trajet intra-pays : le pays de destination est toujours celui
+            // du départ (l'agence), seule la commune d'arrivée varie - voir
+            // le dropdown dédié dans le step "Trajet".
+            setFormData(prev => ({
+                ...prev,
+                pays_destination: prev.pays_depart,
+                code_pays_destination: prev.code_pays_depart,
+                destinataire_ville: "",
+                destinataire_commune_id: "",
                 expediteur_ville: "Abidjan"
             }));
         } else {
@@ -211,6 +234,7 @@ const CreateExpeditionV2 = () => {
                 pays_destination: "",
                 code_pays_destination: "",
                 destinataire_ville: "",
+                destinataire_commune_id: "",
                 expediteur_ville: "Abidjan"
             }));
         }
@@ -579,6 +603,30 @@ const CreateExpeditionV2 = () => {
         return Object.values(byCode).sort((a, b) => a.label.localeCompare(b.label));
     }, [existingGroupageTarifs, baseGroupageTarifs, formData.type_expedition]);
 
+    // Commune de départ = celle de l'agence connectée, jamais choisie
+    // (verrouillée, comme pays_depart) - dérivée directement des données
+    // agence, pas du formulaire.
+    const communeDepartId = agencyData?.agence?.commune_id || agencyData?.commune_id || null;
+
+    // Communes d'arrivée valides pour Interville = celles apparaissant, aux
+    // côtés de communeDepartId, dans un TarifInterville actif - dérivé de
+    // /agence/list-tarifs-interville (déjà filtré par le backend aux lignes
+    // concernant la commune de l'agence). Pas de saisie libre : seuls les
+    // trajets réellement configurés sont proposables.
+    const intervilleAvailableCommunes = useMemo(() => {
+        if (!communeDepartId) return [];
+        const tarifs = Array.isArray(intervilleTarifs) ? intervilleTarifs : [];
+        const byId = {};
+        tarifs.forEach((t) => {
+            if (t.commune_a_id === communeDepartId && t.commune_b) {
+                byId[t.commune_b.id] = { id: t.commune_b.id, label: t.commune_b.nom };
+            } else if (t.commune_b_id === communeDepartId && t.commune_a) {
+                byId[t.commune_a.id] = { id: t.commune_a.id, label: t.commune_a.nom };
+            }
+        });
+        return Object.values(byId).sort((a, b) => a.label.localeCompare(b.label));
+    }, [intervilleTarifs, communeDepartId]);
+
     // Filtrage des catégories en fonction du type d'expédition ET de la ligne sélectionnée
     const filteredCategories = useMemo(() => {
         if (!categories || !Array.isArray(categories)) return [];
@@ -770,10 +818,11 @@ const CreateExpeditionV2 = () => {
             return products.filter(p => p.category && p.category.nom === 'Colis Accompagnés');
         }
 
-        // Pour AFRIQUE et SIMPLE (LD), il n'y a pas de sélecteur de catégorie dans le
-        // formulaire : on force l'affichage de tous les articles pour ne jamais avoir une
-        // liste vide (un filtrage par category_id serait toujours vide car categoryId reste "")
-        if (formData.type_expedition === 'GROUPAGE_AFRIQUE' || formData.type_expedition === 'SIMPLE') {
+        // Pour AFRIQUE, SIMPLE (LD) et INTERVILLE, il n'y a pas de sélecteur de
+        // catégorie dans le formulaire : on force l'affichage de tous les
+        // articles pour ne jamais avoir une liste vide (un filtrage par
+        // category_id serait toujours vide car categoryId reste "")
+        if (formData.type_expedition === 'GROUPAGE_AFRIQUE' || formData.type_expedition === 'SIMPLE' || formData.type_expedition === 'INTERVILLE') {
             return products;
         }
 
@@ -788,6 +837,10 @@ const CreateExpeditionV2 = () => {
     const handleSimulate = async () => {
         if (!formData.pays_destination || !formData.destinataire_ville) {
             toast.info("Veuillez renseigner le pays et la ville de destination.");
+            return;
+        }
+        if (formData.type_expedition === 'INTERVILLE' && !formData.destinataire_commune_id) {
+            toast.info("Veuillez sélectionner la commune de destination.");
             return;
         }
 
@@ -812,6 +865,7 @@ const CreateExpeditionV2 = () => {
             is_livraison_domicile: formData.is_livraison_domicile,
             expediteur_ville: formData.expediteur_ville,
             destinataire_ville: formData.destinataire_ville,
+            destinataire_commune_id: formData.destinataire_commune_id || undefined,
             statut_paiement: formData.statut_paiement,
             colis: formData.colis.map((c, index) => {
                 const item = {
@@ -982,6 +1036,9 @@ const CreateExpeditionV2 = () => {
 
     // Validation des étapes
     const canProceedToStep2 = () => {
+        if (formData.type_expedition === 'INTERVILLE') {
+            return formData.pays_destination && formData.destinataire_ville && formData.destinataire_commune_id;
+        }
         return formData.type_expedition && formData.pays_destination && formData.destinataire_ville;
     };
 
@@ -989,6 +1046,7 @@ const CreateExpeditionV2 = () => {
     const missingStep1Fields = [
         !formData.pays_destination && "pays de destination",
         !formData.destinataire_ville && "ville de destination",
+        formData.type_expedition === 'INTERVILLE' && !formData.destinataire_commune_id && "commune de destination",
     ].filter(Boolean);
 
     const canProceedToStep3 = () => {
@@ -1171,13 +1229,14 @@ const CreateExpeditionV2 = () => {
                                         <label className="block text-xs font-semibold text-slate-600">
                                             Type d'expédition <span className="text-amber-600">*</span>
                                         </label>
-                                        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3">
+                                        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
                                             {[
                                                 { value: 'SIMPLE',                label: 'Livraison à domicile',           icon: '📦' },
                                                 { value: 'GROUPAGE_DHD_AERIEN',   label: 'DHD Aérien',   icon: '✈️' },
                                                 { value: 'GROUPAGE_DHD_MARITIME', label: 'DHD Maritime', icon: '🚢' },
                                                 { value: 'GROUPAGE_AFRIQUE',      label: 'Afrique',      icon: '🌍' },
                                                 { value: 'GROUPAGE_CA',           label: 'CA',           icon: '📮' },
+                                                { value: 'INTERVILLE',            label: 'Interville',   icon: '🏙️' },
                                             ].map(type => (
                                                 <button
                                                     key={type.value}
@@ -1234,6 +1293,33 @@ const CreateExpeditionV2 = () => {
                                                         </svg>
                                                         Non applicable pour l'Afrique — renseignez directement le pays de destination ci-dessous.
                                                     </div>
+                                                </div>
+                                            ) : formData.type_expedition === 'INTERVILLE' ? (
+                                                <div className="space-y-1.5">
+                                                    <label htmlFor="commune-arrivee-select" className="block text-xs font-semibold text-slate-600">
+                                                        Commune de destination <span className="text-amber-600">*</span>
+                                                    </label>
+                                                    <SearchableDropdown
+                                                        id="commune-arrivee-select"
+                                                        options={intervilleAvailableCommunes}
+                                                        onSelect={(commune) => {
+                                                            setFormData(prev => ({ ...prev, destinataire_commune_id: commune.id }));
+                                                        }}
+                                                        disabled={intervilleAvailableCommunes.length === 0}
+                                                        placeholder={formData.destinataire_commune_id
+                                                            ? intervilleAvailableCommunes.find(c => c.id === formData.destinataire_commune_id)?.label || "Rechercher une commune..."
+                                                            : "Rechercher une commune..."}
+                                                        className="w-full"
+                                                        buttonClassName="h-11 text-sm font-medium"
+                                                    />
+                                                    {intervilleAvailableCommunes.length === 0 && (
+                                                        <p className="text-[10px] text-amber-600 mt-1 flex items-center gap-1">
+                                                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                            </svg>
+                                                            Aucun trajet interville configuré depuis votre commune.
+                                                        </p>
+                                                    )}
                                                 </div>
                                             ) : (formData.type_expedition === 'GROUPAGE_DHD_AERIEN' || formData.type_expedition === 'GROUPAGE_DHD_MARITIME') ? (
                                                 <>
@@ -1302,8 +1388,10 @@ const CreateExpeditionV2 = () => {
                                     <div className="grid grid-cols-2 gap-3 p-4 bg-slate-50/80 rounded-lg border border-slate-200">
                                         {/* Pour DHD, le pays est déjà choisi juste au-dessus (dropdown
                                             pays-puis-trajet) : ce second champ générique serait redondant
-                                            et pourrait le contredire, donc masqué pour ce type. */}
-                                        {(formData.type_expedition === 'GROUPAGE_DHD_AERIEN' || formData.type_expedition === 'GROUPAGE_DHD_MARITIME') ? (
+                                            et pourrait le contredire, donc masqué pour ce type. Pour
+                                            Interville, le pays est toujours celui du départ (trajet
+                                            intra-pays, voir le useEffect de pays par défaut), jamais un choix. */}
+                                        {(formData.type_expedition === 'GROUPAGE_DHD_AERIEN' || formData.type_expedition === 'GROUPAGE_DHD_MARITIME' || formData.type_expedition === 'INTERVILLE') ? (
                                             <div className="space-y-1.5">
                                                 <label className="block text-xs font-semibold text-slate-600">Pays destination</label>
                                                 <div className="w-full h-11 px-3 flex items-center rounded-lg border border-slate-200 bg-slate-50 text-sm font-medium text-slate-600">
