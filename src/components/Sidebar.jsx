@@ -90,9 +90,9 @@ const Sidebar = ({ onClose }) => {
     {
       section: "Tarifs",
       items: [
-        { path: "/tarifs-simples",  name: "Simples",  icon: CurrencyDollarIcon },
-        { path: "/tarifs-groupage", name: "Groupage", icon: TableCellsIcon },
-        { path: "/tarifs-interville", name: "Interville", icon: TruckIcon },
+        { path: "/tarifs-simples",  name: "International (LD)",  icon: CurrencyDollarIcon },
+        { path: "/tarifs-groupage", name: "International (Groupage)", icon: TableCellsIcon },
+        { path: "/tarifs-interville", name: "Interville (National)", icon: TruckIcon },
       ],
     },
     {
@@ -137,9 +137,9 @@ const Sidebar = ({ onClose }) => {
     {
       section: "Tarifs",
       items: [
-        { path: "/tarifs-simples",  name: "Simples",  icon: CurrencyDollarIcon },
-        { path: "/tarifs-groupage", name: "Groupage", icon: TableCellsIcon },
-        { path: "/tarifs-interville", name: "Interville", icon: TruckIcon },
+        { path: "/tarifs-simples",  name: "International (LD)",  icon: CurrencyDollarIcon },
+        { path: "/tarifs-groupage", name: "International (Groupage)", icon: TableCellsIcon },
+        { path: "/tarifs-interville", name: "Interville (National)", icon: TruckIcon },
       ],
     },
     {

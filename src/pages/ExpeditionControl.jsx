@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { Package, Scissors, Calculator, Loader2, Plus, Trash2, ArrowLeft, Pencil, ChevronDown, ChevronUp } from 'lucide-react';
+import { Package, Scissors, Calculator, Loader2, Plus, Trash2, ArrowLeft, Pencil, ChevronDown, ChevronUp, MapPinned } from 'lucide-react';
 import Spinner from '../components/common/Spinner';
 import { Button, PageHeader } from '../components/ui';
+import SearchableDropdown from '../components/common/SearchableDropdown';
 import { useExpedition } from '../hooks/useExpedition';
 import { useAuth } from '../hooks/useAuth';
 import { useWebSocket } from '../hooks/useWebSocket';
 import useHasPermission from '../hooks/useHasPermission';
 import { toast } from '../utils/toast';
+import { expeditionsApi } from '../utils/api/expeditions';
+import { agencesApi } from '../utils/api/agences';
 import {
     updateColisControl,
     splitColisControl,
@@ -74,6 +77,13 @@ const ExpeditionControl = () => {
     const [colisCategories, setColisCategories] = useState({});
     const [isSavingExpedition, setIsSavingExpedition] = useState(false);
 
+    // Agence d'arrivée (Interville uniquement) : choisie par l'agence de
+    // départ parmi les agences actives de la commune de destination déjà
+    // choisie par le client - voir AgenceExpeditionController::choisirAgenceArrivee().
+    const [agencesArrivee, setAgencesArrivee] = useState([]);
+    const [isLoadingAgencesArrivee, setIsLoadingAgencesArrivee] = useState(false);
+    const [isSavingAgenceArrivee, setIsSavingAgenceArrivee] = useState(false);
+
     useEffect(() => {
         if (id) getExpeditionDetails(id);
     }, [id, getExpeditionDetails]);
@@ -115,6 +125,22 @@ const ExpeditionControl = () => {
     useEffect(() => {
         if (error) { toast.error(error); resetStatus(); }
     }, [error, resetStatus]);
+
+    // Charge les agences actives de la commune de destination, pour le
+    // sélecteur d'agence d'arrivée (Interville uniquement, expédition déjà
+    // reliée à une commune de destination choisie par le client).
+    const communeArriveeId = expedition?.destinataire?.commune_id;
+    useEffect(() => {
+        if (expedition?.type_expedition !== 'interville' || !communeArriveeId) {
+            setAgencesArrivee([]);
+            return;
+        }
+        setIsLoadingAgencesArrivee(true);
+        agencesApi.getAgencesByCommune(communeArriveeId).then((result) => {
+            if (result.success) setAgencesArrivee(result.data);
+            else toast.error(result.message);
+        }).finally(() => setIsLoadingAgencesArrivee(false));
+    }, [expedition?.type_expedition, communeArriveeId]);
 
     if (!expedition) {
         return (
@@ -306,6 +332,21 @@ const ExpeditionControl = () => {
         }
     };
 
+    const saveAgenceArrivee = async (agenceId) => {
+        setIsSavingAgenceArrivee(true);
+        try {
+            const result = await expeditionsApi.choisirAgenceArrivee(expedition.id, agenceId);
+            if (result.success) {
+                toast.success(result.message);
+                getExpeditionDetails(id);
+            } else {
+                toast.error(result.message);
+            }
+        } finally {
+            setIsSavingAgenceArrivee(false);
+        }
+    };
+
     const handleRecalculate = async () => {
         setIsRecalculating(true);
         try {
@@ -338,6 +379,43 @@ const ExpeditionControl = () => {
                 {!canControl && (
                     <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800">
                         Vous n'avez pas la permission de contrôler les expéditions. Contactez l'administrateur de votre agence.
+                    </div>
+                )}
+
+                {/* Agence d'arrivée (Interville uniquement) : choisie par l'agence
+                    de départ parmi les agences actives de la commune de destination
+                    déjà choisie par le client. Le départ de l'expédition est bloqué
+                    tant qu'elle n'est pas renseignée. */}
+                {canControl && expedition.type_expedition === 'interville' && (
+                    <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 space-y-3">
+                        <div className="flex items-center gap-2">
+                            <MapPinned className="w-4 h-4 text-indigo-600" />
+                            <span className="text-sm font-bold text-slate-800">Agence d'arrivée</span>
+                        </div>
+                        <p className="text-xs text-slate-500">
+                            Choisissez l'agence qui réceptionnera ce colis dans la commune de destination.
+                            Le départ de l'expédition ne pourra pas être confirmé tant qu'elle n'est pas renseignée.
+                        </p>
+                        {isLoadingAgencesArrivee ? (
+                            <div className="flex items-center gap-2 text-sm text-slate-500">
+                                <Loader2 className="w-4 h-4 animate-spin" /> Chargement des agences...
+                            </div>
+                        ) : agencesArrivee.length === 0 ? (
+                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
+                                Aucune agence active n'est disponible dans la commune de destination. Contactez le backoffice.
+                            </div>
+                        ) : (
+                            <SearchableDropdown
+                                options={agencesArrivee.map((a) => ({ id: a.id, label: `${a.nom_agence} (${a.ville})` }))}
+                                onSelect={(option) => saveAgenceArrivee(option.id)}
+                                placeholder={
+                                    expedition.agence_arrivee
+                                        ? `${expedition.agence_arrivee.nom_agence} (${expedition.agence_arrivee.ville})`
+                                        : "Sélectionner une agence..."
+                                }
+                                disabled={isSavingAgenceArrivee}
+                            />
+                        )}
                     </div>
                 )}
 

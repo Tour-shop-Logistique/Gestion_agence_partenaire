@@ -40,7 +40,7 @@ const TarifsInterville = () => {
         <div className="space-y-4 sm:space-y-8 px-3 sm:px-6 animate-in fade-in duration-700">
             <div className="border-b border-slate-200 pb-4 sm:pb-6">
                 <PageHeader
-                    title="Tarifs Interville"
+                    title="Tarifs Interville (National)"
                     subtitle="Tarifs de transport entre communes concernant votre agence"
                 />
             </div>

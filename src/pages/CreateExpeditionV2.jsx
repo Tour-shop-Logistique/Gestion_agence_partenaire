@@ -1236,7 +1236,7 @@ const CreateExpeditionV2 = () => {
                                                 { value: 'GROUPAGE_DHD_MARITIME', label: 'DHD Maritime', icon: '🚢' },
                                                 { value: 'GROUPAGE_AFRIQUE',      label: 'Afrique',      icon: '🌍' },
                                                 { value: 'GROUPAGE_CA',           label: 'CA',           icon: '📮' },
-                                                { value: 'INTERVILLE',            label: 'Interville',   icon: '🏙️' },
+                                                { value: 'INTERVILLE',            label: 'Interville (National)',   icon: '🏙️' },
                                             ].map(type => (
                                                 <button
                                                     key={type.value}

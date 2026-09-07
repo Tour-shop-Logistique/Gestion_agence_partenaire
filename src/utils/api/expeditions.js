@@ -589,5 +589,32 @@ export const expeditionsApi = {
                 errors: error.errors || error.response?.data?.errors,
             };
         }
+    },
+
+    /**
+     * Choix de l'agence d'arrivée pour une expédition Interville (par
+     * l'agence de départ, au contrôle, parmi les agences actives de la
+     * commune de destination déjà choisie par le client).
+     * @param {string} expeditionId
+     * @param {string} agenceArriveeId
+     * @returns {Promise<Object>}
+     */
+    async choisirAgenceArrivee(expeditionId, agenceArriveeId) {
+        try {
+            const url = API_ENDPOINTS.EXPEDITIONS.CHOISIR_AGENCE_ARRIVEE.replace(':id', expeditionId);
+            const response = await apiService.post(url, { agence_arrivee_id: agenceArriveeId });
+
+            return {
+                success: response.success !== false,
+                data: response.expedition || response.data || response,
+                message: response.message || "Agence d'arrivée renseignée",
+            };
+        } catch (error) {
+            return {
+                success: false,
+                message: error.message || "Erreur lors du choix de l'agence d'arrivée",
+                errors: error.errors || error.response?.data?.errors,
+            };
+        }
     }
 };

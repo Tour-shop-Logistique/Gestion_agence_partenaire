@@ -36,6 +36,11 @@ export const API_ENDPOINTS = {
     UPDATE: "/agence/update",
     // LOGO: "/agence/upload-logo",
 
+    // Liste d'agences actives dans une commune (choix de l'agence
+    // d'arrivée pour une expédition Interville) - query params commune_id
+    // et actif ajoutés par le caller.
+    LIST: "/agence/list",
+
     LIST_USERS: "/agence/list-users",
     CREATE_USER: "/agence/create-user",
     EDIT_USER: "/agence/edit-user/:user",
@@ -120,6 +125,9 @@ export const API_ENDPOINTS = {
     SPLIT_COLIS: "/expedition/agence/:expeditionId/colis/:colisId/split",
     RECALCULATE_TARIF: "/expedition/agence/:expeditionId/recalculer-tarif",
     UPDATE_EXPEDITION_CONTROL: "/expedition/agence/:id/controle",
+    // Choix de l'agence d'arrivée (Interville uniquement), par l'agence de
+    // départ au contrôle - voir AgenceExpeditionController::choisirAgenceArrivee.
+    CHOISIR_AGENCE_ARRIVEE: "/expedition/agence/:id/choisir-agence-arrivee",
   },
 
   // Produits
