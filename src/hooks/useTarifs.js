@@ -72,7 +72,7 @@ export const useTarifs = () => {
   // === TARIFS GROUPAGE ===
   const fetchAllTarifsGroupageBase = useCallback(async (forceRefresh = false) => {
     try {
-      return await dispatch(fetchTarifsGroupage()).unwrap();
+      return await dispatch(fetchTarifsGroupage(forceRefresh)).unwrap();
     } catch (error) {
       console.error("Erreur lors du chargement des tarifs groupage:", error);
       return { success: false, error };
@@ -81,7 +81,7 @@ export const useTarifs = () => {
 
   const fetchAgencyTarifsGroupage = useCallback(async (forceRefresh = false) => {
     try {
-      return await dispatch(fetchTarifGroupageAgence()).unwrap();
+      return await dispatch(fetchTarifGroupageAgence(forceRefresh)).unwrap();
     } catch (error) {
       console.error("Erreur lors du chargement des tarifs groupage agence:", error);
       return { success: false, error };

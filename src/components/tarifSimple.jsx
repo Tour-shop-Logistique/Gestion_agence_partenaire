@@ -614,9 +614,11 @@ const TarifSimpleComponent = () => {
                     <th className="px-6 py-4 text-[10px] font-semibold text-indigo-600 uppercase tracking-wide border-r border-slate-200 bg-indigo-50/30">
                       Total Expédition
                     </th>
-                    <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-r border-slate-100/50 text-center">
-                      Statut
-                    </th>
+                    {activeTab === "agency" && (
+                      <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-r border-slate-100/50 text-center">
+                        Statut
+                      </th>
+                    )}
                     <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide text-right">
                       Actions
                     </th>
@@ -655,13 +657,15 @@ const TarifSimpleComponent = () => {
                           {formatPrice(tarif.montant_expedition, "XOF")}
                         </span>
                       </td>
-                      <td className="px-6 py-4 border-r border-slate-100/30 text-center">
-                        <StatusToggle
-                          active={tarif.actif}
-                          onClick={() => !isAgent && activeTab === "agency" && handleStatus(tarif)}
-                          disabled={activeTab === "base" || isAgent}
-                        />
-                      </td>
+                      {activeTab === "agency" && (
+                        <td className="px-6 py-4 border-r border-slate-100/30 text-center">
+                          <StatusToggle
+                            active={tarif.actif}
+                            onClick={() => !isAgent && handleStatus(tarif)}
+                            disabled={isAgent}
+                          />
+                        </td>
+                      )}
 
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
@@ -714,11 +718,13 @@ const TarifSimpleComponent = () => {
                       <div>
                         <div className="flex items-center gap-2 mb-0.5">
                           <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide leading-none">Indice</span>
-                          <StatusToggle
-                            active={tarif.actif}
-                            onClick={() => !isAgent && activeTab === "agency" && handleStatus(tarif)}
-                            disabled={activeTab === "base" || isAgent}
-                          />
+                          {activeTab === "agency" && (
+                            <StatusToggle
+                              active={tarif.actif}
+                              onClick={() => !isAgent && handleStatus(tarif)}
+                              disabled={isAgent}
+                            />
+                          )}
                         </div>
 
                         <p className="text-[13px] font-bold text-slate-900">{tarif.zone?.nom || tarif.nom_zone}</p>

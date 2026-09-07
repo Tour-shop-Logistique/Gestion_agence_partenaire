@@ -78,7 +78,6 @@ const TarifsInterville = () => {
                                 <table className="w-full text-sm">
                                     <thead className="bg-slate-50/50 border-b border-slate-200">
                                         <tr>
-                                            <th className="px-6 py-3 text-left font-bold text-slate-500 uppercase tracking-wider text-xs">Indice</th>
                                             <th className="px-6 py-3 text-left font-bold text-slate-500 uppercase tracking-wider text-xs">Trajet</th>
                                             <th className="px-6 py-3 text-left font-bold text-slate-500 uppercase tracking-wider text-xs">Montant Base</th>
                                             <th className="px-6 py-3 text-left font-bold text-slate-500 uppercase tracking-wider text-xs">Commission si départ</th>
@@ -88,11 +87,6 @@ const TarifsInterville = () => {
                                     <tbody className="divide-y divide-slate-200">
                                         {intervilleTarifs.map((tarif) => (
                                             <tr key={tarif.id} className="hover:bg-slate-50/50 transition-colors">
-                                                <td className="px-6 py-3">
-                                                    <div className="inline-flex items-center justify-center px-2.5 py-1 rounded bg-blue-100 text-slate-700 font-bold text-xs border border-slate-200">
-                                                        {tarif.indice}
-                                                    </div>
-                                                </td>
                                                 <td className="px-6 py-3">
                                                     <div className="flex items-center gap-1.5 text-slate-900 font-semibold">
                                                         <span>{tarif.commune_a?.nom || '?'}</span>
@@ -130,9 +124,6 @@ const TarifsInterville = () => {
                                 {intervilleTarifs.map((tarif) => (
                                     <div key={tarif.id} className="p-3 space-y-2">
                                         <div className="flex items-center gap-2">
-                                            <div className="px-2 py-1 rounded bg-blue-100 text-slate-700 font-bold text-xs border border-slate-200">
-                                                {tarif.indice}
-                                            </div>
                                             <p className="font-semibold text-slate-900 text-sm flex items-center gap-1 truncate">
                                                 {tarif.commune_a?.nom} <ArrowLeftRight size={10} className="text-slate-400 shrink-0" /> {tarif.commune_b?.nom}
                                             </p>

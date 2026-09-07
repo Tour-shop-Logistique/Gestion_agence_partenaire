@@ -222,10 +222,10 @@ export const createTarifGroupage = createAsyncThunk(
   'tarifs/createTarifGroupage',
   async (tarifData, { rejectWithValue }) => {
     try {
-      console.log(tarifData, "🛜🛜")
       const response = await tarifsApi.createTarifGroupage(tarifData);
-      console.log('reponse create Groupage agence ', response);
-      if (response.success) return response.data.tarifs || [];
+      // Le backend renvoie { success, message, tarif } (un seul objet créé,
+      // pas la liste complète) - voir AgenceTarifGroupageController::add().
+      if (response.success) return response.data.tarif;
       return rejectWithValue(response.message);
     } catch (e) {
       return rejectWithValue(e.message);
@@ -239,8 +239,10 @@ export const updateTarifGroupage = createAsyncThunk(
     try {
       const response = await tarifsApi.updateTarifGroupage(id, data);
 
+      // Le backend renvoie { success, message, tarif } - voir
+      // AgenceTarifGroupageController::edit().
       if (response.success) {
-        return response.data;
+        return response.data.tarif;
       }
 
       return rejectWithValue(response.message);
@@ -783,9 +785,10 @@ const tarifsSlice = createSlice({
       .addCase(createTarifGroupage.fulfilled, (state, action) => {
         state.isSaving = false;
         state.message = 'Tarif groupage ajouté avec succès';
-        // L'API renvoie souvent la liste complète ou l'objet créé
-        if (Array.isArray(action.payload)) {
-          state.existingGroupageTarifs = action.payload;
+        // Le backend renvoie l'objet créé seul (pas la liste complète) -
+        // on l'ajoute nous-mêmes à la liste locale plutôt que de la remplacer.
+        if (action.payload && action.payload.id) {
+          state.existingGroupageTarifs = [action.payload, ...state.existingGroupageTarifs];
         }
         saveTarifsToCache({ existingGroupageTarifs: state.existingGroupageTarifs });
       })

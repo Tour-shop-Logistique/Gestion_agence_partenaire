@@ -648,14 +648,24 @@ const CreateExpeditionV2 = () => {
         }
 
         // === À partir d'ici, uniquement pour DHD (AERIEN et MARITIME) ===
-        
-        // Pour les autres types, filtrer par les category_id présents dans les tarifs groupage
-        if (!existingGroupageTarifs || !Array.isArray(existingGroupageTarifs)) {
+
+        // Filtrer par les category_id présents dans les tarifs groupage -
+        // tarifs agence ET tarifs backoffice combinés (même source que
+        // availableRoutes ci-dessus) : un trajet peut n'avoir aucun tarif
+        // personnalisé par l'agence sur cette ligne précise (uniquement des
+        // tarifs de base du backoffice), auquel cas ne regarder que
+        // existingGroupageTarifs le laissait passer à tort comme "aucun
+        // tarif" et affichait toutes les catégories sans filtrage.
+        const agenceTarifsCat = Array.isArray(existingGroupageTarifs) ? existingGroupageTarifs : [];
+        const backofficeTarifsCat = Array.isArray(baseGroupageTarifs) ? baseGroupageTarifs : [];
+        const allGroupageTarifs = [...agenceTarifsCat, ...backofficeTarifsCat];
+
+        if (allGroupageTarifs.length === 0) {
             return categories;
         }
-        
+
         // Récupérer tous les tarifs correspondant au type sélectionné
-        let filteredTarifs = existingGroupageTarifs
+        let filteredTarifs = allGroupageTarifs
             .filter(tarif => tarif.type_expedition === currentType);
         
         // Si une ligne est sélectionnée, filtrer aussi par la ligne
@@ -687,9 +697,9 @@ const CreateExpeditionV2 = () => {
         
         // Filtrer les catégories pour ne garder que celles qui ont un tarif pour ce type/ligne
         const result = categories.filter(cat => uniqueCategoryIds.includes(cat.id));
-        
+
         return result;
-    }, [categories, existingGroupageTarifs, formData.type_expedition, selectedRoute]);
+    }, [categories, existingGroupageTarifs, baseGroupageTarifs, formData.type_expedition, selectedRoute]);
 
     // Sélection automatique des infos depuis un trajet configuré
     const handleRouteSelect = (routeId) => {
@@ -1229,14 +1239,15 @@ const CreateExpeditionV2 = () => {
                                         <label className="block text-xs font-semibold text-slate-600">
                                             Type d'expédition <span className="text-amber-600">*</span>
                                         </label>
-                                        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
+                                        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3">
                                             {[
                                                 { value: 'SIMPLE',                label: 'Livraison à domicile',           icon: '📦' },
                                                 { value: 'GROUPAGE_DHD_AERIEN',   label: 'DHD Aérien',   icon: '✈️' },
                                                 { value: 'GROUPAGE_DHD_MARITIME', label: 'DHD Maritime', icon: '🚢' },
                                                 { value: 'GROUPAGE_AFRIQUE',      label: 'Afrique',      icon: '🌍' },
                                                 { value: 'GROUPAGE_CA',           label: 'CA',           icon: '📮' },
-                                                { value: 'INTERVILLE',            label: 'Interville (National)',   icon: '🏙️' },
+                                                // Interville masqué pour l'instant (chantier pas encore
+                                                // prêt côté produit) - voir { value: 'INTERVILLE', label: 'Interville (National)', icon: '🏙️' }.
                                             ].map(type => (
                                                 <button
                                                     key={type.value}
@@ -1394,7 +1405,7 @@ const CreateExpeditionV2 = () => {
                                         {(formData.type_expedition === 'GROUPAGE_DHD_AERIEN' || formData.type_expedition === 'GROUPAGE_DHD_MARITIME' || formData.type_expedition === 'INTERVILLE') ? (
                                             <div className="space-y-1.5">
                                                 <label className="block text-xs font-semibold text-slate-600">Pays destination</label>
-                                                <div className="w-full h-11 px-3 flex items-center rounded-lg border border-slate-200 bg-slate-50 text-sm font-medium text-slate-600">
+                                                <div className="w-full h-11 px-3 flex items-center rounded-lg border border-slate-200 bg-slate-50 text-sm font-medium text-slate-600 uppercase">
                                                     {formData.pays_destination || "—"}
                                                 </div>
                                             </div>
@@ -1499,19 +1510,32 @@ const CreateExpeditionV2 = () => {
                                             <label htmlFor="destinataire_ville" className="block text-xs font-semibold text-slate-600">
                                                 Ville destination <span className="text-amber-600">*</span>
                                             </label>
-                                            <input
-                                                id="destinataire_ville"
-                                                type="text" name="destinataire_ville"
-                                                value={formData.destinataire_ville} onChange={handleInputChange}
-                                                placeholder="Paris…"
-                                                className={inputCls(formData.destinataire_ville, true)}
-                                            />
+                                            {(formData.type_expedition === 'GROUPAGE_DHD_AERIEN' || formData.type_expedition === 'GROUPAGE_DHD_MARITIME') ? (
+                                                // La ville de destination provient du trajet DHD sélectionné
+                                                // ci-dessus (voir handleRouteSelect) : lecture seule pour ne
+                                                // pas contredire le trajet réellement tarifé.
+                                                <div
+                                                    id="destinataire_ville"
+                                                    className="w-full h-11 px-3 flex items-center rounded-lg border border-slate-200 bg-slate-50 text-sm font-medium text-slate-600 cursor-not-allowed"
+                                                    title="La ville de destination correspond au trajet sélectionné et ne peut pas être modifiée"
+                                                >
+                                                    {formData.destinataire_ville || "—"}
+                                                </div>
+                                            ) : (
+                                                <input
+                                                    id="destinataire_ville"
+                                                    type="text" name="destinataire_ville"
+                                                    value={formData.destinataire_ville} onChange={handleInputChange}
+                                                    placeholder="Paris…"
+                                                    className={inputCls(formData.destinataire_ville, true)}
+                                                />
+                                            )}
                                         </div>
                                         <div className="space-y-1.5">
                                             <label htmlFor="pays_depart" className="block text-xs font-semibold text-slate-600">Pays départ</label>
                                             <div
                                                 id="pays_depart"
-                                                className="w-full h-11 px-3 flex items-center rounded-lg border border-slate-200 bg-slate-50 text-sm font-medium text-slate-600 cursor-not-allowed"
+                                                className="w-full h-11 px-3 flex items-center rounded-lg border border-slate-200 bg-slate-50 text-sm font-medium text-slate-600 uppercase cursor-not-allowed"
                                                 title="Le pays de départ correspond au pays de votre agence et ne peut pas être modifié"
                                             >
                                                 {formData.pays_depart || "—"}

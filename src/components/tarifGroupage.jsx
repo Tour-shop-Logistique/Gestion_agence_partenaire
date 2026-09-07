@@ -353,18 +353,16 @@ const TarifGroupageComponent = () => {
                     <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-r border-slate-100/50">
                       Montant de Base
                     </th>
+                    <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-r border-slate-100/50">
+                      Frais Prestation
+                    </th>
+                    <th className="px-6 py-4 text-[10px] font-semibold text-indigo-600 uppercase tracking-wide border-r border-slate-200 bg-indigo-50/30">
+                      Total Expédition
+                    </th>
                     {activeTab === "agency" && (
-                      <>
-                        <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-r border-slate-100/50">
-                          Frais Prestation
-                        </th>
-                        <th className="px-6 py-4 text-[10px] font-semibold text-indigo-600 uppercase tracking-wide border-r border-slate-200 bg-indigo-50/30">
-                          Total Expédition
-                        </th>
-                        <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-r border-slate-100/50 text-center">
-                          Statut
-                        </th>
-                      </>
+                      <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-r border-slate-100/50 text-center">
+                        Statut
+                      </th>
                     )}
                     <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide text-right">
                       Actions
@@ -393,35 +391,41 @@ const TarifGroupageComponent = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4 border-r border-slate-100/30">
-                          <div className="flex flex-col">
-                            <span className="text-[13px] font-bold text-slate-900">{tarif.category?.nom || 'N/A'}</span>
-                            <span className="text-[9px] font-medium text-slate-400">{getCountryName(tarif.code_pays) || tarif.pays || 'N/A'}</span>
-                          </div>
+                          {tarif.category?.nom ? (
+                            // DHD / CA : la catégorie prime, le pays est
+                            // secondaire.
+                            <div className="flex flex-col">
+                              <span className="text-[13px] font-bold text-slate-900">{tarif.category.nom}</span>
+                              <span className="text-xs font-semibold text-slate-500 uppercase">{getCountryName(tarif.code_pays) || tarif.pays || 'N/A'}</span>
+                            </div>
+                          ) : (
+                            // Afrique (et autres types sans catégorie) : pas
+                            // de "N/A" en avant, le pays est l'info utile.
+                            <span className="text-[13px] font-bold text-slate-900 uppercase">{getCountryName(tarif.code_pays) || tarif.pays || 'N/A'}</span>
+                          )}
                         </td>
                         <td className="px-6 py-4 border-r border-slate-100/30 font-medium text-sm text-slate-600">
                           {montantBase.toLocaleString()} FCFA
                         </td>
+                        <td className="px-6 py-4 border-r border-slate-100/30">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-indigo-600">+{pourcentage}%</span>
+                            <span className="text-[10px] text-slate-400 font-medium">{montantPrestation.toLocaleString()} FCFA</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 border-r border-slate-200 bg-indigo-50/10 group-hover:bg-indigo-50/40 transition-colors">
+                          <span className="text-sm font-bold text-slate-950">
+                            {total.toLocaleString()} FCFA
+                          </span>
+                        </td>
                         {activeTab === "agency" && (
-                          <>
-                            <td className="px-6 py-4 border-r border-slate-100/30">
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs font-bold text-indigo-600">+{pourcentage}%</span>
-                                <span className="text-[10px] text-slate-400 font-medium">{montantPrestation.toLocaleString()} FCFA</span>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 border-r border-slate-200 bg-indigo-50/10 group-hover:bg-indigo-50/40 transition-colors">
-                              <span className="text-sm font-bold text-slate-950">
-                                {total.toLocaleString()} FCFA
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 border-r border-slate-100/30 text-center">
-                              <StatusToggle
-                                active={tarif.actif}
-                                onClick={() => !isAgent && handleToggleStatus(tarif)}
-                                disabled={isAgent}
-                              />
-                            </td>
-                          </>
+                          <td className="px-6 py-4 border-r border-slate-100/30 text-center">
+                            <StatusToggle
+                              active={tarif.actif}
+                              onClick={() => !isAgent && handleToggleStatus(tarif)}
+                              disabled={isAgent}
+                            />
+                          </td>
                         )}
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
@@ -477,8 +481,14 @@ const TarifGroupageComponent = () => {
                           <span className={`inline-flex w-fit items-center px-2 py-1 rounded text-[10px] font-bold uppercase tracking-tight ${typeBadgeClasses(tarif.type_expedition)}`}>
                             {tarif.type_expedition?.replace('groupage_', '').replace('_', ' ').toUpperCase() || 'N/A'}
                           </span>
-                          <p className="text-[13px] font-bold text-slate-900">{tarif.category?.nom || 'N/A'}</p>
-                          <span className="text-[9px] font-medium text-slate-400">{getCountryName(tarif.code_pays) || tarif.pays || 'N/A'}</span>
+                          {tarif.category?.nom ? (
+                            <>
+                              <p className="text-[13px] font-bold text-slate-900">{tarif.category.nom}</p>
+                              <span className="text-xs font-semibold text-slate-500 uppercase">{getCountryName(tarif.code_pays) || tarif.pays || 'N/A'}</span>
+                            </>
+                          ) : (
+                            <p className="text-[13px] font-bold text-slate-900 uppercase">{getCountryName(tarif.code_pays) || tarif.pays || 'N/A'}</p>
+                          )}
                           {tarif.mode && (
                             <span className="text-[11px] font-medium text-slate-500">
                               {tarif.mode?.toUpperCase()} {tarif.ligne ? `→ ${tarif.ligne.toUpperCase()}` : ''}
@@ -516,25 +526,23 @@ const TarifGroupageComponent = () => {
                         <p className="text-[9px] font-bold uppercase tracking-wider mb-1 text-slate-400">Base</p>
                         <p className="text-xs font-bold text-slate-900">{montantBase.toLocaleString()} FCFA</p>
                       </div>
+                      <div className="p-3 rounded-xl border bg-indigo-50/50 border-indigo-100">
+                        <p className="text-[9px] font-bold uppercase tracking-wider mb-1 text-indigo-400">Prestation</p>
+                        <p className="text-xs font-bold text-indigo-700">+{pourcentage}%</p>
+                      </div>
+                      <div className="col-span-2 p-3 rounded-xl flex items-center justify-between shadow-sm bg-indigo-600">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-indigo-100">Total Expédition</p>
+                        <p className="text-base font-bold text-white">{total.toLocaleString()} FCFA</p>
+                      </div>
                       {activeTab === "agency" && (
-                        <>
-                          <div className="p-3 rounded-xl border bg-indigo-50/50 border-indigo-100">
-                            <p className="text-[9px] font-bold uppercase tracking-wider mb-1 text-indigo-400">Prestation</p>
-                            <p className="text-xs font-bold text-indigo-700">+{pourcentage}%</p>
-                          </div>
-                          <div className="col-span-2 p-3 rounded-xl flex items-center justify-between shadow-sm bg-indigo-600">
-                            <p className="text-[10px] font-semibold uppercase tracking-wide text-indigo-100">Total Expédition</p>
-                            <p className="text-base font-bold text-white">{total.toLocaleString()} FCFA</p>
-                          </div>
-                          <div className="col-span-2 flex items-center justify-between pt-1">
-                            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Statut</span>
-                            <StatusToggle
-                              active={tarif.actif}
-                              onClick={() => !isAgent && handleToggleStatus(tarif)}
-                              disabled={isAgent}
-                            />
-                          </div>
-                        </>
+                        <div className="col-span-2 flex items-center justify-between pt-1">
+                          <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Statut</span>
+                          <StatusToggle
+                            active={tarif.actif}
+                            onClick={() => !isAgent && handleToggleStatus(tarif)}
+                            disabled={isAgent}
+                          />
+                        </div>
                       )}
                     </div>
                   </div>
