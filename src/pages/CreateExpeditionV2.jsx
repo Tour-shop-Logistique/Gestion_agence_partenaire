@@ -143,6 +143,9 @@ const CreateExpeditionV2 = () => {
             {
                 designation: "",
                 category_id: "",
+                // Format Petit/Moyen/Grand - concerne uniquement interville
+                // (voir sélecteur conditionnel dans le bloc dimensions).
+                format_colis: "MOYEN",
                 poids: "",
                 longueur: "",
                 largeur: "",
@@ -797,7 +800,7 @@ const CreateExpeditionV2 = () => {
     const addColis = () => {
         setFormData(prev => ({
             ...prev,
-            colis: [...prev.colis, { designation: "", category_id: "", poids: "", longueur: "", largeur: "", hauteur: "", prix_emballage: 0, prix_estimation: 0, articles: [] }]
+            colis: [...prev.colis, { designation: "", category_id: "", format_colis: "MOYEN", poids: "", longueur: "", largeur: "", hauteur: "", prix_emballage: 0, prix_estimation: 0, articles: [] }]
         }));
     };
 
@@ -888,6 +891,12 @@ const CreateExpeditionV2 = () => {
                     prix_estimation: parseFloat(c.prix_estimation) || 0,
                 };
 
+                // Format Petit/Moyen/Grand : concerne uniquement interville,
+                // le tarif de ce trajet dépend du format choisi par colis.
+                if (formData.type_expedition === 'INTERVILLE') {
+                    item.format_colis = (c.format_colis || 'MOYEN').toLowerCase();
+                }
+
                 // N'envoyer articles que s'il y en a, sous forme d'objets {designation}
                 if (c.articles && c.articles.length > 0) {
                     item.articles = c.articles.map(a =>
@@ -924,6 +933,12 @@ const CreateExpeditionV2 = () => {
                     prix_emballage: parseFloat(c.prix_emballage) || 0,
                     prix_estimation: parseFloat(c.prix_estimation) || 0,
                 };
+
+                // Format Petit/Moyen/Grand : concerne uniquement interville,
+                // le tarif de ce trajet dépend du format choisi par colis.
+                if (formData.type_expedition === 'INTERVILLE') {
+                    item.format_colis = (c.format_colis || 'MOYEN').toLowerCase();
+                }
 
                 // N'envoyer articles que s'il y en a, sous forme d'objets {designation}
                 if (c.articles && c.articles.length > 0) {
@@ -1666,6 +1681,36 @@ const CreateExpeditionV2 = () => {
                                                             </div>
                                                         )}
                                                     </div>
+
+                                                    {/* Format du colis - Uniquement pour Interville (tarif dépendant du format) */}
+                                                    {formData.type_expedition === 'INTERVILLE' && (
+                                                        <div className="space-y-1.5">
+                                                            <label className="block text-xs font-semibold text-slate-600">
+                                                                Format du colis <span className="text-amber-600">*</span>
+                                                            </label>
+                                                            <div className="grid grid-cols-3 gap-2">
+                                                                {[
+                                                                    { value: 'PETIT', label: 'Petit' },
+                                                                    { value: 'MOYEN', label: 'Moyen' },
+                                                                    { value: 'GRAND', label: 'Grand' },
+                                                                ].map((format) => (
+                                                                    <button
+                                                                        key={format.value}
+                                                                        type="button"
+                                                                        onClick={() => handleColisChange(index, 'format_colis', format.value)}
+                                                                        aria-pressed={colis.format_colis === format.value}
+                                                                        className={`p-2.5 rounded-lg border-2 text-xs font-semibold transition-all ${
+                                                                            colis.format_colis === format.value
+                                                                                ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                                                                                : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                                                                        }`}
+                                                                    >
+                                                                        {format.label}
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
 
                                                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3">
                                                         <div className="space-y-1.5">

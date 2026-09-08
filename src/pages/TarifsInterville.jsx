@@ -8,6 +8,18 @@ import PageHeader from "../components/ui/PageHeader";
 
 const formatCFA = (amount) => new Intl.NumberFormat('fr-FR').format(amount || 0) + ' CFA';
 
+const FORMAT_BADGE_CLASSES = {
+    petit: 'bg-sky-50 text-sky-700 border-sky-100',
+    moyen: 'bg-violet-50 text-violet-700 border-violet-100',
+    grand: 'bg-amber-50 text-amber-700 border-amber-100',
+};
+
+const FormatBadge = ({ format }) => (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded border font-semibold text-xs capitalize ${FORMAT_BADGE_CLASSES[format] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+        {format || '—'}
+    </span>
+);
+
 /**
  * Consultation en lecture seule des tarifs interville concernant l'agence
  * (où sa commune apparaît comme point de départ ou d'arrivée). Aucune
@@ -79,6 +91,7 @@ const TarifsInterville = () => {
                                     <thead className="bg-slate-50/50 border-b border-slate-200">
                                         <tr>
                                             <th className="px-6 py-3 text-left font-bold text-slate-500 uppercase tracking-wider text-xs">Trajet</th>
+                                            <th className="px-6 py-3 text-left font-bold text-slate-500 uppercase tracking-wider text-xs">Format</th>
                                             <th className="px-6 py-3 text-left font-bold text-slate-500 uppercase tracking-wider text-xs">Montant Base</th>
                                             <th className="px-6 py-3 text-left font-bold text-slate-500 uppercase tracking-wider text-xs">Commission si départ</th>
                                             <th className="px-6 py-3 text-left font-bold text-slate-500 uppercase tracking-wider text-xs">Commission si arrivée</th>
@@ -93,6 +106,9 @@ const TarifsInterville = () => {
                                                         <ArrowLeftRight size={12} className="text-slate-400 shrink-0" />
                                                         <span>{tarif.commune_b?.nom || '?'}</span>
                                                     </div>
+                                                </td>
+                                                <td className="px-6 py-3">
+                                                    <FormatBadge format={tarif.format_colis} />
                                                 </td>
                                                 <td className="px-6 py-3">
                                                     <p className="font-medium text-slate-700">{formatCFA(tarif.montant_base)}</p>
@@ -128,7 +144,10 @@ const TarifsInterville = () => {
                                                 {tarif.commune_a?.nom} <ArrowLeftRight size={10} className="text-slate-400 shrink-0" /> {tarif.commune_b?.nom}
                                             </p>
                                         </div>
-                                        <p className="text-xs text-slate-500 font-bold uppercase">{formatCFA(tarif.montant_base)}</p>
+                                        <div className="flex items-center gap-2">
+                                            <FormatBadge format={tarif.format_colis} />
+                                            <p className="text-xs text-slate-500 font-bold uppercase">{formatCFA(tarif.montant_base)}</p>
+                                        </div>
                                         <div className="grid grid-cols-2 gap-2">
                                             <div className="bg-slate-50 rounded-lg p-2 flex flex-col items-center justify-center border border-slate-100">
                                                 <span className="text-[10px] text-slate-500 font-bold">Si départ</span>
