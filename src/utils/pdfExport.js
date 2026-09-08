@@ -4,6 +4,156 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale/fr';
 
 /**
+ * Export générique d'un tableau de configuration en PDF (miroir du
+ * backoffice-app : src/utils/pdfHelper.js, exportTableToPDF). Pas de
+ * "cartes résumé" comme les exports colis ci-dessous : ici c'est un export
+ * brut de configuration (agents, rôles, tarifs affichés), pas un rapport -
+ * filet de sécurité pour reconstituer manuellement la donnée en cas
+ * d'incident, indépendamment des sauvegardes serveur.
+ *
+ * `columns` : tableau de { header, key }. `rows` : objets déjà aplatis.
+ */
+export const exportTableToPDF = (columns, rows, options = {}) => {
+  const { title = 'Export', subtitle = '', filename = 'export' } = options;
+
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  const primaryColor = [79, 70, 229]; // Indigo-600
+
+  doc.setFillColor(...primaryColor);
+  doc.rect(0, 0, doc.internal.pageSize.width, 28, 'F');
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(16);
+  doc.setFont(undefined, 'bold');
+  doc.text(title, 14, 13);
+
+  const now = new Date();
+  const dateStr = format(now, "dd MMMM yyyy 'à' HH:mm", { locale: fr });
+  doc.setFontSize(9);
+  doc.setFont(undefined, 'normal');
+  doc.text(subtitle ? `${subtitle} — Généré le ${dateStr}` : `Généré le ${dateStr}`, 14, 21);
+
+  autoTable(doc, {
+    startY: 34,
+    head: [columns.map((c) => c.header)],
+    body: rows.map((row) => columns.map((c) => (row[c.key] ?? '').toString())),
+    theme: 'striped',
+    headStyles: {
+      fillColor: primaryColor,
+      textColor: [255, 255, 255],
+      fontSize: 9,
+      fontStyle: 'bold',
+    },
+    bodyStyles: {
+      fontSize: 8,
+      textColor: [30, 41, 59],
+    },
+    alternateRowStyles: {
+      fillColor: [248, 250, 252],
+    },
+    margin: { left: 14, right: 14 },
+    didDrawPage: (data) => {
+      const pageCount = doc.internal.getNumberOfPages();
+      const pageHeight = doc.internal.pageSize.height;
+      doc.setFontSize(8);
+      doc.setTextColor(100);
+      doc.text(
+        `Page ${data.pageNumber} sur ${pageCount}`,
+        doc.internal.pageSize.width / 2,
+        pageHeight - 8,
+        { align: 'center' }
+      );
+    },
+  });
+
+  const fileName = `${filename}-${format(now, 'yyyy-MM-dd')}.pdf`;
+  doc.save(fileName);
+
+  return { success: true, fileName, count: rows.length };
+};
+
+/**
+ * Export de la fiche profil de l'agence en PDF (un seul enregistrement,
+ * pas une liste - format fiche plutôt que tableau). Filet de sécurité
+ * anti-incident : permet de reconstituer manuellement les infos de
+ * l'agence (identité, localisation, horaires) en cas d'incident.
+ */
+export const exportAgencyProfilePDF = (agency) => {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const primaryColor = [79, 70, 229];
+
+  doc.setFillColor(...primaryColor);
+  doc.rect(0, 0, 210, 32, 'F');
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(18);
+  doc.setFont(undefined, 'bold');
+  doc.text(agency.name || 'Fiche agence', 15, 15);
+
+  doc.setFontSize(11);
+  doc.setFont(undefined, 'normal');
+  doc.text('Fiche profil agence', 15, 23);
+
+  const now = new Date();
+  const dateStr = format(now, "dd MMMM yyyy 'à' HH:mm", { locale: fr });
+  doc.setFontSize(9);
+  doc.text(`Généré le ${dateStr}`, 15, 29);
+
+  const infoRows = [
+    ['Code agence', agency.code_agence || '-'],
+    ['Nom', agency.name || '-'],
+    ['Téléphone', agency.telephone || '-'],
+    ['Email', agency.email || '-'],
+    ['Adresse', agency.address || '-'],
+    ['Ville', agency.ville || '-'],
+    ['Commune', agency.commune || '-'],
+    ['Pays', agency.pays || '-'],
+    ['Latitude', agency.latitude ?? '-'],
+    ['Longitude', agency.longitude ?? '-'],
+    ['Description', agency.description || '-'],
+    ['Message d\'accueil', agency.message_accueil || '-'],
+  ];
+
+  autoTable(doc, {
+    startY: 40,
+    head: [['Champ', 'Valeur']],
+    body: infoRows,
+    theme: 'striped',
+    headStyles: { fillColor: primaryColor, textColor: [255, 255, 255], fontSize: 10, fontStyle: 'bold' },
+    bodyStyles: { fontSize: 9, textColor: [30, 41, 59] },
+    columnStyles: { 0: { cellWidth: 50, fontStyle: 'bold' }, 1: { cellWidth: 130 } },
+    margin: { left: 15, right: 15 },
+  });
+
+  const horairesY = doc.lastAutoTable.finalY + 10;
+  doc.setFontSize(11);
+  doc.setFont(undefined, 'bold');
+  doc.setTextColor(0, 0, 0);
+  doc.text('Horaires d\'ouverture', 15, horairesY);
+
+  const horairesData = (agency.horaires || []).map((h) => [
+    h.jour || '-',
+    h.ferme ? 'Fermé' : `${h.ouverture || '-'} – ${h.fermeture || '-'}`,
+  ]);
+
+  autoTable(doc, {
+    startY: horairesY + 4,
+    head: [['Jour', 'Horaire']],
+    body: horairesData,
+    theme: 'grid',
+    headStyles: { fillColor: primaryColor, textColor: [255, 255, 255], fontSize: 9, fontStyle: 'bold' },
+    bodyStyles: { fontSize: 9 },
+    columnStyles: { 0: { cellWidth: 50 }, 1: { cellWidth: 130 } },
+    margin: { left: 15, right: 15 },
+  });
+
+  const fileName = `fiche-agence-${format(now, 'yyyy-MM-dd')}.pdf`;
+  doc.save(fileName);
+
+  return { success: true, fileName };
+};
+
+/**
  * Export des colis à réceptionner en PDF
  * @param {Array} colis - Liste des colis à exporter
  * @param {Object} options - Options d'export

@@ -14,6 +14,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { toast } from "../utils/toast";
 import { getCountryName } from "../utils/countries";
+import ExportButton from "../components/common/ExportButton";
 
 const TableSkeleton = () => (
   <div className="divide-y divide-slate-100">
@@ -194,6 +195,31 @@ const TarifGroupageComponent = () => {
       .sort((a, b) => b.count - a.count);
   }, [flattenedAgencyTarifs, flattenedBaseTarifs, activeTab]);
 
+  // Export (filet de sécurité) : reflète exactement la vue affichée (onglet + filtres courants)
+  const exportColumns = useMemo(() => ([
+    { header: 'Type', key: 'type' },
+    { header: 'Catégorie / Pays', key: 'categorie' },
+    { header: 'Montant Base (FCFA)', key: 'montant_base' },
+    { header: '% Prestation', key: 'pourcentage_prestation' },
+    { header: 'Montant Prestation (FCFA)', key: 'montant_prestation' },
+    { header: 'Total (FCFA)', key: 'total' },
+  ]), []);
+
+  const exportRows = useMemo(() => (currentData || []).map((tarif) => {
+    const montantBase = tarif.montant_base || 0;
+    const pourcentage = tarif.pourcentage_prestation || 0;
+    const montantPrestation = Math.round(montantBase * pourcentage / 100);
+    const total = activeTab === "agency" ? (tarif.montant_expedition || 0) : (montantBase + montantPrestation);
+    return {
+      type: tarif.type_expedition?.replace('groupage_', '').replace('_', ' ').toUpperCase() || 'N/A',
+      categorie: tarif.category?.nom || getCountryName(tarif.code_pays) || tarif.pays || '',
+      montant_base: montantBase,
+      pourcentage_prestation: pourcentage,
+      montant_prestation: montantPrestation,
+      total,
+    };
+  }), [currentData, activeTab]);
+
   return (
     <div className="space-y-4">
       {/* Premium Action Bar */}
@@ -222,6 +248,14 @@ const TarifGroupageComponent = () => {
           >
             <ArrowPathIcon className={`w-4 h-4 ${loading ? 'animate-spin text-indigo-600' : ''}`} />
           </button>
+
+          <ExportButton
+            columns={exportColumns}
+            rows={exportRows}
+            filename="tarifs-groupage"
+            title={activeTab === "agency" ? "Tarifs Groupage (Agence)" : "Tarifs Groupage (Base)"}
+            disabled={exportRows.length === 0}
+          />
         </div>
 
         {!isAgent && (

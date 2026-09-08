@@ -19,6 +19,7 @@ import {
 } from "@heroicons/react/24/outline";
 import SingleInitializeModal from "../components/SingleInitializeModal";
 import { toast } from "../utils/toast";
+import ExportButton from "../components/common/ExportButton";
 
 
 const TableSkeleton = () => (
@@ -475,6 +476,27 @@ const TarifSimpleComponent = () => {
     return zones.size;
   }, [activeTab, flatExistingTarifs, flatTarifs]);
 
+  // Export (filet de sécurité) : reflète exactement la vue affichée (onglet + recherche courants)
+  const exportColumns = useMemo(() => ([
+    { header: 'Indice', key: 'indice' },
+    { header: 'Destination', key: 'destination' },
+    { header: 'Montant Base (FCFA)', key: 'montant_base' },
+    { header: '% Prestation', key: 'pourcentage_prestation' },
+    { header: 'Montant Prestation (FCFA)', key: 'montant_prestation' },
+    { header: 'Total (FCFA)', key: 'total' },
+    ...(activeTab === "agency" ? [{ header: 'Actif', key: 'actif' }] : []),
+  ]), [activeTab]);
+
+  const exportRows = useMemo(() => (currentData || []).map((tarif) => ({
+    indice: tarif.indice,
+    destination: tarif.zone?.nom || tarif.nom_zone || '',
+    montant_base: parseFloat(tarif.montant_base) || 0,
+    pourcentage_prestation: parseFloat(tarif.pourcentage_prestation) || 0,
+    montant_prestation: parseFloat(tarif.montant_prestation) || 0,
+    total: parseFloat(tarif.montant_expedition) || 0,
+    actif: tarif.actif ? 'Oui' : 'Non',
+  })), [currentData]);
+
   return (
     <div className="space-y-4">
       {/* KPI Section */}
@@ -504,6 +526,14 @@ const TarifSimpleComponent = () => {
           >
             <ArrowPathIcon className={`w-4 h-4 ${loading ? 'animate-spin text-indigo-600' : ''}`} />
           </button>
+
+          <ExportButton
+            columns={exportColumns}
+            rows={exportRows}
+            filename="tarifs-simples"
+            title={activeTab === "agency" ? "Tarifs Simples (Agence)" : "Tarifs Simples (Base)"}
+            disabled={exportRows.length === 0}
+          />
         </div>
 
         {!isAgent && (

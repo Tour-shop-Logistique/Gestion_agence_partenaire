@@ -1,10 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { ArrowLeftRight, Info, Loader2 } from "lucide-react";
 import { useTarifs } from "../hooks/useTarifs";
 import { useAuth } from "../hooks/useAuth";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { showToast } from "../utils/toast";
 import PageHeader from "../components/ui/PageHeader";
+import ExportButton from "../components/common/ExportButton";
 
 const formatCFA = (amount) => new Intl.NumberFormat('fr-FR').format(amount || 0) + ' CFA';
 
@@ -57,12 +58,39 @@ const TarifsInterville = () => {
         fetchTarifsInterville();
     }, [fetchTarifsInterville]);
 
+    const exportColumns = useMemo(() => ([
+        { header: 'Commune A', key: 'commune_a' },
+        { header: 'Commune B', key: 'commune_b' },
+        { header: 'Format', key: 'format' },
+        { header: 'Montant Base (FCFA)', key: 'montant_base' },
+        { header: '% Commission départ', key: 'pourcentage_commission_depart' },
+        { header: '% Commission arrivée', key: 'pourcentage_commission_arrivee' },
+    ]), []);
+
+    const exportRows = useMemo(() => (intervilleTarifs || []).map((tarif) => ({
+        commune_a: tarif.commune_a?.nom || '',
+        commune_b: tarif.commune_b?.nom || '',
+        format: tarif.format_colis?.nom || '',
+        montant_base: parseFloat(tarif.montant_base) || 0,
+        pourcentage_commission_depart: parseFloat(tarif.pourcentage_commission_depart) || 0,
+        pourcentage_commission_arrivee: parseFloat(tarif.pourcentage_commission_arrivee) || 0,
+    })), [intervilleTarifs]);
+
     return (
         <div className="space-y-4 sm:space-y-8 px-3 sm:px-6 animate-in fade-in duration-700">
             <div className="border-b border-slate-200 pb-4 sm:pb-6">
                 <PageHeader
                     title="Tarifs Interville (National)"
                     subtitle="Tarifs de transport entre communes concernant votre agence"
+                    actions={
+                        <ExportButton
+                            columns={exportColumns}
+                            rows={exportRows}
+                            filename="tarifs-interville"
+                            title="Tarifs Interville"
+                            disabled={exportRows.length === 0}
+                        />
+                    }
                 />
             </div>
 

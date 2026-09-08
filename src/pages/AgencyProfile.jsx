@@ -10,6 +10,7 @@ import CoverageMap from "../components/CoverageMap";
 import SearchableDropdown from "../components/common/SearchableDropdown";
 import { COUNTRY_OPTIONS, getCountryName } from "../utils/countries";
 import { communesApi } from "../utils/api/communes";
+import { exportAgencyProfilePDF } from "../utils/pdfExport";
 
 import {
   BuildingOffice2Icon,
@@ -34,6 +35,7 @@ import {
   EnvelopeIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ArrowDownTrayIcon,
 } from "@heroicons/react/24/outline";
 
 /* ─────────────────────────────────────────────
@@ -526,6 +528,20 @@ const AgencyProfile = () => {
           {/* Actions */}
           {isAdmin && (
             <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  try {
+                    exportAgencyProfilePDF({ ...formData, pays: getCountryName(formData.code_pays) });
+                  } catch (error) {
+                    toast.error("Erreur lors de l'export de la fiche agence");
+                  }
+                }}
+                className="p-2.5 rounded-xl border border-white/20 bg-white/10 text-white hover:bg-white/20 transition-colors"
+                title="Exporter la fiche en PDF"
+              >
+                <ArrowDownTrayIcon className="w-4 h-4" />
+              </button>
               <button
                 type="button"
                 onClick={async () => { setRefreshing(true); await fetchAgencyData(true); setRefreshing(false); }}

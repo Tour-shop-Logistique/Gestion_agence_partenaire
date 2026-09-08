@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useAuth } from "../hooks/useAuth";
 import { useAgency } from "../hooks/useAgency";
@@ -11,6 +11,7 @@ import { fetchRoles, createRole, updateRole, deleteRole, selectRoles, selectRole
 import { fetchAvailablePermissions, selectAvailablePermissions, selectPermissionsHasLoaded } from "../store/slices/permissionsSlice";
 import PermissionMatrix from "../components/roles/PermissionMatrix";
 import PageHeader from "../components/ui/PageHeader";
+import ExportButton from "../components/common/ExportButton";
 
 const Agents = () => {
   const { isAdmin } = useAuth();
@@ -403,6 +404,36 @@ const Agents = () => {
     );
   }
 
+  const agentsExportColumns = useMemo(() => ([
+    { header: 'Nom', key: 'nom' },
+    { header: 'Prénoms', key: 'prenoms' },
+    { header: 'Téléphone', key: 'telephone' },
+    { header: 'Email', key: 'email' },
+    { header: 'Rôle', key: 'role' },
+    { header: 'Actif', key: 'actif' },
+  ]), []);
+
+  const agentsExportRows = useMemo(() => (agencyUsers || []).map((agent) => ({
+    nom: agent.nom || '',
+    prenoms: agent.prenoms || '',
+    telephone: agent.telephone || '',
+    email: agent.email || '',
+    role: agent.custom_role?.nom || '',
+    actif: agent.actif ? 'Oui' : 'Non',
+  })), [agencyUsers]);
+
+  const rolesExportColumns = useMemo(() => ([
+    { header: 'Nom', key: 'nom' },
+    { header: 'Description', key: 'description' },
+    { header: 'Permissions', key: 'permissions' },
+  ]), []);
+
+  const rolesExportRows = useMemo(() => (roles || []).map((role) => ({
+    nom: role.nom || '',
+    description: role.description || '',
+    permissions: (role.permissions || []).join(', '),
+  })), [roles]);
+
   return (
     <>
       <div className="mb-4 sm:mb-6 px-3 sm:px-0">
@@ -446,6 +477,12 @@ const Agents = () => {
                   )}
                 </button>
               )}
+              <ExportButton
+                columns={activeTab === "agents" ? agentsExportColumns : rolesExportColumns}
+                rows={activeTab === "agents" ? agentsExportRows : rolesExportRows}
+                filename={activeTab === "agents" ? "agents-agence" : "roles-permissions-agence"}
+                title={activeTab === "agents" ? "Agents" : "Rôles & Permissions"}
+              />
               <button
                 onClick={activeTab === "agents" ? openAddModal : openAddRoleModal}
                 className="bg-green-600 hover:bg-green-700 text-white px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center justify-center transition-colors"
