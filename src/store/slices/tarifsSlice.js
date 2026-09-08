@@ -301,6 +301,25 @@ export const fetchTarifsInterville = createAsyncThunk(
   }
 );
 
+// Consultation en lecture seule des formats de colis (Petit/Moyen/Grand par
+// défaut, extensible) du backoffice - purement informatif, sert à déduire
+// automatiquement (côté client, avant confirmation serveur) le format d'un
+// colis selon son poids/volume - voir CreateExpeditionV2.jsx.
+export const fetchFormatsColis = createAsyncThunk(
+  'tarifs/fetchFormatsColis',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await tarifsApi.getFormatsColis();
+      if (response.success) {
+        return response.data || [];
+      }
+      return rejectWithValue(response.message || 'Erreur lors du chargement des formats de colis');
+    } catch (error) {
+      return rejectWithValue(error.message || 'Erreur lors du chargement des formats de colis');
+    }
+  }
+);
+
 // Helpers pour le LocalStorage
 const saveTarifsToCache = (data) => {
   try {
@@ -335,6 +354,8 @@ const initialState = {
   existingGroupageTarifs: cachedData.existingGroupageTarifs || [], // tarifs groupage de l'agence
   intervilleTarifs: [], // tarifs interville concernant l'agence, lecture seule
   loadingInterville: false,
+  formatsColis: [], // formats de colis du backoffice, lecture seule (informatif)
+  loadingFormatsColis: false,
   loading: false,
   error: null,
   message: '',
@@ -874,6 +895,21 @@ const tarifsSlice = createSlice({
       })
       .addCase(fetchTarifsInterville.rejected, (state, action) => {
         state.loadingInterville = false;
+        state.error = action.payload;
+      });
+
+    builder
+      // === Formats de colis (lecture seule) ===
+      .addCase(fetchFormatsColis.pending, (state) => {
+        state.loadingFormatsColis = true;
+        state.error = null;
+      })
+      .addCase(fetchFormatsColis.fulfilled, (state, action) => {
+        state.loadingFormatsColis = false;
+        state.formatsColis = action.payload;
+      })
+      .addCase(fetchFormatsColis.rejected, (state, action) => {
+        state.loadingFormatsColis = false;
         state.error = action.payload;
       });
 

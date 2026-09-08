@@ -87,6 +87,13 @@ const CreateExpeditionV2 = () => {
         // seule, déjà filtrés par le backend aux lignes concernant la
         // commune de l'agence connectée (départ ou arrivée).
         intervilleTarifs, fetchTarifsInterville,
+        // Formats de colis (Petit/Moyen/Grand par défaut, extensible) : le
+        // format est désormais déduit automatiquement du poids/volume
+        // (jamais choisi manuellement par l'agence) - voir
+        // ExpeditionTarificationService::determinerFormatColis() côté
+        // backend, qui reste l'autorité finale à la création ; ce calcul
+        // local sert uniquement à l'affichage instantané avant soumission.
+        formatsColis, fetchFormatsColis,
         loading: tarifsLoading
     } = useTarifs();
     const { data: agencyData, fetchAgencyData, status: agencyStatus } = useAgency();
@@ -143,9 +150,10 @@ const CreateExpeditionV2 = () => {
             {
                 designation: "",
                 category_id: "",
-                // Format Petit/Moyen/Grand - concerne uniquement interville
-                // (voir sélecteur conditionnel dans le bloc dimensions).
-                format_colis: "MOYEN",
+                // Format (interville uniquement) - déduit automatiquement du
+                // poids/volume (voir determinerFormatColisLocal ci-dessous),
+                // jamais choisi manuellement : pas de valeur par défaut ici.
+                format_colis_id: null,
                 poids: "",
                 longueur: "",
                 largeur: "",
@@ -172,6 +180,7 @@ const CreateExpeditionV2 = () => {
         fetchBaseTarifs(); // Tarifs de base backoffice (fallback destinations)
         fetchBaseGroupageTarifs(); // Idem pour le groupage
         fetchTarifsInterville(); // Trajets interville concernant la commune de l'agence
+        fetchFormatsColis(); // Seuils de formats de colis (interville uniquement)
         fetchAgencyData();
         fetchDashboard(); // Nécessaire pour déduire le prochain numéro de code colis
             }, []);
@@ -773,6 +782,33 @@ const CreateExpeditionV2 = () => {
         setFormData(prev => ({ ...prev, colis: newColis }));
     };
 
+    /**
+     * Déduit localement le format d'un colis à partir de son poids/volume,
+     * en miroir de ExpeditionTarificationService::determinerFormatColis()
+     * côté backend (poids et volume résolus séparément, le plus contraignant
+     * gagne) - sert uniquement à l'affichage instantané avant soumission, le
+     * backend reste l'autorité finale à la création de l'expédition.
+     */
+    const determinerFormatColisLocal = (poids, longueur, largeur, hauteur) => {
+        const grille = [...(formatsColis || [])].sort((a, b) => a.ordre - b.ordre);
+        if (grille.length === 0) return null;
+
+        const volume = (parseFloat(longueur) || 0) * (parseFloat(largeur) || 0) * (parseFloat(hauteur) || 0);
+        const poidsNum = parseFloat(poids) || 0;
+
+        const resoudre = (valeur, cle) => {
+            for (const format of grille) {
+                if (format[cle] == null || valeur <= format[cle]) return format;
+            }
+            return grille[grille.length - 1];
+        };
+
+        const formatParPoids = resoudre(poidsNum, 'poids_max');
+        const formatParVolume = resoudre(volume, 'volume_max');
+
+        return formatParPoids.ordre >= formatParVolume.ordre ? formatParPoids : formatParVolume;
+    };
+
     const handleAddArticle = (colisIndex, option) => {
         if (!option || !option.label) return;
         const productDesignation = option.label;
@@ -800,7 +836,7 @@ const CreateExpeditionV2 = () => {
     const addColis = () => {
         setFormData(prev => ({
             ...prev,
-            colis: [...prev.colis, { designation: "", category_id: "", format_colis: "MOYEN", poids: "", longueur: "", largeur: "", hauteur: "", prix_emballage: 0, prix_estimation: 0, articles: [] }]
+            colis: [...prev.colis, { designation: "", category_id: "", format_colis_id: null, poids: "", longueur: "", largeur: "", hauteur: "", prix_emballage: 0, prix_estimation: 0, articles: [] }]
         }));
     };
 
@@ -891,10 +927,12 @@ const CreateExpeditionV2 = () => {
                     prix_estimation: parseFloat(c.prix_estimation) || 0,
                 };
 
-                // Format Petit/Moyen/Grand : concerne uniquement interville,
-                // le tarif de ce trajet dépend du format choisi par colis.
+                // Format (interville uniquement, le tarif de ce trajet en
+                // dépend) : déduit du poids/volume, jamais choisi
+                // manuellement - le backend reste l'autorité finale.
                 if (formData.type_expedition === 'INTERVILLE') {
-                    item.format_colis = (c.format_colis || 'MOYEN').toLowerCase();
+                    const formatDeduit = determinerFormatColisLocal(c.poids, c.longueur, c.largeur, c.hauteur);
+                    if (formatDeduit) item.format_colis_id = formatDeduit.id;
                 }
 
                 // N'envoyer articles que s'il y en a, sous forme d'objets {designation}
@@ -934,10 +972,12 @@ const CreateExpeditionV2 = () => {
                     prix_estimation: parseFloat(c.prix_estimation) || 0,
                 };
 
-                // Format Petit/Moyen/Grand : concerne uniquement interville,
-                // le tarif de ce trajet dépend du format choisi par colis.
+                // Format (interville uniquement, le tarif de ce trajet en
+                // dépend) : déduit du poids/volume, jamais choisi
+                // manuellement - le backend reste l'autorité finale.
                 if (formData.type_expedition === 'INTERVILLE') {
-                    item.format_colis = (c.format_colis || 'MOYEN').toLowerCase();
+                    const formatDeduit = determinerFormatColisLocal(c.poids, c.longueur, c.largeur, c.hauteur);
+                    if (formatDeduit) item.format_colis_id = formatDeduit.id;
                 }
 
                 // N'envoyer articles que s'il y en a, sous forme d'objets {designation}
@@ -1682,36 +1722,6 @@ const CreateExpeditionV2 = () => {
                                                         )}
                                                     </div>
 
-                                                    {/* Format du colis - Uniquement pour Interville (tarif dépendant du format) */}
-                                                    {formData.type_expedition === 'INTERVILLE' && (
-                                                        <div className="space-y-1.5">
-                                                            <label className="block text-xs font-semibold text-slate-600">
-                                                                Format du colis <span className="text-amber-600">*</span>
-                                                            </label>
-                                                            <div className="grid grid-cols-3 gap-2">
-                                                                {[
-                                                                    { value: 'PETIT', label: 'Petit' },
-                                                                    { value: 'MOYEN', label: 'Moyen' },
-                                                                    { value: 'GRAND', label: 'Grand' },
-                                                                ].map((format) => (
-                                                                    <button
-                                                                        key={format.value}
-                                                                        type="button"
-                                                                        onClick={() => handleColisChange(index, 'format_colis', format.value)}
-                                                                        aria-pressed={colis.format_colis === format.value}
-                                                                        className={`p-2.5 rounded-lg border-2 text-xs font-semibold transition-all ${
-                                                                            colis.format_colis === format.value
-                                                                                ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                                                                                : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
-                                                                        }`}
-                                                                    >
-                                                                        {format.label}
-                                                                    </button>
-                                                                ))}
-                                                            </div>
-                                                        </div>
-                                                    )}
-
                                                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3">
                                                         <div className="space-y-1.5">
                                                             <label className="block text-[11px] font-semibold text-slate-600">Poids (kg) <span className="text-amber-600">*</span></label>
@@ -1792,6 +1802,22 @@ const CreateExpeditionV2 = () => {
                                                             />
                                                         </div>
                                                     </div>
+
+                                                    {/* Format du colis - Uniquement pour Interville (tarif dépendant du format) : déduit automatiquement du poids/volume, non modifiable ici */}
+                                                    {formData.type_expedition === 'INTERVILLE' && (() => {
+                                                        const formatDeduit = determinerFormatColisLocal(colis.poids, colis.longueur, colis.largeur, colis.hauteur);
+                                                        return (
+                                                            <div className="flex items-center gap-2 p-2.5 rounded-lg bg-indigo-50 border border-indigo-100">
+                                                                <svg className="w-4 h-4 text-indigo-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                                                </svg>
+                                                                <p className="text-xs text-indigo-700">
+                                                                    Format déduit : <span className="font-semibold">{formatDeduit?.nom || (colis.poids ? 'à déterminer' : '—')}</span>
+                                                                    <span className="text-indigo-400"> (selon le poids et le volume saisis)</span>
+                                                                </p>
+                                                            </div>
+                                                        );
+                                                    })()}
 
                                                     {/* Articles */}
                                                     <div className="space-y-2">

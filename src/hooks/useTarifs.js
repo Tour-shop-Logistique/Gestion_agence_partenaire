@@ -20,7 +20,8 @@ import {
   deleteTarifSimple,
   toggleTarifSimpleStatus,
   toggleTarifGroupageStatus,
-  fetchTarifsInterville
+  fetchTarifsInterville,
+  fetchFormatsColis
 } from '../store/slices/tarifsSlice';
 
 export const useTarifs = () => {
@@ -36,6 +37,8 @@ export const useTarifs = () => {
     existingGroupageTarifs,
     intervilleTarifs,
     loadingInterville,
+    formatsColis,
+    loadingFormatsColis,
     selectedIndex,
     editingZones,
     isSaving,
@@ -204,6 +207,14 @@ export const useTarifs = () => {
     }
   }, [dispatch]);
 
+  const fetchFormatsColisData = useCallback(async () => {
+    try {
+      return await dispatch(fetchFormatsColis()).unwrap();
+    } catch (error) {
+      console.error('Erreur lors du chargement des formats de colis:', error);
+      return { success: false, error };
+    }
+  }, [dispatch]);
 
   return {
     // État
@@ -220,6 +231,8 @@ export const useTarifs = () => {
     existingGroupageTarifs,
     intervilleTarifs,
     loadingInterville,
+    formatsColis,
+    loadingFormatsColis,
     selectedIndex,
     editingZones,
     isSaving,
@@ -242,6 +255,7 @@ export const useTarifs = () => {
     toggleTarifSimpleStatus: toggleTarifSimpleStatusData,
     toggleTarifGroupageStatus: toggleTarifGroupageStatusData,
     fetchTarifsInterville: fetchTarifsIntervilleData,
+    fetchFormatsColis: fetchFormatsColisData,
 
     // Selecteurs
     getCurrentTarif,

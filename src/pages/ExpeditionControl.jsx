@@ -642,6 +642,16 @@ const ExpeditionControl = () => {
                                             {colis.longueur || 0}×{colis.largeur || 0}×{colis.hauteur || 0} cm
                                         </p>
                                     </div>
+                                    {expedition.type_expedition === 'interville' && (
+                                        <div>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase">Format</p>
+                                            {/* Déduit automatiquement du poids/volume (voir
+                                                ExpeditionTarificationService::determinerFormatColis) -
+                                                redéterminé dès la correction du colis, jamais
+                                                modifiable manuellement ici. */}
+                                            <p className="font-semibold text-slate-800">{colis.format_colis?.nom || '—'}</p>
+                                        </div>
+                                    )}
                                     <div>
                                         <p className="text-[10px] font-bold text-slate-400 uppercase">Emballage</p>
                                         <p className="font-semibold text-slate-800">{formatCFA(colis.prix_emballage)}</p>

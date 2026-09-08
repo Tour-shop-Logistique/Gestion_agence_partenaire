@@ -352,4 +352,28 @@ export const tarifsApi = {
       };
     }
   },
+
+  /**
+   * Consultation en lecture seule des formats de colis (Petit/Moyen/Grand
+   * par défaut, extensible) et de leurs seuils poids/volume, pour le
+   * backoffice de l'agence connectée - purement informatif : l'agence ne
+   * choisit plus le format manuellement (déduit automatiquement à la
+   * création, voir CreateExpeditionV2.jsx).
+   * @returns {Promise<Object>}
+   */
+  async getFormatsColis() {
+    try {
+      const response = await apiService.get(API_ENDPOINTS.TARIFS.LIST_FORMATS_COLIS);
+      return {
+        success: response.success !== false,
+        data: response.formats || response.data || response,
+        message: response.message || "Formats de colis récupérés avec succès",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || "Impossible de récupérer les formats de colis",
+      };
+    }
+  },
 };

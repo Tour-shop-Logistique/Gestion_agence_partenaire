@@ -8,17 +8,26 @@ import PageHeader from "../components/ui/PageHeader";
 
 const formatCFA = (amount) => new Intl.NumberFormat('fr-FR').format(amount || 0) + ' CFA';
 
-const FORMAT_BADGE_CLASSES = {
-    petit: 'bg-sky-50 text-sky-700 border-sky-100',
-    moyen: 'bg-violet-50 text-violet-700 border-violet-100',
-    grand: 'bg-amber-50 text-amber-700 border-amber-100',
-};
+// Palette cyclique par rang (ordre) plutôt qu'un mapping figé par nom : la
+// grille de formats est désormais extensible (voir FormatColis côté
+// backend), un nom de format n'est plus une valeur connue à l'avance.
+const FORMAT_BADGE_PALETTE = [
+    'bg-sky-50 text-sky-700 border-sky-100',
+    'bg-violet-50 text-violet-700 border-violet-100',
+    'bg-amber-50 text-amber-700 border-amber-100',
+    'bg-emerald-50 text-emerald-700 border-emerald-100',
+    'bg-rose-50 text-rose-700 border-rose-100',
+];
 
-const FormatBadge = ({ format }) => (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded border font-semibold text-xs capitalize ${FORMAT_BADGE_CLASSES[format] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>
-        {format || '—'}
-    </span>
-);
+const FormatBadge = ({ format }) => {
+    const rang = format?.ordre ? format.ordre - 1 : 0;
+    const classes = FORMAT_BADGE_PALETTE[rang % FORMAT_BADGE_PALETTE.length];
+    return (
+        <span className={`inline-flex items-center px-2 py-0.5 rounded border font-semibold text-xs ${classes}`}>
+            {format?.nom || '—'}
+        </span>
+    );
+};
 
 /**
  * Consultation en lecture seule des tarifs interville concernant l'agence

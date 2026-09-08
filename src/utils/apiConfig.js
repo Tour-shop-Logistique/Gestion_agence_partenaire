@@ -96,6 +96,10 @@ export const API_ENDPOINTS = {
     // Interville : lecture seule, aucune action de modification côté agence
     // (les commissions départ/arrivée sont fixées uniquement par le backoffice).
     LIST_INTERVILLE: "/agence/list-tarifs-interville",
+    // Formats de colis (Petit/Moyen/Grand par défaut, extensible) : lecture
+    // seule, purement informatif - le format est déduit automatiquement à
+    // la création (voir ExpeditionTarificationService::determinerFormatColis()).
+    LIST_FORMATS_COLIS: "/agence/list-formats-colis",
   },
 
   // Communes (référentiel géographique, lecture seule côté agence)
