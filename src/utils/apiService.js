@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "./apiConfig";
+import { getStore } from "../store/storeAccessor";
 
 /**
  * Service API centralisé pour gérer toutes les requêtes HTTP
@@ -92,6 +93,28 @@ class ApiService {
         error.data = data;
         error.success = false;
         throw error;
+      }
+
+      // Session expirée/invalide : déconnexion automatique, sauf sur les
+      // requêtes où un 401 est déjà géré ailleurs ou ne signifie pas la
+      // coupure d'une session en cours d'usage : /login (identifiants
+      // invalides, pas encore connecté), /logout (le token était déjà mort,
+      // pas la peine de redéclencher une seconde déconnexion par-dessus
+      // celle en cours), /profil (vérifié au boot de l'app par
+      // checkAuthState, qui gère déjà ce cas précis sans reload forcé - voir
+      // authSlice.js).
+      if (
+        response.status === 401 &&
+        !response.url.includes("/login") &&
+        !response.url.includes("/logout") &&
+        !response.url.includes("/profil")
+      ) {
+        const store = getStore();
+        if (store) {
+          import("../store/slices/authSlice").then(({ handleSessionExpired }) => {
+            store.dispatch(handleSessionExpired());
+          });
+        }
       }
 
       const error = new Error(

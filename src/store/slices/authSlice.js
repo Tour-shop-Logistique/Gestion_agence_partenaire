@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { authApi } from "../../utils/api/auth";
 import { apiService } from "../../utils/apiService";
+import { showToast } from "../../utils/toast";
 
 /**
  * Thunks asynchrones pour l'authentification
@@ -124,6 +125,36 @@ export const logout = createAsyncThunk(
       window.location.href = "/";
       return rejectWithValue(error.message || "Erreur lors de la déconnexion");
     }
+  }
+);
+
+// Déconnexion déclenchée automatiquement par la détection 401 (voir
+// src/utils/apiService.js, handleResponse) quand le token n'est plus valide
+// (expiré/révoqué). Même nettoyage que logout, mais sans rappel serveur (le
+// token qui a expiré ne peut de toute façon plus authentifier /logout) et
+// avec un message qui explique pourquoi on déconnecte l'utilisateur plutôt
+// que de laisser croire à une action volontaire. Le reload complet
+// (window.location.href) vide de toute façon tout le state Redux en
+// mémoire - voir aussi le type d'action ajouté à la condition de reset de
+// rootReducer (store/index.js), pour couvrir le court instant avant le
+// reload.
+export const handleSessionExpired = createAsyncThunk(
+  "auth/handleSessionExpired",
+  async (_, { getState }) => {
+    if (!getState().auth.isAuthenticated) {
+      return null;
+    }
+
+    showToast("Votre session a expiré. Veuillez vous reconnecter.", "error");
+
+    apiService.removeAuthToken();
+    localStorage.clear();
+    sessionStorage.clear();
+
+    await new Promise((resolve) => setTimeout(resolve, 800));
+
+    window.location.href = "/";
+    return null;
   }
 );
 

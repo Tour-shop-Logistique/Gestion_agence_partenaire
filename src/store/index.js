@@ -1,4 +1,5 @@
 import { configureStore, combineReducers } from '@reduxjs/toolkit';
+import { setStore } from './storeAccessor';
 import authReducer from './slices/authSlice';
 import agencyReducer from './slices/agencySlice';
 import tarifsReducer from './slices/tarifsSlice';
@@ -38,7 +39,13 @@ const appReducer = combineReducers({
 
 const rootReducer = (state, action) => {
   // Détecter la déconnexion (fulfilled ou rejected car on nettoie dans les deux cas dans authSlice)
-  if (action.type === 'auth/logout/fulfilled' || action.type === 'auth/logout/rejected') {
+  // - handleSessionExpired (voir authSlice.js) suit le même besoin de reset
+  // qu'une déconnexion volontaire : session invalide détectée par un 401.
+  if (
+    action.type === 'auth/logout/fulfilled' ||
+    action.type === 'auth/logout/rejected' ||
+    action.type === 'auth/handleSessionExpired/fulfilled'
+  ) {
     // Réinitialiser tout le state à undefined force Redux à utiliser les initialState de chaque slice
     state = undefined;
   }
@@ -57,5 +64,9 @@ export const store = configureStore({
     }),
   devTools: import.meta.env.MODE !== 'production',
 });
+
+// Rend le store accessible depuis src/utils/apiService.js (détection 401)
+// sans import statique circulaire - voir storeAccessor.js.
+setStore(store);
 
 export default store;
