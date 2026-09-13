@@ -12,6 +12,7 @@ import { fetchAvailablePermissions, selectAvailablePermissions, selectPermission
 import PermissionMatrix from "../components/roles/PermissionMatrix";
 import PageHeader from "../components/ui/PageHeader";
 import ExportButton from "../components/common/ExportButton";
+import PhoneInput from "../components/common/PhoneInput";
 
 const Agents = () => {
   const { isAdmin } = useAuth();
@@ -39,6 +40,7 @@ const Agents = () => {
     nom: "",
     prenoms: "",
     email: "",
+    dialCode: "",
     phone: "",
     password: "",
     type: "agence",
@@ -236,6 +238,12 @@ const Agents = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!formData.dialCode) {
+      toast.error("Veuillez sélectionner l'indicatif téléphonique");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -243,6 +251,7 @@ const Agents = () => {
         const payload = {
           nom: (formData.nom || "").trim(),
           prenoms: (formData.prenoms || "").trim(),
+          indicatif_telephone: formData.dialCode || "",
           telephone: formData.phone || "",
           email: formData.email || "",
           type: formData.type || "agence",
@@ -264,6 +273,7 @@ const Agents = () => {
         const payload = {
           nom: (formData.nom || "").trim(),
           prenoms: (formData.prenoms || "").trim(),
+          indicatif_telephone: formData.dialCode || "",
           telephone: formData.phone || "",
           email: formData.email || "",
           password: formData.password || "12345678",
@@ -296,6 +306,7 @@ const Agents = () => {
       nom: agent.nom || "",
       prenoms: agent.prenoms || "",
       email: agent.email || "",
+      dialCode: agent.indicatif_telephone || "",
       phone: agent.telephone || "",
       type: agent.type || "agence",
       password: "",
@@ -344,6 +355,7 @@ const Agents = () => {
       nom: "",
       prenoms: "",
       email: "",
+      dialCode: "",
       phone: "",
       type: "agence",
       password: "",
@@ -984,33 +996,13 @@ const Agents = () => {
                         >
                           Téléphone <span className="text-red-500">*</span>
                         </label>
-                        <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg
-                              className="h-5 w-5 text-gray-400"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                              />
-                            </svg>
-                          </div>
-                          <input
-                            type="tel"
-                            id="phone"
-                            name="phone"
-                            value={formData.phone}
-                            onChange={handleChange}
-                            required
-                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                            placeholder="+225 01 02 03 04 05"
-                          />
-                        </div>
+                        <PhoneInput
+                          dialCode={formData.dialCode}
+                          localNumber={formData.phone}
+                          onDialCodeChange={(dialCode) => setFormData((prev) => ({ ...prev, dialCode }))}
+                          onLocalNumberChange={(phone) => setFormData((prev) => ({ ...prev, phone }))}
+                          inputClassName="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                        />
                       </div>
                     </div>
                   </div>

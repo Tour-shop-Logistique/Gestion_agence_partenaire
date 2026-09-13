@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import VerifyEmailModal from "./VerifyEmailModal";
+import PhoneInput from "./common/PhoneInput";
 
 const RegisterModal = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ const RegisterModal = ({ isOpen, onClose }) => {
     email: "",
     password: "",
     confirmPassword: "",
+    dialCode: "",
     phone: "",
     type: "agence",
   });
@@ -44,10 +46,16 @@ const RegisterModal = ({ isOpen, onClose }) => {
       return;
     }
 
+    if (!formData.dialCode) {
+      setLocalError("Veuillez sélectionner l'indicatif téléphonique");
+      return;
+    }
+
     try {
       const userData = {
         firstName: formData.firstName,
         lastName: formData.lastName,
+        dialCode: formData.dialCode,
         phone: formData.phone,
         email: formData.email,
         password: formData.password,
@@ -101,7 +109,7 @@ const RegisterModal = ({ isOpen, onClose }) => {
           </button>
 
           <h2 className="text-3xl font-bold text-white text-center mb-2">
-            Créer votre agence
+            Créer un compte admin
           </h2>
           <p className="text-gray-300 text-center mb-6">
             Créez votre compte administrateur pour gérer votre agence
@@ -186,15 +194,12 @@ const RegisterModal = ({ isOpen, onClose }) => {
               >
                 Téléphone *
               </label>
-              <input
-                id="phone"
-                name="phone"
-                type="tel"
-                required
-                value={formData.phone}
-                onChange={handleChange}
-                className="appearance-none block w-full px-4 py-2 bg-white/10 border border-gray-300/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="+225 66 66 66 66"
+              <PhoneInput
+                dialCode={formData.dialCode}
+                localNumber={formData.phone}
+                onDialCodeChange={(dialCode) => setFormData((prev) => ({ ...prev, dialCode }))}
+                onLocalNumberChange={(phone) => setFormData((prev) => ({ ...prev, phone }))}
+                inputClassName="appearance-none block w-full px-4 py-2 bg-white/10 border border-gray-300/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
 

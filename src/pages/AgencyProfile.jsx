@@ -8,14 +8,15 @@ import { toast } from "../utils/toast";
 import ErrorBoundary from "../components/ErrorBoundary";
 import CoverageMap from "../components/CoverageMap";
 import SearchableDropdown from "../components/common/SearchableDropdown";
+import PhoneInput from "../components/common/PhoneInput";
 import { COUNTRY_OPTIONS, getCountryName } from "../utils/countries";
+import { splitPhoneNumber, joinPhoneNumber } from "../utils/phoneCountries";
 import { communesApi } from "../utils/api/communes";
 import { exportAgencyProfilePDF } from "../utils/pdfExport";
 
 import {
   BuildingOffice2Icon,
   MapPinIcon,
-  PhoneIcon,
   ClockIcon,
   PencilSquareIcon,
   CheckIcon,
@@ -126,7 +127,8 @@ const SaveBar = ({ saving, onCancel }) => (
               ? <ArrowPathIcon className="w-4 h-4 animate-spin" />
               : <CheckIcon className="w-4 h-4" />
             }
-            {saving ? "Enregistrement…" : "Enregistrer les modifications"}
+            <span className="hidden sm:inline">{saving ? "Enregistrement…" : "Enregistrer les modifications"}</span>
+            <span className="sm:hidden">{saving ? "…" : "Enregistrer"}</span>
           </button>
         </div>
       </div>
@@ -237,10 +239,19 @@ const AgencyProfile = () => {
 
   const [formData, setFormData] = useState({
     name: "", code_agence: "", address: "", ville: "",
-    code_pays: "CI", telephone: "", email: "", website: "",
+    code_pays: "CI", email: "", website: "",
     latitude: "", longitude: "", description: "", commune: "", commune_id: "",
     horaires: defaultHoraires, logo: null, message_accueil: "", zone_couverture_km: "10",
   });
+
+  // Téléphone et WhatsApp restent chacun un seul champ côté backend
+  // (Agence.telephone / Agence.whatsapp), mais s'affichent en deux parties
+  // (indicatif + numéro local, voir PhoneInput) - fusionnées avant l'envoi
+  // (voir handleSubmit) et séparées ici au chargement des données de l'agence.
+  const [telDialCode, setTelDialCode] = useState('');
+  const [telLocalNumber, setTelLocalNumber] = useState('');
+  const [waDialCode, setWaDialCode] = useState('');
+  const [waLocalNumber, setWaLocalNumber] = useState('');
 
   // Communes du backoffice du pays de l'agence, pour le select "Commune"
   // (référentiel utilisé par la tarification interville).
@@ -276,7 +287,6 @@ const AgencyProfile = () => {
       if (a.adresse)     next.address     = a.adresse;
       if (a.ville)       next.ville       = a.ville;
       if (a.code_pays)   next.code_pays   = a.code_pays;
-      if (a.telephone)   next.telephone   = a.telephone;
       if (a.email)       next.email       = a.email;
       if (a.website)     next.website     = a.website;
       if (a.description) next.description = a.description;
@@ -287,6 +297,17 @@ const AgencyProfile = () => {
       if (a.zone_couverture_km != null) next.zone_couverture_km = String(a.zone_couverture_km);
       if (a.latitude  != null) next.latitude  = String(a.latitude);
       if (a.longitude != null) next.longitude = String(a.longitude);
+
+      if (a.telephone) {
+        const tel = splitPhoneNumber(a.telephone);
+        setTelDialCode(tel.dialCode);
+        setTelLocalNumber(tel.localNumber);
+      }
+      if (a.whatsapp) {
+        const wa = splitPhoneNumber(a.whatsapp);
+        setWaDialCode(wa.dialCode);
+        setWaLocalNumber(wa.localNumber);
+      }
 
       if (Array.isArray(a.photos)) setExistingPhotos(a.photos);
 
@@ -389,11 +410,17 @@ const AgencyProfile = () => {
       return;
     }
 
+    if (!telDialCode || !telLocalNumber) {
+      toast.error("Veuillez renseigner un numéro de téléphone complet (indicatif + numéro).");
+      return;
+    }
+
     setSaving(true);
     try {
       const payload = {
         nom_agence:  formData.name,
-        telephone:   formData.telephone,
+        telephone:   joinPhoneNumber(telDialCode, telLocalNumber),
+        whatsapp:    joinPhoneNumber(waDialCode, waLocalNumber) || null,
         email:       formData.email,
         description: formData.description,
         adresse:     formData.address,
@@ -532,7 +559,12 @@ const AgencyProfile = () => {
                 type="button"
                 onClick={() => {
                   try {
-                    exportAgencyProfilePDF({ ...formData, pays: getCountryName(formData.code_pays) });
+                    exportAgencyProfilePDF({
+                      ...formData,
+                      pays: getCountryName(formData.code_pays),
+                      telephone: joinPhoneNumber(telDialCode, telLocalNumber),
+                      whatsapp: joinPhoneNumber(waDialCode, waLocalNumber),
+                    });
                   } catch (error) {
                     toast.error("Erreur lors de l'export de la fiche agence");
                   }
@@ -643,7 +675,26 @@ const AgencyProfile = () => {
                 </div>
                 <div>
                   <FieldLabel>Téléphone</FieldLabel>
-                  <Field icon={PhoneIcon} type="tel" name="telephone" value={formData.telephone} onChange={handleChange} disabled={editingTab !== "identite"} placeholder="+225 07 00 00 00 00" />
+                  <PhoneInput
+                    dialCode={telDialCode}
+                    localNumber={telLocalNumber}
+                    onDialCodeChange={setTelDialCode}
+                    onLocalNumberChange={setTelLocalNumber}
+                    disabled={editingTab !== "identite"}
+                    inputClassName="w-full pl-3 pr-3 py-2.5 text-sm text-slate-800 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 disabled:bg-slate-50 disabled:text-slate-900 disabled:cursor-default transition-colors placeholder:text-slate-300"
+                  />
+                </div>
+                <div>
+                  <FieldLabel>WhatsApp <span className="text-slate-400 font-normal">(optionnel)</span></FieldLabel>
+                  <PhoneInput
+                    dialCode={waDialCode}
+                    localNumber={waLocalNumber}
+                    onDialCodeChange={setWaDialCode}
+                    onLocalNumberChange={setWaLocalNumber}
+                    required={false}
+                    disabled={editingTab !== "identite"}
+                    inputClassName="w-full pl-3 pr-3 py-2.5 text-sm text-slate-800 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 disabled:bg-slate-50 disabled:text-slate-900 disabled:cursor-default transition-colors placeholder:text-slate-300"
+                  />
                 </div>
                 <div>
                   <FieldLabel>Adresse email</FieldLabel>

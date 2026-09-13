@@ -110,9 +110,13 @@ const AgentProfile = () => {
   // Gérer les changements dans le formulaire
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
+    // Le téléphone ne doit contenir que des chiffres, "+" et espaces (l'
+    // indicatif peut être inclus dans la même chaîne pour les comptes
+    // existants) - aucune lettre ni autre caractère.
+    const sanitizedValue = name === "telephone" ? value.replace(/[^\d+\s]/g, '') : value;
     setFormData(prev => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value
+      [name]: type === "checkbox" ? checked : sanitizedValue
     }));
     // Effacer l'erreur pour ce champ
     if (errors[name]) {

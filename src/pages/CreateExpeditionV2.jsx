@@ -787,10 +787,18 @@ const CreateExpeditionV2 = () => {
      * en miroir de ExpeditionTarificationService::determinerFormatColis()
      * côté backend (poids et volume résolus séparément, le plus contraignant
      * gagne) - sert uniquement à l'affichage instantané avant soumission, le
-     * backend reste l'autorité finale à la création de l'expédition.
+     * backend reste l'autorité finale à la création de l'expédition. Pas de
+     * rang manuel ("ordre") : le classement du plus petit au plus grand se
+     * déduit du poids_max croissant (illimité/null en dernier), volume_max
+     * en départage - voir FormatColis::scopeParTailleCroissante().
      */
     const determinerFormatColisLocal = (poids, longueur, largeur, hauteur) => {
-        const grille = [...(formatsColis || [])].sort((a, b) => a.ordre - b.ordre);
+        const grille = [...(formatsColis || [])].sort((a, b) => {
+            const poidsA = a.poids_max ?? Infinity;
+            const poidsB = b.poids_max ?? Infinity;
+            if (poidsA !== poidsB) return poidsA - poidsB;
+            return (a.volume_max ?? Infinity) - (b.volume_max ?? Infinity);
+        });
         if (grille.length === 0) return null;
 
         const volume = (parseFloat(longueur) || 0) * (parseFloat(largeur) || 0) * (parseFloat(hauteur) || 0);
@@ -806,7 +814,10 @@ const CreateExpeditionV2 = () => {
         const formatParPoids = resoudre(poidsNum, 'poids_max');
         const formatParVolume = resoudre(volume, 'volume_max');
 
-        return formatParPoids.ordre >= formatParVolume.ordre ? formatParPoids : formatParVolume;
+        const rangParPoids = grille.indexOf(formatParPoids);
+        const rangParVolume = grille.indexOf(formatParVolume);
+
+        return rangParPoids >= rangParVolume ? formatParPoids : formatParVolume;
     };
 
     const handleAddArticle = (colisIndex, option) => {

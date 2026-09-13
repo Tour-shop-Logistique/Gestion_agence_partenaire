@@ -103,6 +103,7 @@ export const exportAgencyProfilePDF = (agency) => {
     ['Code agence', agency.code_agence || '-'],
     ['Nom', agency.name || '-'],
     ['Téléphone', agency.telephone || '-'],
+    ['WhatsApp', agency.whatsapp || '-'],
     ['Email', agency.email || '-'],
     ['Adresse', agency.address || '-'],
     ['Ville', agency.ville || '-'],

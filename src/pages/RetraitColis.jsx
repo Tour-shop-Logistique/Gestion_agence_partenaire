@@ -234,9 +234,9 @@ const RetraitColis = () => {
             {searchResults.length > 0 ? (
                 <div className="space-y-4">
                     {/* Bulk Action Header */}
-                    <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg">
                         <div className="flex items-center gap-3">
-                            <input 
+                            <input
                                 type="checkbox"
                                 checked={selectedColis.length > 0 && selectedColis.length === searchResults.length}
                                 onChange={selectAll}
@@ -250,7 +250,7 @@ const RetraitColis = () => {
                             <button
                                 onClick={handleInitiateRecup}
                                 disabled={isRefreshing}
-                                className="px-4 py-1.5 bg-slate-900 text-white text-xs font-semibold rounded hover:bg-slate-800 transition-colors flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                                className="w-full sm:w-auto justify-center px-4 py-1.5 bg-slate-900 text-white text-xs font-semibold rounded hover:bg-slate-800 transition-colors flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                             >
                                 {isRefreshing ? (
                                     <>

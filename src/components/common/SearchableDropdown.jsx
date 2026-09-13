@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { MagnifyingGlassIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 
 // Retire les accents pour que "suede" trouve "Suède" - NFD decompose les
@@ -16,7 +17,9 @@ const stripAccents = (value) => value.normalize('NFD').replace(/[̀-ͯ]/g, '');
 const SearchableDropdown = ({ options = [], onSelect, placeholder = "Sélectionner...", className = "", buttonClassName = "h-9 text-xs", id, disabled = false }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [menuPos, setMenuPos] = useState(null);
     const dropdownRef = useRef(null);
+    const menuRef = useRef(null);
     const searchInputRef = useRef(null);
 
     // Filtrer les options selon le terme de recherche, insensible aux
@@ -25,18 +28,48 @@ const SearchableDropdown = ({ options = [], onSelect, placeholder = "Sélectionn
         stripAccents(option.label.toLowerCase()).includes(stripAccents(searchTerm.toLowerCase()))
     );
 
+    // Le menu se rend via un portail (document.body), en position fixed
+    // calculée depuis le bouton - sans ça, un ancêtre avec overflow-hidden
+    // (ex: une carte de formulaire) tronque le menu au lieu de le laisser
+    // flotter par-dessus le reste de la page (bug rencontré et corrigé).
+    // Toujours ouvert vers le HAUT (bottom du menu ancré au-dessus du
+    // bouton), comportement préexistant conservé.
+    const updateMenuPos = () => {
+        if (!dropdownRef.current) return;
+        const rect = dropdownRef.current.getBoundingClientRect();
+        setMenuPos({
+            bottom: window.innerHeight - rect.top + 4,
+            left: rect.left,
+            width: rect.width,
+        });
+    };
+
     // Fermer le dropdown quand on clique à l'extérieur
     useEffect(() => {
+        if (!isOpen) return;
+
+        updateMenuPos();
+
         const handleClickOutside = (event) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+            if (
+                dropdownRef.current && !dropdownRef.current.contains(event.target)
+                && menuRef.current && !menuRef.current.contains(event.target)
+            ) {
                 setIsOpen(false);
                 setSearchTerm('');
             }
         };
 
         document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+        window.addEventListener('scroll', updateMenuPos, true);
+        window.addEventListener('resize', updateMenuPos);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            window.removeEventListener('scroll', updateMenuPos, true);
+            window.removeEventListener('resize', updateMenuPos);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen]);
 
     // Focus sur l'input de recherche quand le dropdown s'ouvre
     useEffect(() => {
@@ -70,8 +103,15 @@ const SearchableDropdown = ({ options = [], onSelect, placeholder = "Sélectionn
             </button>
 
             {/* Dropdown menu - S'ouvre vers le HAUT */}
-            {isOpen && !disabled && (
-                <div className="absolute z-50 w-full bottom-full mb-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-80 overflow-hidden flex flex-col">
+            {isOpen && !disabled && menuPos && createPortal(
+                <div
+                    ref={menuRef}
+                    className="fixed bg-white border border-slate-200 rounded-lg shadow-lg max-h-80 overflow-hidden flex flex-col"
+                    // z-index élevé pour rester visible même utilisé à
+                    // l'intérieur d'un modal (un menu en portail sous un
+                    // modal serait invisible sans jamais lever d'erreur).
+                    style={{ bottom: menuPos.bottom, left: menuPos.left, width: menuPos.width, zIndex: 10050 }}
+                >
                     {/* Liste des options - EN HAUT */}
                     <div className="max-h-64 overflow-y-auto flex-1">
                         {filteredOptions.length > 0 ? (
@@ -106,7 +146,8 @@ const SearchableDropdown = ({ options = [], onSelect, placeholder = "Sélectionn
                             />
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

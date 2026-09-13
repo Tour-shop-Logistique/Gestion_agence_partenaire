@@ -9,9 +9,11 @@ import ExportButton from "../components/common/ExportButton";
 
 const formatCFA = (amount) => new Intl.NumberFormat('fr-FR').format(amount || 0) + ' CFA';
 
-// Palette cyclique par rang (ordre) plutôt qu'un mapping figé par nom : la
-// grille de formats est désormais extensible (voir FormatColis côté
-// backend), un nom de format n'est plus une valeur connue à l'avance.
+// Palette cyclique par nom (hash stable) plutôt qu'un mapping figé ou un
+// rang manuel ("ordre", retiré côté backend) : la grille de formats est
+// extensible (voir FormatColis côté backend), un nom de format n'est pas
+// une valeur connue à l'avance, mais un même nom doit toujours retomber sur
+// la même couleur d'un rendu à l'autre.
 const FORMAT_BADGE_PALETTE = [
     'bg-sky-50 text-sky-700 border-sky-100',
     'bg-violet-50 text-violet-700 border-violet-100',
@@ -20,9 +22,16 @@ const FORMAT_BADGE_PALETTE = [
     'bg-rose-50 text-rose-700 border-rose-100',
 ];
 
+const hashNomFormat = (nom) => {
+    let hash = 0;
+    for (let i = 0; i < (nom || '').length; i++) {
+        hash = (hash * 31 + nom.charCodeAt(i)) % FORMAT_BADGE_PALETTE.length;
+    }
+    return hash;
+};
+
 const FormatBadge = ({ format }) => {
-    const rang = format?.ordre ? format.ordre - 1 : 0;
-    const classes = FORMAT_BADGE_PALETTE[rang % FORMAT_BADGE_PALETTE.length];
+    const classes = FORMAT_BADGE_PALETTE[hashNomFormat(format?.nom)];
     return (
         <span className={`inline-flex items-center px-2 py-0.5 rounded border font-semibold text-xs ${classes}`}>
             {format?.nom || '—'}

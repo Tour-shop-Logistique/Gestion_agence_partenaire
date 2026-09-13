@@ -204,6 +204,9 @@ const LoginModal = ({ isOpen, onClose }) => {
                 className="appearance-none block w-full px-4 py-2 bg-white/10 border border-gray-300/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 placeholder="0700000000 ou email@example.com"
               />
+              <p className="mt-1 text-xs text-gray-400">
+                Téléphone sans indicatif, ex : 0700000000
+              </p>
             </div>
 
             <div>
