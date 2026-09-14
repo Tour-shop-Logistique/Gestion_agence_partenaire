@@ -347,6 +347,31 @@ export const agenciesApi = {
   },
 
   /**
+   * Pays disposant d'un backoffice actif - restreint le sélecteur de pays
+   * du formulaire agence à des choix valides (voir AgenceController::
+   * paysAvecBackoffice() côté backend). Public, aucune authentification
+   * requise.
+   * @returns {Promise<Object>}
+   */
+  async listPaysDisponibles() {
+    try {
+      const response = await apiService.get(API_ENDPOINTS.AGENCIES.PAYS_DISPONIBLES);
+
+      return {
+        success: response.success !== false,
+        data: response.pays || [],
+        message: response.message,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        data: [],
+        message: error.message || "Erreur lors de la récupération des pays disponibles",
+      };
+    }
+  },
+
+  /**
    * Lister les transactions de l'agence
    * @param {Object} params - Paramètres de filtrage (date_debut, date_fin)
    * @returns {Promise<Object>}

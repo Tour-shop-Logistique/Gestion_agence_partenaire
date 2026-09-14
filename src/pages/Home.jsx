@@ -2,13 +2,15 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import logo from "../assets/logo_transparent.png";
 import heroImg from "../assets/background.jpg";
-import LoginModal from "../components/LoginModal";
-import RegisterModal from "../components/RegisterModal";
+import AuthPanel from "../components/auth/AuthPanel";
 
 const Home = () => {
   const [scrolled, setScrolled] = useState(false);
-  const [loginModalOpen, setLoginModalOpen] = useState(false);
-  const [registerModalOpen, setRegisterModalOpen] = useState(false);
+  // null = panneau fermé, sinon la vue initiale à afficher ("login" ou
+  // "register") - un seul panneau dont la vue bascule en interne (mot de
+  // passe oublié, vérification email, etc.) plutôt qu'une pile de modales
+  // ouvertes les unes par-dessus les autres, aligné sur le backoffice.
+  const [authView, setAuthView] = useState(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -40,13 +42,13 @@ const Home = () => {
           </Link>
           <div className="flex items-center gap-3 sm:gap-4">
             <button
-              onClick={() => setLoginModalOpen(true)}
+              onClick={() => setAuthView("login")}
               className="text-sm sm:text-base text-white hover:text-blue-400 px-2 py-1 transition-colors"
             >
               Connexion
             </button>
             <button
-              onClick={() => setRegisterModalOpen(true)}
+              onClick={() => setAuthView("register")}
               className="bg-blue-600 text-white px-4 sm:px-6 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-all shadow-lg hover:shadow-blue-500/25"
             >
               Inscription
@@ -159,15 +161,28 @@ const Home = () => {
         </div>
       </main>
 
-      {/* Modales */}
-      <LoginModal
-        isOpen={loginModalOpen}
-        onClose={() => setLoginModalOpen(false)}
-      />
-      <RegisterModal
-        isOpen={registerModalOpen}
-        onClose={() => setRegisterModalOpen(false)}
-      />
+      {/* Panneau d'authentification - une vue à la fois, jamais de modale
+          empilée par-dessus une autre (voir AuthPanel). La clé sur authView
+          force le remontage du panneau à chaque ouverture, pour repartir de
+          la vue initiale demandée (login/register) plutôt que de garder la
+          vue où l'utilisateur s'était arrêté la fois précédente. */}
+      {authView && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" onClick={() => setAuthView(null)}></div>
+          <div className="relative w-full max-w-lg px-4">
+            <button
+              onClick={() => setAuthView(null)}
+              className="absolute -top-10 right-4 text-white/70 hover:text-white transition-colors z-10"
+              aria-label="Fermer"
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <AuthPanel key={authView} initialView={authView} />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

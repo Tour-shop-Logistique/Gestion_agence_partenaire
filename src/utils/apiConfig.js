@@ -49,6 +49,12 @@ export const API_ENDPOINTS = {
     STATUS_USER: "/agence/status-user/:user",
     RECORD_TRANSACTION: "/agence/record-transaction",
     LIST_TRANSACTIONS: "/agence/list-transactions",
+
+    // Pays disposant d'un backoffice actif - restreint le sélecteur de pays
+    // du formulaire agence à des choix qui ne seront pas rejetés à la
+    // sauvegarde (une agence doit toujours être rattachable à un backoffice
+    // de son pays). Public, hors /agence/... (voir routes/api.php backend).
+    PAYS_DISPONIBLES: "/agences/pays-disponibles",
   },
 
   // Promotions et offres spéciales
@@ -104,7 +110,14 @@ export const API_ENDPOINTS = {
 
   // Communes (référentiel géographique, lecture seule côté agence)
   COMMUNES: {
+    // Authentifié, résout le backoffice via l'agence déjà rattachée à
+    // l'utilisateur connecté - inutilisable tant que l'agence n'existe pas
+    // encore (configuration initiale, voir LIST_PUBLIC).
     LIST: "/communes/list",
+    // Public, filtré par ?code_pays= explicite : seul moyen de lister les
+    // communes AVANT que l'agence ne soit créée (le pays vient d'être
+    // choisi dans le formulaire, pas encore persisté en base).
+    LIST_PUBLIC: "/communes",
   },
 
   EXPEDITIONS: {

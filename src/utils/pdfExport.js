@@ -112,7 +112,6 @@ export const exportAgencyProfilePDF = (agency) => {
     ['Latitude', agency.latitude ?? '-'],
     ['Longitude', agency.longitude ?? '-'],
     ['Description', agency.description || '-'],
-    ['Message d\'accueil', agency.message_accueil || '-'],
   ];
 
   autoTable(doc, {

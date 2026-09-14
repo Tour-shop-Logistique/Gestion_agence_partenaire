@@ -2,6 +2,7 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { selectCurrentUser, selectIsAdmin } from "../store/slices/authSlice";
+import { selectAgencyConfigured } from "../store/slices/agencySlice";
 import { useAgency } from "../hooks/useAgency";
 import { useExpedition } from "../hooks/useExpedition";
 import {
@@ -45,6 +46,8 @@ const PAGE_KEY_BY_PATH = {
 const Sidebar = ({ onClose }) => {
   const currentUser = useSelector(selectCurrentUser);
   const isAdmin = useSelector(selectIsAdmin);
+  const agencyConfigured = useSelector(selectAgencyConfigured);
+  const agencyStatus = useSelector((state) => state.agency.status);
   const location = useLocation();
   const { data: agencyData } = useAgency();
   const { demandesMeta } = useExpedition();
@@ -163,10 +166,22 @@ const Sidebar = ({ onClose }) => {
 
   const rawMenuItems = isAdminLike ? adminMenuItems : agentMenuItems;
 
+  // Tant que l'agence n'est pas configurée (AgencySetupGuard bloque déjà
+  // l'accès direct à toutes les autres pages, voir App.jsx), seul le lien
+  // vers /agency-profile a un sens dans le menu - les autres mèneraient à
+  // une redirection immédiate. Pendant le chargement initial (idle/loading),
+  // ne rien filtrer : même garde-fou que AgencySetupGuard, pour éviter un
+  // flash du menu réduit avant que les vraies données d'agence n'arrivent.
+  const agencyStatusResolved = agencyStatus !== "loading" && agencyStatus !== "idle";
+
   const menuItems = rawMenuItems
     .map((section) => ({
       ...section,
-      items: section.items.filter((item) => canAccessPage(PAGE_KEY_BY_PATH[item.path])),
+      items: section.items.filter((item) => {
+        if (!canAccessPage(PAGE_KEY_BY_PATH[item.path])) return false;
+        if (agencyStatusResolved && !agencyConfigured && item.path !== "/agency-profile") return false;
+        return true;
+      }),
     }))
     .filter((section) => section.items.length > 0);
 

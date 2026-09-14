@@ -6,10 +6,10 @@ import { selectAgencyConfigured } from "../store/slices/agencySlice";
 import { getLogoUrl } from "../utils/apiConfig";
 import { toast } from "../utils/toast";
 import ErrorBoundary from "../components/ErrorBoundary";
-import CoverageMap from "../components/CoverageMap";
 import SearchableDropdown from "../components/common/SearchableDropdown";
 import PhoneInput from "../components/common/PhoneInput";
-import { COUNTRY_OPTIONS, getCountryName } from "../utils/countries";
+import { getCountryName } from "../utils/countries";
+import { agenciesApi } from "../utils/api/agencies";
 import { splitPhoneNumber, joinPhoneNumber } from "../utils/phoneCountries";
 import { communesApi } from "../utils/api/communes";
 import { exportAgencyProfilePDF } from "../utils/pdfExport";
@@ -27,11 +27,9 @@ import {
   BriefcaseIcon,
   CameraIcon,
   ExclamationTriangleIcon,
-  ChatBubbleLeftRightIcon,
   PhotoIcon,
   TrashIcon,
   PlusIcon,
-  IdentificationIcon,
   SparklesIcon,
   EnvelopeIcon,
   ChevronLeftIcon,
@@ -66,14 +64,20 @@ const Field = ({ icon: Icon, ...props }) => (
   </div>
 );
 
-/** En-tête de section */
-const SectionHeader = ({ icon: Icon, title, action }) => (
-  <div className="flex items-center justify-between mb-5">
-    <div className="flex items-center gap-2.5">
-      <Icon className="w-4 h-4 text-slate-400" />
-      <h2 className="text-sm font-semibold text-slate-700">{title}</h2>
+/**
+ * En-tête de section : plus d'action locale (le seul bouton d'édition est
+ * désormais global, en haut de page) - juste une icône, un titre, et une
+ * légende optionnelle qui explique ce que fait la section.
+ */
+const SectionHeader = ({ icon: Icon, title, hint }) => (
+  <div className="flex items-start gap-2.5 mb-5">
+    <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
+      <Icon className="w-4 h-4 text-indigo-600" />
     </div>
-    {action}
+    <div className="min-w-0">
+      <h2 className="text-sm font-semibold text-slate-800">{title}</h2>
+      {hint && <p className="text-xs text-slate-400 mt-0.5">{hint}</p>}
+    </div>
   </div>
 );
 
@@ -84,29 +88,14 @@ const Card = ({ children, className = "" }) => (
   </div>
 );
 
-/** Bouton Modifier/Annuler propre à une section */
-const SectionEditButton = ({ isEditing, onClick }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
-      isEditing
-        ? "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100"
-        : "border-slate-800 bg-slate-800 text-white hover:bg-slate-700"
-    }`}
-  >
-    {isEditing
-      ? <><XMarkIcon className="w-3.5 h-3.5" /> Annuler</>
-      : <><PencilSquareIcon className="w-3.5 h-3.5" /> Modifier</>
-    }
-  </button>
-);
-
-/** Barre de sauvegarde fixe, affichée pendant l'édition d'un onglet */
+/**
+ * Barre de sauvegarde fixe, affichée pendant l'édition du profil (toute la
+ * page bascule ensemble - plus d'édition par onglet isolé, voir isEditing).
+ */
 const SaveBar = ({ saving, onCancel }) => (
   <div className="fixed bottom-0 left-0 right-0 z-50 lg:left-60">
     <div className="bg-white border-t border-slate-200 px-4 py-3 sm:px-6">
-      <div className="max-w-[1600px] mx-auto flex items-center justify-between gap-4">
+      <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4">
         <p className="text-xs text-slate-500 hidden sm:block">
           Les modifications ne sont pas encore enregistrées.
         </p>
@@ -135,12 +124,6 @@ const SaveBar = ({ saving, onCancel }) => (
     </div>
   </div>
 );
-
-const TABS = [
-  { key: "identite", label: "Identité", icon: IdentificationIcon },
-  { key: "vitrine", label: "Vitrine", icon: SparklesIcon },
-  { key: "horaires", label: "Horaires", icon: ClockIcon },
-];
 
 /** Visionneuse plein écran pour parcourir les photos de l'agence */
 const ImageLightbox = ({ images, index, onClose, onNavigate }) => {
@@ -220,12 +203,13 @@ const AgencyProfile = () => {
   const isAdmin = useSelector(selectIsAdmin);
   const agencyConfigured = useSelector(selectAgencyConfigured);
 
-  // Un état d'édition indépendant par onglet : on ne modifie qu'une
-  // section à la fois (identité, vitrine ou horaires).
-  const [editingTab, setEditingTab] = useState(null);
+  // Un seul état d'édition pour toute la page : plus d'édition "par onglet"
+  // qui cachait certains contrôles (logo, photos, message d'accueil)
+  // derrière le bouton Modifier d'une carte sans rapport visible. Cliquer
+  // "Modifier le profil" active tous les champs de la page d'un coup.
+  const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState("identite");
 
   const defaultHoraires = [
     { jour: "Lundi",    ouverture: "08:00", fermeture: "18:00", ferme: false },
@@ -238,10 +222,10 @@ const AgencyProfile = () => {
   ];
 
   const [formData, setFormData] = useState({
-    name: "", code_agence: "", address: "", ville: "",
+    name: "", code_agence: "", address: "",
     code_pays: "CI", email: "", website: "",
     latitude: "", longitude: "", description: "", commune: "", commune_id: "",
-    horaires: defaultHoraires, logo: null, message_accueil: "", zone_couverture_km: "10",
+    horaires: defaultHoraires, logo: null, zone_couverture_km: "10",
   });
 
   // Téléphone et WhatsApp restent chacun un seul champ côté backend
@@ -254,11 +238,43 @@ const AgencyProfile = () => {
   const [waLocalNumber, setWaLocalNumber] = useState('');
 
   // Communes du backoffice du pays de l'agence, pour le select "Commune"
-  // (référentiel utilisé par la tarification interville).
+  // (référentiel utilisé par la tarification interville). Tant que l'agence
+  // n'est pas encore configurée, getCommunes() (authentifié, résout le
+  // backoffice via l'agence déjà rattachée à l'utilisateur) échouerait
+  // toujours - on utilise alors la variante publique filtrée par le pays
+  // choisi dans le formulaire (formData.code_pays), refetchée à chaque
+  // changement de pays. Une fois l'agence configurée, le pays est fixe et
+  // getCommunes() (déjà correct côté backend) reste utilisé.
   const [communes, setCommunes] = useState([]);
   useEffect(() => {
-    communesApi.getCommunes().then((res) => {
+    if (agencyConfigured) {
+      communesApi.getCommunes().then((res) => {
+        if (res.success) setCommunes(res.data || []);
+      });
+      return;
+    }
+
+    if (!formData.code_pays) {
+      setCommunes([]);
+      return;
+    }
+
+    communesApi.getCommunesByPays(formData.code_pays).then((res) => {
       if (res.success) setCommunes(res.data || []);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agencyConfigured, formData.code_pays]);
+
+  // Pays disposant d'un backoffice actif : une agence ne peut être
+  // rattachée qu'à l'un de ces pays (le backend rejette tout autre pays à
+  // la sauvegarde - voir AgenceController::add()/edit()), le sélecteur ne
+  // propose donc que ceux-là plutôt que tous les pays du monde.
+  const [countryOptions, setCountryOptions] = useState([]);
+  useEffect(() => {
+    agenciesApi.listPaysDisponibles().then((res) => {
+      if (res.success) {
+        setCountryOptions(res.data.map((p) => ({ id: p.code_pays, label: p.nom })));
+      }
     });
   }, []);
 
@@ -274,7 +290,7 @@ const AgencyProfile = () => {
 
   /* Ouvrir l'édition automatiquement si pas encore configuré */
   useEffect(() => {
-    if (!agencyConfigured && isAdmin) setEditingTab("identite");
+    if (!agencyConfigured && isAdmin) setIsEditing(true);
   }, [agencyConfigured, isAdmin]);
 
   /* Remplir le formulaire depuis Redux */
@@ -285,7 +301,6 @@ const AgencyProfile = () => {
       if (a.nom_agence)  next.name        = a.nom_agence;
       if (a.code_agence) next.code_agence = a.code_agence;
       if (a.adresse)     next.address     = a.adresse;
-      if (a.ville)       next.ville       = a.ville;
       if (a.code_pays)   next.code_pays   = a.code_pays;
       if (a.email)       next.email       = a.email;
       if (a.website)     next.website     = a.website;
@@ -293,7 +308,6 @@ const AgencyProfile = () => {
       if (a.commune)     next.commune     = a.commune;
       if (a.commune_id)  next.commune_id  = a.commune_id;
       if (a.logo)        next.logo        = a.logo;
-      if (a.message_accueil != null) next.message_accueil = a.message_accueil;
       if (a.zone_couverture_km != null) next.zone_couverture_km = String(a.zone_couverture_km);
       if (a.latitude  != null) next.latitude  = String(a.latitude);
       if (a.longitude != null) next.longitude = String(a.longitude);
@@ -334,7 +348,12 @@ const AgencyProfile = () => {
   /* Handlers */
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((p) => ({ ...p, [name]: value }));
+    // code_agence est toujours stocké en majuscules (voir Agence::
+    // codeAgence() côté backend) - converti dès la saisie plutôt qu'à
+    // l'enregistrement, pour que l'utilisateur voie immédiatement la forme
+    // finale du code qu'il choisit.
+    const nextValue = name === "code_agence" ? value.toUpperCase() : value;
+    setFormData((p) => ({ ...p, [name]: nextValue }));
   };
 
   const handleLogoChange = (e) => {
@@ -424,14 +443,12 @@ const AgencyProfile = () => {
         email:       formData.email,
         description: formData.description,
         adresse:     formData.address,
-        ville:       formData.ville,
         commune:     formData.commune,
         commune_id:  formData.commune_id || null,
         code_pays:   formData.code_pays,
         latitude:    formData.latitude  === "" ? null : parseFloat(formData.latitude),
         longitude:   formData.longitude === "" ? null : parseFloat(formData.longitude),
         horaires:    formData.horaires.map((h) => ({ ...h, jour: h.jour.toLowerCase() })),
-        message_accueil: formData.message_accueil,
       };
       if (logoFile) payload.logo = logoFile;
       if (newPhotoFiles.length) payload.photos = newPhotoFiles;
@@ -447,7 +464,7 @@ const AgencyProfile = () => {
 
       if (result.type?.includes("fulfilled") || result.success) {
         toast.success("Profil agence mis à jour.");
-        setEditingTab(null);
+        setIsEditing(false);
         setPhotosToRemove([]);
         setNewPhotoFiles([]);
         setNewPhotoPreviews([]);
@@ -462,16 +479,18 @@ const AgencyProfile = () => {
     }
   };
 
-  const handleEditToggle = (tabKey) => {
-    if (editingTab === tabKey) {
+  const handleEditToggle = () => {
+    if (isEditing) {
       if (originalFormData) setFormData({ ...originalFormData });
       setPhotosToRemove([]);
       setNewPhotoFiles([]);
       setNewPhotoPreviews([]);
-      setEditingTab(null);
+      setLogoFile(null);
+      setLogoPreview(null);
+      setIsEditing(false);
     } else {
       setOriginalFormData({ ...formData });
-      setEditingTab(tabKey);
+      setIsEditing(true);
     }
   };
 
@@ -484,7 +503,7 @@ const AgencyProfile = () => {
   /* ── Render ── */
   return (
     <ErrorBoundary>
-    <div className="max-w-[1600px] mx-auto px-3 sm:px-4 lg:px-6 pb-24 space-y-4 sm:space-y-6">
+    <div className="max-w-[1400px] mx-auto px-3 sm:px-4 lg:px-6 pb-24 space-y-4 sm:space-y-6">
 
       {/* ── Bannière setup requis ── */}
       {!agencyConfigured && (
@@ -499,11 +518,12 @@ const AgencyProfile = () => {
         </div>
       )}
 
-      {/* ── En-tête identité (bandeau sobre, pleine largeur) ── */}
+      {/* ── En-tête identité : logo, nom, statut, actions ── */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 shadow-sm">
         <div className="relative flex flex-col sm:flex-row sm:items-center gap-5 p-5 sm:p-7">
 
-          {/* Logo */}
+          {/* Logo - toujours cliquable en mode édition, quel que soit
+              l'endroit de la page où le clic Modifier a eu lieu. */}
           <div className="relative group flex-shrink-0">
             <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl border-2 border-white/20 bg-white flex items-center justify-center overflow-hidden shadow-lg">
               {logoPreview || agencyData?.agence?.logo ? (
@@ -516,8 +536,8 @@ const AgencyProfile = () => {
                 <BuildingOffice2Icon className="w-9 h-9 text-slate-300" />
               )}
             </div>
-            {editingTab === "identite" && (
-              <label className="absolute inset-0 flex items-center justify-center bg-slate-900/50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+            {isEditing && (
+              <label className="absolute inset-0 flex items-center justify-center bg-slate-900/50 rounded-2xl opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity cursor-pointer">
                 <CameraIcon className="w-5 h-5 text-white" />
                 <input type="file" className="hidden" accept="image/*" onChange={handleLogoChange} />
               </label>
@@ -543,10 +563,13 @@ const AgencyProfile = () => {
                   {formData.code_agence}
                 </span>
               )}
-              {(formData.ville || formData.code_pays) && (
+              {(formData.commune_id || formData.code_pays) && (
                 <span className="flex items-center gap-1.5">
                   <MapPinIcon className="w-4 h-4" />
-                  {[formData.ville, getCountryName(formData.code_pays)].filter(Boolean).join(", ")}
+                  {[
+                    communes.find((c) => String(c.id) === String(formData.commune_id))?.nom,
+                    getCountryName(formData.code_pays),
+                  ].filter(Boolean).join(", ")}
                 </span>
               )}
             </div>
@@ -555,451 +578,357 @@ const AgencyProfile = () => {
           {/* Actions */}
           {isAdmin && (
             <div className="flex items-center gap-2 flex-shrink-0">
-              <button
-                type="button"
-                onClick={() => {
-                  try {
-                    exportAgencyProfilePDF({
-                      ...formData,
-                      pays: getCountryName(formData.code_pays),
-                      telephone: joinPhoneNumber(telDialCode, telLocalNumber),
-                      whatsapp: joinPhoneNumber(waDialCode, waLocalNumber),
-                    });
-                  } catch (error) {
-                    toast.error("Erreur lors de l'export de la fiche agence");
+              {!isEditing && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      try {
+                        exportAgencyProfilePDF({
+                          ...formData,
+                          pays: getCountryName(formData.code_pays),
+                          telephone: joinPhoneNumber(telDialCode, telLocalNumber),
+                          whatsapp: joinPhoneNumber(waDialCode, waLocalNumber),
+                        });
+                      } catch (error) {
+                        toast.error("Erreur lors de l'export de la fiche agence");
+                      }
+                    }}
+                    className="p-2.5 rounded-xl border border-white/20 bg-white/10 text-white hover:bg-white/20 transition-colors"
+                    title="Exporter la fiche en PDF"
+                  >
+                    <ArrowDownTrayIcon className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => { setRefreshing(true); await fetchAgencyData(true); setRefreshing(false); }}
+                    className="p-2.5 rounded-xl border border-white/20 bg-white/10 text-white hover:bg-white/20 transition-colors"
+                    title="Actualiser"
+                  >
+                    <ArrowPathIcon className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+                  </button>
+                </>
+              )}
+              {agencyConfigured && (
+                <button
+                  type="button"
+                  onClick={handleEditToggle}
+                  className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
+                    isEditing
+                      ? "bg-white/10 text-white border border-white/20 hover:bg-white/20"
+                      : "bg-white text-slate-900 hover:bg-slate-100"
+                  }`}
+                >
+                  {isEditing
+                    ? <><XMarkIcon className="w-4 h-4" /> Annuler</>
+                    : <><PencilSquareIcon className="w-4 h-4" /> Modifier le profil</>
                   }
-                }}
-                className="p-2.5 rounded-xl border border-white/20 bg-white/10 text-white hover:bg-white/20 transition-colors"
-                title="Exporter la fiche en PDF"
-              >
-                <ArrowDownTrayIcon className="w-4 h-4" />
-              </button>
-              <button
-                type="button"
-                onClick={async () => { setRefreshing(true); await fetchAgencyData(true); setRefreshing(false); }}
-                className="p-2.5 rounded-xl border border-white/20 bg-white/10 text-white hover:bg-white/20 transition-colors"
-                title="Actualiser"
-              >
-                <ArrowPathIcon className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
-              </button>
+                </button>
+              )}
             </div>
           )}
         </div>
       </div>
 
-      {/* ── Corps : navigation par onglets (sidebar) + contenu ── */}
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-4 sm:gap-6 items-start">
+      {/* ── Corps : toutes les sections visibles ensemble, plus d'onglets
+          à état caché (voir isEditing, unique pour toute la page) ── */}
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
 
-        {/* Navigation par onglets */}
-        <div className="lg:sticky lg:top-6 flex lg:flex-col gap-1.5 bg-white border border-slate-200 rounded-xl p-2 overflow-x-auto lg:overflow-visible">
-          {TABS.map((tab) => {
-            const isActive = activeTab === tab.key;
-            return (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors ${
-                  isActive
-                    ? "bg-indigo-600 text-white shadow-sm"
-                    : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
-                }`}
-              >
-                <tab.icon className="w-4 h-4 flex-shrink-0" />
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Contenu de l'onglet actif */}
-        <div className="min-w-0">
-
-        {/* Onglet : Identité (+ Localisation) */}
-        {activeTab === "identite" && (
-          <>
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 items-start">
-            <Card>
-              <SectionHeader
-                icon={BuildingOffice2Icon}
-                title="Informations générales"
-                action={
-                  <SectionEditButton
-                    isEditing={editingTab === "identite"}
-                    onClick={() => handleEditToggle("identite")}
-                  />
-                }
-              />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <FieldLabel>Nom de l'agence</FieldLabel>
-                  <Field name="name" value={formData.name} onChange={handleChange} disabled={editingTab !== "identite"} placeholder="Ex : Agence Centrale Abidjan" />
-                </div>
-                <div>
-                  <FieldLabel>Code agence</FieldLabel>
-                  <Field
-                    name="code_agence"
-                    value={formData.code_agence}
-                    onChange={handleChange}
-                    disabled={agencyConfigured}
-                    placeholder="Ex : AGC-001"
-                  />
-                  {!agencyConfigured && (
-                    <p className="mt-1 text-xs text-slate-400">
-                      Choisissez librement ce code : il ne pourra plus être modifié après la création de l'agence.
-                    </p>
-                  )}
-                </div>
-                <div className="sm:col-span-2">
-                  <FieldLabel>Adresse</FieldLabel>
-                  <Field name="address" value={formData.address} onChange={handleChange} disabled={editingTab !== "identite"} placeholder="Rue, quartier…" />
-                </div>
-                <div>
-                  <FieldLabel>Ville</FieldLabel>
-                  <Field name="ville" value={formData.ville} onChange={handleChange} disabled={editingTab !== "identite"} placeholder="Ex : Abidjan" />
-                </div>
-                <div>
-                  <FieldLabel>Commune</FieldLabel>
-                  <SearchableDropdown
-                    options={communes.map((c) => ({ id: c.id, label: c.nom }))}
-                    onSelect={(commune) => setFormData((p) => ({ ...p, commune_id: commune.id, commune: commune.label }))}
-                    placeholder={
-                      communes.find((c) => String(c.id) === String(formData.commune_id))?.nom
-                      || formData.commune
-                      || "Sélectionnez une commune"
-                    }
-                    disabled={editingTab !== "identite"}
-                    className="w-full"
-                    buttonClassName="h-11 pl-3 pr-3 text-sm text-slate-800 rounded-lg"
-                  />
-                </div>
-                <div>
-                  <FieldLabel>Téléphone</FieldLabel>
-                  <PhoneInput
-                    dialCode={telDialCode}
-                    localNumber={telLocalNumber}
-                    onDialCodeChange={setTelDialCode}
-                    onLocalNumberChange={setTelLocalNumber}
-                    disabled={editingTab !== "identite"}
-                    inputClassName="w-full pl-3 pr-3 py-2.5 text-sm text-slate-800 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 disabled:bg-slate-50 disabled:text-slate-900 disabled:cursor-default transition-colors placeholder:text-slate-300"
-                  />
-                </div>
-                <div>
-                  <FieldLabel>WhatsApp <span className="text-slate-400 font-normal">(optionnel)</span></FieldLabel>
-                  <PhoneInput
-                    dialCode={waDialCode}
-                    localNumber={waLocalNumber}
-                    onDialCodeChange={setWaDialCode}
-                    onLocalNumberChange={setWaLocalNumber}
-                    required={false}
-                    disabled={editingTab !== "identite"}
-                    inputClassName="w-full pl-3 pr-3 py-2.5 text-sm text-slate-800 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 disabled:bg-slate-50 disabled:text-slate-900 disabled:cursor-default transition-colors placeholder:text-slate-300"
-                  />
-                </div>
-                <div>
-                  <FieldLabel>Adresse email</FieldLabel>
-                  <Field icon={EnvelopeIcon} type="email" name="email" value={formData.email} onChange={handleChange} disabled={editingTab !== "identite"} placeholder="contact@agence.com" required />
-                </div>
-                <div className="sm:col-span-2">
-                  <FieldLabel>Pays</FieldLabel>
-                  <div className="relative">
-                    <GlobeAltIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none z-10" />
-                    <SearchableDropdown
-                      options={COUNTRY_OPTIONS}
-                      onSelect={(pays) => setFormData((p) => ({ ...p, code_pays: pays.id }))}
-                      placeholder={getCountryName(formData.code_pays) || "Sélectionnez un pays"}
-                      disabled={editingTab !== "identite"}
-                      className="w-full"
-                      buttonClassName="h-11 pl-9 pr-3 text-sm text-slate-800 rounded-lg"
-                    />
-                  </div>
-                </div>
+        {/* Coordonnées + Localisation */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 items-start">
+          <Card>
+            <SectionHeader icon={BuildingOffice2Icon} title="Informations générales" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <FieldLabel>Nom de l'agence</FieldLabel>
+                <Field name="name" value={formData.name} onChange={handleChange} disabled={!isEditing} placeholder="Ex : Agence Centrale Abidjan" />
               </div>
-            </Card>
-
-            <Card>
-              <SectionHeader
-                icon={MapPinSolidIcon}
-                title="Localisation"
-                action={
-                  editingTab === "identite" ? (
-                    <button
-                      type="button"
-                      onClick={getCurrentLocation}
-                      className="text-xs font-medium text-indigo-600 hover:text-indigo-700 hover:underline transition-colors"
-                    >
-                      Détecter ma position
-                    </button>
-                  ) : null
-                }
-              />
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <FieldLabel>Latitude</FieldLabel>
-                  <Field name="latitude" value={formData.latitude} onChange={handleChange} disabled={editingTab !== "identite"} placeholder="5.354722" />
-                </div>
-                <div>
-                  <FieldLabel>Longitude</FieldLabel>
-                  <Field name="longitude" value={formData.longitude} onChange={handleChange} disabled={editingTab !== "identite"} placeholder="-4.008256" />
-                </div>
-              </div>
-
-              <div className="mt-4">
-                <CoverageMap
-                  latitude={formData.latitude === "" ? null : parseFloat(formData.latitude)}
-                  longitude={formData.longitude === "" ? null : parseFloat(formData.longitude)}
-                  radiusKm={0}
-                  editable={editingTab === "identite"}
-                  onPositionChange={([lat, lng]) =>
-                    setFormData((p) => ({ ...p, latitude: lat.toFixed(6), longitude: lng.toFixed(6) }))
-                  }
+              <div>
+                <FieldLabel>Code agence</FieldLabel>
+                <Field
+                  name="code_agence"
+                  value={formData.code_agence}
+                  onChange={handleChange}
+                  disabled={agencyConfigured || !isEditing}
+                  placeholder="Ex : AGC-001"
                 />
-                {editingTab === "identite" && (
-                  <p className="text-xs text-slate-400 mt-1.5">Cliquez sur la carte pour repositionner votre agence.</p>
+                {!agencyConfigured && (
+                  <p className="mt-1 text-xs text-slate-400">
+                    Choisissez librement ce code : il ne pourra plus être modifié après la création de l'agence.
+                  </p>
                 )}
               </div>
-            </Card>
-          </div>
+              <div className="sm:col-span-2">
+                <FieldLabel>Téléphone</FieldLabel>
+                <PhoneInput
+                  dialCode={telDialCode}
+                  localNumber={telLocalNumber}
+                  onDialCodeChange={setTelDialCode}
+                  onLocalNumberChange={setTelLocalNumber}
+                  disabled={!isEditing}
+                  inputClassName="w-full pl-3 pr-3 py-2.5 text-sm text-slate-800 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 disabled:bg-slate-50 disabled:text-slate-900 disabled:cursor-default transition-colors placeholder:text-slate-300"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <FieldLabel>WhatsApp <span className="text-slate-400 font-normal">(optionnel)</span></FieldLabel>
+                <PhoneInput
+                  dialCode={waDialCode}
+                  localNumber={waLocalNumber}
+                  onDialCodeChange={setWaDialCode}
+                  onLocalNumberChange={setWaLocalNumber}
+                  required={false}
+                  disabled={!isEditing}
+                  inputClassName="w-full pl-3 pr-3 py-2.5 text-sm text-slate-800 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 disabled:bg-slate-50 disabled:text-slate-900 disabled:cursor-default transition-colors placeholder:text-slate-300"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <FieldLabel>Adresse email</FieldLabel>
+                <Field icon={EnvelopeIcon} type="email" name="email" value={formData.email} onChange={handleChange} disabled={!isEditing} placeholder="contact@agence.com" required />
+              </div>
+            </div>
+          </Card>
 
-          {editingTab === "identite" && (
-            <SaveBar saving={saving} onCancel={() => handleEditToggle("identite")} />
-          )}
-          </>
-        )}
-
-        {/* Onglet : Vitrine (description, message d'accueil, photos) */}
-        {activeTab === "vitrine" && (
-          <>
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 items-start">
-            <Card>
-              <SectionHeader
-                icon={BriefcaseIcon}
-                title="Description"
-                action={
-                  <SectionEditButton
-                    isEditing={editingTab === "vitrine"}
-                    onClick={() => handleEditToggle("vitrine")}
+          <Card>
+            <div className="flex items-start justify-between mb-5">
+              <SectionHeader icon={MapPinSolidIcon} title="Localisation" />
+              {isEditing && (
+                <button
+                  type="button"
+                  onClick={getCurrentLocation}
+                  className="text-xs font-medium text-indigo-600 hover:text-indigo-700 hover:underline transition-colors shrink-0"
+                >
+                  Détecter ma position
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2">
+                <FieldLabel>Pays</FieldLabel>
+                <div className="relative">
+                  <GlobeAltIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none z-10" />
+                  <SearchableDropdown
+                    options={countryOptions}
+                    onSelect={(pays) => setFormData((p) => (
+                      // Changer de pays invalide la commune déjà choisie
+                      // (référentiel propre à chaque backoffice/pays) - on
+                      // la réinitialise pour ne jamais envoyer une commune
+                      // d'un autre pays que celui finalement retenu.
+                      { ...p, code_pays: pays.id, commune_id: "", commune: "" }
+                    ))}
+                    placeholder={getCountryName(formData.code_pays) || "Sélectionnez un pays"}
+                    disabled={!isEditing}
+                    className="w-full"
+                    buttonClassName="h-11 pl-9 pr-3 text-sm text-slate-800 rounded-lg"
                   />
-                }
-              />
-              <textarea
-                name="description"
-                rows={4}
-                value={formData.description}
-                onChange={handleChange}
-                disabled={editingTab !== "vitrine"}
-                placeholder="Présentez votre agence en quelques lignes…"
-                className="w-full px-3 py-2.5 text-sm text-slate-800 bg-white border border-slate-200 rounded-lg
-                  focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400
-                  disabled:bg-slate-50 disabled:text-slate-900 disabled:cursor-default
-                  transition-colors placeholder:text-slate-300 resize-none"
-              />
-              <p className="mt-2 text-xs text-slate-400">
-                Visible par vos clients lors de la prise de commande.
-              </p>
-            </Card>
+                </div>
+                <p className="mt-1.5 text-xs text-slate-400">
+                  Seuls les pays où Tour Shop opère déjà sont proposés : votre agence est toujours rattachée au backoffice de son pays.
+                </p>
+              </div>
+              <div className="sm:col-span-2">
+                <FieldLabel>Commune</FieldLabel>
+                <SearchableDropdown
+                  options={communes.map((c) => ({ id: c.id, label: c.nom }))}
+                  onSelect={(commune) => setFormData((p) => ({ ...p, commune_id: commune.id, commune: commune.label }))}
+                  placeholder={
+                    communes.find((c) => String(c.id) === String(formData.commune_id))?.nom
+                    || formData.commune
+                    || "Sélectionnez une commune"
+                  }
+                  disabled={!isEditing}
+                  className="w-full"
+                  buttonClassName="h-11 pl-3 pr-3 text-sm text-slate-800 rounded-lg"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <FieldLabel>Adresse</FieldLabel>
+                <Field name="address" value={formData.address} onChange={handleChange} disabled={!isEditing} placeholder="Rue, quartier…" />
+              </div>
+              <div>
+                <FieldLabel>Latitude</FieldLabel>
+                <Field name="latitude" value={formData.latitude} onChange={handleChange} disabled={!isEditing} placeholder="5.354722" />
+              </div>
+              <div>
+                <FieldLabel>Longitude</FieldLabel>
+                <Field name="longitude" value={formData.longitude} onChange={handleChange} disabled={!isEditing} placeholder="-4.008256" />
+              </div>
+            </div>
+          </Card>
+        </div>
 
-            <Card>
-              <SectionHeader icon={ChatBubbleLeftRightIcon} title="Message d'accueil" />
-              <textarea
-                name="message_accueil"
-                rows={3}
-                value={formData.message_accueil}
-                onChange={handleChange}
-                disabled={editingTab !== "vitrine"}
-                placeholder="Ex : Bienvenue chez nous ! Nous sommes ravis de vous accompagner dans vos expéditions."
-                className="w-full px-3 py-2.5 text-sm text-slate-800 bg-white border border-slate-200 rounded-lg
-                  focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400
-                  disabled:bg-slate-50 disabled:text-slate-900 disabled:cursor-default
-                  transition-colors placeholder:text-slate-300 resize-none"
-              />
-              <p className="mt-2 text-xs text-slate-400">
-                Un mot personnalisé affiché aux clients qui découvrent votre agence.
-              </p>
-            </Card>
+        {/* Description : devient éditable avec le reste de la page, plus de
+            dépendance cachée à un bouton d'une carte voisine. */}
+        <Card>
+          <SectionHeader icon={SparklesIcon} title="Description" hint="Visible par vos clients lors de la prise de commande." />
+          <textarea
+            name="description"
+            rows={4}
+            value={formData.description}
+            onChange={handleChange}
+            disabled={!isEditing}
+            placeholder="Présentez votre agence en quelques lignes…"
+            className="w-full px-3 py-2.5 text-sm text-slate-800 bg-white border border-slate-200 rounded-lg
+              focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400
+              disabled:bg-slate-50 disabled:text-slate-900 disabled:cursor-default
+              transition-colors placeholder:text-slate-300 resize-none"
+          />
+        </Card>
 
-            <Card className="xl:col-span-2">
-              <SectionHeader
-                icon={PhotoIcon}
-                title="Photos de l'agence"
-                action={
-                  editingTab === "vitrine" && (
-                    <label className="flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700 cursor-pointer transition-colors">
-                      <PlusIcon className="w-3.5 h-3.5" />
-                      Ajouter
-                      <input type="file" className="hidden" accept="image/*" multiple onChange={handlePhotosChange} />
-                    </label>
-                  )
-                }
-              />
-              {(() => {
-                const visibleExisting = existingPhotos.filter((url) => !photosToRemove.includes(url));
-                const totalCount = visibleExisting.length + newPhotoPreviews.length;
+        <Card>
+          <div className="flex items-start justify-between mb-5">
+            <SectionHeader icon={PhotoIcon} title="Photos de l'agence" hint={`Jusqu'à ${MAX_PHOTOS} photos, visibles par les clients qui consultent votre agence.`} />
+            {isEditing && (
+              <label className="flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700 cursor-pointer transition-colors shrink-0">
+                <PlusIcon className="w-3.5 h-3.5" />
+                Ajouter
+                <input type="file" className="hidden" accept="image/*" multiple onChange={handlePhotosChange} />
+              </label>
+            )}
+          </div>
+          {(() => {
+            const visibleExisting = existingPhotos.filter((url) => !photosToRemove.includes(url));
+            const totalCount = visibleExisting.length + newPhotoPreviews.length;
 
-                if (totalCount === 0) {
-                  return editingTab === "vitrine" ? (
-                    <label className="flex flex-col items-center justify-center gap-2.5 py-10 rounded-xl border-2 border-dashed border-indigo-200 bg-indigo-50/40 hover:bg-indigo-50 hover:border-indigo-300 transition-colors cursor-pointer">
-                      <div className="h-11 w-11 rounded-full bg-indigo-100 flex items-center justify-center">
-                        <PhotoIcon className="w-5 h-5 text-indigo-500" />
-                      </div>
-                      <p className="text-sm font-semibold text-indigo-700">Ajoutez vos premières photos</p>
-                      <p className="text-xs text-slate-400">Cliquez ou déposez des images ici — jusqu'à {MAX_PHOTOS} photos</p>
-                      <input type="file" className="hidden" accept="image/*" multiple onChange={handlePhotosChange} />
-                    </label>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center gap-2.5 py-10 rounded-xl border border-dashed border-slate-200 bg-slate-50/60">
-                      <div className="h-11 w-11 rounded-full bg-slate-100 flex items-center justify-center">
-                        <PhotoIcon className="w-5 h-5 text-slate-300" />
-                      </div>
-                      <p className="text-sm font-medium text-slate-400">Aucune photo pour l'instant</p>
-                      <p className="text-xs text-slate-400">Ajoutez des photos de vos locaux pour rassurer vos clients.</p>
-                    </div>
-                  );
-                }
-
-                return (
-                  <div className="grid grid-cols-3 sm:grid-cols-5 xl:grid-cols-6 gap-3">
-                    {visibleExisting.map((url, i) => (
-                      <div key={url} className="relative group aspect-square rounded-lg overflow-hidden border border-slate-200 bg-slate-50">
-                        <img
-                          src={url}
-                          alt="Photo agence"
-                          onClick={() => setViewerIndex(i)}
-                          className="w-full h-full object-cover cursor-zoom-in"
-                        />
-                        {editingTab === "vitrine" && (
-                          <button
-                            type="button"
-                            onClick={() => removeExistingPhoto(url)}
-                            className="absolute inset-0 flex items-center justify-center bg-slate-900/50 opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <TrashIcon className="w-5 h-5 text-white" />
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                    {newPhotoPreviews.map((src, i) => (
-                      <div key={`new-${i}`} className="relative group aspect-square rounded-lg overflow-hidden border border-indigo-200 bg-indigo-50">
-                        <img
-                          src={src}
-                          alt="Nouvelle photo"
-                          onClick={() => setViewerIndex(visibleExisting.length + i)}
-                          className="w-full h-full object-cover cursor-zoom-in"
-                        />
-                        <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-600 text-white">
-                          Nouveau
-                        </span>
-                        {editingTab === "vitrine" && (
-                          <button
-                            type="button"
-                            onClick={() => removeNewPhoto(i)}
-                            className="absolute inset-0 flex items-center justify-center bg-slate-900/50 opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <TrashIcon className="w-5 h-5 text-white" />
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                    {editingTab === "vitrine" && totalCount < MAX_PHOTOS && (
-                      <label className="aspect-square rounded-lg border-2 border-dashed border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/40 flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors">
-                        <PlusIcon className="w-5 h-5 text-slate-400" />
-                        <span className="text-[10px] font-medium text-slate-400">Ajouter</span>
-                        <input type="file" className="hidden" accept="image/*" multiple onChange={handlePhotosChange} />
-                      </label>
-                    )}
+            if (totalCount === 0) {
+              return isEditing ? (
+                <label className="flex flex-col items-center justify-center gap-2.5 py-10 rounded-xl border-2 border-dashed border-indigo-200 bg-indigo-50/40 hover:bg-indigo-50 hover:border-indigo-300 transition-colors cursor-pointer">
+                  <div className="h-11 w-11 rounded-full bg-indigo-100 flex items-center justify-center">
+                    <PhotoIcon className="w-5 h-5 text-indigo-500" />
                   </div>
-                );
-              })()}
-              <p className="mt-3 text-xs text-slate-400">
-                Jusqu'à {MAX_PHOTOS} photos, visibles par les clients qui consultent votre agence.
-              </p>
-            </Card>
-          </div>
+                  <p className="text-sm font-semibold text-indigo-700">Ajoutez vos premières photos</p>
+                  <p className="text-xs text-slate-400">Cliquez ou déposez des images ici — jusqu'à {MAX_PHOTOS} photos</p>
+                  <input type="file" className="hidden" accept="image/*" multiple onChange={handlePhotosChange} />
+                </label>
+              ) : (
+                <div className="flex flex-col items-center justify-center gap-2.5 py-10 rounded-xl border border-dashed border-slate-200 bg-slate-50/60">
+                  <div className="h-11 w-11 rounded-full bg-slate-100 flex items-center justify-center">
+                    <PhotoIcon className="w-5 h-5 text-slate-300" />
+                  </div>
+                  <p className="text-sm font-medium text-slate-400">Aucune photo pour l'instant</p>
+                  <p className="text-xs text-slate-400">Ajoutez des photos de vos locaux pour rassurer vos clients.</p>
+                </div>
+              );
+            }
 
-          {editingTab === "vitrine" && (
-            <SaveBar saving={saving} onCancel={() => handleEditToggle("vitrine")} />
-          )}
-          </>
-        )}
-
-        {/* Onglet : Horaires */}
-        {activeTab === "horaires" && (
-          <div className="space-y-5">
-            <Card>
-              <SectionHeader
-                icon={ClockIcon}
-                title="Horaires d'ouverture"
-                action={
-                  <SectionEditButton
-                    isEditing={editingTab === "horaires"}
-                    onClick={() => handleEditToggle("horaires")}
-                  />
-                }
-              />
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
-                {formData.horaires.map((h, i) => (
-                  <div
-                    key={`horaire-${h.jour}-${i}`}
-                    className={`rounded-lg border px-3 py-2.5 transition-colors ${
-                      h.ferme ? "bg-slate-50 border-slate-100" : "bg-white border-slate-200"
-                    }`}
-                  >
-                    {/* Ligne jour + statut */}
-                    <div className="flex items-center justify-between">
-                      <span className={`text-xs font-medium ${h.ferme ? "text-slate-400" : "text-slate-700"}`}>
-                        {h.jour}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        {editingTab === "horaires" && (
-                          <input
-                            type="checkbox"
-                            checked={h.ferme}
-                            onChange={(e) => handleHoraireChange(i, "ferme", e.target.checked)}
-                            className="w-3.5 h-3.5 accent-slate-700 cursor-pointer"
-                            title="Marquer comme fermé"
-                          />
-                        )}
-                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
-                          h.ferme
-                            ? "bg-slate-100 text-slate-400"
-                            : "bg-emerald-50 text-emerald-600"
-                        }`}>
-                          {h.ferme ? "Fermé" : "Ouvert"}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Plage horaire */}
-                    {!h.ferme && (
-                      <div className="flex items-center gap-1.5 mt-2">
-                        <input
-                          type="time"
-                          value={h.ouverture}
-                          onChange={(e) => handleHoraireChange(i, "ouverture", e.target.value)}
-                          disabled={editingTab !== "horaires"}
-                          className="flex-1 px-2 py-1 text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-indigo-400 disabled:cursor-default"
-                        />
-                        <span className="text-slate-300 text-xs">–</span>
-                        <input
-                          type="time"
-                          value={h.fermeture}
-                          onChange={(e) => handleHoraireChange(i, "fermeture", e.target.value)}
-                          disabled={editingTab !== "horaires"}
-                          className="flex-1 px-2 py-1 text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-indigo-400 disabled:cursor-default"
-                        />
-                      </div>
+            return (
+              <div className="grid grid-cols-3 sm:grid-cols-5 xl:grid-cols-6 gap-3">
+                {visibleExisting.map((url, i) => (
+                  <div key={url} className="relative group aspect-square rounded-lg overflow-hidden border border-slate-200 bg-slate-50">
+                    <img
+                      src={url}
+                      alt="Photo agence"
+                      onClick={() => setViewerIndex(i)}
+                      className="w-full h-full object-cover cursor-zoom-in"
+                    />
+                    {isEditing && (
+                      <button
+                        type="button"
+                        onClick={() => removeExistingPhoto(url)}
+                        className="absolute inset-0 flex items-center justify-center bg-slate-900/50 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <TrashIcon className="w-5 h-5 text-white" />
+                      </button>
                     )}
                   </div>
                 ))}
+                {newPhotoPreviews.map((src, i) => (
+                  <div key={`new-${i}`} className="relative group aspect-square rounded-lg overflow-hidden border border-indigo-200 bg-indigo-50">
+                    <img
+                      src={src}
+                      alt="Nouvelle photo"
+                      onClick={() => setViewerIndex(visibleExisting.length + i)}
+                      className="w-full h-full object-cover cursor-zoom-in"
+                    />
+                    <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-600 text-white">
+                      Nouveau
+                    </span>
+                    {isEditing && (
+                      <button
+                        type="button"
+                        onClick={() => removeNewPhoto(i)}
+                        className="absolute inset-0 flex items-center justify-center bg-slate-900/50 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <TrashIcon className="w-5 h-5 text-white" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                {isEditing && totalCount < MAX_PHOTOS && (
+                  <label className="aspect-square rounded-lg border-2 border-dashed border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/40 flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors">
+                    <PlusIcon className="w-5 h-5 text-slate-400" />
+                    <span className="text-[10px] font-medium text-slate-400">Ajouter</span>
+                    <input type="file" className="hidden" accept="image/*" multiple onChange={handlePhotosChange} />
+                  </label>
+                )}
               </div>
-            </Card>
+            );
+          })()}
+        </Card>
 
-            {editingTab === "horaires" && (
-              <SaveBar saving={saving} onCancel={() => handleEditToggle("horaires")} />
-            )}
+        {/* Horaires */}
+        <Card>
+          <SectionHeader icon={ClockIcon} title="Horaires d'ouverture" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2">
+            {formData.horaires.map((h, i) => (
+              <div
+                key={`horaire-${h.jour}-${i}`}
+                className={`rounded-lg border px-3 py-2.5 transition-colors ${
+                  h.ferme ? "bg-slate-50 border-slate-100" : "bg-white border-slate-200"
+                }`}
+              >
+                {/* Ligne jour + statut */}
+                <div className="flex items-center justify-between">
+                  <span className={`text-xs font-medium ${h.ferme ? "text-slate-400" : "text-slate-700"}`}>
+                    {h.jour}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {isEditing && (
+                      <input
+                        type="checkbox"
+                        checked={h.ferme}
+                        onChange={(e) => handleHoraireChange(i, "ferme", e.target.checked)}
+                        className="w-3.5 h-3.5 accent-slate-700 cursor-pointer"
+                        title="Marquer comme fermé"
+                      />
+                    )}
+                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                      h.ferme
+                        ? "bg-slate-100 text-slate-400"
+                        : "bg-emerald-50 text-emerald-600"
+                    }`}>
+                      {h.ferme ? "Fermé" : "Ouvert"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Plage horaire */}
+                {!h.ferme && (
+                  <div className="flex items-center gap-1.5 mt-2">
+                    <input
+                      type="time"
+                      value={h.ouverture}
+                      onChange={(e) => handleHoraireChange(i, "ouverture", e.target.value)}
+                      disabled={!isEditing}
+                      className="flex-1 px-2 py-1 text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-indigo-400 disabled:cursor-default"
+                    />
+                    <span className="text-slate-300 text-xs">–</span>
+                    <input
+                      type="time"
+                      value={h.fermeture}
+                      onChange={(e) => handleHoraireChange(i, "fermeture", e.target.value)}
+                      disabled={!isEditing}
+                      className="flex-1 px-2 py-1 text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-indigo-400 disabled:cursor-default"
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
+        </Card>
+
+        {isEditing && (
+          <SaveBar saving={saving} onCancel={handleEditToggle} />
         )}
-        </div>
       </form>
 
       {viewerIndex != null && (
