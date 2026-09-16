@@ -16,7 +16,7 @@ const SingleInitializeModal = ({
     loading,
     title = "Initialisation Rapide",
     subtitle = "Ajout d'un tarif individuel",
-    initialPercentage = 15
+    initialPercentage = 0
 }) => {
     const [percentage, setPercentage] = useState(initialPercentage);
     const [calculatedTotal, setCalculatedTotal] = useState(0);

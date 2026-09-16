@@ -381,7 +381,7 @@ const ColisAReceptionner = () => {
     };
 
     return (
-        <div className="max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-6 py-4 sm:py-1 space-y-3 sm:space-y-6 animate-fade-in">
+        <div className="max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 animate-fade-in">
             {/* Header Section - Responsive */}
             <PageHeader
                 title="Colis à réceptionner"

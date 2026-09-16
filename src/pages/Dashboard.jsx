@@ -138,7 +138,7 @@ const Dashboard = () => {
     }
 
     return (
-        <div className="relative max-w-[1600px] mx-auto space-y-5 sm:space-y-7 pb-8 sm:pb-12 px-3 sm:px-4 lg:px-6 pt-1 animate-fade-in">
+        <div className="relative max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 animate-fade-in">
 
             <PageHeader
                 title="Dashboard"

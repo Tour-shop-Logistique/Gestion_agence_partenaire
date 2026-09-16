@@ -71,42 +71,38 @@ export const fetchAgencyTarifs = createAsyncThunk(
 
 export const saveTarif = createAsyncThunk(
   'tarifs/saveTarif',
-  async (customData, { getState, rejectWithValue }) => {
-    const state = getState();
-    const { selectedIndex, editingZones, existingTarifs } = state.tarifs;
-
-    // Utiliser les données passées (SaveTarifModal) ou celles du state (TarifConfigModal)
-    const dataToSave = customData || {
-      indice: selectedIndex,
-      prix_zones: editingZones
-    };
-
-    if (!dataToSave.indice || dataToSave.indice === 'new') {
-      return rejectWithValue('Aucun indice valide sélectionné');
+  async (dataToSave, { getState, rejectWithValue }) => {
+    if (!dataToSave?.prix_zones?.length) {
+      return rejectWithValue('Aucune ligne à sauvegarder');
     }
+
+    const state = getState();
+    // flatExistingTarifs porte tarif_simple_id (id de la ligne TarifSimple
+    // de base) pour chaque ligne déjà personnalisée par l'agence - matching
+    // par ligne (indice+zone), indépendant du regroupement d'affichage
+    // (par zone dans SaveTarifModal) : une même sauvegarde peut mélanger
+    // des lignes déjà existantes côté agence et de nouvelles.
+    const { flatExistingTarifs } = state.tarifs;
 
     try {
       const results = [];
       const errors = [];
-      const targetIndice = parseFloat(dataToSave.indice);
-
-      // Déterminer s'il s'agit d'un indice déjà configuré par l'agence
-      // pour savoir si on fait des updates ou des creates
-      const isExistingInAgency = existingTarifs.some(t => parseFloat(t.indice) === targetIndice);
+      let hasNew = false;
 
       for (const zone of dataToSave.prix_zones) {
         const percentage = parseFloat(zone.pourcentage_prestation) || 0;
+        const existingAgencyLine = flatExistingTarifs.find(t => t.tarif_simple_id === zone.id);
 
         let response;
-        // Si on n'est pas dans une création globale (customData) et que l'indice existe
-        // déjà chez l'agence, on fait un UPDATE sur l'ID de la ligne agence.
-        if (!customData && isExistingInAgency && zone.id) {
-          response = await tarifsApi.updateTarifSimple(zone.id, {
+        if (existingAgencyLine) {
+          // Ligne déjà personnalisée par l'agence : UPDATE sur son propre id.
+          response = await tarifsApi.updateTarifSimple(existingAgencyLine.id, {
             pourcentage_prestation: percentage
           });
         } else {
-          // Sinon c'est un AJOUT (ou un import de modèle).
+          // Sinon c'est un AJOUT (import du modèle de base).
           // Le body doit contenir tarif_simple_id (ID du modèle de base) et le pourcentage.
+          hasNew = true;
           response = await tarifsApi.createTarifSimple({
             tarif_simple_id: zone.id,
             pourcentage_prestation: percentage
@@ -116,7 +112,7 @@ export const saveTarif = createAsyncThunk(
         if (response.success) {
           results.push(response.data);
         } else {
-          errors.push(`${zone.zone_destination_id}: ${response.message}`);
+          errors.push(`Indice ${zone.indice}: ${response.message}`);
         }
       }
 
@@ -127,9 +123,9 @@ export const saveTarif = createAsyncThunk(
       return {
         success: true,
         data: results[0] || {},
-        isNew: !isExistingInAgency,
+        isNew: hasNew,
         message: errors.length > 0
-          ? `Sauvegarde partielle (${results.length}/${dataToSave.prix_zones.length} zones).`
+          ? `Sauvegarde partielle (${results.length}/${dataToSave.prix_zones.length} lignes).`
           : 'Tarif sauvegardé avec succès'
       };
     } catch (error) {
@@ -560,44 +556,11 @@ const tarifsSlice = createSlice({
       .addCase(saveTarif.fulfilled, (state, action) => {
         state.isSaving = false;
         state.message = action.payload.message;
-
-        // Si c'est un nouveau tarif, l'ajouter à la liste des tarifs existants
-        if (action.payload.isNew) {
-          const newGroup = {
-            ...action.payload.data,
-            indice: action.payload.data.indice || state.selectedIndex,
-            prix_zones: state.editingZones
-          };
-          state.existingTarifs.push(newGroup);
-
-          // Ajouter également à la liste plate
-          state.flatExistingTarifs = [...state.flatExistingTarifs, ...state.editingZones];
-
-          // Mettre à jour l'indice sélectionné avec celui du nouveau tarif
-          state.selectedIndex = action.payload.data.indice || state.selectedIndex;
-        } else {
-          // Mettre à jour le tarif existant dans la liste
-          state.existingTarifs = state.existingTarifs.map(tarif => {
-            if (tarif.indice === state.selectedIndex) {
-              return {
-                ...tarif,
-                prix_zones: state.editingZones
-              };
-            }
-            return tarif;
-          });
-
-          // Mettre à jour la liste plate
-          const updatedZoneIds = state.editingZones.map(z => z.id).filter(Boolean);
-          state.flatExistingTarifs = state.flatExistingTarifs.map(z => {
-            const updated = state.editingZones.find(ez => ez.id === z.id);
-            return updated ? { ...z, ...updated } : z;
-          });
-        }
-        saveTarifsToCache({
-          existingTarifs: state.existingTarifs,
-          flatExistingTarifs: state.flatExistingTarifs
-        });
+        // Pas de mise à jour optimiste ici : les lignes sauvegardées
+        // peuvent appartenir à des indices différents (regroupement par
+        // zone dans SaveTarifModal), donc pas d'un seul indice/zone connu
+        // localement. L'appelant (tarifSimple.jsx) recharge fetchAgencyTarifs
+        // juste après un succès, qui fait foi.
       })
       .addCase(saveTarif.rejected, (state, action) => {
         state.isSaving = false;

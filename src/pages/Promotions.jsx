@@ -122,22 +122,20 @@ const Promotions = () => {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-8 px-3 sm:px-6 animate-in fade-in duration-700">
-      <div className="border-b border-slate-200 pb-4 sm:pb-6">
-        <PageHeader
-          title="Promotions"
-          subtitle="Mettez en avant vos offres spéciales auprès des clients"
-          actions={
-            <button
-              onClick={openCreate}
-              className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-indigo-700 transition-all active:scale-95 shadow-md shadow-indigo-600/20"
-            >
-              <PlusIcon className="w-4 h-4" />
-              Nouvelle promotion
-            </button>
-          }
-        />
-      </div>
+    <div className="max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 animate-fade-in">
+      <PageHeader
+        title="Promotions"
+        subtitle="Mettez en avant vos offres spéciales auprès des clients"
+        actions={
+          <button
+            onClick={openCreate}
+            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-indigo-700 transition-all active:scale-95 shadow-md shadow-indigo-600/20"
+          >
+            <PlusIcon className="w-4 h-4" />
+            Nouvelle promotion
+          </button>
+        }
+      />
 
       {status === "loading" && promotions.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20">

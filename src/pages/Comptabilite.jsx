@@ -694,11 +694,10 @@ const Comptabilite = () => {
   };
 
   return (
-    <div className="max-w-[1600px] mx-auto px-3 sm:px-6 py-1 sm:py-6 space-y-4 sm:space-y-6">
+    <div className="max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 animate-fade-in">
       
       {/* Page Header - Responsive */}
-      <div className="border-b border-slate-200 pb-4 sm:pb-6">
-        <PageHeader
+      <PageHeader
           title="Comptabilité & Flux"
           subtitle="Tableau de bord financier professionnel - Analyse des revenus et répartition des commissions"
           actions={
@@ -773,7 +772,6 @@ const Comptabilite = () => {
             </>
           }
         />
-      </div>
 
       {/* NOUVEAUX KPI FINANCIERS */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">

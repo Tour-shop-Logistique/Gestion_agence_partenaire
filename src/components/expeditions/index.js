@@ -5,7 +5,6 @@ export { default as SortableHeader } from './SortableHeader';
 export { default as FiltersPanel } from './FiltersPanel';
 
 // Nouveaux composants Premium
-export { default as ExpeditionHeader } from './ExpeditionHeader';
 export { default as StatsCards } from './StatsCards';
 export { default as SmartSearchBar } from './SmartSearchBar';
 export { default as QuickFiltersChips } from './QuickFiltersChips';

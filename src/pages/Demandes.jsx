@@ -252,7 +252,7 @@ const Demandes = () => {
     });
 
     return (
-        <div className="space-y-4 sm:space-y-8 max-w-[1600px] mx-auto px-3 sm:px-6 pb-6 sm:pb-10">
+        <div className="max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 animate-fade-in">
             {/* Header Section - Responsive */}
             <PageHeader
                 title="Demandes Clients"
@@ -367,9 +367,7 @@ const Demandes = () => {
 
             {/* Main Content Card */}
             {activeTab === 'demandes' ? (
-            <div className="relative bg-gradient-to-br from-white via-white to-slate-50/30 rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-200/60 overflow-hidden backdrop-blur-sm">
-                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/[0.02] via-transparent to-purple-500/[0.02] pointer-events-none"></div>
-
+            <div className="relative bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 {/* Loading Overlay */}
                 {status === 'loading' && demandes.length > 0 && (
                     <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-20 flex items-center justify-center">
@@ -495,7 +493,7 @@ const Demandes = () => {
                     {/* Desktop view: Table */}
                     <table className="hidden lg:table w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-slate-50/90 backdrop-blur-md border-b-2 border-slate-400">
+                            <tr className="bg-slate-50 border-b border-slate-200">
                                 <th className="px-4 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200 w-[22%]">Client / Date</th>
                                 <th className="px-4 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200 w-[25%]">Type & Destination </th>
                                 <th className="px-4 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200 w-[18%]">Détails Colis</th>
@@ -644,7 +642,7 @@ const Demandes = () => {
 
                 {/* Pagination - Responsive */}
                 {demandesMeta && demandesMeta.last_page > 1 && (
-                    <div className="px-3 sm:px-6 lg:px-8 py-4 sm:py-6 bg-slate-50/50 backdrop-blur-sm border-t border-slate-200/60 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+                    <div className="px-3 sm:px-6 lg:px-8 py-4 sm:py-6 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
                         <span className="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wide">
                             Page <span className="text-indigo-600 font-bold">{demandesMeta.current_page}</span> sur <span className="text-slate-900 font-bold">{demandesMeta.last_page}</span>
                         </span>
@@ -669,9 +667,7 @@ const Demandes = () => {
             </div>
             ) : (
             /* Section "En agence" - Liste des colis acceptés à réceptionner */
-            <div className="relative bg-gradient-to-br from-white via-white to-slate-50/30 rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-200/60 overflow-hidden backdrop-blur-sm">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/[0.02] via-transparent to-indigo-500/[0.02] pointer-events-none"></div>
-
+            <div className="relative bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="relative overflow-x-auto">
                     {/* Mobile view: Cards */}
                     <div className="lg:hidden p-3 sm:p-4 space-y-3">
@@ -725,7 +721,7 @@ const Demandes = () => {
                     {/* Desktop view: Table */}
                     <table className="hidden lg:table w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-slate-50/90 backdrop-blur-md border-b-2 border-slate-400">
+                            <tr className="bg-slate-50 border-b border-slate-200">
                                 <th className="px-4 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200">Code Colis</th>
                                 <th className="px-4 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200">Référence Exp.</th>
                                 <th className="px-4 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200">Produit</th>

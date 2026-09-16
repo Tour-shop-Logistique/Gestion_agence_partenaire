@@ -255,6 +255,10 @@ const TarifSimpleComponent = () => {
   const [showIndexModal, setShowIndexModal] = useState(false);
   const [showSingleModal, setShowSingleModal] = useState(false);
   const [showEditSingleModal, setShowEditSingleModal] = useState(false);
+  // handleConfirmSingle appelle l'API directement (pas le thunk saveTarif),
+  // donc isSaving (piloté par useTarifs/Redux) ne reflète pas cet appel -
+  // état local dédié pour que le bouton "Initialiser" affiche bien le spinner.
+  const [isInitializingSingle, setIsInitializingSingle] = useState(false);
   const [selectedBaseTarif, setSelectedBaseTarif] = useState(null);
   const [selectedAgencyTarif, setSelectedAgencyTarif] = useState(null);
   const [activeTab, setActiveTab] = useState("agency");
@@ -294,9 +298,12 @@ const TarifSimpleComponent = () => {
   }, [selectedIndex, updateZonePercentage]);
 
 
-  const handleSave = useCallback(async (index, zones) => {
+  const handleSave = useCallback(async (payload) => {
     try {
-      const payload = (index && zones) ? { indice: index, prix_zones: zones } : undefined;
+      // payload: { zone_destination_id, prix_zones } — une ligne par
+      // indice pour la zone choisie dans SaveTarifModal. saveTarif
+      // détermine update/create par ligne (via tarif_simple_id), donc peu
+      // importe que le regroupement d'affichage soit par zone ou indice.
       const result = await saveTarif(payload);
       if (result?.success) {
         await fetchAgencyTarifs(true);
@@ -335,27 +342,6 @@ const TarifSimpleComponent = () => {
     }
   }, [fetchTarifs, fetchAgencyTarifs]);
 
-  const handleIndexSelect = useCallback((index) => {
-    try {
-      selectIndex(index);
-      setShowIndexModal(false);
-    } catch (error) {
-      console.error("Error selecting tarif:", error);
-      setShowIndexModal(false);
-    }
-  }, [selectIndex]);
-
-  const handleZoneUpdate = useCallback((updatedZones) => {
-    if (selectedIndex === "new") {
-      updateNewTarifZones(updatedZones);
-    } else {
-      updatedZones.forEach((zone) => {
-        updateZonePercentage(zone.zone_destination_id, zone.pourcentage_prestation);
-      });
-    }
-  }, [selectedIndex, updateNewTarifZones, updateZonePercentage]);
-
-
   const handleDelete = useCallback(async (tarif) => {
     const label = tarif.zone?.nom || `Indice ${tarif.indice} - Zone ${tarif.zone_destination_id}`;
     if (!window.confirm(`Êtes-vous sûr de vouloir supprimer le tarif pour ${label} ? Cette action est irréversible.`)) {
@@ -391,9 +377,7 @@ const TarifSimpleComponent = () => {
   const handleConfirmSingle = useCallback(async (percentage) => {
     if (!selectedBaseTarif) return;
 
-    console.log("🔍 selectedBaseTarif:", selectedBaseTarif);
-    console.log("🔍 selectedBaseTarif.id:", selectedBaseTarif.id);
-
+    setIsInitializingSingle(true);
     try {
       // Appel direct à l'API au lieu de passer par le thunk saveTarif
       // car le thunk s'attend à une structure différente
@@ -414,6 +398,8 @@ const TarifSimpleComponent = () => {
     } catch (err) {
       console.error("Erreur initialisation individuelle:", err);
       toast.error("Erreur lors de l'initialisation du tarif");
+    } finally {
+      setIsInitializingSingle(false);
     }
   }, [selectedBaseTarif, fetchAgencyTarifs]);
 
@@ -832,10 +818,7 @@ const TarifSimpleComponent = () => {
         isOpen={showIndexModal}
         onClose={() => { setShowIndexModal(false); clearMessage(); }}
         onSave={handleSave}
-        isSaving={isSaving}
-        selectedIndex={selectedIndex}
-        onIndexSelect={handleIndexSelect}
-        onZoneUpdate={handleZoneUpdate}
+        isSavingProp={isSaving}
       />
 
       <SingleInitializeModal
@@ -846,7 +829,8 @@ const TarifSimpleComponent = () => {
         }}
         tarif={selectedBaseTarif}
         onConfirm={handleConfirmSingle}
-        loading={isSaving}
+        loading={isInitializingSingle}
+        initialPercentage={selectedBaseTarif?.pourcentage_prestation || 0}
       />
 
       <SingleInitializeModal

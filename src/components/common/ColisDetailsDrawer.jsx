@@ -73,7 +73,7 @@ const ColisDetailsDrawer = ({ colis, onClose }) => {
                                 {colis.articles.map((a, i) => (
                                     <li key={i} className="flex items-center gap-2 text-sm text-slate-700">
                                         <CubeIcon className="w-4 h-4 text-slate-400 shrink-0" />
-                                        {a.designation || a}
+                                        {typeof a === "string" ? a : (a?.designation || "Article")}
                                     </li>
                                 ))}
                             </ul>

@@ -447,10 +447,9 @@ const Agents = () => {
   })), [roles]);
 
   return (
-    <>
-      <div className="mb-4 sm:mb-6 px-3 sm:px-0">
-        <PageHeader
-          title={activeTab === "agents" ? "Gestion des agents" : "Rôles & Permissions"}
+    <div className="max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 animate-fade-in">
+      <PageHeader
+        title={activeTab === "agents" ? "Gestion des agents" : "Rôles & Permissions"}
           subtitle={
             activeTab === "agents"
               ? "Administrez votre équipe d'agents"
@@ -523,7 +522,7 @@ const Agents = () => {
         />
 
         {/* Onglets Agents / Rôles */}
-        <div className="mt-4 flex items-center gap-1 bg-white border border-gray-200 rounded-xl p-1.5 w-fit shadow-sm">
+        <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-xl p-1.5 w-fit shadow-sm">
           <button
             type="button"
             onClick={() => setActiveTab("agents")}
@@ -545,7 +544,6 @@ const Agents = () => {
             Rôles
           </button>
         </div>
-      </div>
 
       {/* Section statistiques - Responsive */}
       {activeTab === "agents" && agencyUsers && agencyUsers.length > 0 && (
@@ -1473,7 +1471,7 @@ const Agents = () => {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 };
 

@@ -31,15 +31,13 @@ const TarifsSimples = () => {
     }, [fetchAgencyTarifs]);
 
     return (
-        <div className="space-y-4 sm:space-y-8 px-3 sm:px-6 animate-in fade-in duration-700">
+        <div className="max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 animate-fade-in">
 
             {/* --- SIMPLE HEADER - Responsive --- */}
-            <div className="border-b border-slate-200 pb-4 sm:pb-6">
-                <PageHeader
-                    title="Tarifs Simples"
-                    subtitle="Gérez vos tarifs d'expédition standard par zones et indices"
-                />
-            </div>
+            <PageHeader
+                title="Tarifs Simples"
+                subtitle="Gérez vos tarifs d'expédition standard par zones et indices"
+            />
 
             {/* --- DYNAMIC CONTENT --- */}
             <main className="relative animate-in slide-in-from-bottom-4 duration-500 mt-2">

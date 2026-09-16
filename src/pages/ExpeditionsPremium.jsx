@@ -1,12 +1,14 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { FunnelIcon } from '@heroicons/react/24/outline';
+import { FunnelIcon, ArrowPathIcon, DocumentArrowDownIcon, PlusIcon } from '@heroicons/react/24/outline';
 
 import { useExpedition } from "../hooks/useExpedition";
 import { useAgency } from "../hooks/useAgency";
 import { useAuth } from "../hooks/useAuth";
 import { useWebSocket } from "../hooks/useWebSocket";
+import PageHeader from "../components/ui/PageHeader";
 import PrintSuccessModal from "../components/Receipts/PrintSuccessModal";
 import ColisDetailsDrawer from "../components/common/ColisDetailsDrawer";
 import { getLogoUrl } from "../utils/apiConfig";
@@ -17,7 +19,6 @@ import { getCountryName } from "../utils/countries";
 
 // Import des nouveaux composants premium
 import {
-    ExpeditionHeader,
     StatsCards,
     ExpeditionListItem,
     ExpeditionMobileCard,
@@ -41,6 +42,7 @@ import {
  */
 
 const ExpeditionsPremium = () => {
+    const navigate = useNavigate();
     const { currentUser } = useAuth();
     const { expeditions, meta, loadExpeditions, status, lastFilters } = useExpedition();
     const { data: agencyData, fetchAgencyData } = useAgency();
@@ -545,22 +547,6 @@ const ExpeditionsPremium = () => {
 
     return (
         <>
-            {/* Header Premium */}
-            <ExpeditionHeader
-                totalCount={filteredExpeditions.length}
-                loading={status === 'loading'}
-                lastSync={lastSync}
-                onRefresh={handleRefresh}
-                onExport={handleExportPDF}
-                dateDebut={dateDebut}
-                dateFin={dateFin}
-                onDateDebutChange={(v) => { setDateDebut(v); setCurrentPage(1); }}
-                onDateFinChange={(v) => { setDateFin(v); setCurrentPage(1); }}
-                canExport={filteredExpeditions.length > 0}
-                onOpenFilters={() => setFiltersOpen(true)}
-                activeFiltersCount={activeFiltersCount}
-            />
-
             {/* Tiroir de filtres (< 2xl : remplace la sidebar fixe) */}
             {filtersOpen && (
                 <div className="fixed inset-0 z-50 2xl:hidden">
@@ -597,7 +583,93 @@ const ExpeditionsPremium = () => {
                 <span className="text-sm font-bold">Filtres</span>
             </button>
 
-            <div className="max-w-[1600px] mx-auto px-3 sm:px-4 lg:px-6 py-6 space-y-6">
+            <div className="max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 animate-fade-in">
+
+                {/* Header */}
+                <PageHeader
+                    title="Expéditions"
+                    subtitle={`Gérez et suivez vos ${filteredExpeditions.length} expédition${filteredExpeditions.length !== 1 ? 's' : ''} en temps réel`}
+                    badge={
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 border border-indigo-100 rounded-full">
+                            <div className="relative flex h-2 w-2">
+                                <span className={`${status === 'loading' ? 'animate-ping' : ''} absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75`}></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                            </div>
+                            <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">
+                                {status === 'loading' ? 'Sync...' : 'Live'}
+                            </span>
+                        </div>
+                    }
+                    actions={
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+                            {/* Date Range Picker */}
+                            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 shadow-sm hover:border-slate-300 transition-colors">
+                                <svg className="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <input
+                                    type="date"
+                                    value={dateDebut}
+                                    onChange={(e) => { setDateDebut(e.target.value); setCurrentPage(1); }}
+                                    className="text-xs font-medium text-slate-700 bg-transparent border-none outline-none w-[110px] cursor-pointer"
+                                />
+                                <svg className="w-3 h-3 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                </svg>
+                                <input
+                                    type="date"
+                                    value={dateFin}
+                                    onChange={(e) => { setDateFin(e.target.value); setCurrentPage(1); }}
+                                    className="text-xs font-medium text-slate-700 bg-transparent border-none outline-none w-[110px] cursor-pointer"
+                                />
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex items-center gap-2">
+                                {/* Filtres (drawer trigger, masqué en très grand écran où la sidebar est fixe) */}
+                                <button
+                                    onClick={() => setFiltersOpen(true)}
+                                    className="relative 2xl:hidden inline-flex items-center justify-center p-2.5 border border-slate-200 rounded-xl text-slate-600 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm hover:shadow active:scale-95"
+                                    title="Filtres"
+                                >
+                                    <FunnelIcon className="w-5 h-5" />
+                                    {activeFiltersCount > 0 && (
+                                        <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-indigo-600 text-white text-[10px] font-bold">
+                                            {activeFiltersCount}
+                                        </span>
+                                    )}
+                                </button>
+
+                                <button
+                                    onClick={handleRefresh}
+                                    disabled={status === 'loading'}
+                                    className="inline-flex items-center justify-center p-2.5 border border-slate-200 rounded-xl text-slate-600 bg-white hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow active:scale-95"
+                                    title="Rafraîchir"
+                                >
+                                    <ArrowPathIcon className={`w-5 h-5 ${status === 'loading' ? 'animate-spin' : ''}`} />
+                                </button>
+
+                                <button
+                                    onClick={handleExportPDF}
+                                    disabled={filteredExpeditions.length === 0}
+                                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md active:scale-95 font-medium text-sm"
+                                    title="Exporter en PDF"
+                                >
+                                    <DocumentArrowDownIcon className="w-5 h-5" />
+                                    <span className="hidden sm:inline">Export PDF</span>
+                                </button>
+
+                                <button
+                                    onClick={() => navigate('/create-expedition')}
+                                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-sm hover:shadow-md active:scale-95 font-medium text-sm"
+                                >
+                                    <PlusIcon className="w-5 h-5" />
+                                    <span className="hidden sm:inline">Nouvelle</span>
+                                </button>
+                            </div>
+                        </div>
+                    }
+                />
 
                 {/* KPI Dashboard */}
                 <StatsCards

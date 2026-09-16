@@ -3,7 +3,7 @@ import { useTarifs } from '../hooks/useTarifs';
 import { formatPrice } from '../utils/format';
 import {
   XMarkIcon,
-  MapIcon,
+  MapPinIcon,
   CheckIcon,
   ArrowPathIcon,
   TicketIcon,
@@ -12,34 +12,60 @@ import {
   CalculatorIcon
 } from "@heroicons/react/24/outline";
 
+// Regroupe la liste plate des tarifs de base (une ligne par indice+zone) par
+// zone plutôt que par indice : pour chaque zone, la liste de ses lignes
+// d'indice, chacune gardant son montant_base propre et son id (id de la
+// ligne TarifSimple de base, nécessaire à la sauvegarde - voir saveTarif).
+const groupByZone = (flatTarifs) => {
+  if (!Array.isArray(flatTarifs)) return [];
+  const grouped = {};
+  flatTarifs.forEach((item) => {
+    const zoneId = item.zone_destination_id;
+    if (!zoneId) return;
+    if (!grouped[zoneId]) {
+      grouped[zoneId] = {
+        zone_destination_id: zoneId,
+        nom_zone: item.zone?.nom || item.nom_zone || `Zone ${zoneId}`,
+        lignes: [],
+      };
+    }
+    grouped[zoneId].lignes.push({
+      ...item,
+      montant_base: parseFloat(item.montant_base) || 0,
+      pourcentage_prestation: parseFloat(item.pourcentage_prestation) || 0,
+      montant_prestation: parseFloat(item.montant_prestation) || 0,
+      montant_expedition: parseFloat(item.montant_expedition) || 0,
+    });
+  });
+  return Object.values(grouped)
+    .map((zone) => ({
+      ...zone,
+      lignes: zone.lignes.sort((a, b) => (parseFloat(a.indice) || 0) - (parseFloat(b.indice) || 0)),
+    }))
+    .sort((a, b) => a.nom_zone.localeCompare(b.nom_zone));
+};
+
 const SaveTarifModal = ({
   isOpen,
   onClose,
   onSave,
   isSavingProp,
-  selectedIndex: selectedIndexProp,
-  onIndexSelect,
-  zones: zonesProp,
-  editingZones: editingZonesProp,
-  onZoneUpdate
 }) => {
   const {
-    tarifs: baseTarifs,
-    existingTarifs: tarifs,
+    flatTarifs,
     isSaving: isSavingContext,
-    saveTarif: saveTarifContext
   } = useTarifs();
 
-  const [localSelectedIndex, setLocalSelectedIndex] = useState(selectedIndexProp || '');
-  const [editedZones, setEditedZones] = useState([]);
+  const [localSelectedZone, setLocalSelectedZone] = useState('');
+  const [editedLignes, setEditedLignes] = useState([]);
   const [isSavingLocal, setIsSavingLocal] = useState(false);
   const [globalPercentage, setGlobalPercentage] = useState('');
   const [showGlobalInput, setShowGlobalInput] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      setLocalSelectedIndex('');
-      setEditedZones([]);
+      setLocalSelectedZone('');
+      setEditedLignes([]);
       setIsSavingLocal(false);
       setGlobalPercentage('');
       setShowGlobalInput(false);
@@ -50,52 +76,51 @@ const SaveTarifModal = ({
     setIsSavingLocal(isSavingProp || isSavingContext);
   }, [isSavingProp, isSavingContext]);
 
-  const availableIndices = useMemo(() => {
-    if (!baseTarifs || !Array.isArray(baseTarifs)) return [];
-    return baseTarifs.map(tarif => ({
-      value: tarif?.indice,
-      label: `Indice ${tarif?.indice}`
-    })).filter(item => item.value);
-  }, [baseTarifs]);
+  const zonesGroupees = useMemo(() => groupByZone(flatTarifs), [flatTarifs]);
 
-  const handleIndexChange = useCallback((e) => {
-    const index = e.target.value;
-    setLocalSelectedIndex(index);
-    const selectedTarif = baseTarifs.find(t => t.indice.toString() === index.toString());
-    if (selectedTarif?.prix_zones) {
-      setEditedZones([...selectedTarif.prix_zones]);
-    }
-  }, [baseTarifs]);
+  const availableZones = useMemo(() => (
+    zonesGroupees.map((zone) => ({
+      value: zone.zone_destination_id,
+      label: zone.nom_zone,
+    }))
+  ), [zonesGroupees]);
 
-  const handlePercentageChange = useCallback((zoneId, value) => {
+  const handleZoneChange = useCallback((e) => {
+    const zoneId = e.target.value;
+    setLocalSelectedZone(zoneId);
+    const selectedZone = zonesGroupees.find((z) => z.zone_destination_id === zoneId);
+    setEditedLignes(selectedZone ? [...selectedZone.lignes] : []);
+  }, [zonesGroupees]);
+
+  const handlePercentageChange = useCallback((indice, value) => {
     const percentage = parseFloat(value) || 0;
-    setEditedZones(prevZones =>
-      prevZones.map(zone => {
-        if (zone.zone_destination_id === zoneId) {
-          const montantBase = parseFloat(zone.montant_base) || 0;
+    setEditedLignes(prevLignes =>
+      prevLignes.map(ligne => {
+        if (ligne.indice === indice) {
+          const montantBase = parseFloat(ligne.montant_base) || 0;
           const montantPrestation = (montantBase * percentage) / 100;
           const montantExpedition = montantBase + montantPrestation;
           return {
-            ...zone,
+            ...ligne,
             pourcentage_prestation: percentage,
             montant_prestation: parseFloat(montantPrestation.toFixed(2)),
             montant_expedition: parseFloat(montantExpedition.toFixed(2))
           };
         }
-        return zone;
+        return ligne;
       })
     );
   }, []);
 
   const applyGlobalPercentage = useCallback(() => {
     const percentage = parseFloat(globalPercentage) || 0;
-    setEditedZones(prevZones =>
-      prevZones.map(zone => {
-        const montantBase = parseFloat(zone.montant_base) || 0;
+    setEditedLignes(prevLignes =>
+      prevLignes.map(ligne => {
+        const montantBase = parseFloat(ligne.montant_base) || 0;
         const montantPrestation = (montantBase * percentage) / 100;
         const montantExpedition = montantBase + montantPrestation;
         return {
-          ...zone,
+          ...ligne,
           pourcentage_prestation: percentage,
           montant_prestation: parseFloat(montantPrestation.toFixed(2)),
           montant_expedition: parseFloat(montantExpedition.toFixed(2))
@@ -106,80 +131,74 @@ const SaveTarifModal = ({
     setGlobalPercentage('');
   }, [globalPercentage]);
 
-  const incrementPercentage = useCallback((zoneId, step = 5) => {
-    setEditedZones(prevZones =>
-      prevZones.map(zone => {
-        if (zone.zone_destination_id === zoneId) {
-          const newPercentage = (parseFloat(zone.pourcentage_prestation) || 0) + step;
-          const montantBase = parseFloat(zone.montant_base) || 0;
+  const incrementPercentage = useCallback((indice, step = 1) => {
+    setEditedLignes(prevLignes =>
+      prevLignes.map(ligne => {
+        if (ligne.indice === indice) {
+          const newPercentage = (parseFloat(ligne.pourcentage_prestation) || 0) + step;
+          const montantBase = parseFloat(ligne.montant_base) || 0;
           const montantPrestation = (montantBase * newPercentage) / 100;
           const montantExpedition = montantBase + montantPrestation;
           return {
-            ...zone,
+            ...ligne,
             pourcentage_prestation: newPercentage,
             montant_prestation: parseFloat(montantPrestation.toFixed(2)),
             montant_expedition: parseFloat(montantExpedition.toFixed(2))
           };
         }
-        return zone;
+        return ligne;
       })
     );
   }, []);
 
-  const decrementPercentage = useCallback((zoneId, step = 5) => {
-    setEditedZones(prevZones =>
-      prevZones.map(zone => {
-        if (zone.zone_destination_id === zoneId) {
-          const newPercentage = Math.max(0, (parseFloat(zone.pourcentage_prestation) || 0) - step);
-          const montantBase = parseFloat(zone.montant_base) || 0;
+  const decrementPercentage = useCallback((indice, step = 1) => {
+    setEditedLignes(prevLignes =>
+      prevLignes.map(ligne => {
+        if (ligne.indice === indice) {
+          const newPercentage = Math.max(0, (parseFloat(ligne.pourcentage_prestation) || 0) - step);
+          const montantBase = parseFloat(ligne.montant_base) || 0;
           const montantPrestation = (montantBase * newPercentage) / 100;
           const montantExpedition = montantBase + montantPrestation;
           return {
-            ...zone,
+            ...ligne,
             pourcentage_prestation: newPercentage,
             montant_prestation: parseFloat(montantPrestation.toFixed(2)),
             montant_expedition: parseFloat(montantExpedition.toFixed(2))
           };
         }
-        return zone;
+        return ligne;
       })
     );
   }, []);
 
   const totalMontantBase = useMemo(() => {
-    return editedZones.reduce((sum, zone) => sum + (parseFloat(zone.montant_base) || 0), 0);
-  }, [editedZones]);
+    return editedLignes.reduce((sum, ligne) => sum + (parseFloat(ligne.montant_base) || 0), 0);
+  }, [editedLignes]);
 
   const totalMontantPrestation = useMemo(() => {
-    return editedZones.reduce((sum, zone) => sum + (parseFloat(zone.montant_prestation) || 0), 0);
-  }, [editedZones]);
+    return editedLignes.reduce((sum, ligne) => sum + (parseFloat(ligne.montant_prestation) || 0), 0);
+  }, [editedLignes]);
 
   const totalMontantExpedition = useMemo(() => {
-    return editedZones.reduce((sum, zone) => sum + (parseFloat(zone.montant_expedition) || 0), 0);
-  }, [editedZones]);
+    return editedLignes.reduce((sum, ligne) => sum + (parseFloat(ligne.montant_expedition) || 0), 0);
+  }, [editedLignes]);
 
   const handleSaveChanges = useCallback(async () => {
     try {
       setIsSavingLocal(true);
-      onIndexSelect(localSelectedIndex);
-      if (localSelectedIndex === 'new') {
-        const newTarif = { indice: localSelectedIndex, actif: true, prix_zones: editedZones };
-        await saveTarifContext(newTarif);
-      } else {
-        if (onZoneUpdate) onZoneUpdate(editedZones);
-        if (onSave) await onSave(localSelectedIndex, editedZones);
-        else {
-          const updatedTarif = { indice: localSelectedIndex, actif: true, prix_zones: editedZones };
-          await saveTarifContext(updatedTarif);
-        }
-      }
+      // Le payload est un tableau de lignes (chacune avec son id de tarif
+      // de base + pourcentage) — saveTarif (tarifsSlice) détermine
+      // update/create par ligne via tarif_simple_id, indépendamment du
+      // regroupement par zone ou par indice utilisé ici pour l'affichage.
+      const payload = { zone_destination_id: localSelectedZone, prix_zones: editedLignes };
+      if (onSave) await onSave(payload);
       onClose();
     } catch (err) {
       console.error('Erreur sauvegarde:', err);
     } finally {
       setIsSavingLocal(false);
     }
-  }, [localSelectedIndex, editedZones, onSave, onClose, onIndexSelect, onZoneUpdate, saveTarifContext]);
+  }, [localSelectedZone, editedLignes, onSave, onClose]);
 
   if (!isOpen) return null;
 
@@ -197,7 +216,7 @@ const SaveTarifModal = ({
               </div>
               <div>
                 <h3 className="text-base font-bold text-slate-900 leading-tight">Initialisation de nouveau tarif</h3>
-                <p className="text-xs font-medium text-slate-500">Sélectionnez un modèle de base pour commencer</p>
+                <p className="text-xs font-medium text-slate-500">Sélectionnez une zone pour commencer</p>
               </div>
             </div>
             <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg transition-colors">
@@ -207,28 +226,28 @@ const SaveTarifModal = ({
 
           <div className="px-6 py-6 space-y-6">
             <div className="max-w-md">
-              <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-2">Choisir l'Indice Modèle</label>
+              <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-2">Choisir la Zone</label>
               <select
-                value={localSelectedIndex || ''}
-                onChange={handleIndexChange}
+                value={localSelectedZone || ''}
+                onChange={handleZoneChange}
                 className="w-full px-4 py-3 text-sm font-bold bg-white border-2 border-slate-200 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all disabled:bg-slate-50 disabled:cursor-not-allowed hover:border-slate-300"
                 disabled={isSavingLocal}
               >
-                <option value="">-- Sélectionner un modèle --</option>
-                {availableIndices.map((indexObj) => (
-                  <option key={indexObj.value} value={indexObj.value}>{indexObj.label}</option>
+                <option value="">-- Sélectionner une zone --</option>
+                {availableZones.map((zoneObj) => (
+                  <option key={zoneObj.value} value={zoneObj.value}>{zoneObj.label}</option>
                 ))}
               </select>
             </div>
 
-            {editedZones.length > 0 && (
+            {editedLignes.length > 0 && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2 text-indigo-600">
-                    <MapIcon className="w-5 h-5" />
-                    <span className="text-xs font-semibold uppercase tracking-wide">Aperçu et Ajustement des Zones</span>
+                    <MapPinIcon className="w-5 h-5" />
+                    <span className="text-xs font-semibold uppercase tracking-wide">Aperçu et Ajustement des Indices</span>
                   </div>
-                  
+
                   {!showGlobalInput ? (
                     <button
                       onClick={() => setShowGlobalInput(true)}
@@ -274,7 +293,7 @@ const SaveTarifModal = ({
                     <table className="w-full text-left border-collapse">
                       <thead className="sticky top-0 z-10">
                         <tr className="bg-gradient-to-r from-slate-50 to-slate-100 border-b-2 border-slate-200 text-[10px] font-semibold text-slate-500 uppercase tracking-wide">
-                          <th className="px-6 py-4">Zone</th>
+                          <th className="px-6 py-4">Indice</th>
                           <th className="px-6 py-4">Base</th>
                           <th className="px-6 py-4 text-center">% Prestation</th>
                           <th className="px-6 py-4">Frais Prest.</th>
@@ -282,25 +301,25 @@ const SaveTarifModal = ({
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {editedZones.map((zone, index) => (
-                          <tr key={zone.zone_destination_id} className={`hover:bg-indigo-50/30 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}>
+                        {editedLignes.map((ligne, index) => (
+                          <tr key={ligne.id || ligne.indice} className={`hover:bg-indigo-50/30 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`}>
                             <td className="px-6 py-4">
                               <div className="flex flex-col">
                                 <span className="text-sm font-bold text-slate-900 leading-none">
-                                  {zone.zone?.nom || zone.nom_zone || `Zone ${zone.zone_destination_id}`}
+                                  Indice {ligne.indice}
                                 </span>
                                 <span className="text-[9px] font-medium text-slate-400 uppercase tracking-tighter mt-1">
-                                  {zone.zone?.id ? `ID: ${zone.zone.id.substring(0, 8)}...` : zone.zone_destination_id}
+                                  {ligne.id ? `ID: ${ligne.id.substring(0, 8)}...` : ''}
                                 </span>
                               </div>
                             </td>
                             <td className="px-6 py-4">
-                              <span className="text-xs font-bold text-slate-600">{formatPrice(zone.montant_base, "XOF")}</span>
+                              <span className="text-xs font-bold text-slate-600">{formatPrice(ligne.montant_base, "XOF")}</span>
                             </td>
                             <td className="px-6 py-4">
                               <div className="flex items-center justify-center gap-1">
                                 <button
-                                  onClick={() => decrementPercentage(zone.zone_destination_id, 5)}
+                                  onClick={() => decrementPercentage(ligne.indice, 1)}
                                   className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
                                   disabled={isSavingLocal}
                                   title="Diminuer de 5%"
@@ -309,8 +328,8 @@ const SaveTarifModal = ({
                                 </button>
                                 <input
                                   type="number"
-                                  value={zone.pourcentage_prestation || ""}
-                                  onChange={(e) => handlePercentageChange(zone.zone_destination_id, e.target.value)}
+                                  value={ligne.pourcentage_prestation || ""}
+                                  onChange={(e) => handlePercentageChange(ligne.indice, e.target.value)}
                                   min="0"
                                   max="100"
                                   className="w-16 px-2 py-1.5 text-xs font-bold text-center border-2 border-slate-200 rounded-lg shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
@@ -318,7 +337,7 @@ const SaveTarifModal = ({
                                   placeholder="0"
                                 />
                                 <button
-                                  onClick={() => incrementPercentage(zone.zone_destination_id, 5)}
+                                  onClick={() => incrementPercentage(ligne.indice, 1)}
                                   className="p-1 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded transition-colors"
                                   disabled={isSavingLocal}
                                   title="Augmenter de 5%"
@@ -328,11 +347,11 @@ const SaveTarifModal = ({
                               </div>
                             </td>
                             <td className="px-6 py-4">
-                              <span className="text-xs font-bold text-indigo-600">{formatPrice(zone.montant_prestation, "XOF")}</span>
+                              <span className="text-xs font-bold text-indigo-600">{formatPrice(ligne.montant_prestation, "XOF")}</span>
                             </td>
                             <td className="px-6 py-4 text-right">
                               <span className="inline-flex items-center px-3 py-1 bg-indigo-600 text-white text-xs font-bold rounded-lg shadow-sm">
-                                {formatPrice(zone.montant_expedition, "XOF")}
+                                {formatPrice(ligne.montant_expedition, "XOF")}
                               </span>
                             </td>
                           </tr>
@@ -359,8 +378,8 @@ const SaveTarifModal = ({
                     <div className="flex-1">
                       <h4 className="text-xs font-bold text-indigo-900 mb-1">Astuce Rapide</h4>
                       <p className="text-[11px] text-indigo-700 leading-relaxed">
-                        Utilisez les boutons <span className="font-bold">+ / -</span> pour ajuster rapidement par pas de 5%, 
-                        ou le bouton <span className="font-bold">"% Global"</span> pour appliquer le même pourcentage à toutes les zones.
+                        Utilisez les boutons <span className="font-bold">+ / -</span> pour ajuster rapidement par pas de 1%,
+                        ou le bouton <span className="font-bold">"% Global"</span> pour appliquer le même pourcentage à tous les indices de cette zone.
                       </p>
                     </div>
                   </div>
@@ -371,9 +390,9 @@ const SaveTarifModal = ({
 
           <div className="bg-slate-50 px-6 py-4 flex items-center justify-between border-t border-slate-100">
             <div className="flex items-center space-x-2 text-xs">
-              <span className="text-slate-500">Zones configurées:</span>
+              <span className="text-slate-500">Indices configurés:</span>
               <span className="inline-flex items-center px-2.5 py-1 bg-indigo-600 text-white rounded-full text-[10px] font-bold">
-                {editedZones.length}
+                {editedLignes.length}
               </span>
             </div>
             <div className="flex items-center space-x-3">
@@ -388,8 +407,8 @@ const SaveTarifModal = ({
               <button
                 type="button"
                 onClick={handleSaveChanges}
-                disabled={isSavingLocal || editedZones.length === 0 || !localSelectedIndex}
-                className={`inline-flex items-center px-6 py-2.5 rounded-lg text-sm font-bold text-white shadow-lg transition-all ${!isSavingLocal && editedZones.length > 0 && localSelectedIndex
+                disabled={isSavingLocal || editedLignes.length === 0 || !localSelectedZone}
+                className={`inline-flex items-center px-6 py-2.5 rounded-lg text-sm font-bold text-white shadow-lg transition-all ${!isSavingLocal && editedLignes.length > 0 && localSelectedZone
                     ? "bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 hover:shadow-indigo-200 hover:-translate-y-0.5"
                     : "bg-slate-300 cursor-not-allowed"
                   }`}

@@ -164,13 +164,12 @@ const Messages = () => {
   };
 
   return (
-    <div className="max-w-[1400px] mx-auto px-3 sm:px-6 pb-6 sm:pb-10">
+    <div className="max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 animate-fade-in">
       <PageHeader
         title="Messages"
         subtitle="Échangez avec l'équipe backoffice Tour Shop Express"
-        className="mb-4 sm:mb-6"
       />
-      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4 sm:gap-6" style={{ height: "min(720px, calc(100vh - 180px))", minHeight: 420 }}>
+      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4 sm:gap-6" style={{ height: "min(720px, calc(100vh - 220px))", minHeight: 420 }}>
 
         {/* ── Colonne latérale : fiche backoffice ── */}
         <div className="hidden lg:flex flex-col bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">

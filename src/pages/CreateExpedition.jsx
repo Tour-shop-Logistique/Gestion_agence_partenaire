@@ -12,6 +12,18 @@ import { toast } from "../utils/toast";
 import { markAsRecentlyCreated } from "../hooks/useWebSocket";
 import PageHeader from "../components/ui/PageHeader";
 
+// Mapping type_expedition (valeur formData, majuscules) -> champ Produit
+// d'éligibilité correspondant - miroir de ProduitEligibiliteRule::
+// CHAMP_PAR_TYPE côté backend (source de vérité pour le contrôle
+// bloquant ; ce mapping ne sert ici qu'à filtrer l'UI en amont). GROUPAGE_CA
+// est volontairement absent : jamais configurable, pas de notion d'éligibilité.
+const ELIGIBILITE_CHAMP_PAR_TYPE = {
+    SIMPLE: "eligible_ld",
+    GROUPAGE_AFRIQUE: "eligible_afrique",
+    GROUPAGE_DHD_AERIEN: "eligible_dhd_aerien",
+    GROUPAGE_DHD_MARITIME: "eligible_dhd_maritime",
+};
+
 const CreateExpedition = () => {
     console.log("🚀 CreateExpedition.jsx chargé - Version avec déduplication");
     
@@ -512,15 +524,18 @@ const CreateExpedition = () => {
         setFormData(prev => ({ ...prev, colis: newColis }));
     };
 
-    const handleAddArticle = (colisIndex, productDesignation) => {
-        if (!productDesignation) return;
+    // Un article est désormais {id, designation} (produit réel du
+    // catalogue), plus un simple texte : id est ce qui permet au backend de
+    // vérifier l'éligibilité produit/type (voir ProduitEligibiliteRule).
+    const handleAddArticle = (colisIndex, product) => {
+        if (!product?.id) return;
         const newColis = [...formData.colis];
         const currentArticles = newColis[colisIndex].articles || [];
 
-        if (!currentArticles.includes(productDesignation)) {
+        if (!currentArticles.some(a => a.id === product.id)) {
             newColis[colisIndex] = {
                 ...newColis[colisIndex],
-                articles: [...currentArticles, productDesignation]
+                articles: [...currentArticles, { id: product.id, designation: product.label }]
             };
             setFormData(prev => ({ ...prev, colis: newColis }));
         }
@@ -556,6 +571,14 @@ const CreateExpedition = () => {
             return;
         }
 
+        if (ELIGIBILITE_CHAMP_PAR_TYPE[formData.type_expedition]) {
+            const colisSansArticle = formData.colis.filter(c => !(c.articles || []).length);
+            if (colisSansArticle.length > 0) {
+                toast.error(`❌ Veuillez ajouter au moins un article pour ${colisSansArticle.length === 1 ? 'le colis' : `les ${colisSansArticle.length} colis`}`);
+                return;
+            }
+        }
+
         const simulationPayload = {
             type_expedition: formData.type_expedition.toLowerCase(),
             pays_depart: formData.pays_depart,
@@ -573,7 +596,7 @@ const CreateExpedition = () => {
                     largeur: parseFloat(c.largeur) || 0,
                     hauteur: parseFloat(c.hauteur) || 0,
                     prix_emballage: parseFloat(c.prix_emballage) || 0,
-                    articles: c.articles || []
+                    articles: (c.articles || []).map(a => ({ produit_id: a.id }))
                 };
                 if (c.category_id) item.category_id = c.category_id;
 
@@ -591,7 +614,7 @@ const CreateExpedition = () => {
     const handleSubmit = async () => {
         // Validation: Vérifier si les catégories sont requises et renseignées
         const isDHD = formData.type_expedition.includes('DHD');
-        
+
         if (isDHD) {
             const missingCategories = formData.colis.filter(c => !c.category_id || c.category_id === "");
             if (missingCategories.length > 0) {
@@ -600,7 +623,15 @@ const CreateExpedition = () => {
                 return;
             }
         }
-        
+
+        if (ELIGIBILITE_CHAMP_PAR_TYPE[formData.type_expedition]) {
+            const colisSansArticle = formData.colis.filter(c => !(c.articles || []).length);
+            if (colisSansArticle.length > 0) {
+                toast.error(`❌ Veuillez ajouter au moins un article pour ${colisSansArticle.length === 1 ? 'le colis' : `les ${colisSansArticle.length} colis`}`);
+                return;
+            }
+        }
+
         const payload = {
             ...formData,
             type_expedition: formData.type_expedition.toLowerCase(),
@@ -612,7 +643,7 @@ const CreateExpedition = () => {
                     largeur: parseFloat(c.largeur) || 0,
                     hauteur: parseFloat(c.hauteur) || 0,
                     prix_emballage: parseFloat(c.prix_emballage) || 0,
-                    articles: c.articles || []
+                    articles: (c.articles || []).map(a => ({ produit_id: a.id }))
                 };
 
                 // Pour DHD, category_id est OBLIGATOIRE
@@ -1070,21 +1101,29 @@ const CreateExpedition = () => {
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         {/* Articles */}
                                                         <div>
-                                                            <label className="block text-xs font-semibold text-slate-500 mb-1.5">Articles contenus</label>
+                                                            <label className="block text-xs font-semibold text-slate-500 mb-1.5">
+                                                                Articles contenus
+                                                                {ELIGIBILITE_CHAMP_PAR_TYPE[formData.type_expedition] && <span className="text-amber-600"> *</span>}
+                                                            </label>
                                                             <SearchableDropdown
-                                                                options={Array.isArray(products) ? products.map(p => ({
-                                                                    id: p.id,
-                                                                    label: p.designation
-                                                                })) : []}
-                                                                onSelect={(option) => handleAddArticle(index, option.label)}
+                                                                options={Array.isArray(products) ? products
+                                                                    .filter(p => {
+                                                                        const champ = ELIGIBILITE_CHAMP_PAR_TYPE[formData.type_expedition];
+                                                                        return !champ || p[champ];
+                                                                    })
+                                                                    .map(p => ({
+                                                                        id: p.id,
+                                                                        label: p.designation
+                                                                    })) : []}
+                                                                onSelect={(option) => handleAddArticle(index, option)}
                                                                 placeholder="+ Ajouter un article"
                                                                 className="mb-2"
                                                             />
                                                             <div className="flex flex-wrap gap-1.5 min-h-[34px] p-2 bg-slate-50 rounded-md border border-slate-200">
                                                                 {(c.articles || []).length > 0 ? (
                                                                     c.articles.map((art, artIdx) => (
-                                                                        <span key={artIdx} className="inline-flex items-center gap-1 px-2 py-0.5 bg-white text-slate-700 text-xs font-semibold rounded border border-slate-300">
-                                                                            {art}
+                                                                        <span key={art.id || artIdx} className="inline-flex items-center gap-1 px-2 py-0.5 bg-white text-slate-700 text-xs font-semibold rounded border border-slate-300">
+                                                                            {art.designation}
                                                                             <button onClick={() => handleRemoveArticle(index, artIdx)} className="text-slate-400 hover:text-red-500 transition-colors ml-0.5">
                                                                                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                                                                             </button>
