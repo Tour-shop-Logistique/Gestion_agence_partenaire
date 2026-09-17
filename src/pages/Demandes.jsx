@@ -48,6 +48,10 @@ const Demandes = () => {
     const [receivingCode, setReceivingCode] = useState(null);
     const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
     const [codesToReceive, setCodesToReceive] = useState([]);
+    // Etat local dedie au clic "Actualiser" : `status` est partage par tous
+    // les thunks du slice (websocket inclus), donc s'appuyer dessus peut
+    // griser le bouton indefiniment si une requete en arriere-plan traine.
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     // Utiliser un ref pour éviter les appels multiples au montage
     const hasLoadedInitialDataRef = useRef(false);
@@ -148,6 +152,11 @@ const Demandes = () => {
         if (!idToAccept) return;
         setProcessingId(idToAccept);
         await acceptDemande(idToAccept);
+        // La demande acceptée bascule dans "En agence" (alimenté par
+        // `expeditions`, pas par `demandes`) : sans ce rechargement explicite,
+        // l'onglet "En agence" ne se met à jour qu'au prochain rechargement
+        // manuel de la page, car le websocket seul ne suffit pas toujours.
+        await loadExpeditions({ page: 1 }, true);
         setProcessingId(null);
         setIsAcceptModalOpen(false);
         setIdToAccept(null);
@@ -229,8 +238,18 @@ const Demandes = () => {
     };
 
     const handleRefresh = async () => {
-        await loadDemandes({ page: currentPage }, true);
-        
+        setIsRefreshing(true);
+        try {
+            // "Demandes" et "En agence" sont alimentés par deux sources distinctes
+            // (demandes vs expeditions) : actualiser doit recharger celle affichée.
+            if (activeTab === 'demandes') {
+                await loadDemandes({ page: currentPage }, true);
+            } else {
+                await loadExpeditions({ page: 1 }, true);
+            }
+        } finally {
+            setIsRefreshing(false);
+        }
     };
 
     // Filtrer les demandes basé sur la recherche
@@ -328,10 +347,10 @@ const Demandes = () => {
                 actions={
                     <button
                         onClick={handleRefresh}
-                        disabled={status === 'loading'}
+                        disabled={isRefreshing}
                         className="inline-flex items-center px-3 sm:px-4 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
                     >
-                        <RefreshCw className={`w-3.5 sm:w-4 h-3.5 sm:h-4 sm:mr-2 ${status === 'loading' ? 'animate-spin' : ''}`} />
+                        <RefreshCw className={`w-3.5 sm:w-4 h-3.5 sm:h-4 sm:mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
                         <span className="hidden sm:inline">Actualiser</span>
                     </button>
                 }
@@ -422,7 +441,7 @@ const Demandes = () => {
             {activeTab === 'demandes' ? (
             <div className="relative bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 {/* Loading Overlay */}
-                {status === 'loading' && demandes.length > 0 && (
+                {isRefreshing && demandes.length > 0 && (
                     <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-20 flex items-center justify-center">
                         <div className="flex flex-col items-center gap-3">
                             <div className="relative">
@@ -738,6 +757,18 @@ const Demandes = () => {
             ) : (
             /* Section "En agence" - Liste des colis acceptés à réceptionner */
             <div className="relative bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                {/* Loading Overlay - retour visuel de l'actualisation, absent avant ce correctif */}
+                {isRefreshing && colisEnAgence.length > 0 && (
+                    <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-20 flex items-center justify-center">
+                        <div className="flex flex-col items-center gap-3">
+                            <Spinner size="xl" color="indigo" />
+                            <div className="text-center">
+                                <p className="text-sm font-bold text-slate-900">Actualisation en cours...</p>
+                                <p className="text-xs text-slate-500 mt-1">Récupération des colis en agence</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
                 {/* Barre d'action - sélection groupée */}
                 {canAccept && filteredColisEnAgence.length > 0 && (
                     <div className="px-3 sm:px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3 bg-slate-50">

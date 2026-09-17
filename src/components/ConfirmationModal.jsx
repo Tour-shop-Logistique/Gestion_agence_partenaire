@@ -44,18 +44,18 @@ const ConfirmationModal = ({
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
             <div
-                className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200"
+                className="relative w-full max-w-md bg-white rounded-xl shadow-2xl overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header with Icon */}
                 <div className="p-6 pb-0">
                     <div className="flex items-center justify-between mb-4">
-                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${colors.icon}`}>
+                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${colors.icon}`}>
                             <AlertTriangle className="w-6 h-6" />
                         </div>
                         <button
                             onClick={onClose}
-                            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all"
+                            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all"
                         >
                             <X className="w-5 h-5" />
                         </button>
@@ -79,14 +79,14 @@ const ConfirmationModal = ({
                     <button
                         onClick={onClose}
                         disabled={isLoading}
-                        className="flex-1 px-4 py-3 rounded-2xl text-sm font-bold text-slate-600 hover:bg-slate-50 border border-slate-200 transition-all disabled:opacity-50"
+                        className="flex-1 px-4 py-3 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-50 border border-slate-200 transition-all disabled:opacity-50"
                     >
                         {cancelText}
                     </button>
                     <button
                         onClick={onConfirm}
                         disabled={isLoading}
-                        className={`flex-1 px-4 py-3 rounded-2xl text-sm font-bold text-white shadow-lg transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 ${colors.button}`}
+                        className={`flex-1 px-4 py-3 rounded-lg text-sm font-bold text-white shadow-lg transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 ${colors.button}`}
                     >
                         {isLoading ? (
                             <Spinner size="sm" color="white" />

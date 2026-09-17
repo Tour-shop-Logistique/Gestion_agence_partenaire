@@ -254,9 +254,10 @@ const ExpeditionDetails = () => {
 
                             {/* Actions rapides inline */}
                             <div className="flex-shrink-0 flex flex-wrap items-center gap-2">
-                                {/* Reçu imprimable seulement après acceptation : rien à imprimer
-                                    tant que la demande n'est pas encore validée par l'agence. */}
-                                {expedition.statut_expedition !== 'en_attente' && (
+                                {/* Reçu imprimable seulement une fois les colis réceptionnés à
+                                    l'agence de départ : rien à imprimer tant que la demande est
+                                    juste "acceptée" mais pas encore physiquement en agence. */}
+                                {!['en_attente', 'accepted'].includes(expedition.statut_expedition) && (
                                     <button
                                         onClick={() => setShowPrintModal(true)}
                                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors"
