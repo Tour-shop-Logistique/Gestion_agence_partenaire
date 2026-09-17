@@ -11,6 +11,7 @@ import Spinner from "../components/common/Spinner";
 import Skeleton from "../components/common/Skeleton";
 import ConfirmationModal from "../components/ConfirmationModal";
 import { getLogoUrl } from "../utils/apiConfig";
+import { getCurrencyLabel } from "../utils/format";
 import { toast } from "../utils/toast";
 import { markAsRecentlyCreated } from "../hooks/useWebSocket";
 import { generateColisCode, parseColisCode } from "../utils/codeGenerator";
@@ -1207,7 +1208,7 @@ const CreateExpeditionV2 = () => {
                         <p className="text-lg font-bold leading-tight">
                             {colisDirty
                                 ? 'Tarif à recalculer'
-                                : `${(parseFloat(simulationTarif?.montant_expedition || simulationResult?.total_price || 0) + totalEmballage).toLocaleString()} FCFA`}
+                                : `${(parseFloat(simulationTarif?.montant_expedition || simulationResult?.total_price || 0) + totalEmballage).toLocaleString()} ${getCurrencyLabel()}`}
                         </p>
                     </div>
                     <button
@@ -1787,7 +1788,7 @@ const CreateExpeditionV2 = () => {
                                                             />
                                                         </div>
                                                         <div className="space-y-1.5 col-span-2 sm:col-span-1">
-                                                            <label className="block text-[11px] font-semibold text-slate-600">Emballage (FCFA)</label>
+                                                            <label className="block text-[11px] font-semibold text-slate-600">Emballage ({getCurrencyLabel()})</label>
                                                             <input 
                                                                 type="number" 
                                                                 step="0" 
@@ -1800,7 +1801,7 @@ const CreateExpeditionV2 = () => {
                                                             />
                                                         </div>
                                                         <div className="space-y-1.5 col-span-2 sm:col-span-1">
-                                                            <label className="block text-[11px] font-semibold text-slate-600">Estimation (FCFA)</label>
+                                                            <label className="block text-[11px] font-semibold text-slate-600">Estimation ({getCurrencyLabel()})</label>
                                                             <input 
                                                                 type="number" 
                                                                 step="0" 
@@ -1906,7 +1907,7 @@ const CreateExpeditionV2 = () => {
                                                 </div>
                                                 <div className="flex items-center justify-between text-sm mt-1">
                                                     <span className="font-semibold text-slate-700">Frais d'emballage :</span>
-                                                    <span className="font-bold text-indigo-700">{totalEmballage.toLocaleString()} FCFA</span>
+                                                    <span className="font-bold text-indigo-700">{totalEmballage.toLocaleString()} {getCurrencyLabel()}</span>
                                                 </div>
                                             </div>
 
@@ -1972,15 +1973,15 @@ const CreateExpeditionV2 = () => {
                                             <div className="space-y-3">
                                                 <div className="flex justify-between items-center pb-3 border-b border-emerald-500/30">
                                                     <span className="text-xs font-medium text-emerald-100">Frais d'expédition</span>
-                                                    <span className="text-lg font-bold">{parseFloat(simulationTarif?.montant_expedition || simulationResult?.total_price || 0).toLocaleString()} FCFA</span>
+                                                    <span className="text-lg font-bold">{parseFloat(simulationTarif?.montant_expedition || simulationResult?.total_price || 0).toLocaleString()} {getCurrencyLabel()}</span>
                                                 </div>
                                                 <div className="flex justify-between items-center">
                                                     <span className="text-xs font-medium text-emerald-100">Frais d'emballage</span>
-                                                    <span className="text-sm font-bold">{totalEmballage.toLocaleString()} FCFA</span>
+                                                    <span className="text-sm font-bold">{totalEmballage.toLocaleString()} {getCurrencyLabel()}</span>
                                                 </div>
                                                 <div className="flex justify-between items-center pt-3 border-t border-emerald-500/30">
                                                     <span className="text-sm font-bold">TOTAL</span>
-                                                    <span className="text-2xl font-bold">{(parseFloat(simulationTarif?.montant_expedition || simulationResult?.total_price || 0) + totalEmballage).toLocaleString()} FCFA</span>
+                                                    <span className="text-2xl font-bold">{(parseFloat(simulationTarif?.montant_expedition || simulationResult?.total_price || 0) + totalEmballage).toLocaleString()} {getCurrencyLabel()}</span>
                                                 </div>
                                             </div>
                                             {colisDirty ? (
@@ -2515,18 +2516,18 @@ const CreateExpeditionV2 = () => {
                                         <div className="space-y-3">
                                             <div className="flex justify-between items-center pb-3 border-b border-slate-700">
                                                 <span className="text-xs font-medium text-slate-300">Frais d'expédition</span>
-                                                <span className="text-lg font-bold">{parseFloat(simulationTarif?.montant_expedition || simulationResult?.total_price || 0).toLocaleString()} FCFA</span>
+                                                <span className="text-lg font-bold">{parseFloat(simulationTarif?.montant_expedition || simulationResult?.total_price || 0).toLocaleString()} {getCurrencyLabel()}</span>
                                             </div>
                                             <div className="flex justify-between items-center">
                                                 <span className="text-xs font-medium text-slate-300">Frais d'emballage</span>
-                                                <span className="text-sm font-bold">{totalEmballage.toLocaleString()} FCFA</span>
+                                                <span className="text-sm font-bold">{totalEmballage.toLocaleString()} {getCurrencyLabel()}</span>
                                             </div>
                                             <div className="flex justify-between items-center pt-3 border-t border-slate-700">
                                                 <span className="text-sm font-bold">TOTAL</span>
                                                 <span className="text-3xl font-bold text-emerald-400">{(parseFloat(simulationTarif?.montant_expedition || simulationResult?.total_price || 0) + totalEmballage).toLocaleString()}</span>
                                             </div>
                                             <div className="text-right">
-                                                <span className="text-xs text-slate-400">FCFA</span>
+                                                <span className="text-xs text-slate-400">{getCurrencyLabel()}</span>
                                             </div>
                                         </div>
                                         {!formData.is_paiement_credit && (
@@ -2561,7 +2562,7 @@ const CreateExpeditionV2 = () => {
                 message={
                     formData.is_paiement_credit
                         ? "Cette expédition sera enregistrée à crédit, sans encaissement immédiat. Confirmez-vous la création ?"
-                        : `Un encaissement de ${(parseFloat(simulationTarif?.montant_expedition || simulationResult?.total_price || 0) + totalEmballage).toLocaleString()} FCFA sera enregistré. Confirmez-vous la création de cette expédition ?`
+                        : `Un encaissement de ${(parseFloat(simulationTarif?.montant_expedition || simulationResult?.total_price || 0) + totalEmballage).toLocaleString()} ${getCurrencyLabel()} sera enregistré. Confirmez-vous la création de cette expédition ?`
                 }
                 confirmText="Confirmer et créer"
                 cancelText="Annuler"

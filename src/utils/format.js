@@ -3,30 +3,40 @@
  * Module utilitaire pour les fonctions de validation et formatage
  */
 
+// Code ISO (norme Intl) -> libellé affiché. Seule source de vérité pour le
+// texte de la devise dans toute l'app : ajouter une devise ici suffit,
+// jamais de "FCFA"/"CFA" recodé en dur ailleurs dans le JSX.
+const CURRENCY_LABELS = {
+  XOF: 'FCFA',
+  USD: 'USD',
+  EUR: '€',
+};
+
+/**
+ * Libellé affichable d'un code devise ISO (ex: 'XOF' -> 'FCFA').
+ * @param {string} currencyCode - Code ISO de la devise (XOF, USD, EUR...)
+ * @returns {string} Libellé à afficher
+ */
+export const getCurrencyLabel = (currencyCode = 'XOF') => CURRENCY_LABELS[currencyCode] || currencyCode;
+
 /**
  * Formater un prix selon la devise
  * @param {number} price - Prix à formater
- * @param {string} currency - Devise (FCFA, USD, EUR)
+ * @param {string} currency - Code devise ISO (XOF, USD, EUR)
  * @returns {string} Prix formaté
  */
-export const formatPrice = (price, currency = 'FCFA') => {
-  const currencyMap = {
-    FCFA: 'XOF',
-    USD: 'USD',
-    EUR: 'EUR',
-  };
-
+export const formatPrice = (price, currency = 'XOF') => {
   return new Intl.NumberFormat('fr-FR', {
     style: 'currency',
-    currency: currencyMap[currency] || 'XOF',
+    currency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0
   }).format(price);
 };
 
 /**
- * Convertir CFA en EUR
- * @param {number} cfa - Montant en CFA
+ * Convertir un montant en XOF vers l'EUR
+ * @param {number} cfa - Montant en XOF
  * @returns {number} Montant en Euro
  */
 export const cfaToEur = (cfa) => {
@@ -35,11 +45,12 @@ export const cfaToEur = (cfa) => {
 };
 
 /**
- * Formater un prix en double devise (CFA & EUR)
- * @param {number} priceCfa - Prix en CFA
+ * Formater un prix en double devise (devise locale & EUR)
+ * @param {number} priceCfa - Prix en devise locale (XOF)
+ * @param {string} currencyCode - Code ISO de la devise locale (défaut XOF)
  * @returns {string} Prix formaté
  */
-export const formatPriceDual = (priceCfa) => {
+export const formatPriceDual = (priceCfa, currencyCode = 'XOF') => {
   const priceEur = cfaToEur(priceCfa);
   const formattedCfa = new Intl.NumberFormat('fr-FR').format(priceCfa);
   const formattedEur = new Intl.NumberFormat('fr-FR', {
@@ -49,7 +60,7 @@ export const formatPriceDual = (priceCfa) => {
     maximumFractionDigits: 2
   }).format(priceEur);
 
-  return `${formattedCfa} CFA (${formattedEur})`;
+  return `${formattedCfa} ${getCurrencyLabel(currencyCode)} (${formattedEur})`;
 };
 
 

@@ -8,6 +8,7 @@ import { useAgency } from "../hooks/useAgency";
 import { useAuth } from "../hooks/useAuth";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { showToast } from "../utils/toast";
+import { getCurrencyLabel } from "../utils/format";
 import { 
   ArrowPathIcon, 
   MagnifyingGlassIcon, 
@@ -32,10 +33,9 @@ import {
   ClockIcon,
   CalendarIcon,
   ArrowTrendingUpIcon,
-  ChartBarIcon,
   BellAlertIcon
 } from "@heroicons/react/24/outline";
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { getCountryName } from "../utils/countries";
 import PageHeader from "../components/ui/PageHeader";
 
@@ -189,36 +189,22 @@ const Comptabilite = () => {
       .filter(exp => exp.statut_paiement === 'en_attente')
       .reduce((sum, exp) => sum + (exp.accounting_details?.total_client_due || 0), 0);
     
-    // Solde de trésorerie (Encaissements - Décaissements)
+    // Solde de trésorerie théorique (Encaissements - part due au HUB/livreurs) -
+    // aucun décaissement réel n'est encore tracé comme transaction dans le
+    // système, donc "Décaissements" ici reste une estimation de ce qui
+    // reste à reverser, pas un montant effectivement sorti de caisse.
     const encaissements = summary.real?.total_cash_received || 0;
-    const decaissements = montantAReverserHUB; // Simplifié pour l'exemple
+    const decaissements = montantAReverserHUB;
     const soldeTresorerie = encaissements - decaissements;
-    
-    // Marge nette agence (Commission Agence - Charges Agence)
-    // Pour l'instant, charges = 0 (à ajuster selon vos besoins)
-    const margeNetteAgence = summary.potential?.total_agence || 0;
-    
+
     return {
       montantAReverserHUB,
       creancesClients,
       soldeTresorerie,
-      margeNetteAgence,
       encaissements,
       decaissements
     };
   }, [summary, filteredData]);
-
-  // Répartition des moyens de paiement (données mockées - à adapter selon vos données réelles)
-  const paymentMethods = useMemo(() => {
-    const total = summary.real?.total_cash_received || 1;
-    return [
-      { name: 'Espèces', montant: total * 0.35, color: '#f97316' },
-      { name: 'Orange Money', montant: total * 0.25, color: '#fb923c' },
-      { name: 'MTN Money', montant: total * 0.20, color: '#fdba74' },
-      { name: 'Wave', montant: total * 0.15, color: '#fed7aa' },
-      { name: 'Carte Bancaire', montant: total * 0.05, color: '#ffedd5' }
-    ];
-  }, [summary]);
 
   // Analyse des impayés par ancienneté
   const unpaidAnalysis = useMemo(() => {
@@ -345,17 +331,6 @@ const Comptabilite = () => {
       .slice(0, 10);
   }, [filteredData]);
 
-  // Répartition financière pour graphique circulaire
-  const financialDistribution = useMemo(() => {
-    const total = summary.potential?.total_client_due || 1;
-    return [
-      { name: 'CA Client', value: total, color: '#0f172a' },
-      { name: 'Part Agence', value: summary.potential?.total_agence || 0, color: '#3b82f6' },
-      { name: 'Part HUB', value: summary.potential?.total_backoffice || 0, color: '#64748b' },
-      { name: 'Part Livreurs', value: summary.potential?.total_livreur || 0, color: '#10b981' }
-    ];
-  }, [summary]);
-
   // Alertes comptables
   const alerts = useMemo(() => {
     const alertList = [];
@@ -365,7 +340,7 @@ const Comptabilite = () => {
         type: 'danger',
         icon: ExclamationTriangleIcon,
         message: `${unpaidAnalysis.totalCount} factures impayées`,
-        value: formatCurrency(unpaidAnalysis.totalAmount) + ' CFA'
+        value: formatCurrency(unpaidAnalysis.totalAmount) + ' ' + getCurrencyLabel()
       });
     }
     
@@ -374,7 +349,7 @@ const Comptabilite = () => {
         type: 'warning',
         icon: BanknotesIcon,
         message: 'Montant à reverser au HUB',
-        value: formatCurrency(financialKPIs.montantAReverserHUB) + ' CFA'
+        value: formatCurrency(financialKPIs.montantAReverserHUB) + ' ' + getCurrencyLabel()
       });
     }
     
@@ -383,7 +358,7 @@ const Comptabilite = () => {
         type: 'danger',
         icon: ExclamationTriangleIcon,
         message: 'Trésorerie négative',
-        value: formatCurrency(financialKPIs.soldeTresorerie) + ' CFA'
+        value: formatCurrency(financialKPIs.soldeTresorerie) + ' ' + getCurrencyLabel()
       });
     }
     
@@ -413,7 +388,7 @@ const Comptabilite = () => {
       "Référence": item.reference,
       "Expéditeur": item.expediteur?.nom_prenom || "---",
       "Destinataire": item.destinataire?.nom_prenom || "---",
-      "Montant Total (CFA)": item.accounting_details?.total_client_due || 0,
+      [`Montant Total (${getCurrencyLabel()})`]: item.accounting_details?.total_client_due || 0,
       "Commission Agence": item.accounting_details?.agence || 0,
       "Part Backoffice / HUB": item.accounting_details?.backoffice || 0,
       "Part Livreur": item.accounting_details?.livreur || 0,
@@ -435,7 +410,7 @@ const Comptabilite = () => {
       "Référence": "TOTAL PÉRIODE",
       "Expéditeur": "",
       "Destinataire": "",
-      "Montant Total (CFA)": summary.potential?.total_client_due || 0,
+      [`Montant Total (${getCurrencyLabel()})`]: summary.potential?.total_client_due || 0,
       "Commission Agence": summary.potential?.total_agence || 0,
       "Part Backoffice / HUB": summary.potential?.total_backoffice || 0,
       "Part Livreur": summary.potential?.total_livreur || 0,
@@ -560,9 +535,9 @@ const Comptabilite = () => {
     const cardHeight = 28;
 
     const cards = [
-      { label: "POTENTIEL (DO)", value: formatCurrencyForPDF(summary.potential?.total_client_due), sub: "CFA", color: [248, 250, 252], borderColor: [226, 232, 240] },
-      { label: "PART BACKOFFICE", value: formatCurrencyForPDF(summary.potential?.total_backoffice), sub: "CFA", color: [30, 41, 59], textColor: [255, 255, 255], borderColor: [15, 23, 42] },
-      { label: "PART AGENCE", value: formatCurrencyForPDF(summary.potential?.total_agence), sub: "CFA", color: [248, 250, 252], borderColor: [226, 232, 240] },
+      { label: "POTENTIEL (DO)", value: formatCurrencyForPDF(summary.potential?.total_client_due), sub: getCurrencyLabel(), color: [248, 250, 252], borderColor: [226, 232, 240] },
+      { label: "PART BACKOFFICE", value: formatCurrencyForPDF(summary.potential?.total_backoffice), sub: getCurrencyLabel(), color: [30, 41, 59], textColor: [255, 255, 255], borderColor: [15, 23, 42] },
+      { label: "PART AGENCE", value: formatCurrencyForPDF(summary.potential?.total_agence), sub: getCurrencyLabel(), color: [248, 250, 252], borderColor: [226, 232, 240] },
       { label: "VOL. EXPEDITIONS", value: `${filteredData.length}`, sub: "EXP.", color: [248, 250, 252], borderColor: [226, 232, 240] }
     ];
 
@@ -588,7 +563,7 @@ const Comptabilite = () => {
       const metrics = doc.getTextDimensions(valText);
       doc.text(valText, x + 6, cardY + 20);
       
-      // Card Sub (CFA / EXP)
+      // Card Sub (FCFA / EXP)
       doc.setFontSize(7);
       doc.setFont('helvetica', 'normal');
       doc.text(card.sub, x + 6 + metrics.w + 2, cardY + 20);
@@ -625,7 +600,7 @@ const Comptabilite = () => {
         doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(37, 99, 235); // blue-600
-        doc.text(formatCurrencyForPDF(item.value) + " CFA", x, detailY + 16);
+        doc.text(formatCurrencyForPDF(item.value) + " " + getCurrencyLabel(), x, detailY + 16);
       });
     }
 
@@ -774,7 +749,7 @@ const Comptabilite = () => {
         />
 
       {/* NOUVEAUX KPI FINANCIERS */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {/* Montant à reverser au HUB - Orange */}
         <div className="p-3 sm:p-4 rounded-lg border border-orange-200 bg-gradient-to-br from-orange-50 to-white shadow-sm hover:shadow-md transition-all animate-in fade-in duration-300">
           <div className="flex justify-between items-start mb-2">
@@ -785,7 +760,7 @@ const Comptabilite = () => {
             <span className="text-base sm:text-xl font-bold tabular-nums text-orange-600">
               {formatCurrency(financialKPIs.montantAReverserHUB)}
             </span>
-            <span className="text-[9px] sm:text-[10px] font-semibold text-orange-400">CFA</span>
+            <span className="text-[9px] sm:text-[10px] font-semibold text-orange-400">{getCurrencyLabel()}</span>
           </div>
           <p className="text-[9px] sm:text-[10px] text-orange-500 mt-1 font-medium">Part Backoffice + Part Livreurs</p>
         </div>
@@ -800,7 +775,7 @@ const Comptabilite = () => {
             <span className="text-base sm:text-xl font-bold tabular-nums text-red-600">
               {formatCurrency(financialKPIs.creancesClients)}
             </span>
-            <span className="text-[9px] sm:text-[10px] font-semibold text-red-400">CFA</span>
+            <span className="text-[9px] sm:text-[10px] font-semibold text-red-400">{getCurrencyLabel()}</span>
           </div>
           <p className="text-[9px] sm:text-[10px] text-red-500 mt-1 font-medium">
             {filteredData.filter(exp => exp.statut_paiement === 'en_attente').length} expéditions non réglées
@@ -829,26 +804,11 @@ const Comptabilite = () => {
             </span>
             <span className={`text-[9px] sm:text-[10px] font-semibold ${
               financialKPIs.soldeTresorerie >= 0 ? 'text-emerald-400' : 'text-red-400'
-            }`}>CFA</span>
+            }`}>{getCurrencyLabel()}</span>
           </div>
           <p className={`text-[9px] sm:text-[10px] mt-1 font-medium ${
             financialKPIs.soldeTresorerie >= 0 ? 'text-emerald-500' : 'text-red-500'
-          }`}>Encaissements - Décaissements</p>
-        </div>
-
-        {/* Marge nette agence - Bleu */}
-        <div className="p-3 sm:p-4 rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 to-white shadow-sm hover:shadow-md transition-all animate-in fade-in duration-300 delay-200">
-          <div className="flex justify-between items-start mb-2">
-            <p className="text-[10px] sm:text-[11px] font-semibold text-blue-600 uppercase tracking-tight">Marge Nette Agence</p>
-            <BuildingOfficeIcon className="w-4 h-4 text-blue-500 opacity-50" />
-          </div>
-          <div className="flex items-baseline gap-1">
-            <span className="text-base sm:text-xl font-bold tabular-nums text-blue-600">
-              {formatCurrency(financialKPIs.margeNetteAgence)}
-            </span>
-            <span className="text-[9px] sm:text-[10px] font-semibold text-blue-400">CFA</span>
-          </div>
-          <p className="text-[9px] sm:text-[10px] text-blue-500 mt-1 font-medium">Commission Agence - Charges</p>
+          }`}>Encaissements - Décaissements (estimation)</p>
         </div>
       </div>
 
@@ -871,7 +831,7 @@ const Comptabilite = () => {
               <span className={`text-base sm:text-xl font-bold tabular-nums ${kpi.color}`}>
                 {formatCurrency(kpi.value)}
               </span>
-              <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400">CFA</span>
+              <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400">{getCurrencyLabel()}</span>
             </div>
             <p className="text-[9px] sm:text-[10px] text-slate-400 mt-1 sm:mt-1.5 font-medium line-clamp-1">{kpi.sub}</p>
           </div>
@@ -901,7 +861,7 @@ const Comptabilite = () => {
                 </div>
                 <div className="flex items-baseline gap-1">
                   <span className="text-sm sm:text-lg font-bold text-blue-600 tabular-nums">{formatCurrency(item.value)}</span>
-                  <span className="text-[8px] sm:text-[9px] font-semibold text-slate-400">CFA</span>
+                  <span className="text-[8px] sm:text-[9px] font-semibold text-slate-400">{getCurrencyLabel()}</span>
                 </div>
               </div>
             ))}
@@ -921,14 +881,14 @@ const Comptabilite = () => {
             <p className="text-lg sm:text-2xl font-bold text-emerald-700 tabular-nums">
               {formatCurrency(financialKPIs.encaissements)}
             </p>
-            <p className="text-[9px] text-emerald-500 mt-1 font-semibold">CFA</p>
+            <p className="text-[9px] text-emerald-500 mt-1 font-semibold">{getCurrencyLabel()}</p>
           </div>
           <div className="text-center p-3 bg-red-50 rounded-lg border border-red-100">
             <p className="text-[10px] font-semibold text-red-600 uppercase mb-2">Décaissements</p>
             <p className="text-lg sm:text-2xl font-bold text-red-700 tabular-nums">
               {formatCurrency(financialKPIs.decaissements)}
             </p>
-            <p className="text-[9px] text-red-500 mt-1 font-semibold">CFA</p>
+            <p className="text-[9px] text-red-500 mt-1 font-semibold">{getCurrencyLabel()}</p>
           </div>
           <div className={`text-center p-3 rounded-lg border ${
             financialKPIs.soldeTresorerie >= 0 
@@ -945,7 +905,7 @@ const Comptabilite = () => {
             </p>
             <p className={`text-[9px] mt-1 font-semibold ${
               financialKPIs.soldeTresorerie >= 0 ? 'text-emerald-600' : 'text-red-600'
-            }`}>CFA</p>
+            }`}>{getCurrencyLabel()}</p>
           </div>
         </div>
       </div>
@@ -1019,8 +979,8 @@ const Comptabilite = () => {
                 boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
               }}
               formatter={(value, name) => {
-                if (name === 'CA') return [formatCurrency(value) + ' CFA', 'Chiffre d\'Affaires'];
-                if (name === 'Commission') return [formatCurrency(value) + ' CFA', 'Commission Agence'];
+                if (name === 'CA') return [formatCurrency(value) + ' ' + getCurrencyLabel(), 'Chiffre d\'Affaires'];
+                if (name === 'Commission') return [formatCurrency(value) + ' ' + getCurrencyLabel(), 'Commission Agence'];
                 return [value, name];
               }}
               labelFormatter={(label) => {
@@ -1035,35 +995,8 @@ const Comptabilite = () => {
         </ResponsiveContainer>
       </div>
 
-      {/* GRAPHIQUE RÉPARTITION FINANCIÈRE */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-sm animate-in fade-in duration-500">
-          <div className="flex items-center gap-2 mb-4">
-            <ChartBarIcon className="w-5 h-5 text-slate-700" />
-            <h2 className="text-xs sm:text-sm font-bold text-slate-900 uppercase tracking-tight">Répartition Financière</h2>
-          </div>
-          <ResponsiveContainer width="100%" height={250}>
-            <PieChart>
-              <Pie
-                data={financialDistribution}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {financialDistribution.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(value) => formatCurrency(value) + ' CFA'} />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* ANALYSE DES IMPAYÉS */}
+      {/* ANALYSE DES IMPAYÉS */}
+      <div className="grid grid-cols-1 gap-4">
         <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-sm animate-in fade-in duration-500">
           <div className="flex items-center gap-2 mb-4">
             <ClockIcon className="w-5 h-5 text-red-600" />
@@ -1076,14 +1009,14 @@ const Comptabilite = () => {
             </div>
             <div className="flex justify-between items-center pb-2 border-b border-slate-100">
               <span className="text-xs font-semibold text-slate-600">Montant Total</span>
-              <span className="text-sm font-bold text-red-600">{formatCurrency(unpaidAnalysis.totalAmount)} CFA</span>
+              <span className="text-sm font-bold text-red-600">{formatCurrency(unpaidAnalysis.totalAmount)} {getCurrencyLabel()}</span>
             </div>
             <div className="pt-2">
               <p className="text-[10px] font-bold text-slate-500 uppercase mb-2">Ancienneté</p>
               {Object.entries(unpaidAnalysis.categories).map(([category, amount]) => (
                 <div key={category} className="flex justify-between items-center py-2">
                   <span className="text-xs text-slate-600">{category}</span>
-                  <span className="text-xs font-bold text-slate-900 tabular-nums">{formatCurrency(amount)} CFA</span>
+                  <span className="text-xs font-bold text-slate-900 tabular-nums">{formatCurrency(amount)} {getCurrencyLabel()}</span>
                 </div>
               ))}
             </div>
@@ -1280,7 +1213,7 @@ const Comptabilite = () => {
                 <div>
                   <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Total Client</p>
                   <p className="text-2xl font-bold text-slate-900 tracking-tight">
-                    {formatCurrency(selectedExpedition.accounting_details?.total_client_due)} <span className="text-xs text-slate-400">CFA</span>
+                    {formatCurrency(selectedExpedition.accounting_details?.total_client_due)} <span className="text-xs text-slate-400">{getCurrencyLabel()}</span>
                   </p>
                 </div>
                 <span className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase border ${getStatusStyle(selectedExpedition.statut_paiement)}`}>
@@ -1295,7 +1228,7 @@ const Comptabilite = () => {
                     <ReceiptPercentIcon className="w-3.5 h-3.5" /> Répartition Détaillée des Gains
                   </h4>
                   <p className="text-xs font-bold text-blue-600">
-                    Total Agence: {formatCurrency((parseFloat(selectedExpedition.accounting_details?.agence_depart || 0) + parseFloat(selectedExpedition.accounting_details?.agence_arrivee || 0)))} CFA
+                    Total Agence: {formatCurrency((parseFloat(selectedExpedition.accounting_details?.agence_depart || 0) + parseFloat(selectedExpedition.accounting_details?.agence_arrivee || 0)))} {getCurrencyLabel()}
                   </p>
                 </div>
 
@@ -1304,25 +1237,25 @@ const Comptabilite = () => {
                   <div className="bg-blue-50/50 rounded-lg p-4 border border-blue-100">
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-[11px] font-bold text-blue-900 uppercase">Agence de Départ (Tour Shop)</p>
-                      <p className="text-lg font-bold text-blue-600 tabular-nums">{formatCurrency(selectedExpedition.accounting_details?.agence_depart)} CFA</p>
+                      <p className="text-lg font-bold text-blue-600 tabular-nums">{formatCurrency(selectedExpedition.accounting_details?.agence_depart)} {getCurrencyLabel()}</p>
                     </div>
                     <div className="space-y-2 pl-3 border-l-2 border-blue-200">
                       {parseFloat(selectedExpedition.montant_prestation || 0) > 0 && (
                         <div className="flex justify-between text-xs">
                           <span className="text-slate-600">Montant Expédition (Com.)</span>
-                          <span className="text-slate-800 font-semibold tabular-nums">{formatCurrency(selectedExpedition.montant_prestation)} CFA</span>
+                          <span className="text-slate-800 font-semibold tabular-nums">{formatCurrency(selectedExpedition.montant_prestation)} {getCurrencyLabel()}</span>
                         </div>
                       )}
                       {selectedExpedition.commission_details?.enlevement && parseFloat(selectedExpedition.commission_details.enlevement.agence || 0) > 0 && (
                         <div className="flex justify-between text-xs">
                           <span className="text-slate-600">Frais d'Enlèvement (Part)</span>
-                          <span className="text-slate-800 font-semibold tabular-nums">{formatCurrency(selectedExpedition.commission_details.enlevement.agence)} CFA</span>
+                          <span className="text-slate-800 font-semibold tabular-nums">{formatCurrency(selectedExpedition.commission_details.enlevement.agence)} {getCurrencyLabel()}</span>
                         </div>
                       )}
                       {selectedExpedition.commission_details?.emballage && parseFloat(selectedExpedition.commission_details.emballage.agence || 0) > 0 && (
                         <div className="flex justify-between text-xs">
                           <span className="text-slate-600">Frais d'Emballage (Part)</span>
-                          <span className="text-slate-800 font-semibold tabular-nums">{formatCurrency(selectedExpedition.commission_details.emballage.agence)} CFA</span>
+                          <span className="text-slate-800 font-semibold tabular-nums">{formatCurrency(selectedExpedition.commission_details.emballage.agence)} {getCurrencyLabel()}</span>
                         </div>
                       )}
                     </div>
@@ -1334,13 +1267,13 @@ const Comptabilite = () => {
                   <div className="bg-blue-50/50 rounded-lg p-4 border border-blue-100">
                     <div className="flex items-center justify-between mb-3">
                       <p className="text-[11px] font-bold text-blue-900 uppercase">Agence d'Arrivée</p>
-                      <p className="text-lg font-bold text-blue-600 tabular-nums">{formatCurrency(selectedExpedition.accounting_details?.agence_arrivee)} CFA</p>
+                      <p className="text-lg font-bold text-blue-600 tabular-nums">{formatCurrency(selectedExpedition.accounting_details?.agence_arrivee)} {getCurrencyLabel()}</p>
                     </div>
                     <div className="space-y-2 pl-3 border-l-2 border-blue-200">
                       {selectedExpedition.commission_details?.livraison && parseFloat(selectedExpedition.commission_details.livraison.agence || 0) > 0 && (
                         <div className="flex justify-between text-xs">
                           <span className="text-slate-600">Frais de Livraison (Part)</span>
-                          <span className="text-slate-800 font-semibold tabular-nums">{formatCurrency(selectedExpedition.commission_details.livraison.agence)} CFA</span>
+                          <span className="text-slate-800 font-semibold tabular-nums">{formatCurrency(selectedExpedition.commission_details.livraison.agence)} {getCurrencyLabel()}</span>
                         </div>
                       )}
                     </div>
@@ -1354,14 +1287,14 @@ const Comptabilite = () => {
                     <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
                       <p className="text-[9px] font-bold text-slate-500 uppercase mb-1">Backoffice</p>
                       <p className="text-sm font-bold text-slate-700 tabular-nums">
-                        {formatCurrency((parseFloat(selectedExpedition.accounting_details?.backoffice_depart || 0) + parseFloat(selectedExpedition.accounting_details?.backoffice_arrivee || 0)))} CFA
+                        {formatCurrency((parseFloat(selectedExpedition.accounting_details?.backoffice_depart || 0) + parseFloat(selectedExpedition.accounting_details?.backoffice_arrivee || 0)))} {getCurrencyLabel()}
                       </p>
                     </div>
                     {(parseFloat(selectedExpedition.accounting_details?.livreur_depart || 0) > 0 || parseFloat(selectedExpedition.accounting_details?.livreur_arrivee || 0) > 0) && (
                       <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
                         <p className="text-[9px] font-bold text-slate-500 uppercase mb-1">Livreurs</p>
                         <p className="text-sm font-bold text-slate-700 tabular-nums">
-                          {formatCurrency((parseFloat(selectedExpedition.accounting_details?.livreur_depart || 0) + parseFloat(selectedExpedition.accounting_details?.livreur_arrivee || 0)))} CFA
+                          {formatCurrency((parseFloat(selectedExpedition.accounting_details?.livreur_depart || 0) + parseFloat(selectedExpedition.accounting_details?.livreur_arrivee || 0)))} {getCurrencyLabel()}
                         </p>
                       </div>
                     )}

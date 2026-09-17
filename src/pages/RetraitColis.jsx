@@ -18,6 +18,7 @@ import { toast } from "../utils/toast";
 import ConfirmationModal from "../components/ConfirmationModal";
 import ColisDetailsDrawer from "../components/common/ColisDetailsDrawer";
 import useHasPermission from "../hooks/useHasPermission";
+import { getCurrencyLabel } from "../utils/format";
 import PageHeader from "../components/ui/PageHeader";
 import { getCountryName } from "../utils/countries";
 
@@ -510,7 +511,7 @@ const RetraitColis = () => {
                                         <div className="flex flex-col">
                                             <span className="text-xs font-bold text-slate-800">Confirmer le paiement reçu</span>
                                             <span className="text-[10px] text-slate-500 font-medium tracking-tight">
-                                                Total à encaisser : <span className="text-emerald-600 font-bold">{new Intl.NumberFormat('fr-FR').format(totalAmountToPay)} CFA</span>
+                                                Total à encaisser : <span className="text-emerald-600 font-bold">{new Intl.NumberFormat('fr-FR').format(totalAmountToPay)} {getCurrencyLabel()}</span>
                                             </span>
                                         </div>
                                     </label>

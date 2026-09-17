@@ -8,7 +8,7 @@ import {
     ChevronDownIcon,
     ChevronUpIcon
 } from "@heroicons/react/24/outline";
-import { formatPriceDual } from "../../utils/format";
+import { formatPriceDual, getCurrencyLabel } from "../../utils/format";
 import { expeditionsApi } from "../../utils/api/expeditions";
 import { expeditionsCache } from "../../utils/expeditionsCache";
 import Spinner from '../common/Spinner';
@@ -172,8 +172,18 @@ const RecentExpeditions = ({ expeditions = [] }) => {
                         // S'assurer que exp.colis existe et est un tableau
                         const colisList = Array.isArray(exp.colis) ? exp.colis : [];
                         const isExpanded = expandedExpeditions[exp.id] || false;
-                        const paysDepart = getCountryName(exp.code_pays_depart) || exp.pays_depart || '';
-                        const paysDestination = getCountryName(exp.code_pays_destination) || exp.pays_destination || '';
+                        // Interville : départ et arrivée sont dans le même
+                        // pays (pays_depart === pays_destination), afficher
+                        // les communes résolues côté backend
+                        // (commune_depart_nom/commune_arrivee_nom) donne le
+                        // vrai trajet plutôt qu'un pays répété deux fois.
+                        const estInterville = exp.type_expedition === 'interville';
+                        const paysDepart = estInterville
+                            ? (exp.commune_depart_nom || getCountryName(exp.code_pays_depart) || exp.pays_depart || '')
+                            : (getCountryName(exp.code_pays_depart) || exp.pays_depart || '');
+                        const paysDestination = estInterville
+                            ? (exp.commune_arrivee_nom || getCountryName(exp.code_pays_destination) || exp.pays_destination || '')
+                            : (getCountryName(exp.code_pays_destination) || exp.pays_destination || '');
                         
                         return (
                             <React.Fragment key={exp.id || `exp-${expIndex}`}>
@@ -252,7 +262,7 @@ const RecentExpeditions = ({ expeditions = [] }) => {
                                                 <p className="text-sm font-bold text-white">
                                                     {new Intl.NumberFormat('fr-FR').format(exp.montant_expedition || exp.montant || 0)}
                                                 </p>
-                                                <p className="text-[9px] text-white/70 font-medium">CFA</p>
+                                                <p className="text-[9px] text-white/70 font-medium">{getCurrencyLabel()}</p>
                                             </div>
 
                                             {/* Icône d'expansion - Desktop */}
@@ -278,7 +288,7 @@ const RecentExpeditions = ({ expeditions = [] }) => {
                                         </span>
                                         <div className="ml-auto text-right">
                                             <p className="text-xs font-bold text-white">
-                                                {new Intl.NumberFormat('fr-FR').format(exp.montant_expedition || exp.montant || 0)} CFA
+                                                {new Intl.NumberFormat('fr-FR').format(exp.montant_expedition || exp.montant || 0)} {getCurrencyLabel()}
                                             </p>
                                         </div>
                                     </div>

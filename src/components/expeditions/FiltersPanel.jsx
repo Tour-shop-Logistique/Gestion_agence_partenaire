@@ -168,9 +168,9 @@ const FiltersPanel = ({
             </FilterSection>
 
             {/* Type d'expédition */}
-            <FilterSection 
-                title="Type d'expédition" 
-                defaultOpen={true}
+            <FilterSection
+                title="Type d'expédition"
+                defaultOpen={false}
                 icon={() => <span className="text-base">📦</span>}
             >
                 <div className="space-y-1.5">
@@ -205,9 +205,9 @@ const FiltersPanel = ({
             </FilterSection>
 
             {/* Statuts */}
-            <FilterSection 
-                title="Statut des expéditions" 
-                defaultOpen={true}
+            <FilterSection
+                title="Statut des expéditions"
+                defaultOpen={false}
                 icon={() => <span className="text-base">📊</span>}
             >
                 <div className="space-y-2">

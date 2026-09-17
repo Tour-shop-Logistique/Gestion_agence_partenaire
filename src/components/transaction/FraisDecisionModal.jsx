@@ -4,6 +4,7 @@ import Spinner from '../common/Spinner';
 import RecordTransactionModal from './RecordTransactionModal';
 import { decisionFraisAnnexes } from '../../store/slices/expeditionSlice';
 import { recordTransaction } from '../../store/slices/expeditionSlice';
+import { getCurrencyLabel } from '../../utils/format';
 import { toast } from '../../utils/toast';
 import {
   XMarkIcon,
@@ -113,7 +114,7 @@ const FraisDecisionModal = ({ expedition, onClose }) => {
           <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Montant des frais</span>
             <span className="text-lg font-bold text-slate-900">
-              {montant.toLocaleString('fr-FR')} <span className="text-xs text-slate-500">CFA</span>
+              {montant.toLocaleString('fr-FR')} <span className="text-xs text-slate-500">{getCurrencyLabel()}</span>
             </span>
           </div>
 

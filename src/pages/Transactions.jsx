@@ -9,6 +9,7 @@ import {
   selectTransactionsStatus 
 } from '../store/slices/agencySlice';
 import { useExpedition } from '../hooks/useExpedition';
+import { getCurrencyLabel } from '../utils/format';
 import { toast } from '../utils/toast';
 import { 
   ArrowPathIcon,
@@ -108,7 +109,7 @@ const Transactions = () => {
       "Client / Partenaire": t.expedition?.expediteur?.nom_prenom || t.user?.nom || '---',
       "Mode de Paiement": t.payment_method === 'cash' ? 'Espèces' : t.payment_method?.replace(/_/g, ' '),
       "Montant": t.amount || 0,
-      "Devise": t.currency || 'CFA',
+      "Devise": t.currency || getCurrencyLabel(),
       "Date": formatDate(t.recorded_at || t.created_at, true)
     }));
 
@@ -247,7 +248,7 @@ const Transactions = () => {
                   <span className={`text-base sm:text-xl font-semibold tabular-nums ${stat.color}`}>
                     {formatCurrency(stat.value)}
                   </span>
-                  <span className="text-[9px] sm:text-[10px] font-medium text-slate-400">CFA</span>
+                  <span className="text-[9px] sm:text-[10px] font-medium text-slate-400">{getCurrencyLabel()}</span>
                 </div>
               </div>
               <div className={`p-1.5 sm:p-2 rounded-md ${stat.bg} flex-shrink-0`}>
@@ -347,7 +348,7 @@ const Transactions = () => {
                     }`}>
                       {t.type === 'encaissement' ? '+' : '-'}{new Intl.NumberFormat('fr-FR', { notation: 'compact' }).format(t.amount)}
                     </span>
-                    <span className="text-[9px] text-slate-400 font-medium">CFA</span>
+                    <span className="text-[9px] text-slate-400 font-medium">{getCurrencyLabel()}</span>
                   </div>
                 </div>
 
@@ -464,7 +465,7 @@ const Transactions = () => {
                         }`}>
                           {t.type === 'encaissement' ? '+' : '-'}{formatCurrency(t.amount)}
                         </span>
-                        <span className="text-[10px] text-slate-400 font-medium">CFA</span>
+                        <span className="text-[10px] text-slate-400 font-medium">{getCurrencyLabel()}</span>
                       </div>
                     </td>
                     <td className="px-2 py-3.5 text-right">

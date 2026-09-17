@@ -12,6 +12,7 @@ import {
     InformationCircleIcon,
     ArrowRightIcon
 } from "@heroicons/react/24/outline";
+import { getCurrencyLabel } from "../../utils/format";
 
 /**
  * Carte KPI réutilisable
@@ -109,7 +110,7 @@ const KPISection = ({ financial, operational }) => {
                         icon={CurrencyDollarIcon}
                         label="Chiffre d'affaires"
                         value={financial.chiffre_affaires_mois || 0}
-                        unit="CFA"
+                        unit={getCurrencyLabel()}
                         badge="Ce mois"
                         colorScheme="emerald"
                         tooltip="Montant total des expéditions créées par votre agence au cours du mois en cours, tous statuts de paiement confondus."
@@ -118,7 +119,7 @@ const KPISection = ({ financial, operational }) => {
                         icon={ChartBarIcon}
                         label="Commissions"
                         value={financial.commissions_mois || 0}
-                        unit="CFA"
+                        unit={getCurrencyLabel()}
                         badge="Gains"
                         colorScheme="indigo"
                         tooltip="Montant total des commissions que votre agence a gagnées sur les expéditions du mois en cours."
@@ -127,7 +128,7 @@ const KPISection = ({ financial, operational }) => {
                         icon={XCircleIcon}
                         label="Impayés"
                         value={financial.statut_paiements?.impaye || 0}
-                        unit="CFA"
+                        unit={getCurrencyLabel()}
                         badge="À recouvrer"
                         colorScheme="red"
                         tooltip="Montant total des expéditions dont le paiement n'a pas encore été effectué par les clients."
@@ -136,7 +137,7 @@ const KPISection = ({ financial, operational }) => {
                         icon={ClockIcon}
                         label="Encours"
                         value={financial.encours_a_recouvrer || 0}
-                        unit="CFA"
+                        unit={getCurrencyLabel()}
                         badge="En cours"
                         colorScheme="amber"
                         tooltip="Montant total des créances en cours de recouvrement auprès de vos clients."

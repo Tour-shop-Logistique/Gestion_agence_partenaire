@@ -6,8 +6,9 @@ import { useWebSocket } from "../hooks/useWebSocket";
 import { showToast } from "../utils/toast";
 import PageHeader from "../components/ui/PageHeader";
 import ExportButton from "../components/common/ExportButton";
+import { getCurrencyLabel } from "../utils/format";
 
-const formatCFA = (amount) => new Intl.NumberFormat('fr-FR').format(amount || 0) + ' CFA';
+const formatFCFA = (amount) => new Intl.NumberFormat('fr-FR').format(amount || 0) + ' ' + getCurrencyLabel();
 
 // Palette cyclique par nom (hash stable) plutôt qu'un mapping figé ou un
 // rang manuel ("ordre", retiré côté backend) : la grille de formats est
@@ -71,7 +72,7 @@ const TarifsInterville = () => {
         { header: 'Commune A', key: 'commune_a' },
         { header: 'Commune B', key: 'commune_b' },
         { header: 'Format', key: 'format' },
-        { header: 'Montant Base (FCFA)', key: 'montant_base' },
+        { header: `Montant Base (${getCurrencyLabel()})`, key: 'montant_base' },
         { header: '% Commission départ', key: 'pourcentage_commission_depart' },
         { header: '% Commission arrivée', key: 'pourcentage_commission_arrivee' },
     ]), []);
@@ -155,14 +156,14 @@ const TarifsInterville = () => {
                                                     <FormatBadge format={tarif.format_colis} />
                                                 </td>
                                                 <td className="px-6 py-3">
-                                                    <p className="font-medium text-slate-700">{formatCFA(tarif.montant_base)}</p>
+                                                    <p className="font-medium text-slate-700">{formatFCFA(tarif.montant_base)}</p>
                                                 </td>
                                                 <td className="px-6 py-3">
                                                     <span className="inline-flex items-center px-2 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-100 font-bold">
                                                         {tarif.pourcentage_commission_depart}%
                                                     </span>
                                                     <span className="text-slate-500 font-medium ml-2 text-xs">
-                                                        ({formatCFA(tarif.montant_commission_depart)})
+                                                        ({formatFCFA(tarif.montant_commission_depart)})
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-3">
@@ -170,7 +171,7 @@ const TarifsInterville = () => {
                                                         {tarif.pourcentage_commission_arrivee}%
                                                     </span>
                                                     <span className="text-slate-500 font-medium ml-2 text-xs">
-                                                        ({formatCFA(tarif.montant_commission_arrivee)})
+                                                        ({formatFCFA(tarif.montant_commission_arrivee)})
                                                     </span>
                                                 </td>
                                             </tr>
@@ -190,7 +191,7 @@ const TarifsInterville = () => {
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <FormatBadge format={tarif.format_colis} />
-                                            <p className="text-xs text-slate-500 font-bold uppercase">{formatCFA(tarif.montant_base)}</p>
+                                            <p className="text-xs text-slate-500 font-bold uppercase">{formatFCFA(tarif.montant_base)}</p>
                                         </div>
                                         <div className="grid grid-cols-2 gap-2">
                                             <div className="bg-slate-50 rounded-lg p-2 flex flex-col items-center justify-center border border-slate-100">

@@ -10,6 +10,7 @@ import {
 import StatusTimeline from './StatusTimeline';
 import PaymentBadge from './PaymentBadge';
 import { getCountryName } from '../../utils/countries';
+import { getCurrencyLabel } from '../../utils/format';
 
 /**
  * 📋 LIGNE D'EXPÉDITION (DESKTOP)
@@ -137,7 +138,7 @@ const ExpeditionRow = ({
                     <div className="flex items-baseline gap-1 mt-0.5">
                         <span className="text-[9px] text-indigo-400 font-medium">Com.</span>
                         <span className="text-[10px] font-bold text-indigo-600 tabular-nums">
-                            {new Intl.NumberFormat('fr-FR').format(getAgencyCommission(expedition))} CFA
+                            {new Intl.NumberFormat('fr-FR').format(getAgencyCommission(expedition))} {getCurrencyLabel()}
                         </span>
                     </div>
                 </div>

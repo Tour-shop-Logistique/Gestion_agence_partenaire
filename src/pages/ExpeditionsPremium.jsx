@@ -1,8 +1,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { FunnelIcon, ArrowPathIcon, DocumentArrowDownIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { FunnelIcon, ArrowPathIcon, DocumentArrowDownIcon } from '@heroicons/react/24/outline';
 
 import { useExpedition } from "../hooks/useExpedition";
 import { useAgency } from "../hooks/useAgency";
@@ -42,7 +41,6 @@ import {
  */
 
 const ExpeditionsPremium = () => {
-    const navigate = useNavigate();
     const { currentUser } = useAuth();
     const { expeditions, meta, loadExpeditions, status, lastFilters } = useExpedition();
     const { data: agencyData, fetchAgencyData } = useAgency();
@@ -478,7 +476,11 @@ const ExpeditionsPremium = () => {
         const tableData = filteredExpeditions.map(exp => ([
             exp.reference,
             getTypeLabel(exp.type_expedition),
-            `${getCountryName(exp.code_pays_depart) || exp.pays_depart || 'N/A'}\n↓\n${getCountryName(exp.code_pays_destination) || exp.pays_destination || 'N/A'}`,
+            // Interville : départ/arrivée sont dans le même pays, afficher
+            // les communes résolues côté backend donne le vrai trajet.
+            exp.type_expedition === 'interville'
+                ? `${exp.commune_depart_nom || getCountryName(exp.code_pays_depart) || exp.pays_depart || 'N/A'}\n↓\n${exp.commune_arrivee_nom || getCountryName(exp.code_pays_destination) || exp.pays_destination || 'N/A'}`
+                : `${getCountryName(exp.code_pays_depart) || exp.pays_depart || 'N/A'}\n↓\n${getCountryName(exp.code_pays_destination) || exp.pays_destination || 'N/A'}`,
             exp.expediteur?.nom_prenom || "---",
             exp.destinataire?.nom_prenom || "---",
             formatCurrencyForPDF(exp.montant_expedition),
@@ -659,13 +661,6 @@ const ExpeditionsPremium = () => {
                                     <span className="hidden sm:inline">Export PDF</span>
                                 </button>
 
-                                <button
-                                    onClick={() => navigate('/create-expedition')}
-                                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-sm hover:shadow-md active:scale-95 font-medium text-sm"
-                                >
-                                    <PlusIcon className="w-5 h-5" />
-                                    <span className="hidden sm:inline">Nouvelle</span>
-                                </button>
                             </div>
                         </div>
                     }

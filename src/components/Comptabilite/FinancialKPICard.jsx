@@ -1,3 +1,5 @@
+import { getCurrencyLabel } from "../../utils/format";
+
 const FinancialKPICard = ({ label, value, subtitle, color, icon: Icon, indicator }) => {
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('fr-FR').format(amount || 0);
@@ -14,7 +16,7 @@ const FinancialKPICard = ({ label, value, subtitle, color, icon: Icon, indicator
         <span className={`text-base sm:text-xl font-bold tabular-nums ${color}`}>
           {formatCurrency(value)}
         </span>
-        <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400">CFA</span>
+        <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400">{getCurrencyLabel()}</span>
       </div>
       <p className="text-[9px] sm:text-[10px] text-slate-400 mt-1 sm:mt-1.5 font-medium line-clamp-1">{subtitle}</p>
     </div>

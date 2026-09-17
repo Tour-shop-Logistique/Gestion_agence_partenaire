@@ -12,6 +12,7 @@ import {
 } from '../store/slices/agencySlice';
 import { useExpedition } from '../hooks/useExpedition';
 import { useAgency } from '../hooks/useAgency';
+import { getCurrencyLabel } from '../utils/format';
 import { toast } from '../utils/toast';
 import { 
   ArrowPathIcon,
@@ -320,7 +321,7 @@ const TransactionsPro = () => {
         type: 'critical',
         icon: ExclamationTriangleIcon,
         message: 'Solde de caisse négatif',
-        value: formatCurrency(financialKPIs.soldeCaisse) + ' CFA'
+        value: formatCurrency(financialKPIs.soldeCaisse) + ' ' + getCurrencyLabel()
       });
     }
     
@@ -346,7 +347,7 @@ const TransactionsPro = () => {
         type: 'warning',
         icon: ArrowTrendingDownIcon,
         message: `${decaissementsEleves.length} décaissement(s) important(s)`,
-        value: '> 100 000 CFA'
+        value: `> 100 000 ${getCurrencyLabel()}`
       });
     }
     
@@ -386,7 +387,7 @@ const TransactionsPro = () => {
       "Objet": t.payment_object?.replace(/_/g, ' ') || '---',
       "Mode Paiement": t.payment_method === 'cash' ? 'Espèces' : t.payment_method?.replace(/_/g, ' '),
       "Montant": t.amount || 0,
-      "Devise": t.currency || 'CFA',
+      "Devise": t.currency || getCurrencyLabel(),
       "Référence Expédition": t.expedition?.reference || '---',
       "Client": t.expedition?.expediteur?.nom_prenom || '---',
       "Destination": getCountryName(t.expedition?.code_pays_destination) || t.expedition?.pays_destination || '---'
@@ -412,21 +413,21 @@ const TransactionsPro = () => {
       "#": "",
       "Date": "Total Encaissements",
       "Montant": financialKPIs.totalEncaissements,
-      "Devise": "CFA"
+      "Devise": getCurrencyLabel()
     });
-    
+
     dataToExport.push({
       "#": "",
       "Date": "Total Décaissements",
       "Montant": financialKPIs.totalDecaissements,
-      "Devise": "CFA"
+      "Devise": getCurrencyLabel()
     });
-    
+
     dataToExport.push({
       "#": "",
       "Date": "Solde Net",
       "Montant": financialKPIs.soldeCaisse,
-      "Devise": "CFA"
+      "Devise": getCurrencyLabel()
     });
 
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
@@ -479,11 +480,11 @@ const TransactionsPro = () => {
     const cardHeight = 28;
 
     const cards = [
-      { label: "ENCAISSEMENTS", value: formatCurrency(financialKPIs.totalEncaissements), sub: "CFA" },
-      { label: "DÉCAISSEMENTS", value: formatCurrency(financialKPIs.totalDecaissements), sub: "CFA" },
-      { label: "SOLDE NET", value: formatCurrency(financialKPIs.soldeCaisse), sub: "CFA" },
+      { label: "ENCAISSEMENTS", value: formatCurrency(financialKPIs.totalEncaissements), sub: getCurrencyLabel() },
+      { label: "DÉCAISSEMENTS", value: formatCurrency(financialKPIs.totalDecaissements), sub: getCurrencyLabel() },
+      { label: "SOLDE NET", value: formatCurrency(financialKPIs.soldeCaisse), sub: getCurrencyLabel() },
       { label: "TRANSACTIONS", value: `${financialKPIs.nombreTransactions.total}`, sub: "OPS" },
-      { label: "MOYENNE ENC.", value: formatCurrency(Math.round(financialKPIs.moyenneEncaissement)), sub: "CFA" }
+      { label: "MOYENNE ENC.", value: formatCurrency(Math.round(financialKPIs.moyenneEncaissement)), sub: getCurrencyLabel() }
     ];
 
     cards.forEach((card, i) => {
@@ -521,7 +522,7 @@ const TransactionsPro = () => {
 
     autoTable(doc, {
       startY: 90,
-      head: [['#', 'Date & Heure', 'Type', 'Objet', 'Mode Paiement', 'Montant (CFA)', 'Réf. Expéd.']],
+      head: [['#', 'Date & Heure', 'Type', 'Objet', 'Mode Paiement', `Montant (${getCurrencyLabel()})`, 'Réf. Expéd.']],
       body: tableData,
       theme: 'grid',
       styles: {
@@ -859,7 +860,7 @@ const TransactionsPro = () => {
                 }`}>
                   {formatCurrency(Math.abs(financialKPIs.soldeCaisse))}
                 </span>
-                <span className="text-xs text-slate-400 font-medium">CFA</span>
+                <span className="text-xs text-slate-400 font-medium">{getCurrencyLabel()}</span>
               </div>
               <p className="text-[10px] text-slate-500 mt-1">
                 {financialKPIs.soldeCaisse >= 0 ? 'Positif ✓' : 'Négatif ⚠️'}
@@ -897,7 +898,7 @@ const TransactionsPro = () => {
                 <span className="text-xl font-bold text-emerald-600">
                   {formatCurrency(Math.round(financialKPIs.moyenneEncaissement))}
                 </span>
-                <span className="text-xs text-slate-400 font-medium">CFA</span>
+                <span className="text-xs text-slate-400 font-medium">{getCurrencyLabel()}</span>
               </div>
               <p className="text-[10px] text-slate-500 mt-1">
                 Par transaction
@@ -916,7 +917,7 @@ const TransactionsPro = () => {
                 <span className="text-xl font-bold text-violet-600">
                   {formatCurrency(financialKPIs.plusGrosEncaissement)}
                 </span>
-                <span className="text-xs text-slate-400 font-medium">CFA</span>
+                <span className="text-xs text-slate-400 font-medium">{getCurrencyLabel()}</span>
               </div>
               <p className="text-[10px] text-slate-500 mt-1">
                 Transaction la plus élevée
@@ -935,7 +936,7 @@ const TransactionsPro = () => {
                 <span className="text-xl font-bold text-orange-600">
                   {formatCurrency(financialKPIs.plusGrosDecaissement)}
                 </span>
-                <span className="text-xs text-slate-400 font-medium">CFA</span>
+                <span className="text-xs text-slate-400 font-medium">{getCurrencyLabel()}</span>
               </div>
               <p className="text-[10px] text-slate-500 mt-1">
                 Sortie la plus importante
@@ -964,7 +965,7 @@ const TransactionsPro = () => {
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-bold text-slate-900">{formatCurrency(stat.total)}</p>
-                      <p className="text-xs text-slate-400">CFA</p>
+                      <p className="text-xs text-slate-400">{getCurrencyLabel()}</p>
                     </div>
                   </div>
                 ))}
@@ -990,7 +991,7 @@ const TransactionsPro = () => {
                         ))}
                       </Pie>
                       <Tooltip 
-                        formatter={(value) => formatCurrency(value) + ' CFA'}
+                        formatter={(value) => formatCurrency(value) + ' ' + getCurrencyLabel()}
                         contentStyle={{ fontSize: '12px', borderRadius: '8px' }}
                       />
                     </PieChart>
@@ -1048,7 +1049,7 @@ const TransactionsPro = () => {
                       }`}>
                         {t.type === 'encaissement' ? '+' : '-'}{formatCurrency(t.amount)}
                       </p>
-                      <p className="text-xs text-slate-400">CFA</p>
+                      <p className="text-xs text-slate-400">{getCurrencyLabel()}</p>
                     </div>
                   </div>
                 </div>
@@ -1142,7 +1143,7 @@ const TransactionsPro = () => {
                           }`}>
                             {t.type === 'encaissement' ? '+' : '-'}{formatCurrency(t.amount)}
                           </span>
-                          <span className="text-xs text-slate-400">CFA</span>
+                          <span className="text-xs text-slate-400">{getCurrencyLabel()}</span>
                         </div>
                       </td>
                       <td className="px-4 py-3 text-right">
@@ -1227,7 +1228,7 @@ const TransactionsPro = () => {
                     }`}>
                       {t.type === 'encaissement' ? '+' : '-'}{formatCurrency(t.amount)}
                     </p>
-                    <p className="text-xs text-slate-400">CFA</p>
+                    <p className="text-xs text-slate-400">{getCurrencyLabel()}</p>
                     <p className={`text-xs font-medium mt-1 ${
                       t.running_balance >= 0 ? 'text-slate-600' : 'text-rose-600'
                     }`}>
@@ -1330,7 +1331,7 @@ const TransactionsPro = () => {
                       <Cell fill="#ef4444" />
                     </Pie>
                     <Tooltip 
-                      formatter={(value) => formatCurrency(value) + ' CFA'}
+                      formatter={(value) => formatCurrency(value) + ' ' + getCurrencyLabel()}
                       contentStyle={{ fontSize: '12px', borderRadius: '8px' }}
                     />
                   </PieChart>
@@ -1342,7 +1343,7 @@ const TransactionsPro = () => {
                 <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
                   <p className="text-xs font-medium text-emerald-700 mb-1">Total Encaissements</p>
                   <p className="text-2xl font-bold text-emerald-900">
-                    {formatCurrency(financialKPIs.totalEncaissements)} <span className="text-sm font-normal">CFA</span>
+                    {formatCurrency(financialKPIs.totalEncaissements)} <span className="text-sm font-normal">{getCurrencyLabel()}</span>
                   </p>
                   <p className="text-xs text-emerald-600 mt-2">
                     {financialKPIs.nombreTransactions.encaissements} opération(s)
@@ -1352,7 +1353,7 @@ const TransactionsPro = () => {
                 <div className="p-4 bg-rose-50 border border-rose-200 rounded-lg">
                   <p className="text-xs font-medium text-rose-700 mb-1">Total Décaissements</p>
                   <p className="text-2xl font-bold text-rose-900">
-                    {formatCurrency(financialKPIs.totalDecaissements)} <span className="text-sm font-normal">CFA</span>
+                    {formatCurrency(financialKPIs.totalDecaissements)} <span className="text-sm font-normal">{getCurrencyLabel()}</span>
                   </p>
                   <p className="text-xs text-rose-600 mt-2">
                     {financialKPIs.nombreTransactions.decaissements} opération(s)
@@ -1372,7 +1373,7 @@ const TransactionsPro = () => {
                   <p className={`text-2xl font-bold ${
                     financialKPIs.soldeCaisse >= 0 ? 'text-blue-900' : 'text-orange-900'
                   }`}>
-                    {formatCurrency(Math.abs(financialKPIs.soldeCaisse))} <span className="text-sm font-normal">CFA</span>
+                    {formatCurrency(Math.abs(financialKPIs.soldeCaisse))} <span className="text-sm font-normal">{getCurrencyLabel()}</span>
                   </p>
                   <p className={`text-xs mt-2 ${
                     financialKPIs.soldeCaisse >= 0 ? 'text-blue-600' : 'text-orange-600'
@@ -1397,13 +1398,13 @@ const TransactionsPro = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-slate-600">Moy. Encaissement</span>
                   <span className="text-sm font-bold text-emerald-600">
-                    {formatCurrency(Math.round(financialKPIs.moyenneEncaissement))} CFA
+                    {formatCurrency(Math.round(financialKPIs.moyenneEncaissement))} {getCurrencyLabel()}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-slate-600">Moy. Décaissement</span>
                   <span className="text-sm font-bold text-rose-600">
-                    {formatCurrency(Math.round(financialKPIs.moyenneDecaissement))} CFA
+                    {formatCurrency(Math.round(financialKPIs.moyenneDecaissement))} {getCurrencyLabel()}
                   </span>
                 </div>
               </div>
@@ -1420,13 +1421,13 @@ const TransactionsPro = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-slate-600">Plus gros +</span>
                   <span className="text-sm font-bold text-emerald-600">
-                    {formatCurrency(financialKPIs.plusGrosEncaissement)} CFA
+                    {formatCurrency(financialKPIs.plusGrosEncaissement)} {getCurrencyLabel()}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-slate-600">Plus gros -</span>
                   <span className="text-sm font-bold text-rose-600">
-                    {formatCurrency(financialKPIs.plusGrosDecaissement)} CFA
+                    {formatCurrency(financialKPIs.plusGrosDecaissement)} {getCurrencyLabel()}
                   </span>
                 </div>
               </div>
@@ -1516,7 +1517,7 @@ const TransactionsPro = () => {
                   selectedTransaction.type === 'encaissement' ? 'text-emerald-600' : 'text-rose-600'
                 }`}>
                   {selectedTransaction.type === 'encaissement' ? '+' : '-'}
-                  {formatCurrency(selectedTransaction.amount)} CFA
+                  {formatCurrency(selectedTransaction.amount)} {getCurrencyLabel()}
                 </p>
               </div>
 
@@ -1574,7 +1575,7 @@ const TransactionsPro = () => {
                 <p className={`text-lg font-bold ${
                   selectedTransaction.running_balance >= 0 ? 'text-slate-900' : 'text-rose-600'
                 }`}>
-                  {formatCurrency(Math.abs(selectedTransaction.running_balance))} CFA
+                  {formatCurrency(Math.abs(selectedTransaction.running_balance))} {getCurrencyLabel()}
                   <span className="text-sm ml-2">
                     {selectedTransaction.running_balance >= 0 ? '✓' : '⚠'}
                   </span>

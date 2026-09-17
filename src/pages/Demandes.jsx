@@ -3,11 +3,11 @@ import { useExpedition } from "../hooks/useExpedition";
 import { useAgency } from "../hooks/useAgency";
 import { useAuth } from "../hooks/useAuth";
 import { useWebSocket } from "../hooks/useWebSocket";
-import { formatPriceDual } from "../utils/format";
+import { formatPriceDual, getCurrencyLabel } from "../utils/format";
 import { Link, useNavigate } from "react-router-dom";
 import { toast, showToast } from "../utils/toast";
 import soundNotification from "../utils/soundNotification";
-import { Check, X, Eye, Package, Calendar, MapPin, User, ArrowRight, Loader2, RefreshCw, Search } from "lucide-react";
+import { Check, X, Eye, Package, Calendar, MapPin, User, ArrowRight, Loader2, RefreshCw, Search, CheckSquare, Square, CheckCircle2 } from "lucide-react";
 import ConfirmationModal from "../components/ConfirmationModal";
 import Spinner from '../components/common/Spinner';
 import useHasPermission from "../hooks/useHasPermission";
@@ -30,7 +30,8 @@ const Demandes = () => {
         error,
         resetStatus,
         expeditions,
-        loadExpeditions
+        loadExpeditions,
+        receiveColisDepart
     } = useExpedition();
     const { fetchAgencyData } = useAgency();
     const [currentPage, setCurrentPage] = useState(1);
@@ -42,6 +43,11 @@ const Demandes = () => {
     const [motifRefus, setMotifRefus] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
     const [activeTab, setActiveTab] = useState('demandes'); // 'demandes' or 'en-agence'
+    const [selectedColisCodes, setSelectedColisCodes] = useState([]);
+    const [isReceiving, setIsReceiving] = useState(false);
+    const [receivingCode, setReceivingCode] = useState(null);
+    const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
+    const [codesToReceive, setCodesToReceive] = useState([]);
 
     // Utiliser un ref pour éviter les appels multiples au montage
     const hasLoadedInitialDataRef = useRef(false);
@@ -186,6 +192,8 @@ const Demandes = () => {
                 return 'bg-orange-50 text-orange-700 border-orange-200';
             case 'groupage_ca':
                 return 'bg-purple-50 text-purple-700 border-purple-200';
+            case 'interville':
+                return 'bg-indigo-50 text-indigo-700 border-indigo-200';
             default:
                 return 'bg-slate-50 text-slate-700 border-slate-200';
         }
@@ -198,8 +206,26 @@ const Demandes = () => {
             case 'groupage_dhd_maritine': return 'DHD Maritime';
             case 'groupage_afrique': return 'Afrique';
             case 'groupage_ca': return 'CA';
+            case 'interville': return 'Interville';
             default: return type || 'Inconnu';
         }
+    };
+
+    // Interville : départ et arrivée sont dans le même pays, donc on affiche
+    // les communes résolues côté backend (commune_depart_nom/commune_arrivee_nom)
+    // plutôt que le pays répété deux fois (ex: "Espagne → Espagne").
+    const getTrajet = (demande) => {
+        const estInterville = demande.type_expedition === 'interville';
+        if (estInterville) {
+            return {
+                depart: demande.commune_depart_nom || getCountryName(demande.code_pays_depart) || demande.pays_depart || '',
+                arrivee: demande.commune_arrivee_nom || getCountryName(demande.code_pays_destination) || demande.pays_destination || ''
+            };
+        }
+        return {
+            depart: getCountryName(demande.code_pays_depart) || demande.pays_depart || '',
+            arrivee: getCountryName(demande.code_pays_destination) || demande.pays_destination || ''
+        };
     };
 
     const handleRefresh = async () => {
@@ -245,11 +271,53 @@ const Demandes = () => {
         const produit = colis.produit_nom?.toLowerCase() || '';
         const destination = (getCountryName(colis.expedition?.code_pays_destination) || colis.expedition?.pays_destination || '').toLowerCase();
         
-        return code.includes(query) || 
-               reference.includes(query) || 
+        return code.includes(query) ||
+               reference.includes(query) ||
                produit.includes(query) ||
                destination.includes(query);
     });
+
+    const toggleSelectColis = (code) => {
+        setSelectedColisCodes(prev =>
+            prev.includes(code)
+                ? prev.filter(c => c !== code)
+                : [...prev, code]
+        );
+    };
+
+    const toggleSelectAllColis = () => {
+        if (selectedColisCodes.length === filteredColisEnAgence.length) {
+            setSelectedColisCodes([]);
+        } else {
+            setSelectedColisCodes(filteredColisEnAgence.map(c => c.code_colis));
+        }
+    };
+
+    const handleReceiveSelected = () => {
+        if (selectedColisCodes.length === 0) return;
+        setCodesToReceive(selectedColisCodes);
+        setIsReceiveModalOpen(true);
+    };
+
+    const handleReceiveOne = (code) => {
+        setCodesToReceive([code]);
+        setIsReceiveModalOpen(true);
+    };
+
+    const confirmReceive = async () => {
+        if (codesToReceive.length === 0) return;
+        const isBulk = codesToReceive.length > 1;
+        if (isBulk) setIsReceiving(true);
+        else setReceivingCode(codesToReceive[0]);
+
+        await receiveColisDepart(codesToReceive);
+
+        setSelectedColisCodes(prev => prev.filter(c => !codesToReceive.includes(c)));
+        setIsReceiving(false);
+        setReceivingCode(null);
+        setIsReceiveModalOpen(false);
+        setCodesToReceive([]);
+    };
 
     return (
         <div className="max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 animate-fade-in">
@@ -258,82 +326,37 @@ const Demandes = () => {
                 title="Demandes Clients"
                 subtitle="Gérez les demandes d'expédition effectuées par les clients"
                 actions={
-                    <>
-                        <button
-                            onClick={handleRefresh}
-                            disabled={status === 'loading'}
-                            className="inline-flex items-center px-3 sm:px-4 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
-                        >
-                            <RefreshCw className={`w-3.5 sm:w-4 h-3.5 sm:h-4 sm:mr-2 ${status === 'loading' ? 'animate-spin' : ''}`} />
-                            <span className="hidden sm:inline">Actualiser</span>
-                        </button>
-                        <div className="bg-white px-3 sm:px-5 py-2 sm:py-3 rounded-lg border border-gray-200 shadow-sm">
-                            <div className="flex items-center gap-2 sm:gap-3">
-                                <span className="relative flex h-2 w-2 sm:h-2.5 sm:w-2.5">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2 w-2 sm:h-2.5 sm:w-2.5 bg-amber-500"></span>
-                                </span>
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] sm:text-xs font-medium text-gray-500">En attente</span>
-                                    <span className="text-base sm:text-lg font-semibold text-gray-900">{demandesMeta?.total || 0}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </>
+                    <button
+                        onClick={handleRefresh}
+                        disabled={status === 'loading'}
+                        className="inline-flex items-center px-3 sm:px-4 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
+                    >
+                        <RefreshCw className={`w-3.5 sm:w-4 h-3.5 sm:h-4 sm:mr-2 ${status === 'loading' ? 'animate-spin' : ''}`} />
+                        <span className="hidden sm:inline">Actualiser</span>
+                    </button>
                 }
             />
 
-            {/* Search Filter */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-                <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                    <input
-                        type="text"
-                        placeholder={activeTab === 'demandes' 
-                            ? "Rechercher par client, destination, origine ou type..." 
-                            : "Rechercher par code colis, référence, produit ou destination..."
-                        }
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 border-2 border-slate-400 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                    />
-                    {searchQuery && (
-                        <button
-                            onClick={() => setSearchQuery('')}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded-full transition-colors"
-                        >
-                            <X className="w-4 h-4 text-slate-400" />
-                        </button>
-                    )}
-                </div>
-                {searchQuery && (
-                    <div className="mt-2 text-xs text-slate-500">
-                        <span className="font-semibold text-indigo-600">
-                            {activeTab === 'demandes' ? filteredDemandes.length : filteredColisEnAgence.length}
-                        </span> résultat{(activeTab === 'demandes' ? filteredDemandes.length : filteredColisEnAgence.length) > 1 ? 's' : ''} trouvé{(activeTab === 'demandes' ? filteredDemandes.length : filteredColisEnAgence.length) > 1 ? 's' : ''}
-                    </div>
-                )}
-            </div>
-
-            {/* Tabs */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-2">
-                <div className="flex gap-2">
+            {/* Barre outils : onglets compacts + recherche, alignés sur une rangée en desktop */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-2 flex flex-col sm:flex-row sm:items-center gap-2">
+                {/* Tabs - taille au contenu, jamais étirés en pleine largeur */}
+                <div className="flex gap-1 bg-slate-100 rounded-lg p-1 shrink-0">
                     <button
-                        onClick={() => setActiveTab('demandes')}
-                        className={`flex-1 px-4 py-3 rounded-lg text-sm font-semibold transition-all ${
+                        onClick={() => { setActiveTab('demandes'); setSelectedColisCodes([]); }}
+                        className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-all whitespace-nowrap ${
                             activeTab === 'demandes'
-                                ? 'bg-indigo-600 text-white shadow-md'
-                                : 'text-slate-600 hover:bg-slate-50'
+                                ? 'bg-white text-indigo-700 shadow-sm'
+                                : 'text-slate-500 hover:text-slate-700'
                         }`}
                     >
-                        <div className="flex items-center justify-center gap-2">
-                            <Package className="w-4 h-4" />
+                        <div className="flex items-center gap-1.5">
+                            <Package className="w-3.5 h-3.5" />
                             <span>Demandes</span>
                             {demandesMeta?.total > 0 && (
-                                <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                                    activeTab === 'demandes' 
-                                        ? 'bg-white/20 text-white' 
-                                        : 'bg-amber-100 text-amber-700'
+                                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                                    activeTab === 'demandes'
+                                        ? 'bg-amber-100 text-amber-700'
+                                        : 'bg-slate-200 text-slate-500'
                                 }`}>
                                     {demandesMeta.total}
                                 </span>
@@ -341,21 +364,21 @@ const Demandes = () => {
                         </div>
                     </button>
                     <button
-                        onClick={() => setActiveTab('en-agence')}
-                        className={`flex-1 px-4 py-3 rounded-lg text-sm font-semibold transition-all ${
+                        onClick={() => { setActiveTab('en-agence'); setSelectedColisCodes([]); }}
+                        className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-all whitespace-nowrap ${
                             activeTab === 'en-agence'
-                                ? 'bg-indigo-600 text-white shadow-md'
-                                : 'text-slate-600 hover:bg-slate-50'
+                                ? 'bg-white text-indigo-700 shadow-sm'
+                                : 'text-slate-500 hover:text-slate-700'
                         }`}
                     >
-                        <div className="flex items-center justify-center gap-2">
-                            <Package className="w-4 h-4" />
+                        <div className="flex items-center gap-1.5">
+                            <Package className="w-3.5 h-3.5" />
                             <span>En agence</span>
                             {colisEnAgence.length > 0 && (
-                                <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                                    activeTab === 'en-agence' 
-                                        ? 'bg-white/20 text-white' 
-                                        : 'bg-blue-100 text-blue-700'
+                                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                                    activeTab === 'en-agence'
+                                        ? 'bg-blue-100 text-blue-700'
+                                        : 'bg-slate-200 text-slate-500'
                                 }`}>
                                     {colisEnAgence.length}
                                 </span>
@@ -363,7 +386,37 @@ const Demandes = () => {
                         </div>
                     </button>
                 </div>
+
+                {/* Recherche - largeur bornée, ne s'étire plus sur toute la ligne en desktop */}
+                <div className="relative sm:max-w-xs sm:ml-auto w-full">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input
+                        type="text"
+                        placeholder={activeTab === 'demandes'
+                            ? "Client, destination, origine..."
+                            : "Code colis, référence..."
+                        }
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-8 pr-8 py-1.5 border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    />
+                    {searchQuery && (
+                        <button
+                            onClick={() => setSearchQuery('')}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 hover:bg-slate-100 rounded-full transition-colors"
+                        >
+                            <X className="w-3.5 h-3.5 text-slate-400" />
+                        </button>
+                    )}
+                </div>
             </div>
+            {searchQuery && (
+                <div className="-mt-2 text-xs text-slate-500 px-1">
+                    <span className="font-semibold text-indigo-600">
+                        {activeTab === 'demandes' ? filteredDemandes.length : filteredColisEnAgence.length}
+                    </span> résultat{(activeTab === 'demandes' ? filteredDemandes.length : filteredColisEnAgence.length) > 1 ? 's' : ''} trouvé{(activeTab === 'demandes' ? filteredDemandes.length : filteredColisEnAgence.length) > 1 ? 's' : ''}
+                </div>
+            )}
 
             {/* Main Content Card */}
             {activeTab === 'demandes' ? (
@@ -408,34 +461,41 @@ const Demandes = () => {
                                                     <User className="w-4 h-4 text-indigo-600" />
                                                 </div>
                                                 <div className="min-w-0 flex-1">
-                                                    <p className="text-xs font-bold text-slate-900 truncate">{demande.expediteur?.nom_prenom}</p>
-                                                    <p className="text-[9px] text-slate-400 font-medium">{formatDate(demande.created_at).split(' ')[0]}</p>
+                                                    <p className="text-sm font-bold text-slate-900 truncate">{demande.expediteur?.nom_prenom}</p>
+                                                    <p className="text-xs text-slate-400 font-medium">{formatDate(demande.created_at).split(' ')[0]}</p>
                                                 </div>
                                             </div>
-                                            <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase border shrink-0 ${getTypeStyle(demande.type_expedition)}`}>
+                                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border shrink-0 ${getTypeStyle(demande.type_expedition)}`}>
                                                 {getTypeLabel(demande.type_expedition)}
                                             </span>
                                         </div>
 
-                                        <div className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-600 bg-slate-50 px-2 py-1.5 rounded-lg">
-                                            <MapPin className="w-3 h-3 text-slate-400 flex-shrink-0" />
-                                            <span className="text-indigo-600">{getCountryName(demande.code_pays_destination) || demande.pays_destination}</span>
-                                        </div>
+                                        {(() => {
+                                            const { depart, arrivee } = getTrajet(demande);
+                                            return (
+                                                <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 bg-slate-50 px-2 py-1.5 rounded-lg">
+                                                    <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                                                    <span className="truncate">{depart}</span>
+                                                    <ArrowRight className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                                                    <span className="text-indigo-600 truncate">{arrivee}</span>
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
 
                                     {/* Body - 2 Columns */}
                                     <div className="p-3 grid grid-cols-2 gap-3 text-center border-b border-slate-100">
                                         <div>
-                                            <p className="text-[9px] font-semibold text-slate-400 uppercase mb-0.5">Colis</p>
-                                            <div className="flex items-center justify-center gap-1 text-xs font-bold text-slate-700">
-                                                <Package className="w-3 h-3 text-slate-400" />
+                                            <p className="text-[10px] font-semibold text-slate-400 uppercase mb-0.5">Colis</p>
+                                            <div className="flex items-center justify-center gap-1 text-sm font-bold text-slate-700">
+                                                <Package className="w-3.5 h-3.5 text-slate-400" />
                                                 {demande.colis?.length || 0}
                                             </div>
                                         </div>
                                         <div>
-                                            <p className="text-[9px] font-semibold text-slate-400 uppercase mb-0.5">Montant</p>
-                                            <p className="text-xs font-bold text-slate-900 tabular-nums">
-                                                {new Intl.NumberFormat('fr-FR').format(demande.montant_expedition || 0)} CFA
+                                            <p className="text-[10px] font-semibold text-slate-400 uppercase mb-0.5">Montant</p>
+                                            <p className="text-sm font-bold text-slate-900 tabular-nums">
+                                                {new Intl.NumberFormat('fr-FR').format(demande.montant_expedition || 0)} {getCurrencyLabel()}
                                             </p>
                                         </div>
                                     </div>
@@ -494,21 +554,23 @@ const Demandes = () => {
                     <table className="hidden lg:table w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-slate-50 border-b border-slate-200">
-                                <th className="px-4 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200 w-[22%]">Client / Date</th>
-                                <th className="px-4 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200 w-[25%]">Type & Destination </th>
-                                <th className="px-4 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200 w-[18%]">Détails Colis</th>
-                                <th className="px-4 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200 w-[15%]">Montant</th>
-                                <th className="px-4 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide text-right w-[20%]">Actions</th>
+                                <th className="px-4 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wide w-[20%]">Client / Date</th>
+                                <th className="px-4 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wide w-[12%]">Type</th>
+                                <th className="px-4 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wide w-[18%]">Trajet</th>
+                                <th className="px-4 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wide w-[16%]">Détails Colis</th>
+                                <th className="px-4 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wide w-[14%]">Montant</th>
+                                <th className="px-4 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wide text-right w-[20%]">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y-2 divide-slate-300">
                             {status === 'loading' && demandes.length === 0 ? (
                                 Array(3).fill(0).map((_, i) => (
                                     <tr key={i} className="animate-pulse border-b-2 border-slate-200">
-                                        <td className="px-4 py-5 border-r border-slate-100"><div className="h-4 bg-slate-200 rounded w-32 mb-2"></div><div className="h-3 bg-slate-100 rounded w-24"></div></td>
-                                        <td className="px-4 py-5 border-r border-slate-100"><div className="h-6 bg-slate-200 rounded-lg w-24 mb-2"></div><div className="h-4 bg-slate-100 rounded w-32"></div></td>
-                                        <td className="px-4 py-5 border-r border-slate-100"><div className="h-4 bg-slate-200 rounded w-20"></div></td>
-                                        <td className="px-4 py-5 border-r border-slate-100"><div className="h-5 bg-slate-200 rounded w-24"></div></td>
+                                        <td className="px-4 py-5"><div className="h-4 bg-slate-200 rounded w-32 mb-2"></div><div className="h-3 bg-slate-100 rounded w-24"></div></td>
+                                        <td className="px-4 py-5"><div className="h-6 bg-slate-200 rounded-lg w-20"></div></td>
+                                        <td className="px-4 py-5"><div className="h-4 bg-slate-100 rounded w-28"></div></td>
+                                        <td className="px-4 py-5"><div className="h-4 bg-slate-200 rounded w-20"></div></td>
+                                        <td className="px-4 py-5"><div className="h-5 bg-slate-200 rounded w-24"></div></td>
                                         <td className="px-4 py-5 text-right"><div className="flex justify-end gap-2"><div className="h-8 w-16 bg-slate-200 rounded-lg"></div><div className="h-8 w-20 bg-slate-200 rounded-lg"></div></div></td>
                                     </tr>
                                 ))
@@ -517,7 +579,7 @@ const Demandes = () => {
                                     <tr key={demande.id} className="group hover:bg-indigo-50/30 transition-all duration-200 border-b-2 border-slate-200 cursor-pointer">
                                         <td 
                                             onClick={() => navigate(`/expeditions/${demande.id}`)}
-                                            className="px-4 py-4 border-r border-slate-100"
+                                            className="px-4 py-4"
                                         >
                                             <div className="flex flex-col gap-1">
                                                 <div className="flex items-center gap-2">
@@ -528,49 +590,57 @@ const Demandes = () => {
                                                         {demande.expediteur?.nom_prenom}
                                                     </span>
                                                 </div>
-                                                <div className="flex items-center gap-1 text-[10px] font-medium text-slate-400 ml-9">
-                                                    <Calendar className="w-3 h-3 flex-shrink-0" />
+                                                <div className="flex items-center gap-1 text-xs font-medium text-slate-400 ml-9">
+                                                    <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
                                                     <span className="truncate">{formatDate(demande.created_at)}</span>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td 
+                                        <td
                                             onClick={() => navigate(`/expeditions/${demande.id}`)}
-                                            className="px-4 py-4 border-r border-slate-100"
+                                            className="px-4 py-4"
                                         >
-                                            <div className="flex flex-col gap-1.5">
-                                                <span className={`inline-flex self-start px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide border shadow-sm ${getTypeStyle(demande.type_expedition)}`}>
-                                                    {getTypeLabel(demande.type_expedition)}
-                                                </span>
-                                                <div className="flex items-center gap-1.5 text-[11px] font-bold text-indigo-600">
-                                                    <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                                                    <span className="py-0.5">{getCountryName(demande.code_pays_destination) || demande.pays_destination}</span>
-                                                </div>
-                                            </div>
+                                            <span className={`inline-flex self-start px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wide border shadow-sm ${getTypeStyle(demande.type_expedition)}`}>
+                                                {getTypeLabel(demande.type_expedition)}
+                                            </span>
+                                        </td>
+                                        <td
+                                            onClick={() => navigate(`/expeditions/${demande.id}`)}
+                                            className="px-4 py-4"
+                                        >
+                                            {(() => {
+                                                const { depart, arrivee } = getTrajet(demande);
+                                                return (
+                                                    <div className="flex items-center gap-1.5 text-sm font-bold text-indigo-600">
+                                                        <MapPin className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                                                        <span className="truncate">{depart} <ArrowRight className="inline w-3 h-3 text-slate-400 mx-0.5" /> {arrivee}</span>
+                                                    </div>
+                                                );
+                                            })()}
                                         </td>
                                         <td 
                                             onClick={() => navigate(`/expeditions/${demande.id}`)}
-                                            className="px-4 py-4 border-r border-slate-100"
+                                            className="px-4 py-4"
                                         >
                                             <div className="flex flex-col gap-1">
-                                                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
-                                                    <Package className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                                                <div className="flex items-center gap-1.5 text-sm font-bold text-slate-700">
+                                                    <Package className="w-4 h-4 text-slate-400 flex-shrink-0" />
                                                     <span>{demande.colis?.length || 0} Colis</span>
                                                 </div>
-                                                <div className="text-[9px] text-slate-400 font-medium truncate">
+                                                <div className="text-xs text-slate-400 font-medium truncate">
                                                     {demande.colis?.map(c => c.produit_nom).join(', ')}
                                                 </div>
                                             </div>
                                         </td>
-                                        <td 
+                                        <td
                                             onClick={() => navigate(`/expeditions/${demande.id}`)}
-                                            className="px-4 py-4 border-r border-slate-100"
+                                            className="px-4 py-4"
                                         >
                                             <div className="flex flex-col gap-0.5">
-                                                <span className="text-sm font-bold text-slate-900 tabular-nums">
+                                                <span className="text-base font-bold text-slate-900 tabular-nums">
                                                     {new Intl.NumberFormat('fr-FR').format(demande.montant_expedition || 0)}
                                                 </span>
-                                                <span className="text-[8px] font-bold text-slate-400 uppercase">CFA</span>
+                                                <span className="text-xs font-bold text-slate-400 uppercase">{getCurrencyLabel()}</span>
                                             </div>
                                         </td>
                                         <td className="px-4 py-4 text-right">
@@ -668,41 +738,112 @@ const Demandes = () => {
             ) : (
             /* Section "En agence" - Liste des colis acceptés à réceptionner */
             <div className="relative bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                {/* Barre d'action - sélection groupée */}
+                {canAccept && filteredColisEnAgence.length > 0 && (
+                    <div className="px-3 sm:px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3 bg-slate-50">
+                        <button
+                            onClick={toggleSelectAllColis}
+                            className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors"
+                        >
+                            {selectedColisCodes.length > 0 && selectedColisCodes.length === filteredColisEnAgence.length ? (
+                                <CheckSquare className="w-4 h-4 text-indigo-600" />
+                            ) : (
+                                <Square className="w-4 h-4" />
+                            )}
+                            <span>
+                                {selectedColisCodes.length > 0
+                                    ? `${selectedColisCodes.length} colis sélectionné${selectedColisCodes.length > 1 ? 's' : ''}`
+                                    : 'Tout sélectionner'}
+                            </span>
+                        </button>
+                        {selectedColisCodes.length > 0 && (
+                            <button
+                                onClick={handleReceiveSelected}
+                                disabled={isReceiving}
+                                className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs sm:text-sm font-bold hover:bg-emerald-700 shadow-sm transition-colors disabled:opacity-50"
+                            >
+                                {isReceiving ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <CheckCircle2 className="w-4 h-4" />
+                                )}
+                                <span>Marquer reçu{selectedColisCodes.length > 1 ? 's' : ''}</span>
+                            </button>
+                        )}
+                    </div>
+                )}
                 <div className="relative overflow-x-auto">
                     {/* Mobile view: Cards */}
                     <div className="lg:hidden p-3 sm:p-4 space-y-3">
                         {filteredColisEnAgence.length > 0 ? (
-                            filteredColisEnAgence.map((colis) => (
-                                <div key={colis.id} className="bg-white rounded-xl border border-slate-200 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all overflow-hidden">
+                            filteredColisEnAgence.map((colis) => {
+                                const { depart, arrivee } = getTrajet(colis.expedition || {});
+                                const isSelected = selectedColisCodes.includes(colis.code_colis);
+                                return (
+                                <div
+                                    key={colis.id}
+                                    onClick={() => canAccept && toggleSelectColis(colis.code_colis)}
+                                    className={`bg-white rounded-xl border shadow-sm transition-all overflow-hidden ${canAccept ? 'cursor-pointer' : ''} ${isSelected ? 'border-indigo-400 ring-2 ring-indigo-100' : 'border-slate-200 hover:border-indigo-300 hover:shadow-md'}`}
+                                >
                                     <div className="p-3 border-b border-slate-100">
                                         <div className="flex justify-between items-start gap-2 mb-2">
                                             <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                {canAccept && (
+                                                    isSelected ? (
+                                                        <CheckSquare className="w-5 h-5 text-indigo-600 shrink-0" />
+                                                    ) : (
+                                                        <Square className="w-5 h-5 text-slate-300 shrink-0" />
+                                                    )
+                                                )}
                                                 <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-                                                    <Package className="w-4 h-4 text-blue-600" />
+                                                    <User className="w-4 h-4 text-blue-600" />
                                                 </div>
                                                 <div className="min-w-0 flex-1">
-                                                    <p className="text-xs font-bold text-slate-900 truncate">{colis.code_colis}</p>
-                                                    <p className="text-[9px] text-slate-400 font-medium">{colis.expedition?.reference}</p>
+                                                    <p className="text-sm font-bold text-slate-900 truncate">{colis.expedition?.expediteur?.nom_prenom || 'N/A'}</p>
+                                                    <p className="text-xs text-slate-400 font-medium truncate">{colis.code_colis} · {colis.expedition?.reference}</p>
                                                 </div>
                                             </div>
+                                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border shrink-0 ${getTypeStyle(colis.expedition?.type_expedition)}`}>
+                                                {getTypeLabel(colis.expedition?.type_expedition)}
+                                            </span>
                                         </div>
-                                        <div className="text-[10px] font-semibold text-slate-600 bg-slate-50 px-2 py-1.5 rounded-lg">
-                                            <span className="text-indigo-600">{colis.produit_nom}</span>
+                                        <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 bg-slate-50 px-2 py-1.5 rounded-lg">
+                                            <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                                            <span className="truncate">{depart}</span>
+                                            <ArrowRight className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                                            <span className="text-indigo-600 truncate">{arrivee}</span>
                                         </div>
                                     </div>
 
-                                    <div className="p-3 grid grid-cols-2 gap-3 text-center">
+                                    <div className="p-3 grid grid-cols-2 gap-3 text-center border-b border-slate-100">
                                         <div>
-                                            <p className="text-[9px] font-semibold text-slate-400 uppercase mb-0.5">Poids</p>
-                                            <p className="text-xs font-bold text-slate-900">{colis.poids || 0} kg</p>
+                                            <p className="text-[10px] font-semibold text-slate-400 uppercase mb-0.5">Poids</p>
+                                            <p className="text-sm font-bold text-slate-900">{colis.poids || 0} kg</p>
                                         </div>
                                         <div>
-                                            <p className="text-[9px] font-semibold text-slate-400 uppercase mb-0.5">Destination</p>
-                                            <p className="text-xs font-bold text-indigo-600 truncate">{getCountryName(colis.expedition?.code_pays_destination) || colis.expedition?.pays_destination}</p>
+                                            <p className="text-[10px] font-semibold text-slate-400 uppercase mb-0.5">Montant</p>
+                                            <p className="text-sm font-bold text-slate-900 tabular-nums truncate">{new Intl.NumberFormat('fr-FR').format(colis.montant_colis_total || 0)}</p>
                                         </div>
                                     </div>
+                                    {canAccept && (
+                                        <div className="p-2.5" onClick={(e) => e.stopPropagation()}>
+                                            <button
+                                                onClick={() => handleReceiveOne(colis.code_colis)}
+                                                disabled={receivingCode === colis.code_colis || isReceiving}
+                                                className="w-full flex items-center justify-center gap-1.5 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 shadow-sm transition-colors disabled:opacity-50"
+                                            >
+                                                {receivingCode === colis.code_colis ? (
+                                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                ) : (
+                                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                                )}
+                                                <span>Réceptionner</span>
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
-                            ))
+                                );
+                            })
                         ) : (
                             <div className="bg-white p-8 rounded-xl text-center border border-slate-100">
                                 <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
@@ -722,51 +863,113 @@ const Demandes = () => {
                     <table className="hidden lg:table w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-slate-50 border-b border-slate-200">
-                                <th className="px-4 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200">Code Colis</th>
-                                <th className="px-4 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200">Référence Exp.</th>
-                                <th className="px-4 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200">Produit</th>
-                                <th className="px-4 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide border-r border-slate-200">Poids</th>
-                                <th className="px-4 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Destination</th>
+                                {canAccept && (
+                                    <th className="px-4 py-4 w-[4%]">
+                                        <button onClick={toggleSelectAllColis} className="flex items-center">
+                                            {selectedColisCodes.length > 0 && selectedColisCodes.length === filteredColisEnAgence.length ? (
+                                                <CheckSquare className="w-4 h-4 text-indigo-600" />
+                                            ) : (
+                                                <Square className="w-4 h-4 text-slate-400" />
+                                            )}
+                                        </button>
+                                    </th>
+                                )}
+                                <th className="px-4 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wide w-[16%]">Client / Réf.</th>
+                                <th className="px-4 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wide w-[12%]">Type</th>
+                                <th className="px-4 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wide w-[16%]">Trajet</th>
+                                <th className="px-4 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wide w-[16%]">Colis</th>
+                                <th className="px-4 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wide w-[10%]">Poids</th>
+                                <th className="px-4 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wide w-[13%]">Montant</th>
+                                <th className="px-4 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wide text-right w-[9%]">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y-2 divide-slate-300">
                             {filteredColisEnAgence.length > 0 ? (
-                                filteredColisEnAgence.map((colis) => (
-                                    <tr 
-                                        key={colis.id} 
+                                filteredColisEnAgence.map((colis) => {
+                                    const { depart, arrivee } = getTrajet(colis.expedition || {});
+                                    const isSelected = selectedColisCodes.includes(colis.code_colis);
+                                    return (
+                                    <tr
+                                        key={colis.id}
                                         onClick={() => navigate(`/expeditions/${colis.expedition_id}`)}
-                                        className="group hover:bg-blue-50/30 transition-all duration-200 border-b-2 border-slate-200 cursor-pointer"
+                                        className={`group transition-all duration-200 border-b-2 border-slate-200 cursor-pointer ${isSelected ? 'bg-indigo-50/40' : 'hover:bg-blue-50/30'}`}
                                     >
-                                        <td className="px-4 py-4 border-r border-slate-100">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-colors">
-                                                    <Package className="w-3.5 h-3.5 text-blue-600" />
+                                        {canAccept && (
+                                            <td className="px-4 py-4" onClick={(e) => { e.stopPropagation(); toggleSelectColis(colis.code_colis); }}>
+                                                {isSelected ? (
+                                                    <CheckSquare className="w-5 h-5 text-indigo-600" />
+                                                ) : (
+                                                    <Square className="w-5 h-5 text-slate-300" />
+                                                )}
+                                            </td>
+                                        )}
+                                        <td className="px-4 py-4">
+                                            <div className="flex flex-col gap-1">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-colors flex-shrink-0">
+                                                        <User className="w-3.5 h-3.5 text-blue-600" />
+                                                    </div>
+                                                    <span className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors truncate">
+                                                        {colis.expedition?.expediteur?.nom_prenom || 'N/A'}
+                                                    </span>
                                                 </div>
-                                                <span className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
-                                                    {colis.code_colis}
-                                                </span>
+                                                <span className="text-xs font-medium text-slate-400 ml-9 truncate">{colis.expedition?.reference}</span>
                                             </div>
                                         </td>
-                                        <td className="px-4 py-4 border-r border-slate-100">
-                                            <span className="text-xs font-semibold text-slate-600">{colis.expedition?.reference}</span>
+                                        <td className="px-4 py-4">
+                                            <span className={`inline-flex self-start px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wide border shadow-sm ${getTypeStyle(colis.expedition?.type_expedition)}`}>
+                                                {getTypeLabel(colis.expedition?.type_expedition)}
+                                            </span>
                                         </td>
-                                        <td className="px-4 py-4 border-r border-slate-100">
-                                            <span className="text-xs font-medium text-slate-700">{colis.produit_nom}</span>
+                                        <td className="px-4 py-4">
+                                            <div className="flex items-center gap-1.5 text-sm font-bold text-indigo-600">
+                                                <MapPin className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                                                <span className="truncate">{depart} <ArrowRight className="inline w-3 h-3 text-slate-400 mx-0.5" /> {arrivee}</span>
+                                            </div>
                                         </td>
-                                        <td className="px-4 py-4 border-r border-slate-100">
+                                        <td className="px-4 py-4">
+                                            <div className="flex items-center gap-2">
+                                                <Package className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                                                <div className="flex flex-col min-w-0">
+                                                    <span className="text-sm font-bold text-slate-900 truncate">{colis.code_colis}</span>
+                                                    <span className="text-xs text-slate-400 truncate">{colis.produit_nom}</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-4">
                                             <span className="text-sm font-bold text-slate-900">{colis.poids || 0} kg</span>
                                         </td>
                                         <td className="px-4 py-4">
-                                            <div className="flex items-center gap-1.5">
-                                                <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                                                <span className="text-sm font-semibold text-indigo-600">{getCountryName(colis.expedition?.code_pays_destination) || colis.expedition?.pays_destination}</span>
+                                            <div className="flex flex-col gap-0.5">
+                                                <span className="text-sm font-bold text-slate-900 tabular-nums">
+                                                    {new Intl.NumberFormat('fr-FR').format(colis.montant_colis_total || 0)}
+                                                </span>
+                                                <span className="text-xs font-bold text-slate-400 uppercase">{getCurrencyLabel()}</span>
                                             </div>
                                         </td>
+                                        <td className="px-4 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                                            {canAccept && (
+                                                <button
+                                                    onClick={() => handleReceiveOne(colis.code_colis)}
+                                                    disabled={receivingCode === colis.code_colis || isReceiving}
+                                                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 shadow-sm transition-colors disabled:opacity-50"
+                                                    title="Marquer ce colis comme réceptionné"
+                                                >
+                                                    {receivingCode === colis.code_colis ? (
+                                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                    ) : (
+                                                        <CheckCircle2 className="w-3.5 h-3.5" />
+                                                    )}
+                                                    <span>Réceptionner</span>
+                                                </button>
+                                            )}
+                                        </td>
                                     </tr>
-                                ))
+                                    );
+                                })
                             ) : (
                                 <tr>
-                                    <td colSpan="5" className="px-4 py-16 text-center">
+                                    <td colSpan={canAccept ? 8 : 7} className="px-4 py-16 text-center">
                                         <div className="flex flex-col items-center max-w-md mx-auto">
                                             <div className="relative w-20 h-20 mb-4">
                                                 <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-blue-100/30 rounded-2xl rotate-6"></div>
@@ -778,7 +981,7 @@ const Demandes = () => {
                                                 {searchQuery ? 'Aucun résultat trouvé' : 'Aucun colis en agence'}
                                             </h3>
                                             <p className="text-sm font-medium text-slate-500">
-                                                {searchQuery 
+                                                {searchQuery
                                                     ? 'Essayez avec d\'autres mots-clés de recherche'
                                                     : 'Les colis des expéditions acceptées à réceptionner apparaîtront ici.'
                                                 }
@@ -832,6 +1035,22 @@ const Demandes = () => {
                 confirmText="Accepter la demande"
                 type="success"
                 isLoading={processingId === idToAccept}
+            />
+
+            <ConfirmationModal
+                isOpen={isReceiveModalOpen}
+                onClose={() => {
+                    setIsReceiveModalOpen(false);
+                    setCodesToReceive([]);
+                }}
+                onConfirm={confirmReceive}
+                title={codesToReceive.length > 1 ? 'Réceptionner les colis' : 'Réceptionner le colis'}
+                message={codesToReceive.length > 1
+                    ? `Confirmez-vous la réception de ces ${codesToReceive.length} colis à l'agence ? L'expédition passera au statut "Reçu" lorsque tous ses colis seront réceptionnés.`
+                    : "Confirmez-vous la réception de ce colis à l'agence ? L'expédition passera au statut \"Reçu\" lorsque tous ses colis seront réceptionnés."}
+                confirmText={codesToReceive.length > 1 ? 'Réceptionner les colis' : 'Réceptionner le colis'}
+                type="success"
+                isLoading={isReceiving || receivingCode !== null}
             />
         </div>
     );

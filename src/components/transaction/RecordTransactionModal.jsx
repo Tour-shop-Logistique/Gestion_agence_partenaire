@@ -17,6 +17,7 @@ import {
   ListBulletIcon,
   MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
+import { getCurrencyLabel } from '../../utils/format';
 import { useExpedition } from '../../hooks/useExpedition';
 
 /**
@@ -491,7 +492,7 @@ const RecordTransactionModal = ({
                         {foundExpedition.expediteur && (
                           <p className="text-[10px] text-emerald-700 mt-0.5">
                             De {foundExpedition.expediteur} → {foundExpedition.destinataire}
-                            {foundExpedition.montant && ` • ${new Intl.NumberFormat('fr-FR').format(foundExpedition.montant)} CFA`}
+                            {foundExpedition.montant && ` • ${new Intl.NumberFormat('fr-FR').format(foundExpedition.montant)} ${getCurrencyLabel()}`}
                           </p>
                         )}
                       </div>
@@ -544,7 +545,7 @@ const RecordTransactionModal = ({
                   disabled={isSubmitting}
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs sm:text-sm font-semibold text-slate-400">
-                  CFA
+                  {getCurrencyLabel()}
                 </div>
               </div>
               {errors.amount && (
@@ -555,7 +556,7 @@ const RecordTransactionModal = ({
               )}
               {formData.amount > 0 && !errors.amount && (
                 <p className="text-[10px] sm:text-xs text-slate-500 mt-1">
-                  Montant: <span className="font-semibold">{formatCurrency(formData.amount)} CFA</span>
+                  Montant: <span className="font-semibold">{formatCurrency(formData.amount)} {getCurrencyLabel()}</span>
                 </p>
               )}
             </div>
@@ -864,7 +865,7 @@ const RecordTransactionModal = ({
                             )}
                             {expedition.montant_expedition && (
                               <p className="text-slate-500">
-                                Montant: <span className="font-semibold text-slate-700">{new Intl.NumberFormat('fr-FR').format(expedition.montant_expedition)} CFA</span>
+                                Montant: <span className="font-semibold text-slate-700">{new Intl.NumberFormat('fr-FR').format(expedition.montant_expedition)} {getCurrencyLabel()}</span>
                               </p>
                             )}
                           </div>

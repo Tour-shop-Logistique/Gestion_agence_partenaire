@@ -8,6 +8,7 @@ import { useAgency } from "../hooks/useAgency";
 import PrintSuccessModal from "../components/Receipts/PrintSuccessModal";
 import SearchableDropdown from "../components/common/SearchableDropdown";
 import { getLogoUrl } from "../utils/apiConfig";
+import { getCurrencyLabel } from "../utils/format";
 import { toast } from "../utils/toast";
 import { markAsRecentlyCreated } from "../hooks/useWebSocket";
 import PageHeader from "../components/ui/PageHeader";
@@ -1152,7 +1153,7 @@ const CreateExpedition = () => {
                                                                     <input type="number" placeholder="0" value={c.hauteur} onChange={(e) => handleColisChange(index, 'hauteur', e.target.value)} className="w-full border-2 border-slate-300 rounded-md text-xs p-2 bg-white text-center h-9 px-3 focus:border-slate-500 focus:ring-2 focus:ring-slate-500/20" />
                                                                 </div>
                                                                 <div>
-                                                                    <label className="block text-xs font-semibold text-slate-400 text-center mb-1">Emb. CFA</label>
+                                                                    <label className="block text-xs font-semibold text-slate-400 text-center mb-1">Emb. {getCurrencyLabel()}</label>
                                                                     <input type="number" value={c.prix_emballage} onChange={(e) => handleColisChange(index, 'prix_emballage', e.target.value)} className="w-full border-2 border-slate-300 rounded-md text-xs p-2 bg-white text-center font-semibold text-slate-700 h-9 px-3 focus:border-slate-500 focus:ring-2 focus:ring-slate-500/20" />
                                                                 </div>
                                                             </div>
@@ -1323,7 +1324,7 @@ const CreateExpedition = () => {
                                                     <span className="text-3xl font-mono font-bold tracking-tight">
                                                         {(parseFloat(simulationTarif?.montant_expedition || simulationResult.total_price || simulationResult.amount || 0) + totalEmballage).toLocaleString()}
                                                     </span>
-                                                    <span className="text-sm text-slate-400 font-semibold">CFA</span>
+                                                    <span className="text-sm text-slate-400 font-semibold">{getCurrencyLabel()}</span>
                                                 </div>
                                             </div>
 
@@ -1331,15 +1332,15 @@ const CreateExpedition = () => {
                                                 <div className="space-y-2.5 text-xs">
                                                     <div className="flex justify-between">
                                                         <span className="text-slate-500">Base transport</span>
-                                                        <span className="font-semibold text-slate-700">{(parseFloat(simulationTarif.montant_base || 0)).toLocaleString()} CFA</span>
+                                                        <span className="font-semibold text-slate-700">{(parseFloat(simulationTarif.montant_base || 0)).toLocaleString()} {getCurrencyLabel()}</span>
                                                     </div>
                                                     <div className="flex justify-between">
                                                         <span className="text-slate-500">Frais de service</span>
-                                                        <span className="font-semibold text-slate-700">{(parseFloat(simulationTarif.montant_prestation || 0)).toLocaleString()} CFA</span>
+                                                        <span className="font-semibold text-slate-700">{(parseFloat(simulationTarif.montant_prestation || 0)).toLocaleString()} {getCurrencyLabel()}</span>
                                                     </div>
                                                     <div className="flex justify-between">
                                                         <span className="text-slate-500">Emballage</span>
-                                                        <span className="font-semibold text-slate-700">{totalEmballage.toLocaleString()} CFA</span>
+                                                        <span className="font-semibold text-slate-700">{totalEmballage.toLocaleString()} {getCurrencyLabel()}</span>
                                                     </div>
                                                 </div>
                                             )}
@@ -1382,7 +1383,7 @@ const CreateExpedition = () => {
                                                     <span className="text-2xl font-mono font-bold">
                                                         {(parseFloat(simulationTarif?.montant_expedition || simulationResult?.total_price || simulationResult?.amount || 0) + totalEmballage).toLocaleString()}
                                                     </span>
-                                                    <span className="text-sm text-slate-400 font-semibold">CFA</span>
+                                                    <span className="text-sm text-slate-400 font-semibold">{getCurrencyLabel()}</span>
                                                 </div>
                                             </div>
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import SaveTarifModal from "../components/SaveTarifModal";
 
-import { formatPrice } from "../utils/format";
+import { formatPrice, getCurrencyLabel } from "../utils/format";
 import { useTarifs } from "../hooks/useTarifs";
 import { useAuth } from "../hooks/useAuth";
 import { tarifsApi } from "../utils/api/tarifs";
@@ -466,10 +466,10 @@ const TarifSimpleComponent = () => {
   const exportColumns = useMemo(() => ([
     { header: 'Indice', key: 'indice' },
     { header: 'Destination', key: 'destination' },
-    { header: 'Montant Base (FCFA)', key: 'montant_base' },
+    { header: `Montant Base (${getCurrencyLabel()})`, key: 'montant_base' },
     { header: '% Prestation', key: 'pourcentage_prestation' },
-    { header: 'Montant Prestation (FCFA)', key: 'montant_prestation' },
-    { header: 'Total (FCFA)', key: 'total' },
+    { header: `Montant Prestation (${getCurrencyLabel()})`, key: 'montant_prestation' },
+    { header: `Total (${getCurrencyLabel()})`, key: 'total' },
     ...(activeTab === "agency" ? [{ header: 'Actif', key: 'actif' }] : []),
   ]), [activeTab]);
 

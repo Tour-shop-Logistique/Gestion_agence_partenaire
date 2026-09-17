@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import StatusTimeline from './StatusTimeline';
 import PaymentBadge from './PaymentBadge';
 import { getCountryName } from '../../utils/countries';
+import { getCurrencyLabel } from '../../utils/format';
 
 /**
  * 📱 CARTE MOBILE EXPEDITIONS
@@ -65,7 +66,7 @@ const ExpeditionMobileCard = ({
                     <span className="text-base font-bold text-slate-900 tabular-nums">
                         {formatCurrency(expedition.montant_expedition)}
                     </span>
-                    <span className="text-[10px] font-semibold text-slate-400">CFA</span>
+                    <span className="text-[10px] font-semibold text-slate-400">{getCurrencyLabel()}</span>
                 </div>
 
                 <div className="flex items-center gap-2">

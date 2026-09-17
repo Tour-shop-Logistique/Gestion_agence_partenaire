@@ -1,5 +1,6 @@
 import React from 'react';
 import { DollarSign, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { getCurrencyLabel } from '../../utils/format';
 
 /**
  * 💰 CARTE FINANCIÈRE
@@ -15,6 +16,10 @@ const FinanceCard = ({ expedition, formatCurrency, onRecordTransaction, onOpenFr
     const expeditionPaid = expedition.statut_paiement_expedition === 'paye';
     const annexesPaid = expedition.statut_paiement_frais === 'paye';
     const isCredit = expedition.is_paiement_credit;
+    // On n'encaisse rien tant que la demande n'a pas été acceptée par
+    // l'agence : les boutons "Encaisser"/"Décider" ne doivent pas être
+    // actionnables sur une expédition encore en_attente.
+    const expeditionAcceptee = expedition.statut_expedition !== 'en_attente';
     // Une fois la décision agence prise (payé maintenant OU à percevoir à
     // l'arrivée), il n'y a plus d'urgence à signaler même si le montant n'est
     // pas encore réellement encaissé - seule l'absence de décision est bloquante.
@@ -87,21 +92,21 @@ const FinanceCard = ({ expedition, formatCurrency, onRecordTransaction, onOpenFr
                     <div>
                         <p className="text-[10px] font-bold text-slate-400 uppercase">Frais expédition</p>
                         <p className="text-sm font-bold text-slate-900 tabular-nums">
-                            {new Intl.NumberFormat('fr-FR').format(montantExpedition)} <span className="text-[10px] text-slate-500">CFA</span>
+                            {new Intl.NumberFormat('fr-FR').format(montantExpedition)} <span className="text-[10px] text-slate-500">{getCurrencyLabel()}</span>
                         </p>
                     </div>
                     {fraisAnnexes > 0 && (
                         <div>
                             <p className="text-[10px] font-bold text-slate-400 uppercase">Frais annexes</p>
                             <p className="text-sm font-bold text-rose-600 tabular-nums">
-                                +{new Intl.NumberFormat('fr-FR').format(fraisAnnexes)} <span className="text-[10px] text-rose-400">CFA</span>
+                                +{new Intl.NumberFormat('fr-FR').format(fraisAnnexes)} <span className="text-[10px] text-rose-400">{getCurrencyLabel()}</span>
                             </p>
                         </div>
                     )}
                     <div>
                         <p className="text-[10px] font-bold text-slate-400 uppercase">Total</p>
                         <p className="text-base font-bold text-slate-900 tabular-nums">
-                            {new Intl.NumberFormat('fr-FR').format(totalAmount)} <span className="text-[10px] text-slate-500">CFA</span>
+                            {new Intl.NumberFormat('fr-FR').format(totalAmount)} <span className="text-[10px] text-slate-500">{getCurrencyLabel()}</span>
                         </p>
                     </div>
                 </div>
@@ -129,7 +134,7 @@ const FinanceCard = ({ expedition, formatCurrency, onRecordTransaction, onOpenFr
                     <StatusPill
                         label="Frais expédition"
                         paid={expeditionPaid}
-                        onClick={!isCredit ? () => onRecordTransaction('montant_expedition') : null}
+                        onClick={!isCredit && expeditionAcceptee ? () => onRecordTransaction('montant_expedition') : null}
                     />
                     {fraisAnnexes > 0 && (
                         <StatusPill
@@ -150,7 +155,7 @@ const FinanceCard = ({ expedition, formatCurrency, onRecordTransaction, onOpenFr
                             // l'occasion de choisir "à percevoir à l'arrivée"
                             // depuis cette page.
                             buttonLabel="Décider"
-                            onClick={!decisionAgencePrise ? onOpenFraisDecision : null}
+                            onClick={!decisionAgencePrise && expeditionAcceptee ? onOpenFraisDecision : null}
                         />
                     )}
                 </div>

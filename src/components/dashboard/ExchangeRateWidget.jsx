@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { CurrencyEuroIcon, XMarkIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
+import { getCurrencyLabel } from "../../utils/format";
 
 const DEFAULT_RATE = '655.957';
 const STORAGE_KEY = 'exchange_rate_cfa_eur';
 
 /**
- * Affiche le taux de conversion EUR → CFA et permet de le modifier
+ * Affiche le taux de conversion EUR → FCFA et permet de le modifier
  * (même clé de stockage que le sélecteur du header global)
  */
 const ExchangeRateWidget = () => {
@@ -40,7 +41,7 @@ const ExchangeRateWidget = () => {
             >
                 <CurrencyEuroIcon className="w-4 h-4 text-indigo-600" />
                 <span className="text-xs sm:text-sm font-semibold text-slate-900">
-                    1€ = {parseFloat(rate).toLocaleString('fr-FR')} CFA
+                    1€ = {parseFloat(rate).toLocaleString('fr-FR')} {getCurrencyLabel()}
                 </span>
             </button>
 
@@ -62,7 +63,7 @@ const ExchangeRateWidget = () => {
                                     </div>
                                     <div>
                                         <h3 className="text-lg font-bold text-slate-900">Taux de conversion</h3>
-                                        <p className="text-xs text-slate-500 font-medium">Euro vers CFA</p>
+                                        <p className="text-xs text-slate-500 font-medium">Euro vers {getCurrencyLabel()}</p>
                                     </div>
                                 </div>
                                 <button
@@ -78,7 +79,7 @@ const ExchangeRateWidget = () => {
                                     <div>
                                         <p className="text-xs font-semibold text-indigo-600 uppercase tracking-wide mb-1">Taux actuel</p>
                                         <p className="text-2xl font-bold text-slate-900">
-                                            1 € = {parseFloat(rate).toLocaleString('fr-FR')} <span className="text-lg text-indigo-600">CFA</span>
+                                            1 € = {parseFloat(rate).toLocaleString('fr-FR')} <span className="text-lg text-indigo-600">{getCurrencyLabel()}</span>
                                         </p>
                                     </div>
                                     <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm">
@@ -108,11 +109,11 @@ const ExchangeRateWidget = () => {
                                             placeholder="655.957"
                                         />
                                         <div className="absolute right-4 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-indigo-600 rounded-xl shadow-sm">
-                                            <span className="text-xs font-bold text-white">CFA</span>
+                                            <span className="text-xs font-bold text-white">{getCurrencyLabel()}</span>
                                         </div>
                                     </div>
                                     <p className="text-xs text-slate-500 ml-1">
-                                        Le taux par défaut est <span className="font-semibold text-slate-700">655.957 CFA</span>. Ce taux sera utilisé pour toutes les conversions dans l'application.
+                                        Le taux par défaut est <span className="font-semibold text-slate-700">655.957 {getCurrencyLabel()}</span>. Ce taux sera utilisé pour toutes les conversions dans l'application.
                                     </p>
                                 </div>
 

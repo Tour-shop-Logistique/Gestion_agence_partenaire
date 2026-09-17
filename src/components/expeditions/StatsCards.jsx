@@ -8,6 +8,7 @@ import {
     BanknotesIcon,
     BuildingLibraryIcon
 } from '@heroicons/react/24/outline';
+import { getCurrencyLabel } from '../../utils/format';
 
 /**
  * 📊 CARTES KPI DASHBOARD
@@ -190,7 +191,7 @@ const StatsCards = ({ expeditions, onFilter, activeFilters = {} }) => {
                 bgColor="from-purple-50 to-purple-100/50"
                 borderColor="border-purple-200"
                 onClick={() => {}}
-                subtitle="CFA"
+                subtitle={getCurrencyLabel()}
             />
 
             <StatCard
@@ -201,7 +202,7 @@ const StatsCards = ({ expeditions, onFilter, activeFilters = {} }) => {
                 bgColor="from-cyan-50 to-cyan-100/50"
                 borderColor="border-cyan-200"
                 onClick={() => {}}
-                subtitle="CFA"
+                subtitle={getCurrencyLabel()}
             />
         </div>
     );

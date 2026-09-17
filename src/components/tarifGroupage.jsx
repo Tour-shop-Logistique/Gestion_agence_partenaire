@@ -14,6 +14,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { toast } from "../utils/toast";
 import { getCountryName } from "../utils/countries";
+import { getCurrencyLabel } from "../utils/format";
 import ExportButton from "../components/common/ExportButton";
 
 const TableSkeleton = () => (
@@ -199,10 +200,10 @@ const TarifGroupageComponent = () => {
   const exportColumns = useMemo(() => ([
     { header: 'Type', key: 'type' },
     { header: 'Catégorie / Pays', key: 'categorie' },
-    { header: 'Montant Base (FCFA)', key: 'montant_base' },
+    { header: `Montant Base (${getCurrencyLabel()})`, key: 'montant_base' },
     { header: '% Prestation', key: 'pourcentage_prestation' },
-    { header: 'Montant Prestation (FCFA)', key: 'montant_prestation' },
-    { header: 'Total (FCFA)', key: 'total' },
+    { header: `Montant Prestation (${getCurrencyLabel()})`, key: 'montant_prestation' },
+    { header: `Total (${getCurrencyLabel()})`, key: 'total' },
   ]), []);
 
   const exportRows = useMemo(() => (currentData || []).map((tarif) => {
@@ -439,17 +440,17 @@ const TarifGroupageComponent = () => {
                           )}
                         </td>
                         <td className="px-6 py-4 border-r border-slate-100/30 font-medium text-sm text-slate-600">
-                          {montantBase.toLocaleString()} FCFA
+                          {montantBase.toLocaleString()} {getCurrencyLabel()}
                         </td>
                         <td className="px-6 py-4 border-r border-slate-100/30">
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-bold text-indigo-600">+{pourcentage}%</span>
-                            <span className="text-[10px] text-slate-400 font-medium">{montantPrestation.toLocaleString()} FCFA</span>
+                            <span className="text-[10px] text-slate-400 font-medium">{montantPrestation.toLocaleString()} {getCurrencyLabel()}</span>
                           </div>
                         </td>
                         <td className="px-6 py-4 border-r border-slate-200 bg-indigo-50/10 group-hover:bg-indigo-50/40 transition-colors">
                           <span className="text-sm font-bold text-slate-950">
-                            {total.toLocaleString()} FCFA
+                            {total.toLocaleString()} {getCurrencyLabel()}
                           </span>
                         </td>
                         {activeTab === "agency" && (
@@ -558,7 +559,7 @@ const TarifGroupageComponent = () => {
                     <div className="grid grid-cols-2 gap-3 pt-2">
                       <div className="p-3 rounded-xl border bg-slate-50 border-slate-100">
                         <p className="text-[9px] font-bold uppercase tracking-wider mb-1 text-slate-400">Base</p>
-                        <p className="text-xs font-bold text-slate-900">{montantBase.toLocaleString()} FCFA</p>
+                        <p className="text-xs font-bold text-slate-900">{montantBase.toLocaleString()} {getCurrencyLabel()}</p>
                       </div>
                       <div className="p-3 rounded-xl border bg-indigo-50/50 border-indigo-100">
                         <p className="text-[9px] font-bold uppercase tracking-wider mb-1 text-indigo-400">Prestation</p>
@@ -566,7 +567,7 @@ const TarifGroupageComponent = () => {
                       </div>
                       <div className="col-span-2 p-3 rounded-xl flex items-center justify-between shadow-sm bg-indigo-600">
                         <p className="text-[10px] font-semibold uppercase tracking-wide text-indigo-100">Total Expédition</p>
-                        <p className="text-base font-bold text-white">{total.toLocaleString()} FCFA</p>
+                        <p className="text-base font-bold text-white">{total.toLocaleString()} {getCurrencyLabel()}</p>
                       </div>
                       {activeTab === "agency" && (
                         <div className="col-span-2 flex items-center justify-between pt-1">

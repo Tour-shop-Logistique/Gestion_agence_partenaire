@@ -10,6 +10,7 @@ import {
     Weight,
 } from 'lucide-react';
 import { getCountryName } from '../../utils/countries';
+import { getCurrencyLabel } from '../../utils/format';
 
 /**
  * 🧭 VUE D'ENSEMBLE DU STATUT
@@ -107,7 +108,12 @@ const StatusOverview = ({ expedition }) => {
         {
             icon: MapPin,
             label: 'Trajet',
-            value: `${getCountryName(expedition.code_pays_depart) || expedition.pays_depart || ''} → ${getCountryName(expedition.code_pays_destination) || expedition.pays_destination || ''}`,
+            // Interville : départ/arrivée sont dans le même pays, afficher
+            // les communes (résolues côté backend) donne le vrai trajet
+            // plutôt qu'un pays répété deux fois.
+            value: expedition.type_expedition === 'interville'
+                ? `${expedition.commune_depart_nom || getCountryName(expedition.code_pays_depart) || expedition.pays_depart || ''} → ${expedition.commune_arrivee_nom || getCountryName(expedition.code_pays_destination) || expedition.pays_destination || ''}`
+                : `${getCountryName(expedition.code_pays_depart) || expedition.pays_depart || ''} → ${getCountryName(expedition.code_pays_destination) || expedition.pays_destination || ''}`,
             unit: '',
             color: 'purple',
         },
@@ -115,7 +121,7 @@ const StatusOverview = ({ expedition }) => {
             icon: FileText,
             label: 'Montant total',
             value: new Intl.NumberFormat('fr-FR').format(totalAmount),
-            unit: 'CFA',
+            unit: getCurrencyLabel(),
             color: 'emerald',
         },
     ];

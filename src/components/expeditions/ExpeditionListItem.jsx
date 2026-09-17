@@ -68,10 +68,18 @@ const ExpeditionListItem = ({
                     </div>
                 </div>
 
-                {/* Pays */}
-                <div className="hidden md:flex items-center gap-1.5 text-xs font-semibold text-slate-600 w-28 flex-shrink-0">
+                {/* Trajet : Interville affiche communes départ → arrivée
+                    (même pays des deux côtés, sans ça rien ne distingue le
+                    trajet) ; les autres types gardent le pays unique. */}
+                <div className="hidden md:flex items-center gap-1.5 text-xs font-semibold text-slate-600 w-36 flex-shrink-0">
                     <MapPinIcon className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                    <span className="truncate">{getCountryName(expedition.code_pays_destination) || getCountryName(expedition.code_pays_depart) || expedition.pays_destination || expedition.pays_depart || '—'}</span>
+                    {expedition.type_expedition === 'interville' ? (
+                        <span className="truncate">
+                            {expedition.commune_depart_nom || '—'} → {expedition.commune_arrivee_nom || '—'}
+                        </span>
+                    ) : (
+                        <span className="truncate">{getCountryName(expedition.code_pays_destination) || getCountryName(expedition.code_pays_depart) || expedition.pays_destination || expedition.pays_depart || '—'}</span>
+                    )}
                 </div>
 
                 {/* Badge type */}

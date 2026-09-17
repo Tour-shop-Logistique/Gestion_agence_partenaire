@@ -1,5 +1,6 @@
 import React from 'react';
 import { MagnifyingGlassIcon, FunnelIcon, InboxIcon } from '@heroicons/react/24/outline';
+import { getCurrencyLabel } from '../../utils/format';
 
 /**
  * 📭 ÉTAT VIDE AMÉLIORÉ
@@ -87,8 +88,8 @@ const EmptyState = ({ hasFilters, onResetFilters }) => {
             <div className="mt-12 grid grid-cols-3 gap-4 max-w-2xl mx-auto">
                 {[
                     { label: 'Expéditions', value: '0', icon: '📦' },
-                    { label: 'Montant', value: '0 CFA', icon: '💰' },
-                    { label: 'Commission', value: '0 CFA', icon: '📊' }
+                    { label: 'Montant', value: `0 ${getCurrencyLabel()}`, icon: '💰' },
+                    { label: 'Commission', value: `0 ${getCurrencyLabel()}`, icon: '📊' }
                 ].map((stat, i) => (
                     <div key={i} className="bg-slate-50 rounded-xl p-4 border border-slate-200">
                         <div className="text-2xl mb-2">{stat.icon}</div>

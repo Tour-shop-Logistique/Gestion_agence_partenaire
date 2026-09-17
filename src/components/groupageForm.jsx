@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useTarifs } from "../hooks/useTarifs";
 import { getCountryName } from "../utils/countries";
+import { getCurrencyLabel } from "../utils/format";
 import {
   XMarkIcon,
   InformationCircleIcon,
@@ -205,7 +206,7 @@ const AddAgencyTarifModal = ({ show, onClose, editingTarif, selectedBaseRate }) 
                     </div>
                     <div className="text-right">
                       <p className="text-[10px] font-semibold text-slate-400 uppercase">Base Modèle</p>
-                      <p className="text-sm font-bold text-slate-900">{tarifData.montant_base?.toLocaleString()} <span className="text-[10px] text-slate-400">FCFA</span></p>
+                      <p className="text-sm font-bold text-slate-900">{tarifData.montant_base?.toLocaleString()} <span className="text-[10px] text-slate-400">{getCurrencyLabel()}</span></p>
                     </div>
                   </div>
 
@@ -228,7 +229,7 @@ const AddAgencyTarifModal = ({ show, onClose, editingTarif, selectedBaseRate }) 
                       <p className="text-[10px] font-semibold text-slate-500 uppercase mb-1">Tarif Final Agence</p>
                       <div className="flex items-baseline justify-end space-x-1">
                         <span className="text-2xl font-bold text-slate-900">{tarifData.montant_expedition?.toLocaleString()}</span>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">FCFA</span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{getCurrencyLabel()}</span>
                       </div>
                     </div>
                   </div>

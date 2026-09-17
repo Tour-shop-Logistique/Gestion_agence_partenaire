@@ -1,4 +1,5 @@
 import React from 'react';
+import { getCurrencyLabel } from '../../utils/format';
 
 /**
  * 📈 STATISTIQUES FILTRÉES
@@ -57,7 +58,7 @@ const FilteredStats = ({ expeditions, getAgencyCommission }) => {
                         {formatCurrency(totalAmount)}
                     </p>
                     <p className="text-[10px] text-slate-400">
-                        CFA total
+                        {getCurrencyLabel()} total
                     </p>
                 </div>
 
@@ -70,7 +71,7 @@ const FilteredStats = ({ expeditions, getAgencyCommission }) => {
                         {formatCurrency(totalCommission)}
                     </p>
                     <p className="text-[10px] text-slate-400">
-                        CFA agence
+                        {getCurrencyLabel()} agence
                     </p>
                 </div>
 
@@ -96,7 +97,7 @@ const FilteredStats = ({ expeditions, getAgencyCommission }) => {
                         {formatCurrency(averageAmount)}
                     </p>
                     <p className="text-[10px] text-slate-400">
-                        CFA/exp
+                        {getCurrencyLabel()}/exp
                     </p>
                 </div>
             </div>

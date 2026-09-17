@@ -10,6 +10,7 @@ import { useWebSocket } from '../hooks/useWebSocket';
 import { realtimeExpeditionPatched } from '../store/slices/expeditionSlice';
 import PrintSuccessModal from '../components/Receipts/PrintSuccessModal';
 import { getLogoUrl } from '../utils/apiConfig';
+import { getCurrencyLabel } from '../utils/format';
 import { toast } from '../utils/toast';
 import { Copy, Loader2 } from 'lucide-react';
 import { Button, PageHeader } from "../components/ui";
@@ -160,7 +161,7 @@ const ExpeditionDetails = () => {
     };
 
     const formatCurrency = (amount) => {
-        const cfa = new Intl.NumberFormat('fr-FR').format(amount || 0) + ' CFA';
+        const cfa = new Intl.NumberFormat('fr-FR').format(amount || 0) + ' ' + getCurrencyLabel();
         const eur = new Intl.NumberFormat('fr-FR', {
             style: 'currency',
             currency: 'EUR',
@@ -253,17 +254,20 @@ const ExpeditionDetails = () => {
 
                             {/* Actions rapides inline */}
                             <div className="flex-shrink-0 flex flex-wrap items-center gap-2">
-                                {/* Bouton imprimer le reçu - toujours visible */}
-                                <button
-                                    onClick={() => setShowPrintModal(true)}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors"
-                                    title="Imprimer les reçus"
-                                >
-                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                                    </svg>
-                                    <span className="hidden sm:inline">Reçu</span>
-                                </button>
+                                {/* Reçu imprimable seulement après acceptation : rien à imprimer
+                                    tant que la demande n'est pas encore validée par l'agence. */}
+                                {expedition.statut_expedition !== 'en_attente' && (
+                                    <button
+                                        onClick={() => setShowPrintModal(true)}
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors"
+                                        title="Imprimer les reçus"
+                                    >
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                        </svg>
+                                        <span className="hidden sm:inline">Reçu</span>
+                                    </button>
+                                )}
                                 {expedition.statut_expedition === 'en_attente' && (
                                     <>
                                         {canRefuse && (
@@ -287,7 +291,18 @@ const ExpeditionDetails = () => {
                                     </>
                                 )}
 
-                                {expedition.statut_expedition === 'accepted' && canControl && (
+                                {expedition.statut_expedition === 'accepted' && (
+                                    <button
+                                        onClick={() => setIsConfirmReceptionModalOpen(true)}
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm transition-colors"
+                                        title="Confirmer que les colis enlevés chez le client sont arrivés à l'agence, avant de pouvoir les contrôler"
+                                    >
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8 8-4-4" /></svg>
+                                        <span className="hidden sm:inline">Confirmer réception</span>
+                                    </button>
+                                )}
+
+                                {expedition.statut_expedition === 'recu_agence_depart' && canControl && (
                                     <button
                                         onClick={() => navigate(`/expeditions/${expedition.id}/controle`)}
                                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors"
@@ -298,17 +313,11 @@ const ExpeditionDetails = () => {
                                     </button>
                                 )}
 
-                                {expedition.statut_expedition === 'accepted' && (
-                                    <button
-                                        onClick={() => setIsConfirmReceptionModalOpen(true)}
-                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm transition-colors"
-                                    >
-                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8 8-4-4" /></svg>
-                                        <span className="hidden sm:inline">Confirmer réception</span>
-                                    </button>
-                                )}
-
-                                {expedition.statut_paiement_expedition !== 'paye' && !expedition.is_paiement_credit && (
+                                {/* Encaisser suppose que l'expédition a été acceptée : on ne
+                                    prend pas le paiement d'une demande encore en attente. */}
+                                {expedition.statut_expedition !== 'en_attente'
+                                    && expedition.statut_paiement_expedition !== 'paye'
+                                    && !expedition.is_paiement_credit && (
                                     <button
                                         onClick={() => handleRecordTransaction('montant_expedition')}
                                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors"
@@ -325,8 +334,11 @@ const ExpeditionDetails = () => {
                                     Le bouton ne réapparaît donc que si aucune décision n'a
                                     encore été prise (statut_paiement_frais passe directement à
                                     "paye" côté backend pour le choix "payé maintenant", donc ce
-                                    cas ne peut plus se présenter une fois décidé). */}
-                                {parseFloat(expedition.frais_annexes || 0) > 0
+                                    cas ne peut plus se présenter une fois décidé). Comme pour le
+                                    transport, cette décision n'a de sens qu'une fois la demande
+                                    acceptée. */}
+                                {expedition.statut_expedition !== 'en_attente'
+                                    && parseFloat(expedition.frais_annexes || 0) > 0
                                     && expedition.statut_paiement_frais !== 'paye'
                                     && !expedition.frais_decision_agence_prise && (
                                     <button
@@ -376,28 +388,28 @@ const ExpeditionDetails = () => {
                                     <p className="text-xs font-medium text-gray-400 mb-1 sm:mb-2">Enlèvement</p>
                                     <p className="text-base sm:text-lg font-semibold text-white">
                                         {new Intl.NumberFormat('fr-FR').format(expedition.commission_details.enlevement?.agence || 0)}
-                                        <span className="text-xs text-indigo-400 ml-1">CFA</span>
+                                        <span className="text-xs text-indigo-400 ml-1">{getCurrencyLabel()}</span>
                                     </p>
                                 </div>
                                 <div className="p-3 sm:p-4 bg-white/5 rounded-lg border border-white/10">
                                     <p className="text-xs font-medium text-gray-400 mb-1 sm:mb-2">Livraison</p>
                                     <p className="text-base sm:text-lg font-semibold text-white">
                                         {new Intl.NumberFormat('fr-FR').format(expedition.commission_details.livraison?.agence || 0)}
-                                        <span className="text-xs text-indigo-400 ml-1">CFA</span>
+                                        <span className="text-xs text-indigo-400 ml-1">{getCurrencyLabel()}</span>
                                     </p>
                                 </div>
                                 <div className="p-3 sm:p-4 bg-white/5 rounded-lg border border-white/10">
                                     <p className="text-xs font-medium text-gray-400 mb-1 sm:mb-2">Emballage</p>
                                     <p className="text-base sm:text-lg font-semibold text-white">
                                         {new Intl.NumberFormat('fr-FR').format(expedition.commission_details.emballage?.agence || 0)}
-                                        <span className="text-xs text-indigo-400 ml-1">CFA</span>
+                                        <span className="text-xs text-indigo-400 ml-1">{getCurrencyLabel()}</span>
                                     </p>
                                 </div>
                                 <div className="p-3 sm:p-4 bg-white/5 rounded-lg border border-white/10">
                                     <p className="text-xs font-medium text-gray-400 mb-1 sm:mb-2">Retards</p>
                                     <p className="text-base sm:text-lg font-semibold text-white">
                                         {new Intl.NumberFormat('fr-FR').format(expedition.commission_details.retard?.agence || 0)}
-                                        <span className="text-xs text-indigo-400 ml-1">CFA</span>
+                                        <span className="text-xs text-indigo-400 ml-1">{getCurrencyLabel()}</span>
                                     </p>
                                 </div>
                             </div>
@@ -413,7 +425,7 @@ const ExpeditionDetails = () => {
                                         (expedition.commission_details.emballage?.agence || 0) +
                                         (expedition.commission_details.retard?.agence || 0)
                                     )}
-                                    <span className="text-sm text-indigo-400 ml-2">CFA</span>
+                                    <span className="text-sm text-indigo-400 ml-2">{getCurrencyLabel()}</span>
                                 </p>
                             </div>
                         </div>

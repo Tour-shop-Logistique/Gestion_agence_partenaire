@@ -6,6 +6,7 @@ import {
     SparklesIcon
 } from '@heroicons/react/24/outline';
 import { STATUS_CONFIG } from './StatusFilter';
+import { getCurrencyLabel } from '../../utils/format';
 
 /**
  * 📈 RÉSUMÉ DES EXPÉDITIONS
@@ -60,7 +61,7 @@ const ExpeditionsSummary = ({ expeditions, getAgencyCommission }) => {
                     </div>
                     <div className="space-y-1">
                         <p className="text-2xl font-bold text-emerald-900 tracking-tight">{formatCurrency(totalMontant)}</p>
-                        <p className="text-xs font-medium text-emerald-600">CFA</p>
+                        <p className="text-xs font-medium text-emerald-600">{getCurrencyLabel()}</p>
                     </div>
                 </div>
 
@@ -74,7 +75,7 @@ const ExpeditionsSummary = ({ expeditions, getAgencyCommission }) => {
                     </div>
                     <div className="space-y-1">
                         <p className="text-2xl font-bold text-purple-900 tracking-tight">{formatCurrency(totalCommission)}</p>
-                        <p className="text-xs font-medium text-purple-600">CFA</p>
+                        <p className="text-xs font-medium text-purple-600">{getCurrencyLabel()}</p>
                     </div>
                 </div>
 

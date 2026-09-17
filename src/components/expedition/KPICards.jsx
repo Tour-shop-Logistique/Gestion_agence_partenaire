@@ -1,6 +1,7 @@
 import React from 'react';
 import { Package, Weight, DollarSign, Activity } from 'lucide-react';
 import { Badge } from '../ui';
+import { getCurrencyLabel } from '../../utils/format';
 
 /**
  * 📊 CARTES KPI
@@ -52,7 +53,7 @@ const KPICards = ({ expedition, formatCurrency }) => {
             icon: DollarSign,
             label: 'Montant total',
             value: new Intl.NumberFormat('fr-FR').format(totalAmount),
-            unit: 'CFA',
+            unit: getCurrencyLabel(),
             color: 'emerald',
             bgColor: 'bg-emerald-50',
             iconColor: 'text-emerald-600',

@@ -19,8 +19,9 @@ import {
     realtimeExpeditionPatched,
     realtimeCurrentExpeditionColisPatched,
 } from '../store/slices/expeditionSlice';
+import { getCurrencyLabel } from '../utils/format';
 
-const formatCFA = (amount) => new Intl.NumberFormat('fr-FR').format(amount || 0) + ' CFA';
+const formatFCFA = (amount) => new Intl.NumberFormat('fr-FR').format(amount || 0) + ' ' + getCurrencyLabel();
 
 // Types nécessitant une category_id par colis pour le calcul du tarif
 // (voir ExpeditionTarificationService côté backend) - si l'expédition change
@@ -324,7 +325,7 @@ const ExpeditionControl = () => {
             if (!result.error) {
                 cancelEditExpedition();
                 if (result.payload?.montantAvant !== undefined && result.payload?.montantAvant !== result.payload?.montantApres) {
-                    toast.success(`Nouveau montant : ${formatCFA(result.payload.montantApres)} (avant : ${formatCFA(result.payload.montantAvant)})`);
+                    toast.success(`Nouveau montant : ${formatFCFA(result.payload.montantApres)} (avant : ${formatFCFA(result.payload.montantAvant)})`);
                 }
             }
         } finally {
@@ -354,7 +355,7 @@ const ExpeditionControl = () => {
             if (!result.error && result.payload) {
                 const { montantAvant, montantApres } = result.payload;
                 if (montantAvant !== montantApres) {
-                    toast.success(`Nouveau montant : ${formatCFA(montantApres)} (avant : ${formatCFA(montantAvant)})`);
+                    toast.success(`Nouveau montant : ${formatFCFA(montantApres)} (avant : ${formatFCFA(montantAvant)})`);
                 }
             }
         } finally {
@@ -371,7 +372,7 @@ const ExpeditionControl = () => {
                             onBack={() => navigate(-1)}
                             eyebrow="Contrôle avant départ"
                             title={expedition.reference}
-                            subtitle={`${colisList.length} colis • Montant actuel : ${formatCFA(expedition.montant_expedition)}`}
+                            subtitle={`${colisList.length} colis • Montant actuel : ${formatFCFA(expedition.montant_expedition)}`}
                         />
                     </div>
                 </div>
@@ -654,11 +655,11 @@ const ExpeditionControl = () => {
                                     )}
                                     <div>
                                         <p className="text-[10px] font-bold text-slate-400 uppercase">Emballage</p>
-                                        <p className="font-semibold text-slate-800">{formatCFA(colis.prix_emballage)}</p>
+                                        <p className="font-semibold text-slate-800">{formatFCFA(colis.prix_emballage)}</p>
                                     </div>
                                     <div>
                                         <p className="text-[10px] font-bold text-slate-400 uppercase">Total colis</p>
-                                        <p className="font-semibold text-indigo-600">{formatCFA(colis.montant_colis_total)}</p>
+                                        <p className="font-semibold text-indigo-600">{formatFCFA(colis.montant_colis_total)}</p>
                                     </div>
                                 </div>
                             )}
@@ -706,7 +707,7 @@ const ExpeditionControl = () => {
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div>
-                                            <label className="text-[10px] font-bold text-slate-500 uppercase">Frais d'emballage (CFA)</label>
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">Frais d'emballage ({getCurrencyLabel()})</label>
                                             <input
                                                 type="number" step="1" min="0"
                                                 value={editForm.prix_emballage}
@@ -788,7 +789,7 @@ const ExpeditionControl = () => {
                                             </div>
                                             <div className="grid grid-cols-2 gap-2">
                                                 <input
-                                                    type="number" step="1" min="0" placeholder="Frais emballage (CFA)"
+                                                    type="number" step="1" min="0" placeholder={`Frais emballage (${getCurrencyLabel()})`}
                                                     value={part.prix_emballage}
                                                     onChange={(e) => updateSplitPart(index, 'prix_emballage', e.target.value)}
                                                     className="px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none"
@@ -835,7 +836,7 @@ const ExpeditionControl = () => {
                 <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div>
                         <p className="text-sm font-bold text-slate-800">Montant actuel de l'expédition</p>
-                        <p className="text-2xl font-bold text-indigo-600 mt-1">{formatCFA(expedition.montant_expedition)}</p>
+                        <p className="text-2xl font-bold text-indigo-600 mt-1">{formatFCFA(expedition.montant_expedition)}</p>
                         <p className="text-xs text-slate-500 mt-1">
                             Après correction des colis, recalculez le tarif pour appliquer les changements — le client sera notifié du nouveau montant.
                         </p>

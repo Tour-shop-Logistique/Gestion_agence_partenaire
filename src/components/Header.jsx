@@ -4,6 +4,7 @@ import { selectCurrentUser, logout } from "../store/slices/authSlice";
 import { useAgency } from "../hooks/useAgency";
 import { useExpedition } from "../hooks/useExpedition";
 import { getLogoUrl } from "../utils/apiConfig";
+import { getCurrencyLabel } from "../utils/format";
 import { Bell, Menu, Euro, RefreshCcw, Plus } from "lucide-react";
 import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
@@ -289,7 +290,7 @@ const Header = ({ onToggleSidebar }) => {
                   </div>
                   <div>
                     <h3 className="text-lg font-bold text-slate-900">Taux de conversion</h3>
-                    <p className="text-xs text-slate-500 font-medium">Euro vers CFA</p>
+                    <p className="text-xs text-slate-500 font-medium">Euro vers {getCurrencyLabel()}</p>
                   </div>
                 </div>
                 <button
@@ -308,7 +309,7 @@ const Header = ({ onToggleSidebar }) => {
                   <div>
                     <p className="text-xs font-semibold text-indigo-600 uppercase tracking-wide mb-1">Taux actuel</p>
                     <p className="text-2xl font-bold text-slate-900">
-                      1 € = {parseFloat(exchangeRate).toLocaleString('fr-FR')} <span className="text-lg text-indigo-600">CFA</span>
+                      1 € = {parseFloat(exchangeRate).toLocaleString('fr-FR')} <span className="text-lg text-indigo-600">{getCurrencyLabel()}</span>
                     </p>
                   </div>
                   <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm">
@@ -339,14 +340,14 @@ const Header = ({ onToggleSidebar }) => {
                       placeholder="655.957"
                     />
                     <div className="absolute right-4 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-indigo-600 rounded-xl shadow-sm">
-                      <span className="text-xs font-bold text-white">CFA</span>
+                      <span className="text-xs font-bold text-white">{getCurrencyLabel()}</span>
                     </div>
                   </div>
                   <div className="flex items-start gap-2 ml-1">
                     <svg className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <p className="text-xs text-slate-500">Le taux par défaut est <span className="font-semibold text-slate-700">655.957 CFA</span>. Ce taux sera utilisé pour toutes les conversions dans l'application.</p>
+                    <p className="text-xs text-slate-500">Le taux par défaut est <span className="font-semibold text-slate-700">655.957 {getCurrencyLabel()}</span>. Ce taux sera utilisé pour toutes les conversions dans l'application.</p>
                   </div>
                 </div>
 
