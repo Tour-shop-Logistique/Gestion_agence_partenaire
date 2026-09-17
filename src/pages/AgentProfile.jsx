@@ -331,7 +331,7 @@ const AgentProfile = () => {
         </div>
 
         {/* Card principale */}
-        <div className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 overflow-hidden">
+        <div className="bg-white rounded-lg shadow-sm ring-1 ring-slate-200 overflow-hidden">
 
           {/* Avatar et infos de base */}
           <div className="px-8 py-7 border-b border-slate-100">
@@ -380,7 +380,7 @@ const AgentProfile = () => {
             <form onSubmit={handleUpdateProfile}>
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-[15px] font-semibold text-slate-900 flex items-center gap-2">
-                  <span className="flex items-center justify-center w-7 h-7 rounded-md bg-indigo-50 text-indigo-600">
+                  <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600">
                     <User className="w-4 h-4" />
                   </span>
                   Informations personnelles
@@ -547,7 +547,7 @@ const AgentProfile = () => {
           {/* Section Sécurité */}
           <div className="px-8 py-7 border-t border-slate-100">
             <h3 className="text-[15px] font-semibold text-slate-900 flex items-center gap-2 mb-5">
-              <span className="flex items-center justify-center w-7 h-7 rounded-md bg-indigo-50 text-indigo-600">
+              <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600">
                 <Shield className="w-4 h-4" />
               </span>
               Sécurité et compte
@@ -557,7 +557,7 @@ const AgentProfile = () => {
               {/* Changer le mot de passe */}
               <button
                 onClick={() => setShowPasswordModal(true)}
-                className="w-full flex items-center justify-between px-5 py-3.5 bg-white border border-slate-200 rounded-xl hover:border-indigo-300 hover:shadow-sm transition group"
+                className="w-full flex items-center justify-between px-5 py-3.5 bg-white border border-slate-200 rounded-lg hover:border-indigo-300 hover:shadow-sm transition group"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center group-hover:bg-indigo-100 transition">
@@ -575,7 +575,7 @@ const AgentProfile = () => {
               {profile?.role !== "is_agence_admin" && (
                 <button
                   onClick={() => setShowDeleteModal(true)}
-                  className="w-full flex items-center justify-between px-5 py-3.5 bg-white border border-slate-200 rounded-xl hover:border-red-300 hover:shadow-sm transition group"
+                  className="w-full flex items-center justify-between px-5 py-3.5 bg-white border border-slate-200 rounded-lg hover:border-red-300 hover:shadow-sm transition group"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center group-hover:bg-red-100 transition">
@@ -596,7 +596,7 @@ const AgentProfile = () => {
           <div className="px-8 py-6 border-t border-slate-100 bg-slate-50/60">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-lg px-4 py-3">
-                <div className="w-8 h-8 rounded-md bg-slate-100 flex items-center justify-center text-slate-500 shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 shrink-0">
                   <Calendar className="w-4 h-4" />
                 </div>
                 <div className="min-w-0">
@@ -607,7 +607,7 @@ const AgentProfile = () => {
                 </div>
               </div>
               <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-lg px-4 py-3">
-                <div className="w-8 h-8 rounded-md bg-slate-100 flex items-center justify-center text-slate-500 shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 shrink-0">
                   <History className="w-4 h-4" />
                 </div>
                 <div className="min-w-0">
@@ -619,7 +619,7 @@ const AgentProfile = () => {
               </div>
               {profile?.email_verified_at && (
                 <div className="sm:col-span-2 flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3">
-                  <div className="w-8 h-8 rounded-md bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
                     <BadgeCheck className="w-4 h-4" />
                   </div>
                   <p className="text-sm text-emerald-800">
@@ -635,7 +635,7 @@ const AgentProfile = () => {
       {/* Modal Changement de mot de passe */}
       {showPasswordModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl ring-1 ring-slate-200 animate-in zoom-in">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl ring-1 ring-slate-200 animate-in zoom-in">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2.5">
                 <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600">
@@ -760,7 +760,7 @@ const AgentProfile = () => {
       {/* Modal Suppression du compte */}
       {showDeleteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl ring-1 ring-slate-200 animate-in zoom-in">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl ring-1 ring-slate-200 animate-in zoom-in">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2.5">
                 <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-red-50 text-red-600">
@@ -841,7 +841,7 @@ const AgentProfile = () => {
       {/* Modal Vérification Email */}
       {showEmailVerifyModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl ring-1 ring-slate-200 animate-in zoom-in">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl ring-1 ring-slate-200 animate-in zoom-in">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2.5">
                 <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600">

@@ -6,7 +6,7 @@ import React from 'react';
 const Card = ({ children, className = '', padding = true, ...props }) => {
   return (
     <div
-      className={`bg-white border border-slate-200 rounded-xl shadow-sm ${padding ? 'p-6' : ''} ${className}`}
+      className={`bg-white border border-slate-200 rounded-lg shadow-sm ${padding ? 'p-6' : ''} ${className}`}
       {...props}
     >
       {children}

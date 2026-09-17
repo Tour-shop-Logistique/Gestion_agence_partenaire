@@ -83,7 +83,7 @@ const SectionHeader = ({ icon: Icon, title, hint }) => (
 
 /** Carte de section */
 const Card = ({ children, className = "" }) => (
-  <div className={`bg-white border border-slate-200 rounded-xl p-5 sm:p-6 ${className}`}>
+  <div className={`bg-white border border-slate-200 rounded-lg p-5 sm:p-6 ${className}`}>
     {children}
   </div>
 );
@@ -519,13 +519,13 @@ const AgencyProfile = () => {
       )}
 
       {/* ── En-tête identité : logo, nom, statut, actions ── */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 shadow-sm">
+      <div className="relative overflow-hidden rounded-lg bg-gradient-to-br from-slate-900 to-slate-800 shadow-sm">
         <div className="relative flex flex-col sm:flex-row sm:items-center gap-5 p-5 sm:p-7">
 
           {/* Logo - toujours cliquable en mode édition, quel que soit
               l'endroit de la page où le clic Modifier a eu lieu. */}
           <div className="relative group flex-shrink-0">
-            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl border-2 border-white/20 bg-white flex items-center justify-center overflow-hidden shadow-lg">
+            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg border-2 border-white/20 bg-white flex items-center justify-center overflow-hidden shadow-lg">
               {logoPreview || agencyData?.agence?.logo ? (
                 <img
                   src={logoPreview || getLogoUrl(agencyData?.agence?.logo)}
@@ -537,7 +537,7 @@ const AgencyProfile = () => {
               )}
             </div>
             {isEditing && (
-              <label className="absolute inset-0 flex items-center justify-center bg-slate-900/50 rounded-2xl opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity cursor-pointer">
+              <label className="absolute inset-0 flex items-center justify-center bg-slate-900/50 rounded-lg opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity cursor-pointer">
                 <CameraIcon className="w-5 h-5 text-white" />
                 <input type="file" className="hidden" accept="image/*" onChange={handleLogoChange} />
               </label>
@@ -551,7 +551,7 @@ const AgencyProfile = () => {
                 {formData.name || "Nouvelle agence"}
               </h1>
               {agencyConfigured && (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-400/20 text-emerald-200 border border-emerald-300/30">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg text-[11px] font-semibold bg-emerald-400/20 text-emerald-200 border border-emerald-300/30">
                   Actif
                 </span>
               )}
@@ -594,7 +594,7 @@ const AgencyProfile = () => {
                         toast.error("Erreur lors de l'export de la fiche agence");
                       }
                     }}
-                    className="p-2.5 rounded-xl border border-white/20 bg-white/10 text-white hover:bg-white/20 transition-colors"
+                    className="p-2.5 rounded-lg border border-white/20 bg-white/10 text-white hover:bg-white/20 transition-colors"
                     title="Exporter la fiche en PDF"
                   >
                     <ArrowDownTrayIcon className="w-4 h-4" />
@@ -602,7 +602,7 @@ const AgencyProfile = () => {
                   <button
                     type="button"
                     onClick={async () => { setRefreshing(true); await fetchAgencyData(true); setRefreshing(false); }}
-                    className="p-2.5 rounded-xl border border-white/20 bg-white/10 text-white hover:bg-white/20 transition-colors"
+                    className="p-2.5 rounded-lg border border-white/20 bg-white/10 text-white hover:bg-white/20 transition-colors"
                     title="Actualiser"
                   >
                     <ArrowPathIcon className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
@@ -613,7 +613,7 @@ const AgencyProfile = () => {
                 <button
                   type="button"
                   onClick={handleEditToggle}
-                  className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
+                  className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-colors ${
                     isEditing
                       ? "bg-white/10 text-white border border-white/20 hover:bg-white/20"
                       : "bg-white text-slate-900 hover:bg-slate-100"
@@ -791,7 +791,7 @@ const AgencyProfile = () => {
 
             if (totalCount === 0) {
               return isEditing ? (
-                <label className="flex flex-col items-center justify-center gap-2.5 py-10 rounded-xl border-2 border-dashed border-indigo-200 bg-indigo-50/40 hover:bg-indigo-50 hover:border-indigo-300 transition-colors cursor-pointer">
+                <label className="flex flex-col items-center justify-center gap-2.5 py-10 rounded-lg border-2 border-dashed border-indigo-200 bg-indigo-50/40 hover:bg-indigo-50 hover:border-indigo-300 transition-colors cursor-pointer">
                   <div className="h-11 w-11 rounded-full bg-indigo-100 flex items-center justify-center">
                     <PhotoIcon className="w-5 h-5 text-indigo-500" />
                   </div>
@@ -800,7 +800,7 @@ const AgencyProfile = () => {
                   <input type="file" className="hidden" accept="image/*" multiple onChange={handlePhotosChange} />
                 </label>
               ) : (
-                <div className="flex flex-col items-center justify-center gap-2.5 py-10 rounded-xl border border-dashed border-slate-200 bg-slate-50/60">
+                <div className="flex flex-col items-center justify-center gap-2.5 py-10 rounded-lg border border-dashed border-slate-200 bg-slate-50/60">
                   <div className="h-11 w-11 rounded-full bg-slate-100 flex items-center justify-center">
                     <PhotoIcon className="w-5 h-5 text-slate-300" />
                   </div>

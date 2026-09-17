@@ -1,8 +1,5 @@
 import React from 'react';
-import { 
-    ClockIcon, 
-    CheckCircleIcon, 
-    XCircleIcon,
+import {
     TruckIcon,
     BuildingOfficeIcon,
     GlobeAltIcon,
@@ -15,34 +12,11 @@ import {
  * Composant de filtrage avancé par statut avec multi-select
  */
 
+// En attente / acceptée / refusée sont gérées dans la page "Demandes" :
+// une fois ici, l'expédition est déjà prise en charge par l'agence
+// (reçue au départ ou attendue à l'arrivée), ces 3 statuts n'ont donc
+// pas leur place dans le filtre ni les cartes de la page Expéditions.
 const STATUS_CONFIG = {
-    en_attente: {
-        label: 'En attente',
-        icon: ClockIcon,
-        color: 'amber',
-        bgColor: 'bg-amber-50',
-        textColor: 'text-amber-700',
-        borderColor: 'border-amber-200',
-        hoverColor: 'hover:bg-amber-100'
-    },
-    accepted: {
-        label: 'Acceptée',
-        icon: CheckCircleIcon,
-        color: 'emerald',
-        bgColor: 'bg-emerald-50',
-        textColor: 'text-emerald-700',
-        borderColor: 'border-emerald-200',
-        hoverColor: 'hover:bg-emerald-100'
-    },
-    refused: {
-        label: 'Refusée',
-        icon: XCircleIcon,
-        color: 'red',
-        bgColor: 'bg-red-50',
-        textColor: 'text-red-700',
-        borderColor: 'border-red-200',
-        hoverColor: 'hover:bg-red-100'
-    },
     recu_agence_depart: {
         label: 'Reçu Agence',
         icon: BuildingOfficeIcon,
@@ -62,7 +36,7 @@ const STATUS_CONFIG = {
         hoverColor: 'hover:bg-indigo-100'
     },
     depart_expedition_succes: {
-        label: 'En Transit',
+        label: 'Départ Confirmé',
         icon: GlobeAltIcon,
         color: 'purple',
         bgColor: 'bg-purple-50',
@@ -143,7 +117,7 @@ const StatusFilter = ({ selectedStatuses, onStatusChange, expeditions }) => {
             {/* Bouton principal */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 transition-all ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-all ${
                     selectedStatuses.length > 0
                         ? 'bg-indigo-50 border-indigo-300 text-indigo-700 shadow-md'
                         : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
@@ -170,7 +144,7 @@ const StatusFilter = ({ selectedStatuses, onStatusChange, expeditions }) => {
                     />
 
                     {/* Menu */}
-                    <div className="absolute top-full left-0 mt-2 w-96 bg-white rounded-2xl shadow-2xl border-2 border-slate-200 z-50 overflow-hidden">
+                    <div className="absolute top-full left-0 mt-2 w-96 bg-white rounded-lg shadow-2xl border-2 border-slate-200 z-50 overflow-hidden">
                         {/* Header */}
                         <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
                             <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
@@ -204,7 +178,7 @@ const StatusFilter = ({ selectedStatuses, onStatusChange, expeditions }) => {
                                     <button
                                         key={key}
                                         onClick={() => toggleStatus(key)}
-                                        className={`w-full flex items-center justify-between p-3 rounded-xl transition-all ${
+                                        className={`w-full flex items-center justify-between p-3 rounded-lg transition-all ${
                                             isSelected
                                                 ? `${config.bgColor} ${config.borderColor} border-2`
                                                 : 'hover:bg-slate-50 border-2 border-transparent'

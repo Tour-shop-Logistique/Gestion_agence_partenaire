@@ -29,7 +29,7 @@ const SelectionToolbar = ({
 
     return (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4 duration-300">
-            <div className="bg-slate-900 text-white rounded-2xl shadow-2xl border border-slate-700 p-4 min-w-[320px]">
+            <div className="bg-slate-900 text-white rounded-lg shadow-2xl border border-slate-700 p-4 min-w-[320px]">
                 <div className="flex items-center justify-between gap-4">
                     {/* Selection info */}
                     <div className="flex items-center gap-3">

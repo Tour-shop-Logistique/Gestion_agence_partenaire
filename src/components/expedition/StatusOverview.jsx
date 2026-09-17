@@ -134,7 +134,7 @@ const StatusOverview = ({ expedition }) => {
     };
 
     return (
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
             {/* Bandeau statut */}
             <div className="px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-indigo-50 to-white flex items-center justify-between gap-3 flex-wrap">
                 <div>

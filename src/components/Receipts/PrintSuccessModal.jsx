@@ -82,7 +82,7 @@ const PrintSuccessModal = ({ expedition, agency, onClose }) => {
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white w-full max-w-5xl max-h-[90vh] overflow-hidden rounded-2xl shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-200 my-4">
+            <div className="bg-white w-full max-w-5xl max-h-[90vh] overflow-hidden rounded-lg shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-200 my-4">
                 
                 {/* Professional Header */}
                 <div className="relative px-6 py-4 bg-white border-b border-slate-200">
@@ -129,12 +129,12 @@ const PrintSuccessModal = ({ expedition, agency, onClose }) => {
                         {/* Professional Preview */}
                         <div
                             onClick={() => handlePrintA4()}
-                            className="group relative aspect-[1/1.4] bg-white rounded-xl border-2 border-slate-200 hover:border-slate-400 overflow-hidden cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md"
+                            className="group relative aspect-[1/1.4] bg-white rounded-lg border-2 border-slate-200 hover:border-slate-400 overflow-hidden cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md"
                         >
                             {/* Hover overlay */}
                             <div className="absolute inset-0 bg-slate-900/90 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center z-10">
                                 <div className="text-center space-y-3">
-                                    <div className="w-14 h-14 bg-white rounded-xl flex items-center justify-center mx-auto">
+                                    <div className="w-14 h-14 bg-white rounded-lg flex items-center justify-center mx-auto">
                                         <PrinterIcon className="w-7 h-7 text-slate-900" />
                                     </div>
                                     <p className="text-sm font-semibold text-white">Cliquer pour imprimer</p>
@@ -193,7 +193,7 @@ const PrintSuccessModal = ({ expedition, agency, onClose }) => {
                             <div className="flex gap-2 flex-1">
                                 <button
                                     onClick={() => setLabelFormat('thermal')}
-                                    className={`flex-1 px-3 py-2 rounded-md text-xs font-semibold transition-all ${
+                                    className={`flex-1 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
                                         labelFormat === 'thermal'
                                             ? 'bg-slate-900 text-white shadow-sm'
                                             : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200'
@@ -203,7 +203,7 @@ const PrintSuccessModal = ({ expedition, agency, onClose }) => {
                                 </button>
                                 <button
                                     onClick={() => setLabelFormat('a4')}
-                                    className={`flex-1 px-3 py-2 rounded-md text-xs font-semibold transition-all ${
+                                    className={`flex-1 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
                                         labelFormat === 'a4'
                                             ? 'bg-slate-900 text-white shadow-sm'
                                             : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200'

@@ -17,7 +17,7 @@ const ToastManager = () => {
         className: 'font-sans',
         classNames: {
           toast:
-            'rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border backdrop-blur-md px-4 py-3.5',
+            'rounded-lg shadow-[0_8px_30px_rgb(0,0,0,0.12)] border backdrop-blur-md px-4 py-3.5',
           title: 'text-sm font-semibold tracking-tight',
           description: 'text-sm text-slate-500',
           closeButton: 'opacity-60 hover:opacity-100',

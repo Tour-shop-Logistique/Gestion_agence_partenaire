@@ -38,9 +38,9 @@ const ExpeditionsSummary = ({ expeditions, getAgencyCommission }) => {
             {/* Cartes KPI principales */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Total Expéditions */}
-                <div className="bg-gradient-to-br from-indigo-50 to-indigo-100/50 rounded-2xl p-5 border-2 border-indigo-200 shadow-lg shadow-indigo-100/50">
+                <div className="bg-gradient-to-br from-indigo-50 to-indigo-100/50 rounded-lg p-5 border-2 border-indigo-200 shadow-lg shadow-indigo-100/50">
                     <div className="flex items-center justify-between mb-3">
-                        <div className="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-600/30">
+                        <div className="w-12 h-12 rounded-lg bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-600/30">
                             <CubeIcon className="w-6 h-6 text-white" />
                         </div>
                         <span className="text-xs font-bold text-indigo-600 uppercase tracking-wide">Total</span>
@@ -52,9 +52,9 @@ const ExpeditionsSummary = ({ expeditions, getAgencyCommission }) => {
                 </div>
 
                 {/* Montant Total */}
-                <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-2xl p-5 border-2 border-emerald-200 shadow-lg shadow-emerald-100/50">
+                <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-lg p-5 border-2 border-emerald-200 shadow-lg shadow-emerald-100/50">
                     <div className="flex items-center justify-between mb-3">
-                        <div className="w-12 h-12 rounded-xl bg-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-600/30">
+                        <div className="w-12 h-12 rounded-lg bg-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-600/30">
                             <CurrencyDollarIcon className="w-6 h-6 text-white" />
                         </div>
                         <span className="text-xs font-bold text-emerald-600 uppercase tracking-wide">Montant</span>
@@ -66,9 +66,9 @@ const ExpeditionsSummary = ({ expeditions, getAgencyCommission }) => {
                 </div>
 
                 {/* Commission Agence */}
-                <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-2xl p-5 border-2 border-purple-200 shadow-lg shadow-purple-100/50">
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-lg p-5 border-2 border-purple-200 shadow-lg shadow-purple-100/50">
                     <div className="flex items-center justify-between mb-3">
-                        <div className="w-12 h-12 rounded-xl bg-purple-600 flex items-center justify-center shadow-lg shadow-purple-600/30">
+                        <div className="w-12 h-12 rounded-lg bg-purple-600 flex items-center justify-center shadow-lg shadow-purple-600/30">
                             <ChartBarIcon className="w-6 h-6 text-white" />
                         </div>
                         <span className="text-xs font-bold text-purple-600 uppercase tracking-wide">Commission</span>
@@ -80,9 +80,9 @@ const ExpeditionsSummary = ({ expeditions, getAgencyCommission }) => {
                 </div>
 
                 {/* Taux de commission */}
-                <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 rounded-2xl p-5 border-2 border-amber-200 shadow-lg shadow-amber-100/50">
+                <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 rounded-lg p-5 border-2 border-amber-200 shadow-lg shadow-amber-100/50">
                     <div className="flex items-center justify-between mb-3">
-                        <div className="w-12 h-12 rounded-xl bg-amber-600 flex items-center justify-center shadow-lg shadow-amber-600/30">
+                        <div className="w-12 h-12 rounded-lg bg-amber-600 flex items-center justify-center shadow-lg shadow-amber-600/30">
                             <SparklesIcon className="w-6 h-6 text-white" />
                         </div>
                         <span className="text-xs font-bold text-amber-600 uppercase tracking-wide">Taux</span>
@@ -97,7 +97,7 @@ const ExpeditionsSummary = ({ expeditions, getAgencyCommission }) => {
             </div>
 
             {/* Résumé par statut */}
-            <div className="bg-white rounded-2xl border-2 border-slate-200 p-5 shadow-lg">
+            <div className="bg-white rounded-lg border-2 border-slate-200 p-5 shadow-lg">
                 <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-4 flex items-center gap-2">
                     <svg className="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -116,7 +116,7 @@ const ExpeditionsSummary = ({ expeditions, getAgencyCommission }) => {
                         return (
                             <div
                                 key={key}
-                                className={`${config.bgColor} ${config.borderColor} border-2 rounded-xl p-4 transition-all hover:scale-105 hover:shadow-lg`}
+                                className={`${config.bgColor} ${config.borderColor} border-2 rounded-lg p-4 transition-all hover:scale-105 hover:shadow-lg`}
                             >
                                 <div className="flex items-center gap-2 mb-2">
                                     <Icon className={`w-4 h-4 ${config.textColor}`} />

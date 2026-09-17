@@ -73,7 +73,7 @@ const KPICard = ({
         return (
             <Link
                 to={link}
-                className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 hover:-translate-y-0.5 transition-all duration-200 group relative"
+                className="bg-white p-4 sm:p-5 rounded-lg border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 hover:-translate-y-0.5 transition-all duration-200 group relative"
             >
                 {content}
             </Link>
@@ -81,7 +81,7 @@ const KPICard = ({
     }
 
     return (
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow duration-200 group relative">
+        <div className="bg-white p-4 sm:p-5 rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow duration-200 group relative">
             {content}
         </div>
     );

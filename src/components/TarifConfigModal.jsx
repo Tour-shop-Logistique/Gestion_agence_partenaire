@@ -29,7 +29,7 @@ const TarifConfigModal = ({
           onClick={onClose}
         ></div>
 
-        <div className="relative inline-block w-full max-w-4xl transform overflow-hidden rounded-xl bg-white text-left align-middle shadow-[0_20px_50px_rgba(0,0,0,0.2)] transition-all">
+        <div className="relative inline-block w-full max-w-4xl transform overflow-hidden rounded-lg bg-white text-left align-middle shadow-[0_20px_50px_rgba(0,0,0,0.2)] transition-all">
           {/* Header */}
           <div className="border-b border-slate-100 px-6 py-4 flex items-center justify-between">
             <div className="flex items-center space-x-3">

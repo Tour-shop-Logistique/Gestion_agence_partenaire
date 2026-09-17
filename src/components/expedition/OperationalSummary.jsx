@@ -80,10 +80,10 @@ const OperationalSummary = ({ expedition, formatCurrency }) => {
     const StatusIcon = statusConfig.icon;
 
     return (
-        <div className={`${statusConfig.bg} ${statusConfig.border} border-2 rounded-2xl p-6 shadow-sm`}>
+        <div className={`${statusConfig.bg} ${statusConfig.border} border-2 rounded-lg p-6 shadow-sm`}>
             <div className="flex items-start justify-between mb-6">
                 <div className="flex items-center gap-3">
-                    <div className={`w-12 h-12 rounded-xl ${statusConfig.bg} border ${statusConfig.border} flex items-center justify-center`}>
+                    <div className={`w-12 h-12 rounded-lg ${statusConfig.bg} border ${statusConfig.border} flex items-center justify-center`}>
                         <StatusIcon className={`w-6 h-6 ${statusConfig.iconColor}`} />
                     </div>
                     <div>
@@ -95,7 +95,7 @@ const OperationalSummary = ({ expedition, formatCurrency }) => {
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Destination */}
-                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-white/40">
+                <div className="bg-white/60 backdrop-blur-sm rounded-lg p-4 border border-white/40">
                     <div className="flex items-center gap-2 mb-2">
                         <MapPin className="w-4 h-4 text-slate-400" />
                         <p className="text-xs font-bold text-slate-500 uppercase">Destination</p>
@@ -106,7 +106,7 @@ const OperationalSummary = ({ expedition, formatCurrency }) => {
                 </div>
 
                 {/* Nombre de colis */}
-                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-white/40">
+                <div className="bg-white/60 backdrop-blur-sm rounded-lg p-4 border border-white/40">
                     <div className="flex items-center gap-2 mb-2">
                         <Package className="w-4 h-4 text-slate-400" />
                         <p className="text-xs font-bold text-slate-500 uppercase">Colis</p>
@@ -115,7 +115,7 @@ const OperationalSummary = ({ expedition, formatCurrency }) => {
                 </div>
 
                 {/* Poids total */}
-                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-white/40">
+                <div className="bg-white/60 backdrop-blur-sm rounded-lg p-4 border border-white/40">
                     <div className="flex items-center gap-2 mb-2">
                         <Weight className="w-4 h-4 text-slate-400" />
                         <p className="text-xs font-bold text-slate-500 uppercase">Poids</p>
@@ -124,7 +124,7 @@ const OperationalSummary = ({ expedition, formatCurrency }) => {
                 </div>
 
                 {/* Date estimée */}
-                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-white/40">
+                <div className="bg-white/60 backdrop-blur-sm rounded-lg p-4 border border-white/40">
                     <div className="flex items-center gap-2 mb-2">
                         <Calendar className="w-4 h-4 text-slate-400" />
                         <p className="text-xs font-bold text-slate-500 uppercase">Créé le</p>
@@ -137,7 +137,7 @@ const OperationalSummary = ({ expedition, formatCurrency }) => {
 
             {/* Alerte blocage */}
             {parseFloat(expedition.frais_annexes || 0) > 0 && expedition.statut_paiement_frais === 'en_attente' && (
-                <div className="mt-4 bg-red-100 border-2 border-red-300 rounded-xl p-4 flex items-center gap-3">
+                <div className="mt-4 bg-red-100 border-2 border-red-300 rounded-lg p-4 flex items-center gap-3">
                     <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
                     <div className="flex-1">
                         <p className="text-sm font-bold text-red-900">⚠️ Expédition bloquée</p>

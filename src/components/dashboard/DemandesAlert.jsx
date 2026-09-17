@@ -7,7 +7,7 @@ const DemandesAlert = ({ count, onView, onDismiss }) => {
     if (count <= 0) return null;
 
     return (
-        <div className="bg-gradient-to-r from-amber-50 to-amber-50/60 border border-amber-200 rounded-2xl p-3 sm:p-4 flex items-center gap-2.5 sm:gap-3 shadow-sm animate-fade-in-down">
+        <div className="bg-gradient-to-r from-amber-50 to-amber-50/60 border border-amber-200 rounded-lg p-3 sm:p-4 flex items-center gap-2.5 sm:gap-3 shadow-sm animate-fade-in-down">
             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
                 <BellAlertIcon className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" />
             </div>
@@ -16,7 +16,7 @@ const DemandesAlert = ({ count, onView, onDismiss }) => {
             </p>
             <button
                 onClick={onView}
-                className="px-2.5 sm:px-3.5 py-1 sm:py-1.5 bg-amber-600 text-white text-[10px] sm:text-xs font-semibold rounded-md hover:bg-amber-700 active:scale-95 transition-all shadow-sm"
+                className="px-2.5 sm:px-3.5 py-1 sm:py-1.5 bg-amber-600 text-white text-[10px] sm:text-xs font-semibold rounded-lg hover:bg-amber-700 active:scale-95 transition-all shadow-sm"
             >
                 Voir
             </button>

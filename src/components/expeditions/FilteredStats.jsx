@@ -2,11 +2,9 @@ import React from 'react';
 import { getCurrencyLabel } from '../../utils/format';
 
 /**
- * 📈 STATISTIQUES FILTRÉES
- * Style: Stripe Dashboard
- * - Affichage des résultats filtrés
- * - Métriques clés
- * - Design compact
+ * Bandeau de stats sur la sélection filtrée, dans un seul cadre englobant.
+ * Pas d'accent de couleur par item : seules les lignes de séparation
+ * distinguent les colonnes, pour rester net et pas trop chargé.
  */
 
 const FilteredStats = ({ expeditions, getAgencyCommission }) => {
@@ -16,90 +14,33 @@ const FilteredStats = ({ expeditions, getAgencyCommission }) => {
     const totalAmount = expeditions.reduce((sum, e) => sum + parseFloat(e.montant_expedition || 0), 0);
     const totalCommission = expeditions.reduce((sum, e) => sum + getAgencyCommission(e), 0);
     const totalColis = expeditions.reduce((sum, e) => sum + (e.colis?.length || 0), 0);
-    const averageAmount = totalCount > 0 ? totalAmount / totalCount : 0;
 
-    const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('fr-FR').format(amount);
-    };
+    const formatCurrency = (amount) => new Intl.NumberFormat('fr-FR').format(amount);
+
+    const items = [
+        { label: 'Résultats', value: totalCount, unit: 'expéditions' },
+        { label: 'Montant', value: formatCurrency(totalAmount), unit: getCurrencyLabel() },
+        { label: 'Commission', value: formatCurrency(totalCommission), unit: `${getCurrencyLabel()} agence` },
+        { label: 'Colis', value: totalColis, unit: 'total' },
+    ];
 
     return (
-        <div className="bg-gradient-to-br from-indigo-50 via-white to-purple-50 rounded-xl border border-indigo-100 p-4 shadow-sm">
-            <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
-                    <svg className="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                </div>
-                <h3 className="text-sm font-bold text-slate-900">
-                    Statistiques de sélection
-                </h3>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                {/* Total résultats */}
-                <div className="space-y-1">
-                    <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-                        Résultats
-                    </p>
-                    <p className="text-xl font-bold text-slate-900 tabular-nums">
-                        {totalCount}
-                    </p>
-                    <p className="text-[10px] text-slate-400">
-                        expéditions
-                    </p>
-                </div>
-
-                {/* Montant total */}
-                <div className="space-y-1">
-                    <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-                        Montant
-                    </p>
-                    <p className="text-xl font-bold text-purple-600 tabular-nums">
-                        {formatCurrency(totalAmount)}
-                    </p>
-                    <p className="text-[10px] text-slate-400">
-                        {getCurrencyLabel()} total
-                    </p>
-                </div>
-
-                {/* Commission */}
-                <div className="space-y-1">
-                    <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-                        Commission
-                    </p>
-                    <p className="text-xl font-bold text-indigo-600 tabular-nums">
-                        {formatCurrency(totalCommission)}
-                    </p>
-                    <p className="text-[10px] text-slate-400">
-                        {getCurrencyLabel()} agence
-                    </p>
-                </div>
-
-                {/* Nombre de colis */}
-                <div className="space-y-1">
-                    <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-                        Colis
-                    </p>
-                    <p className="text-xl font-bold text-emerald-600 tabular-nums">
-                        {totalColis}
-                    </p>
-                    <p className="text-[10px] text-slate-400">
-                        total
-                    </p>
-                </div>
-
-                {/* Montant moyen */}
-                <div className="space-y-1">
-                    <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-                        Moyenne
-                    </p>
-                    <p className="text-xl font-bold text-amber-600 tabular-nums">
-                        {formatCurrency(averageAmount)}
-                    </p>
-                    <p className="text-[10px] text-slate-400">
-                        {getCurrencyLabel()}/exp
-                    </p>
-                </div>
+        <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 sm:p-4">
+            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-3">
+                Sélection filtrée
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 divide-y divide-slate-200 sm:divide-y-0 sm:divide-x sm:divide-slate-200">
+                {items.map((item, i) => (
+                    <div key={item.label} className={`py-2 sm:py-0 ${i > 0 ? 'sm:pl-4' : ''} ${i < items.length - 1 ? 'sm:pr-4' : ''}`}>
+                        <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
+                            {item.label}
+                        </p>
+                        <p className="text-lg font-bold text-slate-900 tabular-nums leading-tight">
+                            {item.value}
+                        </p>
+                        <p className="text-[10px] text-slate-400">{item.unit}</p>
+                    </div>
+                ))}
             </div>
         </div>
     );

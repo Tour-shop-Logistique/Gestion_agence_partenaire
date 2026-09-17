@@ -522,7 +522,7 @@ const Agents = () => {
         />
 
         {/* Onglets Agents / Rôles */}
-        <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-xl p-1.5 w-fit shadow-sm">
+        <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg p-1.5 w-fit shadow-sm">
           <button
             type="button"
             onClick={() => setActiveTab("agents")}
@@ -617,7 +617,7 @@ const Agents = () => {
           </>
         ) : (
           <div className="p-8 text-center">
-            <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center shadow-lg">
+            <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center shadow-lg">
               <svg
                 className="w-10 h-10 text-gray-400"
                 fill="none"
@@ -676,7 +676,7 @@ const Agents = () => {
             </div>
           ) : roles.length === 0 ? (
             <div className="bg-white shadow-sm rounded-lg border border-gray-100 p-8 text-center">
-              <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center shadow-lg">
+              <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center shadow-lg">
                 <KeyIcon className="w-10 h-10 text-gray-400" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-3">Aucun rôle créé</h3>
@@ -736,7 +736,7 @@ const Agents = () => {
                                 return acc;
                               }, {})
                             ).map(([label, count]) => (
-                              <span key={label} className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-gray-100 text-gray-600">
+                              <span key={label} className="px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-gray-100 text-gray-600">
                                 {label} ({count})
                               </span>
                             ))}
@@ -844,7 +844,7 @@ const Agents = () => {
               &#8203;
             </span>
 
-            <div className="inline-block w-full max-w-2xl mx-4 sm:mx-auto transform overflow-hidden rounded-xl bg-white text-left align-bottom shadow-2xl transition-all sm:my-8 sm:align-middle">
+            <div className="inline-block w-full max-w-2xl mx-4 sm:mx-auto transform overflow-hidden rounded-lg bg-white text-left align-bottom shadow-2xl transition-all sm:my-8 sm:align-middle">
               <form onSubmit={handleSubmit}>
                 {/* Header avec gradient */}
                 <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
@@ -1094,7 +1094,7 @@ const Agents = () => {
                 </div>
 
                 {/* Footer avec boutons */}
-                <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-3 rounded-b-xl">
+                <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-3 rounded-b-md">
                   <button
                     type="button"
                     onClick={closeModal}
@@ -1166,7 +1166,7 @@ const Agents = () => {
               className="fixed inset-0 bg-black/50 backdrop-blur-sm"
               onClick={cancelDelete}
             ></div>
-            <div className="relative bg-white rounded-xl max-w-md w-full p-6 shadow-2xl transition-all font-sans">
+            <div className="relative bg-white rounded-lg max-w-md w-full p-6 shadow-2xl transition-all font-sans">
               <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 text-red-600 mb-4 mx-auto">
                 <svg
                   className="w-6 h-6"
@@ -1219,7 +1219,7 @@ const Agents = () => {
             className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
             onClick={closeRoleModal}
           ></div>
-          <div className="relative flex flex-col w-full max-w-2xl max-h-[90vh] transform overflow-hidden rounded-xl bg-white text-left shadow-2xl transition-all">
+          <div className="relative flex flex-col w-full max-w-2xl max-h-[90vh] transform overflow-hidden rounded-lg bg-white text-left shadow-2xl transition-all">
             <form onSubmit={handleSubmitRole} className="flex flex-col min-h-0">
               <div className="shrink-0 bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
                 <div className="flex items-center justify-between">
@@ -1289,7 +1289,7 @@ const Agents = () => {
                 </div>
               </div>
 
-              <div className="shrink-0 bg-gray-50 px-6 py-4 flex justify-end space-x-3 rounded-b-xl">
+              <div className="shrink-0 bg-gray-50 px-6 py-4 flex justify-end space-x-3 rounded-b-md">
                 <button
                   type="button"
                   onClick={closeRoleModal}
@@ -1326,7 +1326,7 @@ const Agents = () => {
               className="fixed inset-0 bg-black/50 backdrop-blur-sm"
               onClick={() => setRoleToDelete(null)}
             ></div>
-            <div className="relative bg-white rounded-xl max-w-md w-full p-6 shadow-2xl transition-all font-sans">
+            <div className="relative bg-white rounded-lg max-w-md w-full p-6 shadow-2xl transition-all font-sans">
               <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 text-red-600 mb-4 mx-auto">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -1376,7 +1376,7 @@ const Agents = () => {
             <span className="hidden sm:inline-block sm:h-screen sm:align-middle" aria-hidden="true">
               &#8203;
             </span>
-            <div className="inline-block w-full max-w-lg mx-4 sm:mx-auto transform overflow-hidden rounded-xl bg-white text-left align-bottom shadow-2xl transition-all sm:my-8 sm:align-middle">
+            <div className="inline-block w-full max-w-lg mx-4 sm:mx-auto transform overflow-hidden rounded-lg bg-white text-left align-bottom shadow-2xl transition-all sm:my-8 sm:align-middle">
               <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -1448,7 +1448,7 @@ const Agents = () => {
                 </div>
               </div>
 
-              <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-3 rounded-b-xl">
+              <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-3 rounded-b-md">
                 <button
                   type="button"
                   onClick={closeAddAgentsModal}

@@ -1176,9 +1176,9 @@ const CreateExpeditionV2 = () => {
                             <Skeleton className="h-5 w-40" />
                             <Skeleton className="h-3 w-56 hidden sm:block" />
                         </div>
-                        <Skeleton className="h-10 w-48 rounded-xl" />
+                        <Skeleton className="h-10 w-48 rounded-lg" />
                     </div>
-                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                         <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
                             <Skeleton className="h-4 w-32" />
                         </div>
@@ -1247,7 +1247,7 @@ const CreateExpeditionV2 = () => {
                             }
                             actions={
                                 /* Stepper — compact sur mobile, complet sur desktop */
-                                <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+                                <div className="flex items-center bg-white border border-slate-200 rounded-lg p-1 shadow-sm">
                                     {steps.map((s, idx) => (
                                         <React.Fragment key={s.num}>
                                             <button
@@ -1287,7 +1287,7 @@ const CreateExpeditionV2 = () => {
                     <div className="space-y-4 sm:space-y-6">
                         {/* ÉTAPE 1: CHOISIR LE TRAJET */}
                         {step === 1 && (
-                            <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                            <section className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                                 <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 flex items-center gap-3">
                                     <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
                                         <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1651,7 +1651,7 @@ const CreateExpeditionV2 = () => {
                         {step === 2 && (
                             <div className={simulationResult ? "grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6" : "space-y-4 sm:space-y-6"}>
                                 <div className={simulationResult ? "lg:col-span-2 space-y-4 sm:space-y-6" : "space-y-4 sm:space-y-6"}>
-                                    <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                                    <section className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                                         <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 flex items-center gap-3">
                                             <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
                                                 <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1671,7 +1671,7 @@ const CreateExpeditionV2 = () => {
                                                         <div className="flex items-center gap-1">
                                                             <button
                                                                 onClick={() => duplicateColis(index)}
-                                                                className="text-xs text-slate-500 font-semibold flex items-center gap-1 py-1 px-2 rounded-md hover:bg-slate-100 active:bg-slate-200 transition-colors"
+                                                                className="text-xs text-slate-500 font-semibold flex items-center gap-1 py-1 px-2 rounded-lg hover:bg-slate-100 active:bg-slate-200 transition-colors"
                                                             >
                                                                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -1681,7 +1681,7 @@ const CreateExpeditionV2 = () => {
                                                             {formData.colis.length > 1 && (
                                                                 <button
                                                                     onClick={() => removeColis(index)}
-                                                                    className="text-xs text-red-500 font-semibold flex items-center gap-1 py-1 px-2 rounded-md hover:bg-red-50 active:bg-red-100 transition-colors"
+                                                                    className="text-xs text-red-500 font-semibold flex items-center gap-1 py-1 px-2 rounded-lg hover:bg-red-50 active:bg-red-100 transition-colors"
                                                                 >
                                                                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -1846,7 +1846,7 @@ const CreateExpeditionV2 = () => {
                                                                 </span>
                                                             )}
                                                         </div>
-                                                        <div className={`flex gap-2 rounded-md border ${(!colis.articles || colis.articles.length === 0) ? 'border-amber-300 bg-amber-50/40' : 'border-transparent'}`}>
+                                                        <div className={`flex gap-2 rounded-lg border ${(!colis.articles || colis.articles.length === 0) ? 'border-amber-300 bg-amber-50/40' : 'border-transparent'}`}>
                                                             <SearchableDropdown
                                                                 options={getFilteredProducts(colis.category_id).map(p => ({ 
                                                                     id: p.id,
@@ -1953,7 +1953,7 @@ const CreateExpeditionV2 = () => {
                                 {/* Panneau de tarification */}
                                 {simulationResult && (
                                     <div className="lg:col-span-1">
-                                        <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-xl shadow-lg p-6 text-white sticky top-4">
+                                        <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-lg shadow-lg p-6 text-white sticky top-4">
                                             <div className="flex items-center gap-2 mb-4">
                                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -2018,7 +2018,7 @@ const CreateExpeditionV2 = () => {
 
                         {/* Étape 3: Identifier les clients avec inputs uniformisés */}
                         {step === 3 && (
-                            <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                            <section className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                                 <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 flex items-center gap-3">
                                     <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
                                         <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -2221,7 +2221,7 @@ const CreateExpeditionV2 = () => {
                         {step === 4 && (
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                                 <div className="lg:col-span-2">
-                                    <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                                    <section className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                                         <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 flex items-center gap-3">
                                             <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
                                                 <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -2506,7 +2506,7 @@ const CreateExpeditionV2 = () => {
 
                                 {/* Panneau récapitulatif du montant */}
                                 <div className="lg:col-span-1">
-                                    <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl shadow-lg p-6 text-white sticky top-4">
+                                    <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg shadow-lg p-6 text-white sticky top-4">
                                         <div className="flex items-center gap-2 mb-4">
                                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />

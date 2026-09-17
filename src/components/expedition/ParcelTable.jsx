@@ -13,7 +13,7 @@ const ParcelTable = ({ colis = [], formatCurrency }) => {
 
     if (colis.length === 0) {
         return (
-            <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+            <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
                 <div className="px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
                     <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">
                         Inventaire des Colis
@@ -28,7 +28,7 @@ const ParcelTable = ({ colis = [], formatCurrency }) => {
     }
 
     return (
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
             {/* Header avec résumé */}
             <div className="px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-indigo-50 to-white">
                 <div className="flex items-center justify-between">

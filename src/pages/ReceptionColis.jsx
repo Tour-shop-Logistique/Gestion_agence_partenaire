@@ -221,10 +221,10 @@ const ReceptionColis = () => {
     return (
         <div className="space-y-6 sm:space-y-8 max-w-[1800px] mx-auto px-4 sm:px-6">
             {/* Premium Header */}
-            <div className="bg-gradient-to-r from-indigo-50 to-white p-6 rounded-3xl border border-indigo-100">
+            <div className="bg-gradient-to-r from-indigo-50 to-white p-6 rounded-lg border border-indigo-100">
                 <PageHeader
                     icon={
-                        <div className="p-3 bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-2xl shadow-lg shadow-indigo-300/50">
+                        <div className="p-3 bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-lg shadow-lg shadow-indigo-300/50">
                             <InboxArrowDownIcon className="w-7 h-7 text-white" />
                         </div>
                     }
@@ -239,7 +239,7 @@ const ReceptionColis = () => {
                                 </div>
                                 <input
                                     type="text"
-                                    className="block w-full pl-11 pr-4 py-3.5 bg-white border-2 border-slate-200 rounded-2xl text-sm font-semibold placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm hover:border-slate-300"
+                                    className="block w-full pl-11 pr-4 py-3.5 bg-white border-2 border-slate-200 rounded-lg text-sm font-semibold placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all shadow-sm hover:border-slate-300"
                                     placeholder="Rechercher par code, pays, expédition..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -249,14 +249,14 @@ const ReceptionColis = () => {
                             <button
                                 onClick={() => loadReception({ page: 1 }, true)}
                                 disabled={isRefreshing}
-                                className="p-3.5 bg-white border-2 border-slate-200 rounded-2xl text-slate-600 hover:text-indigo-600 hover:border-indigo-300 hover:shadow-lg hover:bg-indigo-50 transition-all active:scale-95 disabled:opacity-50"
+                                className="p-3.5 bg-white border-2 border-slate-200 rounded-lg text-slate-600 hover:text-indigo-600 hover:border-indigo-300 hover:shadow-lg hover:bg-indigo-50 transition-all active:scale-95 disabled:opacity-50"
                             >
                                 <ArrowPathIcon className={`w-5 h-5 ${isRefreshing ? 'animate-spin text-indigo-600' : ''}`} />
                             </button>
 
                             <button
                                 onClick={() => setScannerOpen(true)}
-                                className="p-3.5 bg-indigo-600 border-2 border-indigo-600 rounded-2xl text-white hover:bg-indigo-700 hover:border-indigo-700 hover:shadow-lg transition-all active:scale-95"
+                                className="p-3.5 bg-indigo-600 border-2 border-indigo-600 rounded-lg text-white hover:bg-indigo-700 hover:border-indigo-700 hover:shadow-lg transition-all active:scale-95"
                             >
                                 <QrCodeIcon className="w-5 h-5" />
                             </button>
@@ -279,7 +279,7 @@ const ReceptionColis = () => {
                     { label: "Colis reçus", count: statsRecus, color: "bg-gradient-to-br from-green-50 to-green-100/50 text-green-800 border-green-200", icon: "✓" },
                     { label: "Total à traiter", count: statsTotal, color: "bg-gradient-to-br from-indigo-50 to-indigo-100/50 text-indigo-800 border-indigo-200", icon: "📦" }
                 ].map((stat, idx) => (
-                    <div key={idx} className={`p-5 rounded-2xl border-2 ${stat.color} flex items-center justify-between shadow-sm hover:shadow-md transition-shadow`}>
+                    <div key={idx} className={`p-5 rounded-lg border-2 ${stat.color} flex items-center justify-between shadow-sm hover:shadow-md transition-shadow`}>
                         <div className="flex items-center gap-3">
                             <span className="text-2xl">{stat.icon}</span>
                             <span className="text-sm font-bold uppercase tracking-wide">{stat.label}</span>
@@ -291,7 +291,7 @@ const ReceptionColis = () => {
 
             {/* Bulk Actions */}
             {completableList.length > 0 && (
-                <div className="flex items-center justify-between p-5 bg-gradient-to-r from-white to-indigo-50/30 border-2 border-indigo-200 rounded-2xl shadow-md">
+                <div className="flex items-center justify-between p-5 bg-gradient-to-r from-white to-indigo-50/30 border-2 border-indigo-200 rounded-lg shadow-md">
                     <div className="flex items-center gap-4">
                         <button
                             onClick={selectAll}
@@ -312,7 +312,7 @@ const ReceptionColis = () => {
                         <button
                             onClick={handleValidateMultiple}
                             disabled={isRefreshing}
-                            className="px-8 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white text-sm font-bold rounded-xl hover:from-indigo-700 hover:to-indigo-800 transition-all shadow-lg shadow-indigo-300/50 active:scale-95 disabled:opacity-50"
+                            className="px-8 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white text-sm font-bold rounded-lg hover:from-indigo-700 hover:to-indigo-800 transition-all shadow-lg shadow-indigo-300/50 active:scale-95 disabled:opacity-50"
                         >
                             {isRefreshing ? "Validation..." : "Valider la sélection"}
                         </button>
@@ -321,7 +321,7 @@ const ReceptionColis = () => {
             )}
 
             {/* Main List - Tableau amélioré */}
-            <div className="bg-white rounded-3xl border-2 border-slate-200 shadow-lg overflow-hidden">
+            <div className="bg-white rounded-lg border-2 border-slate-200 shadow-lg overflow-hidden">
                 {filteredColis.length > 0 ? (
                     <div className="overflow-x-auto">
                         <table className="w-full">
@@ -459,7 +459,7 @@ const ReceptionColis = () => {
                                                         <button
                                                             onClick={() => handleValidateReception(item.code_colis)}
                                                             disabled={isRefreshing}
-                                                            className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white text-xs font-bold rounded-xl hover:from-indigo-700 hover:to-indigo-800 transition-all shadow-md shadow-indigo-300/50 active:scale-95 disabled:opacity-50"
+                                                            className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white text-xs font-bold rounded-lg hover:from-indigo-700 hover:to-indigo-800 transition-all shadow-md shadow-indigo-300/50 active:scale-95 disabled:opacity-50"
                                                         >
                                                             Valider
                                                         </button>
@@ -492,10 +492,10 @@ const ReceptionColis = () => {
             </div>
 
             {/* Quick Help Footer */}
-            <div className="bg-gradient-to-br from-indigo-900 via-indigo-800 to-indigo-900 rounded-3xl p-8 sm:p-12 text-white relative overflow-hidden shadow-2xl">
+            <div className="bg-gradient-to-br from-indigo-900 via-indigo-800 to-indigo-900 rounded-lg p-8 sm:p-12 text-white relative overflow-hidden shadow-2xl">
                 <div className="relative z-10 space-y-5 max-w-3xl">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-white/10 rounded-xl backdrop-blur-sm">
+                        <div className="p-2 bg-white/10 rounded-lg backdrop-blur-sm">
                             <InformationCircleIcon className="w-6 h-6 text-white" />
                         </div>
                         <h3 className="text-2xl sm:text-3xl font-bold">Besoin d'aide avec la réception ?</h3>
@@ -505,7 +505,7 @@ const ReceptionColis = () => {
                         Une fois qu'un colis arrive physiquement, vous pouvez valider sa réception. Le statut du colis
                         sera alors mis à jour sur tout le réseau.
                     </p>
-                    <button className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide bg-white text-indigo-900 px-8 py-3.5 rounded-xl hover:bg-indigo-50 transition-all shadow-lg hover:shadow-xl active:scale-95">
+                    <button className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide bg-white text-indigo-900 px-8 py-3.5 rounded-lg hover:bg-indigo-50 transition-all shadow-lg hover:shadow-xl active:scale-95">
                         📖 Consulter le guide
                     </button>
                 </div>

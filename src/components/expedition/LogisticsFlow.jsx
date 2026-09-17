@@ -89,7 +89,7 @@ const LogisticsFlow = ({ expedition, formatDate }) => {
     const steps = getFlowSteps();
 
     return (
-        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
                 <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">
                     Flux Logistique

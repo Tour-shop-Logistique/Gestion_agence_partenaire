@@ -87,7 +87,7 @@ const AuthPanel = ({ initialView = "login" }) => {
 
   return (
     <div className={`w-full transition-[max-width] duration-200 ${isWide ? "max-w-lg" : "max-w-md"}`}>
-      <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-2xl shadow-slate-900/20">
+      <div className="bg-white rounded-lg p-6 sm:p-8 shadow-2xl shadow-slate-900/20">
         {view === "verify-code" || view === "reset-password" ? (
           <RouteMarkSteps active={view === "verify-code" ? 2 : 3} />
         ) : (

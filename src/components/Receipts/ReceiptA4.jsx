@@ -93,7 +93,7 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
                             <img src={AppLogo} alt="Tour Shop" className="h-16 w-auto object-contain rounded-lg shadow-sm" />
                         </div>
                         
-                        {/* <div className="bg-slate-900 text-white px-4 py-2 mb-2 inline-block rounded-tl-xl rounded-br-xl shadow-md">
+                        {/* <div className="bg-slate-900 text-white px-4 py-2 mb-2 inline-block rounded-tl-md rounded-br-md shadow-md">
                             <h2 className="text-lg font-bold uppercase tracking-wide">FACTURE</h2>
                         </div> */}
                         <p className="text-sm font-bold uppercase tracking-wide">N° {invoiceNumber}</p>
@@ -116,7 +116,7 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
 
                 {/* Partners Info */}
                 <div className="grid grid-cols-2 gap-6 mb-6">
-                    <div className="p-4 bg-slate-50/80 border border-slate-200 rounded-2xl shadow-sm">
+                    <div className="p-4 bg-slate-50/80 border border-slate-200 rounded-lg shadow-sm">
                         <div className="flex items-center mb-3 border-b border-slate-200 pb-2">
                             <div className="w-2 h-4 bg-indigo-600 mr-2 rounded-sm"></div>
                             <h3 className="text-[11px] font-bold text-slate-600 uppercase tracking-wide">EXPÉDITEUR / FACTURÉ À</h3>
@@ -126,7 +126,7 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
                         <p className="text-xs font-medium text-slate-500 mt-2">{expedition.expediteur?.adresse || expedition.expediteur_adresse}</p>
                         <p className="text-xs font-bold text-slate-500 mt-1 uppercase tracking-wider">{expedition.expediteur?.ville || expedition.expediteur_ville}, {paysDepart}</p>
                     </div>
-                    <div className="p-4 bg-slate-50/80 border border-slate-200 rounded-2xl shadow-sm">
+                    <div className="p-4 bg-slate-50/80 border border-slate-200 rounded-lg shadow-sm">
                         <div className="flex items-center mb-3 border-b border-slate-200 pb-2">
                             <div className="w-2 h-4 bg-blue-600 mr-2 rounded-sm"></div>
                             <h3 className="text-[11px] font-bold text-slate-600 uppercase tracking-wide">DESTINATAIRE LIEE</h3>
@@ -150,7 +150,7 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
                         DÉTAILS DES PRESTATIONS
                         <div className="flex-1 h-[2px] bg-slate-100"></div>
                     </h3>
-                    <div className="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                    <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="bg-slate-100/80 text-slate-600 text-[10px] font-semibold uppercase tracking-wide border-b border-slate-200">
@@ -194,7 +194,7 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
 
                 {/* Financial Summary */}
                 <div className="flex justify-end mb-6">
-                    <div className="w-1/2 rounded-xl border border-slate-200 p-4 bg-slate-50/50 shadow-sm relative overflow-hidden">
+                    <div className="w-1/2 rounded-lg border border-slate-200 p-4 bg-slate-50/50 shadow-sm relative overflow-hidden">
                         {/* Decorative background element */}
                         <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-bl-full -mr-8 -mt-8 opacity-50 z-0"></div>
 

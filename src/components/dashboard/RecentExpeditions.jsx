@@ -140,7 +140,7 @@ const RecentExpeditions = ({ expeditions = [] }) => {
     };
 
     return (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
+        <div className="bg-white rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
             {/* Header compact */}
             <div className="px-4 sm:px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-slate-50 to-white">
                 <div className="flex items-center gap-2">
@@ -395,7 +395,7 @@ const RecentExpeditions = ({ expeditions = [] }) => {
                 </div>
             ) : (
                 <div className="px-6 py-16 text-center">
-                    <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 border-2 border-slate-200 flex items-center justify-center">
+                    <div className="w-20 h-20 mx-auto mb-4 rounded-lg bg-gradient-to-br from-slate-50 to-slate-100 border-2 border-slate-200 flex items-center justify-center">
                         <CubeIcon className="w-10 h-10 text-slate-400" />
                     </div>
                     <p className="text-sm font-semibold text-slate-600 mb-1">Aucune expédition ce mois-ci</p>

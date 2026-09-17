@@ -187,7 +187,7 @@ const Transactions = () => {
           {/* Nouvelle Transaction Button */}
           <button
             onClick={() => setIsNewTransactionModalOpen(true)}
-            className="h-8 sm:h-9 px-3 flex items-center gap-1.5 sm:gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-all shadow-sm active:scale-95 text-xs font-semibold"
+            className="h-8 sm:h-9 px-3 flex items-center gap-1.5 sm:gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all shadow-sm active:scale-95 text-xs font-semibold"
           >
             <PlusIcon className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
             <span className="hidden sm:inline">Nouvelle transaction</span>
@@ -197,7 +197,7 @@ const Transactions = () => {
           {/* Export Button */}
           <button
             onClick={handleExportExcel}
-            className="h-8 sm:h-9 px-3 flex items-center gap-1.5 sm:gap-2 bg-white border border-slate-200 text-slate-600 rounded-md hover:bg-slate-50 transition-all disabled:opacity-50 text-xs font-medium"
+            className="h-8 sm:h-9 px-3 flex items-center gap-1.5 sm:gap-2 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 transition-all disabled:opacity-50 text-xs font-medium"
             disabled={!filteredTransactions || filteredTransactions.length === 0}
           >
             <ArrowDownLeftIcon className="w-3 sm:w-3.5 h-3 sm:h-3.5 rotate-45" />
@@ -208,14 +208,14 @@ const Transactions = () => {
           <button
             onClick={handleRefresh}
             disabled={status === 'loading'}
-            className="h-8 sm:h-9 px-3 flex items-center gap-1.5 sm:gap-2 bg-white border border-slate-200 text-slate-600 rounded-md hover:bg-slate-50 transition-all disabled:opacity-50 text-xs font-medium"
+            className="h-8 sm:h-9 px-3 flex items-center gap-1.5 sm:gap-2 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 transition-all disabled:opacity-50 text-xs font-medium"
           >
             <ArrowPathIcon className={`w-3 sm:w-3.5 h-3 sm:h-3.5 ${status === 'loading' ? 'animate-spin' : ''}`} />
             <span className="hidden sm:inline">Actualiser</span>
           </button>
 
           {/* Date Selector - Responsive */}
-          <div className="flex items-center bg-white border border-slate-200 rounded-md overflow-hidden flex-1 sm:flex-none">
+          <div className="flex items-center bg-white border border-slate-200 rounded-lg overflow-hidden flex-1 sm:flex-none">
             <div className="flex items-center px-2 sm:px-3 py-1.5 gap-1 sm:gap-2 border-r border-slate-100">
               <CalendarIcon className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-slate-400 hidden sm:block" />
               <input
@@ -251,7 +251,7 @@ const Transactions = () => {
                   <span className="text-[9px] sm:text-[10px] font-medium text-slate-400">{getCurrencyLabel()}</span>
                 </div>
               </div>
-              <div className={`p-1.5 sm:p-2 rounded-md ${stat.bg} flex-shrink-0`}>
+              <div className={`p-1.5 sm:p-2 rounded-lg ${stat.bg} flex-shrink-0`}>
                 <stat.icon className={`w-3 sm:w-4 h-3 sm:h-4 ${stat.color}`} />
               </div>
             </div>
@@ -269,13 +269,13 @@ const Transactions = () => {
             <input 
               type="text"
               placeholder="Rechercher..."
-              className="w-full pl-8 sm:pl-9 pr-2.5 sm:pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs sm:text-sm focus:outline-none focus:bg-white focus:border-slate-300 transition-all placeholder:text-slate-400"
+              className="w-full pl-8 sm:pl-9 pr-2.5 sm:pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs sm:text-sm focus:outline-none focus:bg-white focus:border-slate-300 transition-all placeholder:text-slate-400"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
 
-          <div className="flex items-center p-0.5 bg-slate-50 rounded-md border border-slate-200 overflow-x-auto">
+          <div className="flex items-center p-0.5 bg-slate-50 rounded-lg border border-slate-200 overflow-x-auto">
             {[
               { id: 'all', label: 'Tout' },
               { id: 'encaissement', label: 'Entrées' },

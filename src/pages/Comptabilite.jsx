@@ -28,12 +28,9 @@ import {
   ChevronDownIcon,
   DocumentArrowDownIcon,
   TableCellsIcon,
-  ExclamationTriangleIcon,
   CreditCardIcon,
-  ClockIcon,
   CalendarIcon,
-  ArrowTrendingUpIcon,
-  BellAlertIcon
+  ArrowTrendingUpIcon
 } from "@heroicons/react/24/outline";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { getCountryName } from "../utils/countries";
@@ -179,63 +176,6 @@ const Comptabilite = () => {
     return result;
   }, [data, searchQuery, statusFilter]);
 
-  // Calcul des nouveaux KPI financiers
-  const financialKPIs = useMemo(() => {
-    // Montant à reverser au HUB (Part Backoffice + Part Livreurs)
-    const montantAReverserHUB = (summary.potential?.total_backoffice || 0) + (summary.potential?.total_livreur || 0);
-    
-    // Créances Clients (expéditions non réglées)
-    const creancesClients = filteredData
-      .filter(exp => exp.statut_paiement === 'en_attente')
-      .reduce((sum, exp) => sum + (exp.accounting_details?.total_client_due || 0), 0);
-    
-    // Solde de trésorerie théorique (Encaissements - part due au HUB/livreurs) -
-    // aucun décaissement réel n'est encore tracé comme transaction dans le
-    // système, donc "Décaissements" ici reste une estimation de ce qui
-    // reste à reverser, pas un montant effectivement sorti de caisse.
-    const encaissements = summary.real?.total_cash_received || 0;
-    const decaissements = montantAReverserHUB;
-    const soldeTresorerie = encaissements - decaissements;
-
-    return {
-      montantAReverserHUB,
-      creancesClients,
-      soldeTresorerie,
-      encaissements,
-      decaissements
-    };
-  }, [summary, filteredData]);
-
-  // Analyse des impayés par ancienneté
-  const unpaidAnalysis = useMemo(() => {
-    const today = new Date();
-    const unpaid = filteredData.filter(exp => exp.statut_paiement === 'en_attente');
-    
-    const categories = {
-      '0-7 jours': 0,
-      '8-30 jours': 0,
-      '31-60 jours': 0,
-      '+60 jours': 0
-    };
-    
-    unpaid.forEach(exp => {
-      const createdDate = new Date(exp.created_at);
-      const daysDiff = Math.floor((today - createdDate) / (1000 * 60 * 60 * 24));
-      const montant = exp.accounting_details?.total_client_due || 0;
-      
-      if (daysDiff <= 7) categories['0-7 jours'] += montant;
-      else if (daysDiff <= 30) categories['8-30 jours'] += montant;
-      else if (daysDiff <= 60) categories['31-60 jours'] += montant;
-      else categories['+60 jours'] += montant;
-    });
-    
-    return {
-      totalCount: unpaid.length,
-      totalAmount: unpaid.reduce((sum, exp) => sum + (exp.accounting_details?.total_client_due || 0), 0),
-      categories
-    };
-  }, [filteredData]);
-
   // Données pour le graphique d'évolution du CA (basé sur les vraies données)
   const revenueEvolution = useMemo(() => {
     if (!filteredData || filteredData.length === 0) return [];
@@ -330,49 +270,6 @@ const Comptabilite = () => {
       .sort((a, b) => b.ca - a.ca)
       .slice(0, 10);
   }, [filteredData]);
-
-  // Alertes comptables
-  const alerts = useMemo(() => {
-    const alertList = [];
-    
-    if (unpaidAnalysis.totalCount > 5) {
-      alertList.push({
-        type: 'danger',
-        icon: ExclamationTriangleIcon,
-        message: `${unpaidAnalysis.totalCount} factures impayées`,
-        value: formatCurrency(unpaidAnalysis.totalAmount) + ' ' + getCurrencyLabel()
-      });
-    }
-    
-    if (financialKPIs.montantAReverserHUB > 1000000) {
-      alertList.push({
-        type: 'warning',
-        icon: BanknotesIcon,
-        message: 'Montant à reverser au HUB',
-        value: formatCurrency(financialKPIs.montantAReverserHUB) + ' ' + getCurrencyLabel()
-      });
-    }
-    
-    if (financialKPIs.soldeTresorerie < 0) {
-      alertList.push({
-        type: 'danger',
-        icon: ExclamationTriangleIcon,
-        message: 'Trésorerie négative',
-        value: formatCurrency(financialKPIs.soldeTresorerie) + ' ' + getCurrencyLabel()
-      });
-    }
-    
-    if (filteredData.filter(exp => exp.statut_paiement === 'en_attente').length > 10) {
-      alertList.push({
-        type: 'warning',
-        icon: ClockIcon,
-        message: 'Expéditions en attente de règlement',
-        value: filteredData.filter(exp => exp.statut_paiement === 'en_attente').length + ' exp.'
-      });
-    }
-    
-    return alertList;
-  }, [unpaidAnalysis, financialKPIs, filteredData]);
 
   const handleRowClick = (expedition) => {
     setSelectedExpedition(expedition);
@@ -677,7 +574,7 @@ const Comptabilite = () => {
           subtitle="Tableau de bord financier professionnel - Analyse des revenus et répartition des commissions"
           actions={
             <>
-            <div className="flex items-center bg-white border border-slate-200 rounded-md overflow-hidden">
+            <div className="flex items-center bg-white border border-slate-200 rounded-lg overflow-hidden">
               <div className="flex items-center px-2 sm:px-3 py-1.5 gap-1 sm:gap-2 border-r border-slate-100">
                 <input
                   type="date"
@@ -699,7 +596,7 @@ const Comptabilite = () => {
             <button
               onClick={() => loadAccounting({ date_debut: dateDebut, date_fin: dateFin }, true)}
               disabled={status === 'loading'}
-              className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 bg-white border border-slate-200 text-slate-500 rounded-md hover:bg-slate-50 hover:text-slate-900 transition-colors disabled:opacity-50"
+              className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 bg-white border border-slate-200 text-slate-500 rounded-lg hover:bg-slate-50 hover:text-slate-900 transition-colors disabled:opacity-50"
               title="Actualiser les données"
             >
               <ArrowPathIcon className={`w-3.5 sm:w-4 h-3.5 sm:h-4 ${status === 'loading' ? 'animate-spin' : ''}`} />
@@ -708,7 +605,7 @@ const Comptabilite = () => {
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setIsExportDropdownOpen(!isExportDropdownOpen)}
-                className={`h-8 sm:h-9 px-3 sm:px-4 flex items-center gap-1.5 sm:gap-2 border rounded-md text-xs font-semibold transition-all shadow-sm active:scale-95 ${
+                className={`h-8 sm:h-9 px-3 sm:px-4 flex items-center gap-1.5 sm:gap-2 border rounded-lg text-xs font-semibold transition-all shadow-sm active:scale-95 ${
                   isExportDropdownOpen 
                   ? 'bg-slate-100 border-slate-300 text-slate-900' 
                   : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
@@ -724,18 +621,18 @@ const Comptabilite = () => {
                   <div className="p-1">
                     <button
                       onClick={handleExportExcel}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 rounded-md transition-colors"
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 rounded-lg transition-colors"
                     >
-                      <div className="w-7 h-7 flex items-center justify-center bg-emerald-50 text-emerald-600 rounded-md">
+                      <div className="w-7 h-7 flex items-center justify-center bg-emerald-50 text-emerald-600 rounded-lg">
                         <TableCellsIcon className="w-4 h-4" />
                       </div>
                       <span>Format Excel (.xlsx)</span>
                     </button>
                     <button
                       onClick={handleExportPDF}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 rounded-md transition-colors"
+                      className="w-full flex items-center gap-3 px-3 py-2.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 rounded-lg transition-colors"
                     >
-                      <div className="w-7 h-7 flex items-center justify-center bg-red-50 text-red-600 rounded-md">
+                      <div className="w-7 h-7 flex items-center justify-center bg-red-50 text-red-600 rounded-lg">
                         <DocumentArrowDownIcon className="w-4 h-4" />
                       </div>
                       <span>Rapport PDF (.pdf)</span>
@@ -747,70 +644,6 @@ const Comptabilite = () => {
             </>
           }
         />
-
-      {/* NOUVEAUX KPI FINANCIERS */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-        {/* Montant à reverser au HUB - Orange */}
-        <div className="p-3 sm:p-4 rounded-lg border border-orange-200 bg-gradient-to-br from-orange-50 to-white shadow-sm hover:shadow-md transition-all animate-in fade-in duration-300">
-          <div className="flex justify-between items-start mb-2">
-            <p className="text-[10px] sm:text-[11px] font-semibold text-orange-600 uppercase tracking-tight">Montant à reverser au HUB</p>
-            <BanknotesIcon className="w-4 h-4 text-orange-500 opacity-50" />
-          </div>
-          <div className="flex items-baseline gap-1">
-            <span className="text-base sm:text-xl font-bold tabular-nums text-orange-600">
-              {formatCurrency(financialKPIs.montantAReverserHUB)}
-            </span>
-            <span className="text-[9px] sm:text-[10px] font-semibold text-orange-400">{getCurrencyLabel()}</span>
-          </div>
-          <p className="text-[9px] sm:text-[10px] text-orange-500 mt-1 font-medium">Part Backoffice + Part Livreurs</p>
-        </div>
-
-        {/* Créances Clients - Rouge */}
-        <div className="p-3 sm:p-4 rounded-lg border border-red-200 bg-gradient-to-br from-red-50 to-white shadow-sm hover:shadow-md transition-all animate-in fade-in duration-300 delay-75">
-          <div className="flex justify-between items-start mb-2">
-            <p className="text-[10px] sm:text-[11px] font-semibold text-red-600 uppercase tracking-tight">Créances Clients</p>
-            <ExclamationTriangleIcon className="w-4 h-4 text-red-500 opacity-50" />
-          </div>
-          <div className="flex items-baseline gap-1">
-            <span className="text-base sm:text-xl font-bold tabular-nums text-red-600">
-              {formatCurrency(financialKPIs.creancesClients)}
-            </span>
-            <span className="text-[9px] sm:text-[10px] font-semibold text-red-400">{getCurrencyLabel()}</span>
-          </div>
-          <p className="text-[9px] sm:text-[10px] text-red-500 mt-1 font-medium">
-            {filteredData.filter(exp => exp.statut_paiement === 'en_attente').length} expéditions non réglées
-          </p>
-        </div>
-
-        {/* Solde de trésorerie - Vert/Rouge selon valeur */}
-        <div className={`p-3 sm:p-4 rounded-lg border shadow-sm hover:shadow-md transition-all animate-in fade-in duration-300 delay-150 ${
-          financialKPIs.soldeTresorerie >= 0 
-            ? 'border-emerald-200 bg-gradient-to-br from-emerald-50 to-white' 
-            : 'border-red-200 bg-gradient-to-br from-red-50 to-white'
-        }`}>
-          <div className="flex justify-between items-start mb-2">
-            <p className={`text-[10px] sm:text-[11px] font-semibold uppercase tracking-tight ${
-              financialKPIs.soldeTresorerie >= 0 ? 'text-emerald-600' : 'text-red-600'
-            }`}>Solde de Trésorerie</p>
-            <BanknotesIcon className={`w-4 h-4 opacity-50 ${
-              financialKPIs.soldeTresorerie >= 0 ? 'text-emerald-500' : 'text-red-500'
-            }`} />
-          </div>
-          <div className="flex items-baseline gap-1">
-            <span className={`text-base sm:text-xl font-bold tabular-nums ${
-              financialKPIs.soldeTresorerie >= 0 ? 'text-emerald-600' : 'text-red-600'
-            }`}>
-              {formatCurrency(financialKPIs.soldeTresorerie)}
-            </span>
-            <span className={`text-[9px] sm:text-[10px] font-semibold ${
-              financialKPIs.soldeTresorerie >= 0 ? 'text-emerald-400' : 'text-red-400'
-            }`}>{getCurrencyLabel()}</span>
-          </div>
-          <p className={`text-[9px] sm:text-[10px] mt-1 font-medium ${
-            financialKPIs.soldeTresorerie >= 0 ? 'text-emerald-500' : 'text-red-500'
-          }`}>Encaissements - Décaissements (estimation)</p>
-        </div>
-      </div>
 
       {/* KPI Section - Responsive Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -854,7 +687,7 @@ const Comptabilite = () => {
               { label: "Commission Livraison", value: summary.potential.details_agence.com_livraison, icon: MapPinIcon },
               { label: "Commission Retard", value: summary.potential.details_agence.com_retard, icon: InformationCircleIcon }
             ].map((item, idx) => (
-              <div key={idx} className="bg-white rounded-md p-2.5 sm:p-3 border border-slate-200">
+              <div key={idx} className="bg-white rounded-lg p-2.5 sm:p-3 border border-slate-200">
                 <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
                   <item.icon className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-blue-500" />
                   <p className="text-[9px] sm:text-[10px] font-semibold text-slate-500 uppercase line-clamp-1">{item.label}</p>
@@ -869,79 +702,6 @@ const Comptabilite = () => {
         </div>
       )}
 
-      {/* SECTION TRÉSORERIE */}
-      <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-sm animate-in fade-in duration-500">
-        <div className="flex items-center gap-2 mb-4">
-          <BanknotesIcon className="w-5 h-5 text-slate-700" />
-          <h2 className="text-xs sm:text-sm font-bold text-slate-900 uppercase tracking-tight">Trésorerie</h2>
-        </div>
-        <div className="grid grid-cols-3 gap-4">
-          <div className="text-center p-3 bg-emerald-50 rounded-lg border border-emerald-100">
-            <p className="text-[10px] font-semibold text-emerald-600 uppercase mb-2">Encaissements</p>
-            <p className="text-lg sm:text-2xl font-bold text-emerald-700 tabular-nums">
-              {formatCurrency(financialKPIs.encaissements)}
-            </p>
-            <p className="text-[9px] text-emerald-500 mt-1 font-semibold">{getCurrencyLabel()}</p>
-          </div>
-          <div className="text-center p-3 bg-red-50 rounded-lg border border-red-100">
-            <p className="text-[10px] font-semibold text-red-600 uppercase mb-2">Décaissements</p>
-            <p className="text-lg sm:text-2xl font-bold text-red-700 tabular-nums">
-              {formatCurrency(financialKPIs.decaissements)}
-            </p>
-            <p className="text-[9px] text-red-500 mt-1 font-semibold">{getCurrencyLabel()}</p>
-          </div>
-          <div className={`text-center p-3 rounded-lg border ${
-            financialKPIs.soldeTresorerie >= 0 
-              ? 'bg-emerald-100 border-emerald-200' 
-              : 'bg-red-100 border-red-200'
-          }`}>
-            <p className={`text-[10px] font-semibold uppercase mb-2 ${
-              financialKPIs.soldeTresorerie >= 0 ? 'text-emerald-700' : 'text-red-700'
-            }`}>Solde Actuel</p>
-            <p className={`text-lg sm:text-2xl font-bold tabular-nums ${
-              financialKPIs.soldeTresorerie >= 0 ? 'text-emerald-800' : 'text-red-800'
-            }`}>
-              {formatCurrency(financialKPIs.soldeTresorerie)}
-            </p>
-            <p className={`text-[9px] mt-1 font-semibold ${
-              financialKPIs.soldeTresorerie >= 0 ? 'text-emerald-600' : 'text-red-600'
-            }`}>{getCurrencyLabel()}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* CENTRE D'ALERTES */}
-      {alerts.length > 0 && (
-        <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-sm animate-in fade-in duration-500">
-          <div className="flex items-center gap-2 mb-4">
-            <BellAlertIcon className="w-5 h-5 text-red-600" />
-            <h2 className="text-xs sm:text-sm font-bold text-slate-900 uppercase tracking-tight">Alertes Comptables</h2>
-            <span className="ml-auto px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-[10px] font-bold">
-              {alerts.length}
-            </span>
-          </div>
-          <div className="space-y-2">
-            {alerts.map((alert, idx) => {
-              const AlertIcon = alert.icon;
-              const bgColor = alert.type === 'danger' ? 'bg-red-50' : 'bg-orange-50';
-              const borderColor = alert.type === 'danger' ? 'border-red-200' : 'border-orange-200';
-              const textColor = alert.type === 'danger' ? 'text-red-700' : 'text-orange-700';
-              const iconColor = alert.type === 'danger' ? 'text-red-600' : 'text-orange-600';
-
-              return (
-                <div key={idx} className={`${bgColor} ${borderColor} border rounded-lg p-3 flex items-center gap-3 transition-all hover:shadow-sm`}>
-                  <AlertIcon className={`w-5 h-5 ${iconColor} flex-shrink-0`} />
-                  <div className="flex-1">
-                    <p className={`text-xs font-semibold ${textColor}`}>{alert.message}</p>
-                  </div>
-                  <p className={`text-xs font-bold ${textColor} whitespace-nowrap`}>{alert.value}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       {/* GRAPHIQUE ÉVOLUTION DU CA */}
       <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-sm animate-in fade-in duration-500">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
@@ -949,7 +709,7 @@ const Comptabilite = () => {
             <ArrowTrendingUpIcon className="w-5 h-5 text-blue-600" />
             <h2 className="text-xs sm:text-sm font-bold text-slate-900 uppercase tracking-tight">Évolution du Chiffre d'Affaires</h2>
           </div>
-          <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-md">
+          <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-lg">
             {['jour', 'semaine', 'mois', 'annee'].map(range => (
               <button
                 key={range}
@@ -995,35 +755,6 @@ const Comptabilite = () => {
         </ResponsiveContainer>
       </div>
 
-      {/* ANALYSE DES IMPAYÉS */}
-      <div className="grid grid-cols-1 gap-4">
-        <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 shadow-sm animate-in fade-in duration-500">
-          <div className="flex items-center gap-2 mb-4">
-            <ClockIcon className="w-5 h-5 text-red-600" />
-            <h2 className="text-xs sm:text-sm font-bold text-slate-900 uppercase tracking-tight">Analyse des Impayés</h2>
-          </div>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center pb-2 border-b border-slate-100">
-              <span className="text-xs font-semibold text-slate-600">Total Impayés</span>
-              <span className="text-sm font-bold text-red-600">{unpaidAnalysis.totalCount} factures</span>
-            </div>
-            <div className="flex justify-between items-center pb-2 border-b border-slate-100">
-              <span className="text-xs font-semibold text-slate-600">Montant Total</span>
-              <span className="text-sm font-bold text-red-600">{formatCurrency(unpaidAnalysis.totalAmount)} {getCurrencyLabel()}</span>
-            </div>
-            <div className="pt-2">
-              <p className="text-[10px] font-bold text-slate-500 uppercase mb-2">Ancienneté</p>
-              {Object.entries(unpaidAnalysis.categories).map(([category, amount]) => (
-                <div key={category} className="flex justify-between items-center py-2">
-                  <span className="text-xs text-slate-600">{category}</span>
-                  <span className="text-xs font-bold text-slate-900 tabular-nums">{formatCurrency(amount)} {getCurrencyLabel()}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Combined Table Area */}
       <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
         
@@ -1033,14 +764,14 @@ const Comptabilite = () => {
             <MagnifyingGlassIcon className="absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 w-3.5 sm:w-4 h-3.5 sm:h-4 text-slate-400" />
             <input
               type="text"
-              className="w-full pl-8 sm:pl-9 pr-2.5 sm:pr-3 py-1.5 bg-white border-2 border-slate-400 rounded-md text-xs sm:text-sm placeholder:text-slate-400 focus:outline-none focus:border-slate-300 transition-all font-medium"
+              className="w-full pl-8 sm:pl-9 pr-2.5 sm:pr-3 py-1.5 bg-white border-2 border-slate-400 rounded-lg text-xs sm:text-sm placeholder:text-slate-400 focus:outline-none focus:border-slate-300 transition-all font-medium"
               placeholder="Rechercher..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
 
-          <div className="flex items-center p-0.5 bg-white border border-slate-200 rounded-md shadow-xs overflow-x-auto">
+          <div className="flex items-center p-0.5 bg-white border border-slate-200 rounded-lg shadow-xs overflow-x-auto">
             {['', 'paye', 'en_attente'].map(s => (
               <button
                 key={s}

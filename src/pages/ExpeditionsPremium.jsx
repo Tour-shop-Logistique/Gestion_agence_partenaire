@@ -232,6 +232,8 @@ const ExpeditionsPremium = () => {
                 return 'bg-orange-50 text-orange-700 border-orange-200 shadow-orange-100/50';
             case 'groupage_ca':
                 return 'bg-purple-50 text-purple-700 border-purple-200 shadow-purple-100/50';
+            case 'interville':
+                return 'bg-teal-50 text-teal-700 border-teal-200 shadow-teal-100/50';
             default:
                 return 'bg-slate-50 text-slate-700 border-slate-200 shadow-slate-100/50';
         }
@@ -244,6 +246,7 @@ const ExpeditionsPremium = () => {
             case 'groupage_dhd_maritine': return 'DHD Maritime';
             case 'groupage_afrique': return 'Afrique';
             case 'groupage_ca': return 'CA';
+            case 'interville': return 'Interville';
             default: return type || 'Inconnu';
         }
     };
@@ -268,37 +271,35 @@ const ExpeditionsPremium = () => {
         setSortConfig({ key, direction });
     };
 
-    const handleKpiFilter = (filterType) => {
-        setQuickFilter('all');
-        setQuickFilterFn(null);
-        
-        switch (filterType) {
-            case 'all':
-                setSelectedStatuses([]);
-                setActiveKpiFilter({ type: 'all' });
-                break;
-            case 'en_attente':
-                setSelectedStatuses(['en_attente']);
-                setActiveKpiFilter({ status: 'en_attente' });
-                break;
-            case 'en_transit':
-                setSelectedStatuses(['en_cours_enlevement', 'en_cours_depot', 'recu_agence_depart', 
-                                    'en_transit_entrepot', 'depart_expedition_succes', 
-                                    'arrivee_expedition_succes', 'recu_agence_destination', 'en_cours_livraison']);
-                setActiveKpiFilter({ status: 'en_transit' });
-                break;
-            case 'delivered':
-                setSelectedStatuses(['termined', 'delivered']);
-                setActiveKpiFilter({ status: 'delivered' });
-                break;
-            case 'refused':
-                setSelectedStatuses(['refused']);
-                setActiveKpiFilter({ status: 'refused' });
-                break;
-            default:
-                setSelectedStatuses([]);
-                setActiveKpiFilter({});
+    // isExpeditionDepart : l'agence courante est celle qui a créé/expédié,
+    // pas celle qui réceptionne - une expédition peut en théorie être les
+    // deux (agence qui s'envoie à elle-même), mais dans ce cas elle compte
+    // comme "départ", cohérent avec la priorité déjà utilisée côté backend.
+    const isExpeditionDepart = useCallback((exp) => exp.agence_id === currentUser?.agence_id, [currentUser?.agence_id]);
+    const isExpeditionArrivee = useCallback((exp) => (
+        !isExpeditionDepart(exp) && exp.colis?.some(c => c.agence_destination_id === currentUser?.agence_id)
+    ), [isExpeditionDepart, currentUser?.agence_id]);
+
+    const handleKpiFilter = (filterType, role) => {
+        setSelectedStatuses([]);
+
+        if (filterType === 'all') {
+            setQuickFilter('all');
+            setQuickFilterFn(null);
+            setActiveKpiFilter({ type: 'all' });
+            return;
         }
+
+        // Un statut exact de STATUS_CONFIG (recu_agence_depart, termined, ...)
+        // combiné au rôle de l'agence sur cette expédition (départ/arrivée),
+        // sinon les deux cartes "Terminée" (départ et arrivée) filtreraient
+        // la même chose.
+        setQuickFilter(`${role}:${filterType}`);
+        setQuickFilterFn(() => (exp) => (
+            exp.statut_expedition === filterType &&
+            (role === 'depart' ? isExpeditionDepart(exp) : isExpeditionArrivee(exp))
+        ));
+        setActiveKpiFilter({ status: filterType, role });
     };
 
     const handleQuickFilter = (filterId, filterFunction) => {
@@ -315,9 +316,16 @@ const ExpeditionsPremium = () => {
     };
 
     // ========== FILTERED & SORTED EXPEDITIONS ==========
+    // Page Expéditions = suivi de ce que l'agence gère physiquement.
+    // en_attente/accepted/refused restent sur l'écran "Demandes" tant que
+    // l'agence n'a pas reçu de colis ni rien à expédier/livrer.
+    const managedExpeditions = useMemo(() => (
+        expeditions.filter(e => !['en_attente', 'accepted', 'refused'].includes(e.statut_expedition))
+    ), [expeditions]);
+
     const filteredExpeditions = useMemo(() => {
-        let result = expeditions;
-        
+        let result = managedExpeditions;
+
         // 1. Quick filter function (chips)
         if (quickFilterFn) {
             result = result.filter(quickFilterFn);
@@ -391,7 +399,7 @@ const ExpeditionsPremium = () => {
         }
         
         return result;
-    }, [expeditions, type, selectedStatuses, searchQuery, sortConfig, quickFilterFn]);
+    }, [managedExpeditions, type, selectedStatuses, searchQuery, sortConfig, quickFilterFn]);
 
 
 
@@ -522,7 +530,7 @@ const ExpeditionsPremium = () => {
     const activeFiltersCount = (selectedStatuses.length > 0 ? 1 : 0) + (type ? 1 : 0) + (searchQuery ? 1 : 0);
 
     const filtersPanelProps = {
-        expeditions,
+        expeditions: managedExpeditions,
         selectedStatuses,
         onStatusChange: (v) => { setSelectedStatuses(v); setCurrentPage(1); },
         type,
@@ -591,21 +599,10 @@ const ExpeditionsPremium = () => {
                 <PageHeader
                     title="Expéditions"
                     subtitle={`Gérez et suivez vos ${filteredExpeditions.length} expédition${filteredExpeditions.length !== 1 ? 's' : ''} en temps réel`}
-                    badge={
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 border border-indigo-100 rounded-full">
-                            <div className="relative flex h-2 w-2">
-                                <span className={`${status === 'loading' ? 'animate-ping' : ''} absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75`}></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-                            </div>
-                            <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">
-                                {status === 'loading' ? 'Sync...' : 'Live'}
-                            </span>
-                        </div>
-                    }
                     actions={
                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
                             {/* Date Range Picker */}
-                            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 shadow-sm hover:border-slate-300 transition-colors">
+                            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 shadow-sm hover:border-slate-300 transition-colors">
                                 <svg className="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                 </svg>
@@ -631,7 +628,7 @@ const ExpeditionsPremium = () => {
                                 {/* Filtres (drawer trigger, masqué en très grand écran où la sidebar est fixe) */}
                                 <button
                                     onClick={() => setFiltersOpen(true)}
-                                    className="relative 2xl:hidden inline-flex items-center justify-center p-2.5 border border-slate-200 rounded-xl text-slate-600 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm hover:shadow active:scale-95"
+                                    className="relative 2xl:hidden inline-flex items-center justify-center p-2.5 border border-slate-200 rounded-lg text-slate-600 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm hover:shadow active:scale-95"
                                     title="Filtres"
                                 >
                                     <FunnelIcon className="w-5 h-5" />
@@ -645,7 +642,7 @@ const ExpeditionsPremium = () => {
                                 <button
                                     onClick={handleRefresh}
                                     disabled={status === 'loading'}
-                                    className="inline-flex items-center justify-center p-2.5 border border-slate-200 rounded-xl text-slate-600 bg-white hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow active:scale-95"
+                                    className="inline-flex items-center justify-center p-2.5 border border-slate-200 rounded-lg text-slate-600 bg-white hover:bg-slate-50 hover:border-slate-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow active:scale-95"
                                     title="Rafraîchir"
                                 >
                                     <ArrowPathIcon className={`w-5 h-5 ${status === 'loading' ? 'animate-spin' : ''}`} />
@@ -654,7 +651,7 @@ const ExpeditionsPremium = () => {
                                 <button
                                     onClick={handleExportPDF}
                                     disabled={filteredExpeditions.length === 0}
-                                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md active:scale-95 font-medium text-sm"
+                                    className="inline-flex items-center gap-2 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md active:scale-95 font-medium text-sm"
                                     title="Exporter en PDF"
                                 >
                                     <DocumentArrowDownIcon className="w-5 h-5" />
@@ -668,7 +665,8 @@ const ExpeditionsPremium = () => {
 
                 {/* KPI Dashboard */}
                 <StatsCards
-                    expeditions={expeditions}
+                    expeditions={managedExpeditions}
+                    currentAgenceId={currentUser?.agence_id}
                     onFilter={handleKpiFilter}
                     activeFilters={activeKpiFilter}
                 />
@@ -691,12 +689,12 @@ const ExpeditionsPremium = () => {
                         )}
 
                         {/* Table Container */}
-                        <div className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden">
+                        <div className="bg-white rounded-lg border border-slate-200 shadow-lg overflow-hidden">
                             {/* Desktop List */}
                             <div className="hidden lg:block">
                                 {/* Barre d'en-tête avec tri */}
                                 <div className="flex items-center gap-4 px-4 py-3 bg-slate-50 border-b-2 border-slate-100 sticky top-0 z-10">
-                                    <div className="flex-1">
+                                    <div className="w-[220px] flex-shrink-0">
                                         <SortableHeader
                                             label="Référence"
                                             sortKey="reference"
@@ -705,13 +703,13 @@ const ExpeditionsPremium = () => {
                                             className="text-[10px] font-bold text-slate-400 uppercase tracking-widest"
                                         />
                                     </div>
-                                    <div className="hidden md:block w-28 flex-shrink-0 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                        Pays
+                                    <div className="hidden md:block flex-1 min-w-0 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                        Trajet
                                     </div>
                                     <div className="hidden lg:block w-[110px] flex-shrink-0 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                                         Type
                                     </div>
-                                    <div className="w-24 flex-shrink-0">
+                                    <div className="w-24 flex-shrink-0 text-right">
                                         <SortableHeader
                                             label="Montant"
                                             sortKey="montant"
@@ -756,7 +754,7 @@ const ExpeditionsPremium = () => {
                                 ) : (
                                     <div className="px-5 py-16 text-center">
                                         <div className="flex flex-col items-center">
-                                            <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mb-4">
+                                            <div className="w-16 h-16 bg-slate-50 rounded-lg flex items-center justify-center mb-4">
                                                 <svg className="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                                                 </svg>
@@ -772,7 +770,7 @@ const ExpeditionsPremium = () => {
                     <div className="block lg:hidden space-y-3 p-3">
                         {status === 'loading' && expeditions.length === 0 ? (
                             Array(3).fill(0).map((_, i) => (
-                                <div key={i} className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 animate-pulse">
+                                <div key={i} className="bg-white rounded-lg p-4 shadow-sm border border-slate-100 animate-pulse">
                                     <div className="h-20 bg-slate-100 rounded"></div>
                                 </div>
                             ))
@@ -810,7 +808,7 @@ const ExpeditionsPremium = () => {
                                 <button
                                     onClick={() => handlePageChange(meta.current_page - 1)}
                                     disabled={meta.current_page === 1}
-                                    className={`px-4 py-2 rounded-xl text-xs font-bold uppercase transition-all ${
+                                    className={`px-4 py-2 rounded-lg text-xs font-bold uppercase transition-all ${
                                         meta.current_page === 1
                                             ? 'text-slate-300 cursor-not-allowed'
                                             : 'text-slate-600 hover:bg-white hover:shadow-md'
@@ -828,7 +826,7 @@ const ExpeditionsPremium = () => {
                                             )}
                                             <button
                                                 onClick={() => handlePageChange(page)}
-                                                className={`min-w-[2.75rem] h-11 rounded-xl text-xs font-bold transition-all ${
+                                                className={`min-w-[2.75rem] h-11 rounded-lg text-xs font-bold transition-all ${
                                                     meta.current_page === page
                                                         ? 'bg-gradient-to-br from-indigo-600 to-indigo-500 text-white shadow-lg scale-105'
                                                         : 'text-slate-600 hover:bg-white hover:shadow-md'
@@ -842,7 +840,7 @@ const ExpeditionsPremium = () => {
                                 <button
                                     onClick={() => handlePageChange(meta.current_page + 1)}
                                     disabled={meta.current_page === meta.last_page}
-                                    className={`px-4 py-2 rounded-xl text-xs font-bold uppercase transition-all ${
+                                    className={`px-4 py-2 rounded-lg text-xs font-bold uppercase transition-all ${
                                         meta.current_page === meta.last_page
                                             ? 'text-slate-300 cursor-not-allowed'
                                             : 'text-slate-600 hover:bg-white hover:shadow-md'

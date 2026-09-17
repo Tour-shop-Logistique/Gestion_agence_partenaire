@@ -146,7 +146,7 @@ const AddAgencyTarifModal = ({ show, onClose, editingTarif, selectedBaseRate }) 
         {/* Overlay */}
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-[2px]" onClick={handleClose}></div>
 
-        <div className="relative inline-block w-full max-w-xl transform overflow-hidden rounded-xl bg-white text-left align-middle shadow-[0_20px_50px_rgba(0,0,0,0.2)] transition-all">
+        <div className="relative inline-block w-full max-w-xl transform overflow-hidden rounded-lg bg-white text-left align-middle shadow-[0_20px_50px_rgba(0,0,0,0.2)] transition-all">
           {/* Header */}
           <div className="border-b border-slate-100 px-6 py-4 flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -194,7 +194,7 @@ const AddAgencyTarifModal = ({ show, onClose, editingTarif, selectedBaseRate }) 
 
             {tarifData && !editingTarif?.delete && (
               <div className="space-y-6">
-                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 shadow-sm space-y-4">
                   <div className="flex items-start justify-between">
                     <div>
                       <div className="flex items-center space-x-2 text-indigo-600 mb-1">

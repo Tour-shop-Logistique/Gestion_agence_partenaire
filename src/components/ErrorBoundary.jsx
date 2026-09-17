@@ -71,7 +71,7 @@ class ErrorBoundary extends React.Component {
       // UI de secours personnalisée
       return (
         <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-          <div className="max-w-md w-full bg-white rounded-xl shadow-lg border border-slate-200 p-6 space-y-4">
+          <div className="max-w-md w-full bg-white rounded-lg shadow-lg border border-slate-200 p-6 space-y-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-amber-50 rounded-lg">
                 <ExclamationTriangleIcon className="w-6 h-6 text-amber-600" />

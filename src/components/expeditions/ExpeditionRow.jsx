@@ -79,7 +79,7 @@ const ExpeditionRow = ({
                     <span className="text-[10px] text-slate-400 font-medium">
                         {formatRelativeDate(expedition.created_at)}
                     </span>
-                    <span className={`mt-1 self-start px-2 py-0.5 rounded-md text-[9px] font-bold uppercase border ${getTypeStyle(expedition.type_expedition)}`}>
+                    <span className={`mt-1 self-start px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase border ${getTypeStyle(expedition.type_expedition)}`}>
                         {getTypeLabel(expedition.type_expedition)}
                     </span>
                 </div>
@@ -204,7 +204,7 @@ const ExpeditionRow = ({
                         {showCompactMenu && (
                             <div
                                 onMouseLeave={() => setShowCompactMenu(false)}
-                                className="absolute right-0 top-full mt-2 w-44 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 py-1.5 animate-in fade-in slide-in-from-top-2 duration-200"
+                                className="absolute right-0 top-full mt-2 w-44 bg-white border border-slate-200 rounded-lg shadow-2xl z-50 py-1.5 animate-in fade-in slide-in-from-top-2 duration-200"
                             >
                                 <button
                                     onClick={(e) => {
@@ -277,7 +277,7 @@ const ExpeditionRow = ({
 
                         {/* Popover au survol */}
                         {showPopover && (
-                            <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 p-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                            <div className="absolute right-0 top-full mt-2 w-72 bg-white border border-slate-200 rounded-lg shadow-2xl z-50 p-4 animate-in fade-in slide-in-from-top-2 duration-200">
                                 <h4 className="text-xs font-bold text-slate-900 mb-3 uppercase tracking-wide">
                                     Aperçu rapide
                                 </h4>

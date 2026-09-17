@@ -46,7 +46,7 @@ const SmartSearchBar = ({
     return (
         <div className={`relative transition-all duration-300 ${isFocused ? 'scale-[1.01]' : ''}`}>
             {/* Search Container */}
-            <div className={`relative flex items-center bg-white border-2 rounded-xl shadow-sm transition-all duration-300 ${
+            <div className={`relative flex items-center bg-white border-2 rounded-lg shadow-sm transition-all duration-300 ${
                 isFocused 
                     ? 'border-indigo-400 shadow-lg shadow-indigo-500/10' 
                     : 'border-slate-200 hover:border-slate-300'
@@ -99,7 +99,7 @@ const SmartSearchBar = ({
 
             {/* Search Tips */}
             {isFocused && !value && (
-                <div className="absolute top-full left-0 right-0 mt-2 p-4 bg-white border border-slate-200 rounded-xl shadow-xl z-10 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="absolute top-full left-0 right-0 mt-2 p-4 bg-white border border-slate-200 rounded-lg shadow-xl z-10 animate-in fade-in slide-in-from-top-2 duration-200">
                     <p className="text-xs font-semibold text-slate-700 mb-2">💡 Recherche intelligente</p>
                     <div className="space-y-1.5 text-xs text-slate-500">
                         <div className="flex items-center gap-2">

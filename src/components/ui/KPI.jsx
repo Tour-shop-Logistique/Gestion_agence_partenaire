@@ -37,7 +37,7 @@ const KPI = ({
   };
   
   return (
-    <div className={`p-4 border rounded-xl shadow-sm ${variants[variant]} ${className}`}>
+    <div className={`p-4 border rounded-lg shadow-sm ${variants[variant]} ${className}`}>
       <div className="flex items-start justify-between mb-2">
         <p className={`text-xs font-semibold uppercase tracking-wide ${subtitleColors[variant]}`}>
           {label}

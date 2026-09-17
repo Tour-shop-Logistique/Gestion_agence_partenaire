@@ -90,7 +90,7 @@ const PriorityActions = ({ operational }) => {
                         <Link
                             key={action.id}
                             to={action.link}
-                            className={`${colors.cardBg} p-4 sm:p-5 rounded-2xl border ${colors.cardBorder} shadow-sm hover:shadow-md ${colors.cardHoverBorder} hover:-translate-y-0.5 transition-all duration-200 group relative flex items-center gap-3 sm:gap-4`}
+                            className={`${colors.cardBg} p-4 sm:p-5 rounded-lg border ${colors.cardBorder} shadow-sm hover:shadow-md ${colors.cardHoverBorder} hover:-translate-y-0.5 transition-all duration-200 group relative flex items-center gap-3 sm:gap-4`}
                         >
                             {colors.badge && (
                                 <span className={`absolute top-3 right-3 text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${colors.badge}`}>

@@ -118,7 +118,7 @@ const PhoneInput = ({
                 {isOpen && !disabled && menuPos && createPortal(
                     <div
                         ref={menuRef}
-                        className="fixed bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden"
+                        className="fixed bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden"
                         // z-index au-dessus des modales (voir Home.jsx/AuthPanel,
                         // z-50) : un menu en portail sous une modale serait
                         // invisible sans erreur visible.

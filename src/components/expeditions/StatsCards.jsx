@@ -1,209 +1,151 @@
-import React, { useMemo } from 'react';
-import {
-    CubeIcon,
-    ClockIcon,
-    TruckIcon,
-    CheckCircleIcon,
-    XCircleIcon,
-    BanknotesIcon,
-    BuildingLibraryIcon
-} from '@heroicons/react/24/outline';
-import { getCurrencyLabel } from '../../utils/format';
+import React, { useMemo, useState } from 'react';
+import { CubeIcon } from '@heroicons/react/24/outline';
+import { STATUS_CONFIG } from './StatusFilter';
 
 /**
- * 📊 CARTES KPI DASHBOARD
- * Style: Stripe / Linear / Notion
- * - Cartes cliquables pour filtrer
- * - Animations au hover
- * - Icônes + couleurs
- * - Valeurs + évolution
+ * Cartes de comptage par statut, séparées par rôle de l'agence sur
+ * l'expédition (départ = elle l'a créée/reçue à envoyer, arrivée = elle
+ * doit la réceptionner). Affichées via onglets plutôt que les deux
+ * groupes empilés : un même statut compte différemment selon le rôle,
+ * mais montrer les 2x7 cartes d'un coup était trop dense.
  */
 
-const StatCard = ({ 
-    icon: Icon, 
-    label, 
-    value, 
-    color, 
-    bgColor, 
-    borderColor,
-    onClick,
-    active = false,
-    subtitle
-}) => {
+const ACCENT_BAR = {
+    indigo: 'bg-indigo-600',
+    blue: 'bg-blue-600',
+    sky: 'bg-sky-600',
+    cyan: 'bg-cyan-600',
+    purple: 'bg-purple-600',
+    pink: 'bg-pink-600',
+    violet: 'bg-violet-600',
+    green: 'bg-green-600',
+    amber: 'bg-amber-600',
+    red: 'bg-red-600',
+};
+
+const ACCENT_TEXT = {
+    indigo: 'text-indigo-600',
+    blue: 'text-blue-600',
+    sky: 'text-sky-600',
+    cyan: 'text-cyan-600',
+    purple: 'text-purple-600',
+    pink: 'text-pink-600',
+    violet: 'text-violet-600',
+    green: 'text-green-600',
+    amber: 'text-amber-600',
+    red: 'text-red-600',
+};
+
+const StatCard = ({ icon: Icon, label, value, color, onClick, active = false }) => {
+    const accentBar = ACCENT_BAR[color] || 'bg-slate-500';
+    const accentText = ACCENT_TEXT[color] || 'text-slate-500';
+
     return (
         <button
             onClick={onClick}
-            className={`relative group overflow-hidden bg-white rounded-2xl border-2 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 active:scale-[0.98] ${
-                active 
-                    ? `${borderColor} shadow-lg scale-[1.02]` 
-                    : 'border-slate-200 hover:border-slate-300 shadow-sm'
+            className={`flex items-start gap-2.5 bg-white border rounded-lg pl-3 pr-3 py-3 text-left transition-colors min-w-0 ${
+                active ? 'border-slate-900 ring-1 ring-slate-900' : 'border-slate-200 hover:border-slate-400'
             }`}
         >
-            {/* Gradient overlay */}
-            <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-br ${bgColor}`}></div>
-
-            <div className="relative p-3 sm:p-4 lg:p-3 xl:p-4">
-                <div className="flex items-start justify-between mb-1.5 lg:mb-2">
-                    <div className={`p-1.5 lg:p-2 rounded-lg lg:rounded-xl ${bgColor} ${borderColor} border group-hover:scale-110 transition-transform duration-300`}>
-                        <Icon className={`w-4 h-4 lg:w-5 lg:h-5 ${color}`} />
-                    </div>
-
-                    {active && (
-                        <div className="flex items-center gap-1 px-1.5 py-0.5 lg:px-2 lg:py-1 bg-indigo-50 border border-indigo-100 rounded-full">
-                            <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse"></div>
-                            <span className="hidden xl:inline text-[9px] font-bold text-indigo-600 uppercase tracking-wide">Actif</span>
-                        </div>
-                    )}
-                </div>
-
-                <div className="space-y-0.5">
-                    <p className="text-[10px] lg:text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">
-                        {label}
-                    </p>
-                    <p className="text-lg lg:text-xl xl:text-2xl font-bold text-slate-900 tracking-tight tabular-nums truncate">
-                        {value}
-                    </p>
-                    {subtitle && (
-                        <p className="text-[9px] lg:text-[10px] text-slate-400 font-medium truncate">
-                            {subtitle}
-                        </p>
-                    )}
-                </div>
+            <span className={`self-stretch w-1 rounded-sm shrink-0 ${accentBar}`} aria-hidden="true" />
+            <Icon className={`w-5 h-5 shrink-0 mt-0.5 ${accentText}`} />
+            <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide leading-snug break-words">
+                    {label}
+                </p>
+                <p className="text-xl font-bold text-slate-900 tabular-nums leading-tight">
+                    {value}
+                </p>
             </div>
-
-            {/* Bottom accent bar */}
-            <div className={`h-1 ${bgColor} transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left`}></div>
         </button>
     );
 };
 
-const StatsCards = ({ expeditions, onFilter, activeFilters = {} }) => {
-    const stats = useMemo(() => {
-        const total = expeditions.length;
-        const enAttente = expeditions.filter(e => e.statut_expedition === 'en_attente').length;
-        const enTransit = expeditions.filter(e => 
-            ['en_cours_enlevement', 'en_cours_depot', 'recu_agence_depart', 'en_transit_entrepot', 
-             'depart_expedition_succes', 'arrivee_expedition_succes', 'recu_agence_destination', 
-             'en_cours_livraison'].includes(e.statut_expedition)
-        ).length;
-        const livrees = expeditions.filter(e => ['termined', 'delivered'].includes(e.statut_expedition)).length;
-        const refusees = expeditions.filter(e => e.statut_expedition === 'refused').length;
-        
-        const chiffreAffaires = expeditions.reduce((sum, e) => sum + parseFloat(e.montant_expedition || 0), 0);
-        
-        const commissionAgence = expeditions.reduce((sum, exp) => {
-            // Utiliser montant_prestation si disponible
-            if (exp.montant_prestation !== undefined && exp.montant_prestation !== null) {
-                return sum + (parseFloat(exp.montant_prestation) || 0);
+// Statuts pertinents côté arrivée : avant "arrivee_expedition_succes" le
+// colis n'est même pas encore chez l'agence destinataire (recu_agence_depart,
+// en_transit_entrepot, depart_expedition_succes ne concernent que l'agence
+// de départ), donc inutiles à afficher ici. Côté départ on garde tout : on
+// peut vouloir suivre l'expédition jusqu'au bout même après l'avoir envoyée.
+const ARRIVEE_STATUSES = ['arrivee_expedition_succes', 'recu_agence_destination', 'en_cours_livraison', 'termined'];
+
+const StatsCards = ({ expeditions, currentAgenceId, onFilter, activeFilters = {} }) => {
+    const [activeTab, setActiveTab] = useState('depart');
+
+    const { total, departTotal, arriveeTotal, departCounts, arriveeCounts } = useMemo(() => {
+        const departCounts = {};
+        const arriveeCounts = {};
+        let departTotal = 0;
+        let arriveeTotal = 0;
+
+        expeditions.forEach(exp => {
+            const s = exp.statut_expedition;
+            const estDepart = exp.agence_id === currentAgenceId;
+            const estArrivee = !estDepart && exp.colis?.some(c => c.agence_destination_id === currentAgenceId);
+
+            if (estDepart) {
+                departCounts[s] = (departCounts[s] || 0) + 1;
+                departTotal += 1;
+            } else if (estArrivee) {
+                arriveeCounts[s] = (arriveeCounts[s] || 0) + 1;
+                arriveeTotal += 1;
             }
-            
-            // Fallback sur commission_details
-            if (!exp.commission_details) return sum;
-            const c = exp.commission_details;
-            return sum + (c.enlevement?.agence || 0) + 
-                   (c.livraison?.agence || 0) + 
-                   (c.emballage?.agence || 0) + 
-                   (c.retard?.agence || 0);
-        }, 0);
+        });
 
-        return {
-            total,
-            enAttente,
-            enTransit,
-            livrees,
-            refusees,
-            chiffreAffaires,
-            commissionAgence
-        };
-    }, [expeditions]);
+        return { total: expeditions.length, departTotal, arriveeTotal, departCounts, arriveeCounts };
+    }, [expeditions, currentAgenceId]);
 
-    const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('fr-FR').format(amount);
-    };
+    const counts = activeTab === 'depart' ? departCounts : arriveeCounts;
+    const visibleStatuses = activeTab === 'depart'
+        ? Object.entries(STATUS_CONFIG)
+        : Object.entries(STATUS_CONFIG).filter(([key]) => ARRIVEE_STATUSES.includes(key));
 
     return (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2 sm:gap-3">
-            <StatCard
-                icon={CubeIcon}
-                label="Total"
-                value={stats.total}
-                color="text-indigo-600"
-                bgColor="from-indigo-50 to-indigo-100/50"
-                borderColor="border-indigo-200"
-                onClick={() => onFilter('all')}
-                active={activeFilters.type === 'all'}
-                subtitle="expéditions"
-            />
+        <div className="space-y-3">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+                <button
+                    onClick={() => onFilter('all')}
+                    className={`flex items-center gap-2.5 bg-white border rounded-lg px-3 py-2 transition-colors ${
+                        activeFilters.type === 'all' ? 'border-slate-900 ring-1 ring-slate-900' : 'border-slate-200 hover:border-slate-400'
+                    }`}
+                >
+                    <CubeIcon className="w-4 h-4 text-indigo-600" />
+                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Total</span>
+                    <span className="text-base font-bold text-slate-900 tabular-nums">{total}</span>
+                </button>
 
-            <StatCard
-                icon={ClockIcon}
-                label="En attente"
-                value={stats.enAttente}
-                color="text-amber-600"
-                bgColor="from-amber-50 to-amber-100/50"
-                borderColor="border-amber-200"
-                onClick={() => onFilter('en_attente')}
-                active={activeFilters.status === 'en_attente'}
-                subtitle="à traiter"
-            />
+                <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
+                    <button
+                        onClick={() => setActiveTab('depart')}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+                            activeTab === 'depart' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                    >
+                        Départ <span className="text-xs font-bold">({departTotal})</span>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('arrivee')}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+                            activeTab === 'arrivee' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                    >
+                        Arrivée <span className="text-xs font-bold">({arriveeTotal})</span>
+                    </button>
+                </div>
+            </div>
 
-            <StatCard
-                icon={TruckIcon}
-                label="En transit"
-                value={stats.enTransit}
-                color="text-blue-600"
-                bgColor="from-blue-50 to-blue-100/50"
-                borderColor="border-blue-200"
-                onClick={() => onFilter('en_transit')}
-                active={activeFilters.status === 'en_transit'}
-                subtitle="en cours"
-            />
-
-            <StatCard
-                icon={CheckCircleIcon}
-                label="Livrées"
-                value={stats.livrees}
-                color="text-emerald-600"
-                bgColor="from-emerald-50 to-emerald-100/50"
-                borderColor="border-emerald-200"
-                onClick={() => onFilter('delivered')}
-                active={activeFilters.status === 'delivered'}
-                subtitle="complétées"
-            />
-
-            <StatCard
-                icon={XCircleIcon}
-                label="Refusées"
-                value={stats.refusees}
-                color="text-red-600"
-                bgColor="from-red-50 to-red-100/50"
-                borderColor="border-red-200"
-                onClick={() => onFilter('refused')}
-                active={activeFilters.status === 'refused'}
-                subtitle="rejetées"
-            />
-
-            <StatCard
-                icon={BanknotesIcon}
-                label="CA Total"
-                value={`${formatCurrency(stats.chiffreAffaires)}`}
-                color="text-purple-600"
-                bgColor="from-purple-50 to-purple-100/50"
-                borderColor="border-purple-200"
-                onClick={() => {}}
-                subtitle={getCurrencyLabel()}
-            />
-
-            <StatCard
-                icon={BuildingLibraryIcon}
-                label="Commission"
-                value={`${formatCurrency(stats.commissionAgence)}`}
-                color="text-cyan-600"
-                bgColor="from-cyan-50 to-cyan-100/50"
-                borderColor="border-cyan-200"
-                onClick={() => {}}
-                subtitle={getCurrencyLabel()}
-            />
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+                {visibleStatuses.map(([key, config]) => (
+                    <StatCard
+                        key={`${activeTab}-${key}`}
+                        icon={config.icon}
+                        label={config.label}
+                        value={counts[key] || 0}
+                        color={config.color}
+                        onClick={() => onFilter(key, activeTab)}
+                        active={activeFilters.status === key && activeFilters.role === activeTab}
+                    />
+                ))}
+            </div>
         </div>
     );
 };

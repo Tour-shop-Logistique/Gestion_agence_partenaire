@@ -100,7 +100,7 @@ const LogisticsFlow = ({ operational }) => {
     };
 
     return (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+        <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6">
             <div className="mb-6">
                 <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
                     <span className="text-purple-600">🔄</span>
@@ -121,7 +121,7 @@ const LogisticsFlow = ({ operational }) => {
                             <React.Fragment key={stage.id}>
                                 {/* Étape */}
                                 <div className="flex-1 min-w-0">
-                                    <div className={`${colors.bg} ${colors.border} border-2 rounded-xl p-4 transition-all hover:shadow-md relative group`}>
+                                    <div className={`${colors.bg} ${colors.border} border-2 rounded-lg p-4 transition-all hover:shadow-md relative group`}>
                                         {/* Badge de compteur */}
                                         {stage.count > 0 && (
                                             <div className="absolute -top-2 -right-2">
@@ -133,7 +133,7 @@ const LogisticsFlow = ({ operational }) => {
 
                                         {/* Icône */}
                                         <div className="flex justify-center mb-3">
-                                            <div className={`w-12 h-12 ${colors.bg} rounded-xl flex items-center justify-center border-2 ${colors.border} group-hover:scale-110 transition-transform`}>
+                                            <div className={`w-12 h-12 ${colors.bg} rounded-lg flex items-center justify-center border-2 ${colors.border} group-hover:scale-110 transition-transform`}>
                                                 <Icon className={`w-6 h-6 ${colors.icon}`} />
                                             </div>
                                         </div>

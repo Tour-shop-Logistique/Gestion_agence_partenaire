@@ -517,7 +517,7 @@ const RetraitColis = () => {
                                     </label>
 
                                     {isPaid && (
-                                        <div className="mt-2 p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-4">
+                                        <div className="mt-2 p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-4">
                                             <div className="space-y-3">
                                                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Mode de paiement</label>
                                                  <div className="grid grid-cols-2 gap-2">
@@ -567,7 +567,7 @@ const RetraitColis = () => {
                                 <button
                                     onClick={handleVerifyOtp}
                                     disabled={isRefreshing || !otp}
-                                    className="px-5 py-2 bg-slate-900 text-white rounded-md text-xs font-bold uppercase tracking-wider hover:bg-slate-800 disabled:opacity-50"
+                                    className="px-5 py-2 bg-slate-900 text-white rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-slate-800 disabled:opacity-50"
                                 >
                                     {isRefreshing ? "Validation..." : "Confirmer le retrait"}
                                 </button>

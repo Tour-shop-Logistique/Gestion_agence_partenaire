@@ -43,7 +43,7 @@ const AgentCardDesktop = ({
                 <div className="flex items-center space-x-4">
                   <div className="flex-shrink-0">
                     <div className="relative">
-                      <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 flex items-center justify-center text-white font-bold text-lg shadow-lg group-hover:shadow-xl transition-shadow duration-200">
+                      <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 flex items-center justify-center text-white font-bold text-lg shadow-lg group-hover:shadow-xl transition-shadow duration-200">
                         {(agent.nom || agent.name || "A")
                           .charAt(0)
                           .toUpperCase()}
@@ -119,7 +119,7 @@ const AgentCardDesktop = ({
 
               <td className="px-6 py-4 whitespace-nowrap">
                 {agent.custom_role?.nom ? (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
                     {agent.custom_role.nom}
                   </span>
                 ) : (

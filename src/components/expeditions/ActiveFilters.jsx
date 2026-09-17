@@ -35,7 +35,7 @@ const ActiveFilters = ({
     };
 
     return (
-        <div className="bg-white rounded-xl border-2 border-slate-200 p-4">
+        <div className="bg-white rounded-lg border-2 border-slate-200 p-4">
             <div className="flex items-center justify-between mb-3">
                 <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wide">
                     Filtres actifs

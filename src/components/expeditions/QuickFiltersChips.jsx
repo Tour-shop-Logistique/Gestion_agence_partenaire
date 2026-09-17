@@ -12,7 +12,7 @@ const FilterChip = ({ label, active, onClick, icon, count }) => {
     return (
         <button
             onClick={onClick}
-            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 whitespace-nowrap ${
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 whitespace-nowrap ${
                 active
                     ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 scale-105'
                     : 'bg-white text-slate-600 border-2 border-slate-200 hover:border-indigo-300 hover:shadow-md hover:scale-[1.02]'

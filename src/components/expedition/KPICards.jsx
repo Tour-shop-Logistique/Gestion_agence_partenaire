@@ -80,7 +80,7 @@ const KPICards = ({ expedition, formatCurrency }) => {
                 return (
                     <div
                         key={index}
-                        className={`${kpi.bgColor} border-2 ${kpi.borderColor} rounded-xl p-5 transition-all hover:shadow-lg hover:scale-105 ${
+                        className={`${kpi.bgColor} border-2 ${kpi.borderColor} rounded-lg p-5 transition-all hover:shadow-lg hover:scale-105 ${
                             kpi.highlight ? 'ring-2 ring-emerald-300 ring-offset-2' : ''
                         }`}
                     >

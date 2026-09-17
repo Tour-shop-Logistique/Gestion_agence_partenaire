@@ -53,7 +53,7 @@ const QuickStatusFilters = ({ expeditions, selectedStatuses, onStatusChange }) =
                     <button
                         key={status}
                         onClick={() => toggleStatus(status)}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-xl border-2 transition-all ${
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 transition-all ${
                             isActive
                                 ? `${config.bgColor} ${config.borderColor} ${config.textColor} shadow-md scale-105`
                                 : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:shadow-sm'

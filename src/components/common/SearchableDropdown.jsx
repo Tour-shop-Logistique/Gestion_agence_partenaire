@@ -94,7 +94,7 @@ const SearchableDropdown = ({ options = [], onSelect, placeholder = "Sélectionn
                 disabled={disabled}
                 aria-haspopup="listbox"
                 aria-expanded={isOpen}
-                className={`w-full flex items-center justify-between px-3 bg-white border border-slate-300 rounded-md font-semibold text-slate-700 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-colors disabled:bg-slate-50 disabled:text-slate-900 disabled:cursor-default disabled:hover:border-slate-300 ${buttonClassName}`}
+                className={`w-full flex items-center justify-between px-3 bg-white border border-slate-300 rounded-lg font-semibold text-slate-700 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-colors disabled:bg-slate-50 disabled:text-slate-900 disabled:cursor-default disabled:hover:border-slate-300 ${buttonClassName}`}
             >
                 <span className="text-slate-500">{placeholder}</span>
                 {!disabled && (
@@ -142,7 +142,7 @@ const SearchableDropdown = ({ options = [], onSelect, placeholder = "Sélectionn
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 placeholder="Rechercher..."
-                                className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
+                                className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500"
                             />
                         </div>
                     </div>

@@ -21,7 +21,7 @@ const PushNotificationPrompt = () => {
   };
 
   return (
-    <div className="mb-4 mx-3 sm:mx-6 p-4 bg-indigo-50 border border-indigo-200 text-indigo-900 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div className="mb-4 mx-3 sm:mx-6 p-4 bg-indigo-50 border border-indigo-200 text-indigo-900 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
       <div className="flex items-center gap-3">
         <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
           <Bell size={16} className="text-indigo-600" />

@@ -28,7 +28,7 @@ const ExpeditionMobileCard = ({
     return (
         <Link
             to={`/expeditions/${expedition.id}`}
-            className={`block bg-white rounded-xl p-4 shadow-sm border border-slate-100 hover:shadow-lg transition-all active:scale-[0.98] border-l-4 ${getStatusBorderColor(expedition.statut_expedition)}`}
+            className={`block bg-white rounded-lg p-4 shadow-sm border border-slate-100 hover:shadow-lg transition-all active:scale-[0.98] border-l-4 ${getStatusBorderColor(expedition.statut_expedition)}`}
         >
             {/* Header - Référence + Type */}
             <div className="flex items-start justify-between gap-2 mb-3">
@@ -36,7 +36,7 @@ const ExpeditionMobileCard = ({
                     <span className="text-sm font-bold text-slate-900 truncate">
                         {expedition.reference}
                     </span>
-                    <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold uppercase border shadow-sm whitespace-nowrap ${getTypeStyle(expedition.type_expedition)}`}>
+                    <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase border shadow-sm whitespace-nowrap ${getTypeStyle(expedition.type_expedition)}`}>
                         {getTypeLabel(expedition.type_expedition)}
                     </span>
                 </div>

@@ -56,8 +56,8 @@ const ExpeditionListItem = ({
                 className="flex flex-wrap lg:flex-nowrap items-center gap-3 lg:gap-4 px-4 py-3.5 cursor-pointer hover:bg-indigo-50/30 transition-colors"
             >
                 {/* Icône + référence + sous-titre */}
-                <div className="flex items-center gap-3 min-w-0 flex-1 basis-full lg:basis-auto">
-                    <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-base flex-shrink-0">
+                <div className="flex items-center gap-3 min-w-0 w-full lg:w-[220px] flex-shrink-0 basis-full lg:basis-auto">
+                    <div className="w-9 h-9 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-base flex-shrink-0">
                         📦
                     </div>
                     <div className="min-w-0">
@@ -71,7 +71,7 @@ const ExpeditionListItem = ({
                 {/* Trajet : Interville affiche communes départ → arrivée
                     (même pays des deux côtés, sans ça rien ne distingue le
                     trajet) ; les autres types gardent le pays unique. */}
-                <div className="hidden md:flex items-center gap-1.5 text-xs font-semibold text-slate-600 w-36 flex-shrink-0">
+                <div className="hidden md:flex items-center gap-1.5 text-xs font-semibold text-slate-600 flex-1 min-w-0">
                     <MapPinIcon className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
                     {expedition.type_expedition === 'interville' ? (
                         <span className="truncate">
@@ -83,19 +83,23 @@ const ExpeditionListItem = ({
                 </div>
 
                 {/* Badge type */}
-                <span className={`hidden lg:inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold uppercase border flex-shrink-0 ${getTypeStyle(expedition.type_expedition)}`}>
-                    {getTypeLabel(expedition.type_expedition)}
-                </span>
+                <div className="hidden lg:block w-[110px] flex-shrink-0">
+                    <span className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold uppercase border ${getTypeStyle(expedition.type_expedition)}`}>
+                        {getTypeLabel(expedition.type_expedition)}
+                    </span>
+                </div>
 
                 {/* Montant */}
-                <span className="text-sm font-bold text-slate-900 tabular-nums w-24 flex-shrink-0 lg:text-right">
+                <span className="text-sm font-bold text-slate-900 tabular-nums w-24 flex-shrink-0 text-right">
                     {formatPriceDual(expedition.montant_expedition)}
                 </span>
 
                 {/* Badge statut */}
-                <span className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold border flex-shrink-0 ${statusStyle.bgColor} ${statusStyle.textColor} ${statusStyle.borderColor}`}>
-                    {getStatusLabel(expedition.statut_expedition)}
-                </span>
+                <div className="w-[150px] flex-shrink-0">
+                    <span className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold border ${statusStyle.bgColor} ${statusStyle.textColor} ${statusStyle.borderColor}`}>
+                        {getStatusLabel(expedition.statut_expedition)}
+                    </span>
+                </div>
 
                 {/* Compteur colis (mobile) */}
                 <span className="lg:hidden text-[10px] font-semibold text-slate-400">

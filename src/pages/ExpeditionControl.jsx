@@ -388,7 +388,7 @@ const ExpeditionControl = () => {
                     déjà choisie par le client. Le départ de l'expédition est bloqué
                     tant qu'elle n'est pas renseignée. */}
                 {canControl && expedition.type_expedition === 'interville' && (
-                    <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 space-y-3">
+                    <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 space-y-3">
                         <div className="flex items-center gap-2">
                             <MapPinned className="w-4 h-4 text-indigo-600" />
                             <span className="text-sm font-bold text-slate-800">Agence d'arrivée</span>
@@ -422,7 +422,7 @@ const ExpeditionControl = () => {
 
                 {/* Édition complète de l'expédition : type, expéditeur, destinataire, pays, paiement/livraison */}
                 {canControl && (
-                    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+                    <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
                         <button
                             onClick={() => isEditingExpedition ? cancelEditExpedition() : startEditExpedition()}
                             className="w-full px-4 sm:px-5 py-3 sm:py-4 flex items-center justify-between gap-3 bg-gradient-to-r from-slate-50 to-white"
@@ -605,7 +605,7 @@ const ExpeditionControl = () => {
 
                 <div className="space-y-3">
                     {colisList.map((colis) => (
-                        <div key={colis.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+                        <div key={colis.id} className="bg-white border border-slate-200 rounded-lg overflow-hidden">
                             <div className="px-4 py-3 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white flex items-center justify-between gap-3">
                                 <div className="flex items-center gap-2 min-w-0">
                                     <Package className="w-4 h-4 text-indigo-600 flex-shrink-0" />
@@ -833,7 +833,7 @@ const ExpeditionControl = () => {
                 </div>
 
                 {/* Recalcul du tarif */}
-                <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div>
                         <p className="text-sm font-bold text-slate-800">Montant actuel de l'expédition</p>
                         <p className="text-2xl font-bold text-indigo-600 mt-1">{formatFCFA(expedition.montant_expedition)}</p>

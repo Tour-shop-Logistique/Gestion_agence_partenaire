@@ -40,7 +40,7 @@ const AgentCardMobile = ({
       {agents.map((agent) => (
         <div
           key={agent.id}
-          className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+          className="bg-white rounded-lg shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
         >
           {/* Header avec gradient */}
           <div className="bg-indigo-600 p-4">
@@ -48,7 +48,7 @@ const AgentCardMobile = ({
               <div className="flex items-center space-x-3">
                 {/* Avatar avec statut */}
                 <div className="relative">
-                  <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                  <div className="w-12 h-12 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center text-white font-bold text-lg shadow-lg">
                     {(agent.nom || agent.name || "A").charAt(0).toUpperCase()}
                   </div>
                   {/* Badge de statut */}
@@ -121,7 +121,7 @@ const AgentCardMobile = ({
             {/* Informations de contact */}
             <div className="grid grid-cols-1 gap-3">
               {/* Email */}
-              <div className="flex items-center p-3 bg-gray-50 rounded-xl">
+              <div className="flex items-center p-3 bg-gray-50 rounded-lg">
                 <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center mr-3">
                   <svg
                     className="w-4 h-4 text-blue-600"
@@ -146,7 +146,7 @@ const AgentCardMobile = ({
               </div>
 
               {/* Téléphone */}
-              <div className="flex items-center p-3 bg-gray-50 rounded-xl">
+              <div className="flex items-center p-3 bg-gray-50 rounded-lg">
                 <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center mr-3">
                   <svg
                     className="w-4 h-4 text-green-600"
@@ -173,7 +173,7 @@ const AgentCardMobile = ({
             </div>
 
             {agent.custom_role?.nom && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
                 {agent.custom_role.nom}
               </span>
             )}
@@ -182,7 +182,7 @@ const AgentCardMobile = ({
             <div className="flex items-center justify-end space-x-2 pt-2 border-t border-gray-100">
               <button
                 onClick={() => onEdit(agent)}
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl transition-all duration-200 active:scale-95 font-medium"
+                className="flex items-center space-x-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition-all duration-200 active:scale-95 font-medium"
               >
                 <svg
                   className="w-4 h-4"
@@ -202,7 +202,7 @@ const AgentCardMobile = ({
               <button
                 onClick={() => onDelete(agent)}
                 disabled={loading}
-                className="flex items-center space-x-2 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 rounded-xl transition-all duration-200 active:scale-95 disabled:opacity-50 font-medium"
+                className="flex items-center space-x-2 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg transition-all duration-200 active:scale-95 disabled:opacity-50 font-medium"
               >
                 <svg
                   className="w-4 h-4"

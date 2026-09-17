@@ -207,7 +207,7 @@ const SaveTarifModal = ({
       <div className="flex min-h-screen items-center justify-center px-4">
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-[2px]" onClick={onClose}></div>
 
-        <div className="relative inline-block w-full max-w-4xl transform overflow-hidden rounded-xl bg-white text-left align-middle shadow-[0_20px_50px_rgba(0,0,0,0.2)] transition-all">
+        <div className="relative inline-block w-full max-w-4xl transform overflow-hidden rounded-lg bg-white text-left align-middle shadow-[0_20px_50px_rgba(0,0,0,0.2)] transition-all">
           {/* Header */}
           <div className="border-b border-slate-100 px-6 py-4 flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -288,7 +288,7 @@ const SaveTarifModal = ({
                   )}
                 </div>
 
-                <div className="overflow-hidden border-2 border-slate-200 rounded-xl shadow-sm">
+                <div className="overflow-hidden border-2 border-slate-200 rounded-lg shadow-sm">
                   <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
                     <table className="w-full text-left border-collapse">
                       <thead className="sticky top-0 z-10">

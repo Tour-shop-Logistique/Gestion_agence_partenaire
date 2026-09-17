@@ -112,7 +112,7 @@ const TarifsInterville = () => {
             </div>
 
             <main className="relative animate-in slide-in-from-bottom-4 duration-500 mt-2">
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                     {loadingInterville && intervilleTarifs.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-16 px-6">
                             <Loader2 className="h-8 w-8 text-slate-900 animate-spin mb-3" />

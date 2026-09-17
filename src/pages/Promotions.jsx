@@ -129,7 +129,7 @@ const Promotions = () => {
         actions={
           <button
             onClick={openCreate}
-            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-indigo-700 transition-all active:scale-95 shadow-md shadow-indigo-600/20"
+            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-indigo-700 transition-all active:scale-95 shadow-md shadow-indigo-600/20"
           >
             <PlusIcon className="w-4 h-4" />
             Nouvelle promotion
@@ -143,8 +143,8 @@ const Promotions = () => {
           <p className="text-sm text-slate-500">Chargement des promotions...</p>
         </div>
       ) : promotions.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl border border-slate-200">
-          <div className="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center mb-3">
+        <div className="flex flex-col items-center justify-center py-20 bg-white rounded-lg border border-slate-200">
+          <div className="w-14 h-14 rounded-lg bg-indigo-50 flex items-center justify-center mb-3">
             <MegaphoneIcon className="w-7 h-7 text-indigo-300" />
           </div>
           <p className="text-sm font-bold text-slate-700">Aucune promotion pour l'instant</p>
@@ -157,7 +157,7 @@ const Promotions = () => {
             return (
               <div
                 key={promo.id}
-                className={`rounded-2xl border p-5 transition-all ${
+                className={`rounded-lg border p-5 transition-all ${
                   enCours ? "border-indigo-200 bg-gradient-to-br from-indigo-50/60 to-white" : "border-slate-200 bg-white opacity-70"
                 }`}
               >
@@ -167,7 +167,7 @@ const Promotions = () => {
                       <TagIcon className="w-4 h-4 text-white" />
                     </div>
                     {promo.badge && (
-                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-amber-100 text-amber-700">
+                      <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wide bg-amber-100 text-amber-700">
                         {promo.badge}
                       </span>
                     )}
@@ -221,7 +221,7 @@ const Promotions = () => {
           <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" onClick={closeModal} />
           <form
             onSubmit={handleSubmit}
-            className="relative w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden"
+            className="relative w-full max-w-md bg-white rounded-lg shadow-xl border border-slate-200 overflow-hidden"
           >
             <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
               <h2 className="text-lg font-bold text-slate-900">
@@ -307,7 +307,7 @@ const Promotions = () => {
       {toDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm" onClick={() => setToDelete(null)} />
-          <div className="relative w-full max-w-sm bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
+          <div className="relative w-full max-w-sm bg-white rounded-lg shadow-xl border border-slate-200 p-6">
             <h3 className="text-base font-bold text-slate-900">Supprimer la promotion</h3>
             <p className="text-sm text-slate-500 mt-2">
               La promotion « {toDelete.titre} » sera définitivement supprimée.

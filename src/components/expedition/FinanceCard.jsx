@@ -57,7 +57,7 @@ const FinanceCard = ({ expedition, formatCurrency, onRecordTransaction, onOpenFr
             {!paid && !aPercevoirArrivee && onClick && (
                 <button
                     onClick={onClick}
-                    className={`ml-1 px-2.5 py-1 text-white text-[10px] font-bold uppercase rounded-md shrink-0 transition-all ${
+                    className={`ml-1 px-2.5 py-1 text-white text-[10px] font-bold uppercase rounded-lg shrink-0 transition-all ${
                         decisionAttente ? 'bg-red-600 hover:bg-red-700 animate-pulse' : 'bg-amber-600 hover:bg-amber-700'
                     }`}
                 >
@@ -68,7 +68,7 @@ const FinanceCard = ({ expedition, formatCurrency, onRecordTransaction, onOpenFr
     );
 
     return (
-        <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4 sm:p-5">
+        <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-4 sm:p-5">
             <div className="flex flex-wrap items-center gap-4 sm:gap-6">
                 {/* Icône + titre */}
                 <div className="flex items-center gap-3 shrink-0">

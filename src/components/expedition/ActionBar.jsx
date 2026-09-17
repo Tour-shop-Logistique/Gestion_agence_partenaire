@@ -80,9 +80,9 @@ const ActionBar = ({
     const secondaryActions = actions.filter(a => a.priority === 'secondary');
 
     return (
-        <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-2xl p-6 shadow-lg">
+        <div className="bg-gradient-to-br from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-lg p-6 shadow-lg">
             <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center">
                     <span className="text-white text-lg">⚡</span>
                 </div>
                 <div>

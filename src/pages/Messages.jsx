@@ -172,9 +172,9 @@ const Messages = () => {
       <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4 sm:gap-6" style={{ height: "min(720px, calc(100vh - 220px))", minHeight: 420 }}>
 
         {/* ── Colonne latérale : fiche backoffice ── */}
-        <div className="hidden lg:flex flex-col bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="hidden lg:flex flex-col bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
           <div className="p-6 flex flex-col items-center text-center border-b border-slate-100">
-            <div className="w-16 h-16 rounded-2xl bg-slate-900 flex items-center justify-center shadow-sm mb-3">
+            <div className="w-16 h-16 rounded-lg bg-slate-900 flex items-center justify-center shadow-sm mb-3">
               <Building2 className="w-7 h-7 text-white" />
             </div>
             <p className="text-sm font-bold text-slate-900">Backoffice</p>
@@ -243,7 +243,7 @@ const Messages = () => {
         </div>
 
         {/* ── Panneau principal : fil de discussion ── */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col min-w-0">
+        <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden flex flex-col min-w-0">
           {/* En-tête mobile (fiche condensée, cachée sur desktop) */}
           <div className="lg:hidden px-4 py-3 border-b border-slate-100 flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center shrink-0">
@@ -297,7 +297,7 @@ const Messages = () => {
               </div>
             ) : displayedMessages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-slate-400">
-                <div className="w-14 h-14 rounded-2xl bg-white border border-slate-100 flex items-center justify-center mb-3">
+                <div className="w-14 h-14 rounded-lg bg-white border border-slate-100 flex items-center justify-center mb-3">
                   <Mail className="w-6 h-6 text-slate-300" strokeWidth={1.5} />
                 </div>
                 <p className="text-sm font-bold text-slate-600">
@@ -392,7 +392,7 @@ const Messages = () => {
                                 <>
                                   {m.body && (
                                     <div
-                                      className={`px-3.5 py-2.5 rounded-2xl text-sm whitespace-pre-wrap break-words leading-relaxed shadow-sm ${
+                                      className={`px-3.5 py-2.5 rounded-lg text-sm whitespace-pre-wrap break-words leading-relaxed shadow-sm ${
                                         isMine
                                           ? "bg-indigo-600 text-white rounded-br-md"
                                           : "bg-white text-slate-700 border border-slate-200 rounded-bl-md"
@@ -410,7 +410,7 @@ const Messages = () => {
                                     <div className="mt-1.5 space-y-1.5 w-full">
                                       {m.attachments.map((a) => isImage(a.mime_type) ? (
                                         <a key={a.id} href={a.url} target="_blank" rel="noopener noreferrer" className="block">
-                                          <img src={a.url} alt={a.original_name} className="max-w-full max-h-48 rounded-xl object-cover border border-slate-200" />
+                                          <img src={a.url} alt={a.original_name} className="max-w-full max-h-48 rounded-lg object-cover border border-slate-200" />
                                         </a>
                                       ) : (
                                         <a
@@ -487,12 +487,12 @@ const Messages = () => {
               onKeyDown={handleKeyDown}
               placeholder="Écrire un message..."
               rows={1}
-              className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-slate-900/5 focus:border-slate-400 text-sm font-medium text-slate-900 transition-all resize-none max-h-32"
+              className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-slate-900/5 focus:border-slate-400 text-sm font-medium text-slate-900 transition-all resize-none max-h-32"
             />
             <button
               onClick={handleSend}
               disabled={isSending || (!body.trim() && attachments.length === 0)}
-              className="p-2.5 bg-slate-900 text-white rounded-xl hover:bg-slate-800 active:scale-95 transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+              className="p-2.5 bg-slate-900 text-white rounded-lg hover:bg-slate-800 active:scale-95 transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
             >
               {isSending ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
             </button>

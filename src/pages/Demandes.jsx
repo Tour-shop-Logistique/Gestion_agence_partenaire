@@ -357,12 +357,12 @@ const Demandes = () => {
             />
 
             {/* Barre outils : onglets compacts + recherche, alignés sur une rangée en desktop */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-2 flex flex-col sm:flex-row sm:items-center gap-2">
+            <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-2 flex flex-col sm:flex-row sm:items-center gap-2">
                 {/* Tabs - taille au contenu, jamais étirés en pleine largeur */}
                 <div className="flex gap-1 bg-slate-100 rounded-lg p-1 shrink-0">
                     <button
                         onClick={() => { setActiveTab('demandes'); setSelectedColisCodes([]); }}
-                        className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-all whitespace-nowrap ${
+                        className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${
                             activeTab === 'demandes'
                                 ? 'bg-white text-indigo-700 shadow-sm'
                                 : 'text-slate-500 hover:text-slate-700'
@@ -384,7 +384,7 @@ const Demandes = () => {
                     </button>
                     <button
                         onClick={() => { setActiveTab('en-agence'); setSelectedColisCodes([]); }}
-                        className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-all whitespace-nowrap ${
+                        className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${
                             activeTab === 'en-agence'
                                 ? 'bg-white text-indigo-700 shadow-sm'
                                 : 'text-slate-500 hover:text-slate-700'
@@ -439,7 +439,7 @@ const Demandes = () => {
 
             {/* Main Content Card */}
             {activeTab === 'demandes' ? (
-            <div className="relative bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="relative bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                 {/* Loading Overlay */}
                 {isRefreshing && demandes.length > 0 && (
                     <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-20 flex items-center justify-center">
@@ -460,7 +460,7 @@ const Demandes = () => {
                     <div className="lg:hidden p-3 sm:p-4 space-y-3">
                         {status === 'loading' && demandes.length === 0 ? (
                             Array(3).fill(0).map((_, i) => (
-                                <div key={i} className="bg-white p-3 rounded-xl border border-slate-100 animate-pulse space-y-2">
+                                <div key={i} className="bg-white p-3 rounded-lg border border-slate-100 animate-pulse space-y-2">
                                     <div className="flex justify-between items-center">
                                         <div className="h-4 bg-slate-200 rounded w-1/3"></div>
                                         <div className="h-6 bg-slate-100 rounded-full w-16"></div>
@@ -471,7 +471,7 @@ const Demandes = () => {
                             ))
                         ) : filteredDemandes.length > 0 ? (
                             filteredDemandes.map((demande) => (
-                                <div key={demande.id} className="bg-white rounded-xl border border-slate-200 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all active:scale-[0.99] overflow-hidden">
+                                <div key={demande.id} className="bg-white rounded-lg border border-slate-200 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all active:scale-[0.99] overflow-hidden">
                                     {/* Header Compact */}
                                     <div className="p-3 border-b border-slate-100">
                                         <div className="flex justify-between items-start gap-2 mb-2">
@@ -555,8 +555,8 @@ const Demandes = () => {
                                 </div>
                             ))
                         ) : (
-                            <div className="bg-white p-8 rounded-xl text-center border border-slate-100">
-                                <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                            <div className="bg-white p-8 rounded-lg text-center border border-slate-100">
+                                <div className="w-16 h-16 bg-amber-50 rounded-lg flex items-center justify-center mx-auto mb-3">
                                     <Package className="w-8 h-8 text-amber-300" />
                                 </div>
                                 <h3 className="text-sm font-bold text-slate-900 mb-1">
@@ -707,8 +707,8 @@ const Demandes = () => {
                                     <td colSpan="5" className="px-4 py-16 text-center">
                                         <div className="flex flex-col items-center max-w-md mx-auto">
                                             <div className="relative w-20 h-20 mb-4">
-                                                <div className="absolute inset-0 bg-gradient-to-br from-amber-50 to-amber-100/30 rounded-2xl rotate-6"></div>
-                                                <div className="relative w-full h-full bg-white rounded-2xl shadow-lg flex items-center justify-center border border-amber-100">
+                                                <div className="absolute inset-0 bg-gradient-to-br from-amber-50 to-amber-100/30 rounded-lg rotate-6"></div>
+                                                <div className="relative w-full h-full bg-white rounded-lg shadow-lg flex items-center justify-center border border-amber-100">
                                                     <Package className="w-8 h-8 text-amber-200" />
                                                 </div>
                                             </div>
@@ -739,14 +739,14 @@ const Demandes = () => {
                             <button
                                 onClick={() => handlePageChange(demandesMeta.current_page - 1)}
                                 disabled={demandesMeta.current_page === 1}
-                                className="px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs font-bold uppercase tracking-wide text-slate-600 disabled:text-slate-300 hover:bg-white rounded-lg sm:rounded-xl transition-all"
+                                className="px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs font-bold uppercase tracking-wide text-slate-600 disabled:text-slate-300 hover:bg-white rounded-lg sm:rounded-lg transition-all"
                             >
                                 Préc.
                             </button>
                             <button
                                 onClick={() => handlePageChange(demandesMeta.current_page + 1)}
                                 disabled={demandesMeta.current_page === demandesMeta.last_page}
-                                className="px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs font-bold uppercase tracking-wide text-slate-600 disabled:text-slate-300 hover:bg-white rounded-lg sm:rounded-xl transition-all"
+                                className="px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs font-bold uppercase tracking-wide text-slate-600 disabled:text-slate-300 hover:bg-white rounded-lg sm:rounded-lg transition-all"
                             >
                                 Suiv.
                             </button>
@@ -756,7 +756,7 @@ const Demandes = () => {
             </div>
             ) : (
             /* Section "En agence" - Liste des colis acceptés à réceptionner */
-            <div className="relative bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="relative bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                 {/* Loading Overlay - retour visuel de l'actualisation, absent avant ce correctif */}
                 {isRefreshing && colisEnAgence.length > 0 && (
                     <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-20 flex items-center justify-center">
@@ -814,7 +814,7 @@ const Demandes = () => {
                                 <div
                                     key={colis.id}
                                     onClick={() => canAccept && toggleSelectColis(colis.code_colis)}
-                                    className={`bg-white rounded-xl border shadow-sm transition-all overflow-hidden ${canAccept ? 'cursor-pointer' : ''} ${isSelected ? 'border-indigo-400 ring-2 ring-indigo-100' : 'border-slate-200 hover:border-indigo-300 hover:shadow-md'}`}
+                                    className={`bg-white rounded-lg border shadow-sm transition-all overflow-hidden ${canAccept ? 'cursor-pointer' : ''} ${isSelected ? 'border-indigo-400 ring-2 ring-indigo-100' : 'border-slate-200 hover:border-indigo-300 hover:shadow-md'}`}
                                 >
                                     <div className="p-3 border-b border-slate-100">
                                         <div className="flex justify-between items-start gap-2 mb-2">
@@ -876,8 +876,8 @@ const Demandes = () => {
                                 );
                             })
                         ) : (
-                            <div className="bg-white p-8 rounded-xl text-center border border-slate-100">
-                                <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                            <div className="bg-white p-8 rounded-lg text-center border border-slate-100">
+                                <div className="w-16 h-16 bg-blue-50 rounded-lg flex items-center justify-center mx-auto mb-3">
                                     <Package className="w-8 h-8 text-blue-300" />
                                 </div>
                                 <h3 className="text-sm font-bold text-slate-900 mb-1">
@@ -1003,8 +1003,8 @@ const Demandes = () => {
                                     <td colSpan={canAccept ? 8 : 7} className="px-4 py-16 text-center">
                                         <div className="flex flex-col items-center max-w-md mx-auto">
                                             <div className="relative w-20 h-20 mb-4">
-                                                <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-blue-100/30 rounded-2xl rotate-6"></div>
-                                                <div className="relative w-full h-full bg-white rounded-2xl shadow-lg flex items-center justify-center border border-blue-100">
+                                                <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-blue-100/30 rounded-lg rotate-6"></div>
+                                                <div className="relative w-full h-full bg-white rounded-lg shadow-lg flex items-center justify-center border border-blue-100">
                                                     <Package className="w-8 h-8 text-blue-200" />
                                                 </div>
                                             </div>
@@ -1049,7 +1049,7 @@ const Demandes = () => {
                         value={motifRefus}
                         onChange={(e) => setMotifRefus(e.target.value)}
                         placeholder="Ex: Articles non autorisés, poids incorrect, etc..."
-                        className="w-full h-24 px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-red-500/10 focus:border-red-500 transition-all resize-none"
+                        className="w-full h-24 px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:outline-none focus:ring-4 focus:ring-red-500/10 focus:border-red-500 transition-all resize-none"
                     />
                 </div>
             </ConfirmationModal>

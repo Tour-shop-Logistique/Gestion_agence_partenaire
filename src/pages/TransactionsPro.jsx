@@ -579,7 +579,7 @@ const TransactionsPro = () => {
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setIsNewTransactionModalOpen(true)}
-            className="h-9 px-4 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-all shadow-sm active:scale-95 text-xs font-semibold"
+            className="h-9 px-4 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all shadow-sm active:scale-95 text-xs font-semibold"
           >
             <PlusIcon className="w-4 h-4" />
             <span>Nouvelle transaction</span>
@@ -588,7 +588,7 @@ const TransactionsPro = () => {
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setIsExportDropdownOpen(!isExportDropdownOpen)}
-              className={`h-9 px-4 flex items-center gap-2 border rounded-md text-xs font-semibold transition-all shadow-sm ${
+              className={`h-9 px-4 flex items-center gap-2 border rounded-lg text-xs font-semibold transition-all shadow-sm ${
                 isExportDropdownOpen 
                 ? 'bg-slate-100 border-slate-300 text-slate-900' 
                 : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
@@ -604,18 +604,18 @@ const TransactionsPro = () => {
                 <div className="p-1">
                   <button
                     onClick={() => { handleExportExcel(); setIsExportDropdownOpen(false); }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 rounded-md"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 rounded-lg"
                   >
-                    <div className="w-7 h-7 flex items-center justify-center bg-emerald-50 text-emerald-600 rounded-md">
+                    <div className="w-7 h-7 flex items-center justify-center bg-emerald-50 text-emerald-600 rounded-lg">
                       <TableCellsIcon className="w-4 h-4" />
                     </div>
                     <span>Format Excel (.xlsx)</span>
                   </button>
                   <button
                     onClick={() => { handleExportPDF(); setIsExportDropdownOpen(false); }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 rounded-md"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 rounded-lg"
                   >
-                    <div className="w-7 h-7 flex items-center justify-center bg-red-50 text-red-600 rounded-md">
+                    <div className="w-7 h-7 flex items-center justify-center bg-red-50 text-red-600 rounded-lg">
                       <DocumentArrowDownIcon className="w-4 h-4" />
                     </div>
                     <span>Rapport PDF (.pdf)</span>
@@ -628,7 +628,7 @@ const TransactionsPro = () => {
           <button
             onClick={handleRefresh}
             disabled={status === 'loading'}
-            className="h-9 px-4 flex items-center gap-2 bg-white border border-slate-200 text-slate-600 rounded-md hover:bg-slate-50 transition-all disabled:opacity-50 text-xs font-medium"
+            className="h-9 px-4 flex items-center gap-2 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 transition-all disabled:opacity-50 text-xs font-medium"
           >
             <ArrowPathIcon className={`w-4 h-4 ${status === 'loading' ? 'animate-spin' : ''}`} />
             <span>Actualiser</span>
@@ -636,7 +636,7 @@ const TransactionsPro = () => {
 
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`h-9 px-4 flex items-center gap-2 rounded-md transition-all text-xs font-medium ${
+            className={`h-9 px-4 flex items-center gap-2 rounded-lg transition-all text-xs font-medium ${
               showFilters 
               ? 'bg-blue-50 border-2 border-blue-200 text-blue-700' 
               : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
@@ -651,7 +651,7 @@ const TransactionsPro = () => {
             )}
           </button>
 
-          <div className="flex items-center bg-white border border-slate-200 rounded-md overflow-hidden ml-auto">
+          <div className="flex items-center bg-white border border-slate-200 rounded-lg overflow-hidden ml-auto">
             <div className="flex items-center px-3 py-2 gap-2 border-r border-slate-100">
               <CalendarIcon className="w-4 h-4 text-slate-400" />
               <input
@@ -682,7 +682,7 @@ const TransactionsPro = () => {
             <button
               key={view.id}
               onClick={() => setActiveView(view.id)}
-              className={`px-4 py-2 rounded-md text-xs font-semibold transition-all flex items-center gap-2 ${
+              className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 ${
                 activeView === view.id
                 ? 'bg-white text-slate-900 shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
@@ -724,7 +724,7 @@ const TransactionsPro = () => {
               <select
                 value={filters.type}
                 onChange={(e) => setFilters({ ...filters, type: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-blue-500"
               >
                 <option value="all">Tous</option>
                 <option value="encaissement">Encaissements</option>
@@ -737,7 +737,7 @@ const TransactionsPro = () => {
               <select
                 value={filters.payment_method}
                 onChange={(e) => setFilters({ ...filters, payment_method: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-blue-500"
               >
                 <option value="all">Tous</option>
                 {paymentMethods.map(pm => (
@@ -751,7 +751,7 @@ const TransactionsPro = () => {
               <select
                 value={filters.categorie}
                 onChange={(e) => setFilters({ ...filters, categorie: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-blue-500"
               >
                 <option value="all">Toutes</option>
                 {categories.map(cat => (
@@ -766,7 +766,7 @@ const TransactionsPro = () => {
                 type="number"
                 value={filters.montant_min}
                 onChange={(e) => setFilters({ ...filters, montant_min: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-blue-500"
                 placeholder="0"
               />
             </div>
@@ -777,13 +777,13 @@ const TransactionsPro = () => {
                 type="number"
                 value={filters.montant_max}
                 onChange={(e) => setFilters({ ...filters, montant_max: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-200 rounded-md text-xs focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-blue-500"
                 placeholder="Illimité"
               />
             </div>
 
             <div className="flex items-end">
-              <div className="text-xs text-slate-500 bg-slate-50 px-3 py-2 rounded-md border border-slate-200">
+              <div className="text-xs text-slate-500 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200">
                 <strong className="text-slate-900">{filteredTransactions.length}</strong> résultat(s) trouvé(s)
               </div>
             </div>
@@ -1069,7 +1069,7 @@ const TransactionsPro = () => {
               <input 
                 type="text"
                 placeholder="Rechercher par référence, client, expédition..."
-                className="w-full pl-10 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-md text-sm focus:outline-none focus:bg-white focus:border-slate-300"
+                className="w-full pl-10 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:bg-white focus:border-slate-300"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />

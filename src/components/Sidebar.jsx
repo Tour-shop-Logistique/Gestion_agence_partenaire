@@ -352,7 +352,7 @@ const Sidebar = ({ onClose }) => {
                     }}
                   >
                     <span
-                      className="flex items-center justify-center w-7 h-7 rounded-md mr-2.5 shrink-0 transition-all duration-150"
+                      className="flex items-center justify-center w-7 h-7 rounded-lg mr-2.5 shrink-0 transition-all duration-150"
                       style={{
                         background: active ? `${c.accent}33` : c.chip,
                         boxShadow: `inset 0 0 0 1px ${active ? c.accent + "66" : c.ring}`,

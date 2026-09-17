@@ -32,7 +32,7 @@ const EmptyState = ({ hasFilters, onResetFilters }) => {
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                     <button
                         onClick={onResetFilters}
-                        className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 hover:shadow-xl hover:scale-105"
+                        className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 hover:shadow-xl hover:scale-105"
                     >
                         <FunnelIcon className="w-5 h-5" />
                         Réinitialiser les filtres
@@ -40,7 +40,7 @@ const EmptyState = ({ hasFilters, onResetFilters }) => {
                 </div>
 
                 {/* Suggestions */}
-                <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-xl max-w-md mx-auto">
+                <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg max-w-md mx-auto">
                     <p className="text-xs font-bold text-blue-900 uppercase tracking-wide mb-2">
                         💡 Suggestions
                     </p>
@@ -60,9 +60,9 @@ const EmptyState = ({ hasFilters, onResetFilters }) => {
         <div className="text-center py-20 px-4">
             <div className="relative w-40 h-40 mx-auto mb-8">
                 {/* Boîte 3D */}
-                <div className="absolute inset-0 bg-gradient-to-br from-slate-100 to-slate-50 rounded-3xl rotate-6 shadow-xl"></div>
-                <div className="absolute inset-0 bg-gradient-to-br from-slate-50 to-white rounded-3xl -rotate-6 shadow-2xl"></div>
-                <div className="relative w-full h-full bg-white rounded-3xl shadow-2xl flex items-center justify-center border-2 border-slate-100">
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-100 to-slate-50 rounded-lg rotate-6 shadow-xl"></div>
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-50 to-white rounded-lg -rotate-6 shadow-2xl"></div>
+                <div className="relative w-full h-full bg-white rounded-lg shadow-2xl flex items-center justify-center border-2 border-slate-100">
                     <InboxIcon className="w-20 h-20 text-slate-300" />
                 </div>
             </div>
@@ -76,7 +76,7 @@ const EmptyState = ({ hasFilters, onResetFilters }) => {
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <button className="flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold hover:from-indigo-700 hover:to-purple-700 transition-all shadow-xl shadow-indigo-200 hover:shadow-2xl hover:scale-105">
+                <button className="flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-bold hover:from-indigo-700 hover:to-purple-700 transition-all shadow-xl shadow-indigo-200 hover:shadow-2xl hover:scale-105">
                     <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                     </svg>
@@ -91,7 +91,7 @@ const EmptyState = ({ hasFilters, onResetFilters }) => {
                     { label: 'Montant', value: `0 ${getCurrencyLabel()}`, icon: '💰' },
                     { label: 'Commission', value: `0 ${getCurrencyLabel()}`, icon: '📊' }
                 ].map((stat, i) => (
-                    <div key={i} className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                    <div key={i} className="bg-slate-50 rounded-lg p-4 border border-slate-200">
                         <div className="text-2xl mb-2">{stat.icon}</div>
                         <p className="text-2xl font-bold text-slate-900">{stat.value}</p>
                         <p className="text-xs text-slate-500 uppercase tracking-wide">{stat.label}</p>

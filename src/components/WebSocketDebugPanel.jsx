@@ -134,7 +134,7 @@ const WebSocketDebugPanel = () => {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 w-96 max-h-[600px] bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col">
+    <div className="fixed bottom-4 right-4 z-50 w-96 max-h-[600px] bg-white rounded-lg shadow-2xl border border-slate-200 overflow-hidden flex flex-col">
       {/* Header */}
       <div className="bg-slate-900 text-white px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">

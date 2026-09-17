@@ -30,7 +30,7 @@ const ContactCard = ({ type, contact, country }) => {
     const style = config[type];
 
     return (
-        <div className={`${style.bgColor} border-2 ${style.borderColor} rounded-xl p-6 transition-all hover:shadow-lg`}>
+        <div className={`${style.bgColor} border-2 ${style.borderColor} rounded-lg p-6 transition-all hover:shadow-lg`}>
             {/* Header avec avatar */}
             <div className="flex items-center gap-4 mb-6">
                 <div className={`w-14 h-14 rounded-full ${style.accentColor} flex items-center justify-center shadow-lg`}>

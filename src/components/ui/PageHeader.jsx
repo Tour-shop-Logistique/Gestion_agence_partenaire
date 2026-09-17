@@ -52,7 +52,7 @@ const PageHeader = ({
                 type="button"
                 onClick={onBack}
                 aria-label="Retour"
-                className="p-1.5 rounded-md text-slate-400 hover:text-slate-900 hover:bg-white border border-transparent hover:border-slate-200 transition-all flex-shrink-0"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-white border border-transparent hover:border-slate-200 transition-all flex-shrink-0"
               >
                 <ChevronLeftIcon className="w-4 h-4" />
               </button>

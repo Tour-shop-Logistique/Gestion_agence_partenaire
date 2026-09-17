@@ -224,18 +224,18 @@ const TarifGroupageComponent = () => {
   return (
     <div className="space-y-4">
       {/* Premium Action Bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-center bg-white p-2 rounded-xl border border-slate-200 shadow-sm gap-2">
+      <div className="flex flex-col sm:flex-row justify-between items-center bg-white p-2 rounded-lg border border-slate-200 shadow-sm gap-2">
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <div className="inline-flex flex-1 sm:flex-none p-1 bg-slate-100 rounded-lg">
             <button
               onClick={() => setActiveTab("agency")}
-              className={`flex-1 sm:flex-none px-6 py-2 text-[11px] font-bold rounded-md transition-all ${activeTab === "agency" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+              className={`flex-1 sm:flex-none px-6 py-2 text-[11px] font-bold rounded-lg transition-all ${activeTab === "agency" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
             >
               Tarif Agence
             </button>
             <button
               onClick={() => setActiveTab("base")}
-              className={`flex-1 sm:flex-none px-6 py-2 text-[11px] font-bold rounded-md transition-all ${activeTab === "base" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+              className={`flex-1 sm:flex-none px-6 py-2 text-[11px] font-bold rounded-lg transition-all ${activeTab === "base" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
             >
               Tarif de Base
             </button>
@@ -272,7 +272,7 @@ const TarifGroupageComponent = () => {
 
       {/* KPI Section */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        <div className="bg-gradient-to-br from-indigo-50 to-white p-4 rounded-xl border border-indigo-100 shadow-sm flex items-center justify-between">
+        <div className="bg-gradient-to-br from-indigo-50 to-white p-4 rounded-lg border border-indigo-100 shadow-sm flex items-center justify-between">
           <div>
             <p className="text-[10px] font-semibold text-indigo-500/80 uppercase tracking-wide mb-1">Tarif Agence</p>
             <p className="text-2xl font-bold text-slate-900">{flattenedAgencyTarifs.length}</p>
@@ -281,7 +281,7 @@ const TarifGroupageComponent = () => {
             <TableCellsIcon className="w-5 h-5" />
           </div>
         </div>
-        <div className="bg-gradient-to-br from-amber-50 to-white p-4 rounded-xl border border-amber-100 shadow-sm flex items-center justify-between">
+        <div className="bg-gradient-to-br from-amber-50 to-white p-4 rounded-lg border border-amber-100 shadow-sm flex items-center justify-between">
           <div>
             <p className="text-[10px] font-semibold text-amber-600/80 uppercase tracking-wide mb-1">Tarif de Base</p>
             <p className="text-2xl font-bold text-slate-900">{flattenedBaseTarifs.length}</p>
@@ -290,7 +290,7 @@ const TarifGroupageComponent = () => {
             <DocumentDuplicateIcon className="w-5 h-5" />
           </div>
         </div>
-        <div className="bg-gradient-to-br from-slate-50 to-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div className="bg-gradient-to-br from-slate-50 to-white p-4 rounded-lg border border-slate-200 shadow-sm">
           <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-2">
             Répartition par type ({activeTab === "agency" ? "Tarif Agence" : "Tarif de Base"})
           </p>
@@ -313,7 +313,7 @@ const TarifGroupageComponent = () => {
       </div>
 
       {/* Search Bar + Filtre type d'expédition */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+      <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <input
@@ -370,7 +370,7 @@ const TarifGroupageComponent = () => {
       </div>
 
       {/* Main Table Section */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden transition-all">
+      <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden transition-all">
         {loading && (!currentData || currentData.length === 0) ? (
           <TableSkeleton />
         ) : (
@@ -557,15 +557,15 @@ const TarifGroupageComponent = () => {
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 pt-2">
-                      <div className="p-3 rounded-xl border bg-slate-50 border-slate-100">
+                      <div className="p-3 rounded-lg border bg-slate-50 border-slate-100">
                         <p className="text-[9px] font-bold uppercase tracking-wider mb-1 text-slate-400">Base</p>
                         <p className="text-xs font-bold text-slate-900">{montantBase.toLocaleString()} {getCurrencyLabel()}</p>
                       </div>
-                      <div className="p-3 rounded-xl border bg-indigo-50/50 border-indigo-100">
+                      <div className="p-3 rounded-lg border bg-indigo-50/50 border-indigo-100">
                         <p className="text-[9px] font-bold uppercase tracking-wider mb-1 text-indigo-400">Prestation</p>
                         <p className="text-xs font-bold text-indigo-700">+{pourcentage}%</p>
                       </div>
-                      <div className="col-span-2 p-3 rounded-xl flex items-center justify-between shadow-sm bg-indigo-600">
+                      <div className="col-span-2 p-3 rounded-lg flex items-center justify-between shadow-sm bg-indigo-600">
                         <p className="text-[10px] font-semibold uppercase tracking-wide text-indigo-100">Total Expédition</p>
                         <p className="text-base font-bold text-white">{total.toLocaleString()} {getCurrencyLabel()}</p>
                       </div>
@@ -587,7 +587,7 @@ const TarifGroupageComponent = () => {
 
             {(!loading && currentData?.length === 0) && (
               <div className="p-16 text-center animate-in zoom-in-95 duration-500">
-                <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-slate-100 text-slate-300 shadow-inner">
+                <div className="w-20 h-20 bg-slate-50 rounded-lg flex items-center justify-center mx-auto mb-6 border border-slate-100 text-slate-300 shadow-inner">
                   <DocumentDuplicateIcon className="w-10 h-10" />
                 </div>
                 <h3 className="text-base font-bold text-slate-900 mb-2">Aucun tarif groupage trouvé</h3>
@@ -599,7 +599,7 @@ const TarifGroupageComponent = () => {
                 {!isAgent && (
                   <button
                     onClick={() => handleNewTarif()}
-                    className="inline-flex items-center px-8 py-3 bg-slate-950 text-white rounded-xl text-xs font-bold shadow-lg hover:shadow-indigo-200 transition-all hover:-translate-y-1 active:translate-y-0"
+                    className="inline-flex items-center px-8 py-3 bg-slate-950 text-white rounded-lg text-xs font-bold shadow-lg hover:shadow-indigo-200 transition-all hover:-translate-y-1 active:translate-y-0"
                   >
                     Ajouter un tarif groupage
                   </button>

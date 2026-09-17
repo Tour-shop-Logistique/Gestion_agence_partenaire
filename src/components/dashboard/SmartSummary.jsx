@@ -37,7 +37,7 @@ const SmartSummary = ({ operational, pendingDemandesCount }) => {
         pendingDemandesCount > 0;
 
     return (
-        <div className={`rounded-xl p-5 border ${hasUrgentActions ? 'bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200' : 'bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200'}`}>
+        <div className={`rounded-lg p-5 border ${hasUrgentActions ? 'bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200' : 'bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200'}`}>
             <div className="flex items-start gap-4">
                 <div className={`p-2.5 ${hasUrgentActions ? 'bg-indigo-500' : 'bg-emerald-500'} rounded-lg flex-shrink-0`}>
                     <SparklesIcon className="w-5 h-5 text-white" />

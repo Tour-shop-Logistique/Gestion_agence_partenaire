@@ -66,13 +66,13 @@ const Notifications = () => {
       )}
 
       {/* Main Content Card */}
-      <div className="relative bg-gradient-to-br from-white via-white to-slate-50/30 rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-200/60 overflow-hidden backdrop-blur-sm">
+      <div className="relative bg-gradient-to-br from-white via-white to-slate-50/30 rounded-lg shadow-xl shadow-slate-200/40 border border-slate-200/60 overflow-hidden backdrop-blur-sm">
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/[0.02] via-transparent to-purple-500/[0.02] pointer-events-none"></div>
 
         <div className="relative p-3 sm:p-4 space-y-3">
           {status === "loading" && notifications.length === 0 ? (
             Array(3).fill(0).map((_, i) => (
-              <div key={i} className="bg-white p-3 rounded-xl border border-slate-100 animate-pulse space-y-2">
+              <div key={i} className="bg-white p-3 rounded-lg border border-slate-100 animate-pulse space-y-2">
                 <div className="flex justify-between items-center">
                   <div className="h-4 bg-slate-200 rounded w-1/3"></div>
                   <div className="h-6 bg-slate-100 rounded-full w-16"></div>
@@ -86,7 +86,7 @@ const Notifications = () => {
               <div
                 key={n.id}
                 onClick={() => !n.lu && handleMarkAsRead(n.id)}
-                className={`bg-white rounded-xl border shadow-sm transition-all overflow-hidden cursor-pointer active:scale-[0.99] ${
+                className={`bg-white rounded-lg border shadow-sm transition-all overflow-hidden cursor-pointer active:scale-[0.99] ${
                   n.lu
                     ? "border-slate-200 hover:border-slate-300 hover:shadow-md"
                     : "border-indigo-200 hover:border-indigo-300 hover:shadow-md ring-1 ring-indigo-100"
@@ -118,8 +118,8 @@ const Notifications = () => {
               </div>
             ))
           ) : (
-            <div className="bg-white p-8 rounded-xl text-center border border-slate-100">
-              <div className="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+            <div className="bg-white p-8 rounded-lg text-center border border-slate-100">
+              <div className="w-16 h-16 bg-indigo-50 rounded-lg flex items-center justify-center mx-auto mb-3">
                 <Radio className="w-8 h-8 text-indigo-300" />
               </div>
               <p className="text-sm font-bold text-slate-700">Aucune annonce pour le moment</p>
