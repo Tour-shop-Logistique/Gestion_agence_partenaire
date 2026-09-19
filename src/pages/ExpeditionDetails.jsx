@@ -12,7 +12,7 @@ import PrintSuccessModal from '../components/Receipts/PrintSuccessModal';
 import { getLogoUrl } from '../utils/apiConfig';
 import { getCurrencyLabel } from '../utils/format';
 import { toast } from '../utils/toast';
-import { Copy, Loader2 } from 'lucide-react';
+import { Copy, Loader2, MapPinned } from 'lucide-react';
 import { Button, PageHeader } from "../components/ui";
 import { getCountryName } from '../utils/countries';
 import {
@@ -23,6 +23,9 @@ import {
 } from '../components/expedition';
 import FraisDecisionModal from '../components/transaction/FraisDecisionModal';
 import useHasPermission from '../hooks/useHasPermission';
+import SearchableDropdown from '../components/common/SearchableDropdown';
+import { expeditionsApi } from '../utils/api/expeditions';
+import { agencesApi } from '../utils/api/agences';
 
 /**
  * 🚀 PAGE DÉTAIL EXPÉDITION - VERSION REFACTORISÉE
@@ -90,6 +93,15 @@ const ExpeditionDetails = () => {
     const [motifRefus, setMotifRefus] = React.useState("");
     const [isFraisDecisionModalOpen, setIsFraisDecisionModalOpen] = React.useState(false);
 
+    // Agence d'arrivée (Interville uniquement) : choisie par l'agence de
+    // départ parmi les agences actives de la commune de destination déjà
+    // choisie par le client - affichée ici (page systématiquement visitée)
+    // plutôt que seulement dans l'écran Contrôle (optionnel), le départ
+    // étant bloqué côté backend tant qu'elle n'est pas renseignée.
+    const [agencesArrivee, setAgencesArrivee] = React.useState([]);
+    const [isLoadingAgencesArrivee, setIsLoadingAgencesArrivee] = React.useState(false);
+    const [isSavingAgenceArrivee, setIsSavingAgenceArrivee] = React.useState(false);
+
     // Chargement des données
     useEffect(() => {
         if (id) {
@@ -100,6 +112,50 @@ const ExpeditionDetails = () => {
     useEffect(() => {
         fetchAgencyData();
     }, [fetchAgencyData]);
+
+    const communeArriveeId = expedition?.destinataire?.commune_id;
+    useEffect(() => {
+        if (expedition?.type_expedition !== 'interville' || !communeArriveeId) {
+            setAgencesArrivee([]);
+            return;
+        }
+        setIsLoadingAgencesArrivee(true);
+        agencesApi.getAgencesByCommune(communeArriveeId).then((result) => {
+            if (result.success) setAgencesArrivee(result.data);
+            else toast.error(result.message);
+        }).finally(() => setIsLoadingAgencesArrivee(false));
+    }, [expedition?.type_expedition, communeArriveeId]);
+
+    const saveAgenceArrivee = async (agenceId) => {
+        setIsSavingAgenceArrivee(true);
+        try {
+            const result = await expeditionsApi.choisirAgenceArrivee(expedition.id, agenceId);
+            if (result.success) {
+                toast.success(result.message);
+                getExpeditionDetails(id);
+            } else {
+                toast.error(result.message);
+            }
+        } finally {
+            setIsSavingAgenceArrivee(false);
+        }
+    };
+
+    const [isConfirmingDepart, setIsConfirmingDepart] = React.useState(false);
+    const handleConfirmerDepart = async () => {
+        setIsConfirmingDepart(true);
+        try {
+            const result = await expeditionsApi.confirmerDepart(expedition.id);
+            if (result.success) {
+                toast.success(result.message);
+                getExpeditionDetails(id);
+            } else {
+                toast.error(result.message);
+            }
+        } finally {
+            setIsConfirmingDepart(false);
+        }
+    };
 
     // Gestion des transactions
     const handleRecordTransaction = (type) => {
@@ -357,6 +413,66 @@ const ExpeditionDetails = () => {
 
                 {/* 🧭 VUE D'ENSEMBLE (statut + timeline + chiffres clés) */}
                 <StatusOverview expedition={expedition} />
+
+                {/* 📍 AGENCE D'ARRIVÉE (Interville uniquement) : le départ est
+                    bloqué côté backend tant qu'elle n'est pas renseignée, donc
+                    affichée ici même si tout le reste (poids, frais...) est
+                    déjà correct et que l'agence n'a aucune raison d'aller dans
+                    l'écran Contrôle. */}
+                {canControl && expedition.type_expedition === 'interville' && (
+                    <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 space-y-3">
+                        <div className="flex items-center gap-2">
+                            <MapPinned className="w-4 h-4 text-indigo-600" />
+                            <span className="text-sm font-bold text-slate-800">Agence d'arrivée</span>
+                            {!expedition.agence_arrivee && (
+                                <span className="px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-bold uppercase rounded">
+                                    À renseigner
+                                </span>
+                            )}
+                        </div>
+                        <p className="text-xs text-slate-500">
+                            Choisissez l'agence qui réceptionnera ce colis dans la commune de destination.
+                            Le départ de l'expédition ne pourra pas être confirmé tant qu'elle n'est pas renseignée.
+                        </p>
+                        {isLoadingAgencesArrivee ? (
+                            <div className="flex items-center gap-2 text-sm text-slate-500">
+                                <Loader2 className="w-4 h-4 animate-spin" /> Chargement des agences...
+                            </div>
+                        ) : agencesArrivee.length === 0 ? (
+                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
+                                Aucune agence active n'est disponible dans la commune de destination. Contactez le backoffice.
+                            </div>
+                        ) : (
+                            <SearchableDropdown
+                                options={agencesArrivee.map((a) => ({ id: a.id, label: `${a.nom_agence} (${a.ville})` }))}
+                                onSelect={(option) => saveAgenceArrivee(option.id)}
+                                placeholder={
+                                    expedition.agence_arrivee
+                                        ? `${expedition.agence_arrivee.nom_agence} (${expedition.agence_arrivee.ville})`
+                                        : "Sélectionner une agence..."
+                                }
+                                disabled={isSavingAgenceArrivee}
+                            />
+                        )}
+
+                        {/* Confirmer le départ : par l'agence de départ elle-même
+                            (cahier des charges §8.1), jamais le backoffice pour
+                            Interville. Nécessite l'agence d'arrivée renseignée. */}
+                        {['accepted', 'recu_agence_depart'].includes(expedition.statut_expedition) && (
+                            <Button
+                                onClick={handleConfirmerDepart}
+                                disabled={!expedition.agence_arrivee || isConfirmingDepart}
+                                className="w-full sm:w-auto"
+                            >
+                                {isConfirmingDepart ? (
+                                    <span className="inline-flex items-center gap-2">
+                                        <Loader2 className="w-4 h-4 animate-spin" /> Confirmation...
+                                    </span>
+                                ) : "Confirmer le départ"}
+                            </Button>
+                        )}
+                    </div>
+                )}
 
                 {/* 💰 FINANCE - pleine largeur */}
                 <FinanceCard

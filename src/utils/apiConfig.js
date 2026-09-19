@@ -145,6 +145,10 @@ export const API_ENDPOINTS = {
     // Choix de l'agence d'arrivée (Interville uniquement), par l'agence de
     // départ au contrôle - voir AgenceExpeditionController::choisirAgenceArrivee.
     CHOISIR_AGENCE_ARRIVEE: "/expedition/agence/:id/choisir-agence-arrivee",
+    // Confirmation du départ (Interville uniquement) : par l'agence de
+    // départ elle-même, jamais le backoffice - voir cahier des charges §8.1
+    // et AgenceExpeditionController::confirmerDepart.
+    CONFIRMER_DEPART: "/expedition/agence/:id/confirmer-depart",
   },
 
   // Produits

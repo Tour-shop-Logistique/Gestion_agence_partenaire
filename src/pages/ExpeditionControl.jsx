@@ -78,13 +78,6 @@ const ExpeditionControl = () => {
     const [colisCategories, setColisCategories] = useState({});
     const [isSavingExpedition, setIsSavingExpedition] = useState(false);
 
-    // Agence d'arrivée (Interville uniquement) : choisie par l'agence de
-    // départ parmi les agences actives de la commune de destination déjà
-    // choisie par le client - voir AgenceExpeditionController::choisirAgenceArrivee().
-    const [agencesArrivee, setAgencesArrivee] = useState([]);
-    const [isLoadingAgencesArrivee, setIsLoadingAgencesArrivee] = useState(false);
-    const [isSavingAgenceArrivee, setIsSavingAgenceArrivee] = useState(false);
-
     useEffect(() => {
         if (id) getExpeditionDetails(id);
     }, [id, getExpeditionDetails]);
@@ -152,7 +145,12 @@ const ExpeditionControl = () => {
         );
     }
 
-    if (expedition.statut_expedition !== 'accepted') {
+    // Le contrôle physique se fait souvent après réception des colis, pas
+    // seulement entre acceptation et réception - une expédition dont les
+    // colis ont déjà été marqués reçus à l'agence de départ doit rester
+    // contrôlable, sinon la fenêtre se referme avant que l'agence ait pu
+    // vérifier poids/dimensions/frais.
+    if (!['accepted', 'recu_agence_depart'].includes(expedition.statut_expedition)) {
         return (
             <div className="max-w-2xl mx-auto px-4 py-12 text-center">
                 <p className="text-sm font-semibold text-slate-600">
@@ -383,42 +381,9 @@ const ExpeditionControl = () => {
                     </div>
                 )}
 
-                {/* Agence d'arrivée (Interville uniquement) : choisie par l'agence
-                    de départ parmi les agences actives de la commune de destination
-                    déjà choisie par le client. Le départ de l'expédition est bloqué
-                    tant qu'elle n'est pas renseignée. */}
-                {canControl && expedition.type_expedition === 'interville' && (
-                    <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 space-y-3">
-                        <div className="flex items-center gap-2">
-                            <MapPinned className="w-4 h-4 text-indigo-600" />
-                            <span className="text-sm font-bold text-slate-800">Agence d'arrivée</span>
-                        </div>
-                        <p className="text-xs text-slate-500">
-                            Choisissez l'agence qui réceptionnera ce colis dans la commune de destination.
-                            Le départ de l'expédition ne pourra pas être confirmé tant qu'elle n'est pas renseignée.
-                        </p>
-                        {isLoadingAgencesArrivee ? (
-                            <div className="flex items-center gap-2 text-sm text-slate-500">
-                                <Loader2 className="w-4 h-4 animate-spin" /> Chargement des agences...
-                            </div>
-                        ) : agencesArrivee.length === 0 ? (
-                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
-                                Aucune agence active n'est disponible dans la commune de destination. Contactez le backoffice.
-                            </div>
-                        ) : (
-                            <SearchableDropdown
-                                options={agencesArrivee.map((a) => ({ id: a.id, label: `${a.nom_agence} (${a.ville})` }))}
-                                onSelect={(option) => saveAgenceArrivee(option.id)}
-                                placeholder={
-                                    expedition.agence_arrivee
-                                        ? `${expedition.agence_arrivee.nom_agence} (${expedition.agence_arrivee.ville})`
-                                        : "Sélectionner une agence..."
-                                }
-                                disabled={isSavingAgenceArrivee}
-                            />
-                        )}
-                    </div>
-                )}
+                {/* Agence d'arrivée (Interville) : déplacée sur ExpeditionDetails,
+                    page systématiquement visitée par l'agence, contrairement à
+                    cet écran de contrôle qui reste optionnel si rien à ajuster. */}
 
                 {/* Édition complète de l'expédition : type, expéditeur, destinataire, pays, paiement/livraison */}
                 {canControl && (

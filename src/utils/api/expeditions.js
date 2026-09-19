@@ -616,5 +616,30 @@ export const expeditionsApi = {
                 errors: error.errors || error.response?.data?.errors,
             };
         }
+    },
+
+    /**
+     * Confirme le départ d'une expédition Interville, par l'agence de
+     * départ elle-même.
+     * @param {string} expeditionId
+     * @returns {Promise<Object>}
+     */
+    async confirmerDepart(expeditionId) {
+        try {
+            const url = API_ENDPOINTS.EXPEDITIONS.CONFIRMER_DEPART.replace(':id', expeditionId);
+            const response = await apiService.put(url);
+
+            return {
+                success: response.success !== false,
+                data: response.expedition || response.data || response,
+                message: response.message || "Départ confirmé",
+            };
+        } catch (error) {
+            return {
+                success: false,
+                message: error.message || "Erreur lors de la confirmation du départ",
+                errors: error.errors || error.response?.data?.errors,
+            };
+        }
     }
 };
