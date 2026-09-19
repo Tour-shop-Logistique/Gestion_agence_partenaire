@@ -317,6 +317,30 @@ const Colis = () => {
     };
 
     const handleQRScan = (scannedData) => {
+        // Interville : pas de sélection multiple ni de confirmation
+        // automatique au scan (envoyer une expédition sans agence d'arrivée
+        // choisie n'est de toute façon pas possible, mais on reste prudent) -
+        // le scan localise seulement l'expédition, l'agent confirme
+        // explicitement via le bouton dédié.
+        if (activeTab === 'interville') {
+            const exp = tabExpeditionsInterville.find(e =>
+                (e.colis || []).some(c => c.code_colis === scannedData || scannedData.includes(c.code_colis))
+                || e.id === scannedData
+            );
+            if (!exp) {
+                soundNotification.playErrorSound();
+                toast.error(`Aucune expédition Interville à traiter ne correspond au code scanné : ${scannedData}`);
+                return;
+            }
+            soundNotification.playScanSound();
+            toast.success(`Expédition ${exp.reference} trouvée. Confirmez le départ ci-dessous.`);
+            setTimeout(() => {
+                const element = document.getElementById(`expedition-interville-${exp.id}`);
+                if (element) element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+            return;
+        }
+
         // Chercher le colis dans la liste filtrée
         let foundColis = filteredColis.find(c => c.code_colis === scannedData);
         
@@ -390,15 +414,13 @@ const Colis = () => {
                     : "Envoyez les colis reçus vers l'entrepôt"}
                 actions={
                     <>
-                        {activeTab === 'extraville' && (
-                            <button
-                                onClick={() => setScannerOpen(true)}
-                                className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-transparent rounded-lg text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm hover:shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
-                            >
-                                <QrCodeIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
-                                <span className="hidden sm:inline">Scanner</span>
-                            </button>
-                        )}
+                        <button
+                            onClick={() => setScannerOpen(true)}
+                            className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-transparent rounded-lg text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm hover:shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
+                        >
+                            <QrCodeIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
+                            <span className="hidden sm:inline">Scanner</span>
+                        </button>
                         <button
                             onClick={() => fetchColisData(true)}
                             disabled={loadingColis}
@@ -947,7 +969,7 @@ const Colis = () => {
                             const isSavingAgence = savingAgenceExpeditionId === exp.id;
                             const isConfirmingDepart = confirmingDepartExpeditionId === exp.id;
                             return (
-                                <div key={exp.id} className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+                                <div key={exp.id} id={`expedition-interville-${exp.id}`} className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                                     <div className="flex items-center justify-between gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-indigo-600">
                                         <Link to={`/expeditions/${exp.id}`} className="flex items-center gap-2 min-w-0">
                                             <span className="text-xs font-bold text-white truncate">{exp.reference}</span>
