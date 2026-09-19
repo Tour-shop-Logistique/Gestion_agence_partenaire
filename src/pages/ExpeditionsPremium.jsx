@@ -276,8 +276,14 @@ const ExpeditionsPremium = () => {
     // deux (agence qui s'envoie à elle-même), mais dans ce cas elle compte
     // comme "départ", cohérent avec la priorité déjà utilisée côté backend.
     const isExpeditionDepart = useCallback((exp) => exp.agence_id === currentUser?.agence_id, [currentUser?.agence_id]);
+    // Interville : l'agence destinataire est portée par l'expédition elle-même
+    // (agence_arrivee_id), jamais par les colis - contrairement à Extraville
+    // où c'est colis.agence_destination_id qui fait foi.
     const isExpeditionArrivee = useCallback((exp) => (
-        !isExpeditionDepart(exp) && exp.colis?.some(c => c.agence_destination_id === currentUser?.agence_id)
+        !isExpeditionDepart(exp) && (
+            exp.agence_arrivee_id === currentUser?.agence_id
+            || exp.colis?.some(c => c.agence_destination_id === currentUser?.agence_id)
+        )
     ), [isExpeditionDepart, currentUser?.agence_id]);
 
     const handleKpiFilter = (filterType, role) => {

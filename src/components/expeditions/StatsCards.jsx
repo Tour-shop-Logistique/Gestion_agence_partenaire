@@ -80,7 +80,13 @@ const StatsCards = ({ expeditions, currentAgenceId, onFilter, activeFilters = {}
         expeditions.forEach(exp => {
             const s = exp.statut_expedition;
             const estDepart = exp.agence_id === currentAgenceId;
-            const estArrivee = !estDepart && exp.colis?.some(c => c.agence_destination_id === currentAgenceId);
+            // Interville : l'agence destinataire est portée par l'expédition
+            // elle-même (agence_arrivee_id), jamais par les colis - contrairement
+            // à Extraville où c'est colis.agence_destination_id qui fait foi.
+            const estArrivee = !estDepart && (
+                exp.agence_arrivee_id === currentAgenceId
+                || exp.colis?.some(c => c.agence_destination_id === currentAgenceId)
+            );
 
             if (estDepart) {
                 departCounts[s] = (departCounts[s] || 0) + 1;
