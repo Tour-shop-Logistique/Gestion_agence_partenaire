@@ -434,8 +434,12 @@ const ExpeditionDetails = () => {
                     bloqué côté backend tant qu'elle n'est pas renseignée, donc
                     affichée ici même si tout le reste (poids, frais...) est
                     déjà correct et que l'agence n'a aucune raison d'aller dans
-                    l'écran Contrôle. */}
-                {canControl && expedition.type_expedition === 'interville' && (
+                    l'écran Contrôle. N'a de sens qu'une fois la demande
+                    acceptée (et idéalement déjà reçue) - rien à choisir tant
+                    que le colis n'est même pas encore accepté. */}
+                {canControl
+                    && expedition.type_expedition === 'interville'
+                    && ['accepted', 'recu_agence_depart'].includes(expedition.statut_expedition) && (
                     <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 space-y-3">
                         <div className="flex items-center gap-2">
                             <MapPinned className="w-4 h-4 text-indigo-600" />
@@ -460,11 +464,11 @@ const ExpeditionDetails = () => {
                             </div>
                         ) : (
                             <SearchableDropdown
-                                options={agencesArrivee.map((a) => ({ id: a.id, label: `${a.nom_agence} (${a.ville})` }))}
+                                options={agencesArrivee.map((a) => ({ id: a.id, label: `${a.nom_agence} (${a.commune?.nom || a.pays})` }))}
                                 onSelect={(option) => saveAgenceArrivee(option.id)}
                                 placeholder={
                                     expedition.agence_arrivee
-                                        ? `${expedition.agence_arrivee.nom_agence} (${expedition.agence_arrivee.ville})`
+                                        ? `${expedition.agence_arrivee.nom_agence} (${expedition.agence_arrivee.commune?.nom || ''})`
                                         : "Sélectionner une agence..."
                                 }
                                 disabled={isSavingAgenceArrivee}

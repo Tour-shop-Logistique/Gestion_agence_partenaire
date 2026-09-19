@@ -47,16 +47,22 @@ const ExpeditionMobileCard = ({
                 <StatusTimeline currentStatus={expedition.statut_expedition} compact={true} />
             </div>
 
-            {/* Trajet */}
+            {/* Trajet : Interville affiche communes départ → arrivée (même
+                pays des deux côtés, sans ça rien ne distingue le trajet) ;
+                les autres types gardent le pays unique. */}
             <div className="flex items-center gap-2 mb-3 text-xs font-semibold">
                 <span className="truncate max-w-[40%] text-slate-600">
-                    {getCountryName(expedition.code_pays_depart) || expedition.pays_depart}
+                    {expedition.type_expedition === 'interville'
+                        ? (expedition.commune_depart_nom || '—')
+                        : (getCountryName(expedition.code_pays_depart) || expedition.pays_depart)}
                 </span>
                 <svg className="w-4 h-4 text-indigo-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
                 <span className="truncate max-w-[40%] text-indigo-600">
-                    {getCountryName(expedition.code_pays_destination) || expedition.pays_destination}
+                    {expedition.type_expedition === 'interville'
+                        ? (expedition.commune_arrivee_nom || '—')
+                        : (getCountryName(expedition.code_pays_destination) || expedition.pays_destination)}
                 </span>
             </div>
 

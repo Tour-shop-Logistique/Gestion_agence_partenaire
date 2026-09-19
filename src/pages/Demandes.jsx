@@ -404,7 +404,7 @@ const Demandes = () => {
                     >
                         <div className="flex items-center gap-1.5">
                             <Package className="w-3.5 h-3.5" />
-                            <span>En agence</span>
+                            <span>À réceptionner</span>
                             {colisEnAgence.length > 0 && (
                                 <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
                                     activeTab === 'en-agence'
