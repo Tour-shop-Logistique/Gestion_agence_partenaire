@@ -71,6 +71,8 @@ export const expeditionsApi = {
             if (params.date_debut) queryParams.append('date_debut', params.date_debut);
             if (params.date_fin) queryParams.append('date_fin', params.date_fin);
             if (params.mode) queryParams.append('mode', params.mode);
+            if (params.status) queryParams.append('status', params.status);
+            if (params.type_expedition) queryParams.append('type_expedition', params.type_expedition);
 
             const queryString = queryParams.toString();
             const url = `${API_ENDPOINTS.EXPEDITIONS.LIST}${queryString ? `?${queryString}` : ''}`;

@@ -24,6 +24,9 @@ import useHasPermission from "../hooks/useHasPermission";
 import { exportColisAReceptionnerPDF, exportBonReceptionPDF } from "../utils/pdfExport";
 import PageHeader from "../components/ui/PageHeader";
 import { getCountryName } from "../utils/countries";
+import { CubeIcon } from "@heroicons/react/24/outline";
+import { Loader2 } from "lucide-react";
+import { expeditionsApi } from "../utils/api/expeditions";
 
 const ColisAReceptionner = () => {
     const dispatch = useDispatch();
@@ -47,7 +50,15 @@ const ColisAReceptionner = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [scannerOpen, setScannerOpen] = useState(false);
     const [detailsColis, setDetailsColis] = useState(null);
-    
+    // Interville ne passe jamais par le backoffice (cahier des charges §8.1) :
+    // la réception se fait par expédition, agence d'arrivée elle-même
+    // confirmant directement - onglet séparé de la réception "classique"
+    // (Extraville) où le backoffice notifie l'agence de destination.
+    const [activeTab, setActiveTab] = useState('extraville');
+    const [expeditionsInterville, setExpeditionsInterville] = useState([]);
+    const [loadingInterville, setLoadingInterville] = useState(false);
+    const [confirmingReceptionId, setConfirmingReceptionId] = useState(null);
+
     // Suivre les colis déjà scannés pour éviter les messages en double
     const scannedCodesRef = useRef(new Set());
 
@@ -93,6 +104,37 @@ const ColisAReceptionner = () => {
     useEffect(() => {
         fetchReceptionData();
     }, [currentPage]);
+
+    const fetchInterville = async () => {
+        setLoadingInterville(true);
+        const result = await expeditionsApi.listExpeditions({
+            mode: 'reception',
+            type_expedition: 'interville',
+            status: 'depart_expedition_succes',
+        });
+        if (result.success) {
+            setExpeditionsInterville(result.data);
+        } else {
+            toast.error(result.message);
+        }
+        setLoadingInterville(false);
+    };
+
+    useEffect(() => {
+        if (activeTab === 'interville') fetchInterville();
+    }, [activeTab]);
+
+    const handleConfirmerReceptionInterville = async (expeditionId) => {
+        setConfirmingReceptionId(expeditionId);
+        const result = await expeditionsApi.confirmerReceptionArrivee(expeditionId);
+        if (result.success) {
+            toast.success(result.message);
+            fetchInterville();
+        } else {
+            toast.error(result.message);
+        }
+        setConfirmingReceptionId(null);
+    };
 
     useEffect(() => {
         if (error) {
@@ -385,43 +427,78 @@ const ColisAReceptionner = () => {
             {/* Header Section - Responsive */}
             <PageHeader
                 title="Colis à réceptionner"
-                subtitle="Gérez les colis en transit vers votre agence"
+                subtitle={activeTab === 'interville'
+                    ? "Confirmez la réception des expéditions Interville qui vous sont destinées"
+                    : "Gérez les colis en transit vers votre agence"}
                 actions={
                     <>
+                        {activeTab === 'extraville' && (
+                            <button
+                                onClick={handleExportPDF}
+                                className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-slate-300 rounded-lg text-xs sm:text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50 hover:border-indigo-400 shadow-sm hover:shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
+                                title="Exporter la liste des colis à réceptionner en PDF"
+                            >
+                                <ArrowDownTrayIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
+                                <span className="hidden sm:inline">Export PDF</span>
+                            </button>
+                        )}
+                        {activeTab === 'extraville' && (
+                            <button
+                                onClick={() => setScannerOpen(true)}
+                                className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-transparent rounded-lg text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm hover:shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
+                            >
+                                <QrCodeIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
+                                <span className="hidden sm:inline">Scanner</span>
+                            </button>
+                        )}
                         <button
-                            onClick={handleExportPDF}
-                            className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-slate-300 rounded-lg text-xs sm:text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50 hover:border-indigo-400 shadow-sm hover:shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
-                            title="Exporter la liste des colis à réceptionner en PDF"
-                        >
-                            <ArrowDownTrayIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
-                            <span className="hidden sm:inline">Export PDF</span>
-                        </button>
-                        <button
-                            onClick={() => setScannerOpen(true)}
-                            className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-transparent rounded-lg text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm hover:shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
-                        >
-                            <QrCodeIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
-                            <span className="hidden sm:inline">Scanner</span>
-                        </button>
-                        <button
-                            onClick={() => fetchReceptionData(true)}
-                            disabled={loading}
+                            onClick={() => activeTab === 'interville' ? fetchInterville() : fetchReceptionData(true)}
+                            disabled={activeTab === 'interville' ? loadingInterville : loading}
                             className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white border-2 border-slate-300 rounded-lg text-sm font-bold text-slate-700 hover:bg-slate-50 hover:border-indigo-400 shadow-sm hover:shadow-md active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            <ArrowPathIcon className={`w-5 h-5 ${loading ? 'animate-spin text-indigo-600' : 'text-slate-600'}`} />
+                            <ArrowPathIcon className={`w-5 h-5 ${(activeTab === 'interville' ? loadingInterville : loading) ? 'animate-spin text-indigo-600' : 'text-slate-600'}`} />
                             <span className="uppercase tracking-wide">Actualiser</span>
                         </button>
                     </>
                 }
             />
 
+            {/* Onglets Extraville / Interville : la reception se fait
+                differemment (backoffice notifie l'agence vs agence
+                d'arrivee confirme elle-meme directement). */}
+            <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 w-fit">
+                <button
+                    onClick={() => setActiveTab('extraville')}
+                    className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-all ${
+                        activeTab === 'extraville' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                >
+                    Extraville
+                </button>
+                <button
+                    onClick={() => setActiveTab('interville')}
+                    className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-all ${
+                        activeTab === 'interville' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                >
+                    Interville
+                    {expeditionsInterville.length > 0 && (
+                        <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-700">
+                            {expeditionsInterville.length}
+                        </span>
+                    )}
+                </button>
+            </div>
+
             {/* QR Scanner Modal */}
-            <QRScanner 
+            <QRScanner
                 isOpen={scannerOpen}
                 onClose={() => setScannerOpen(false)}
                 onScan={handleQRScan}
             />
 
+            {activeTab === 'extraville' && (
+            <>
             {/* Search Bar - Responsive */}
             <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
@@ -937,6 +1014,69 @@ const ColisAReceptionner = () => {
                             </nav>
                         </div>
                     </div>
+                </div>
+            )}
+            </>
+            )}
+
+            {/* Onglet Interville : liste par expédition */}
+            {activeTab === 'interville' && (
+                <div className="space-y-3 pb-6">
+                    {loadingInterville && expeditionsInterville.length === 0 ? (
+                        Array(2).fill(0).map((_, i) => (
+                            <div key={i} className="bg-white rounded-lg p-4 border border-slate-100 shadow-sm animate-pulse space-y-2">
+                                <div className="h-4 bg-slate-100 rounded w-1/3"></div>
+                                <div className="h-3 bg-slate-100 rounded w-full"></div>
+                            </div>
+                        ))
+                    ) : expeditionsInterville.length === 0 ? (
+                        <div className="bg-white rounded-lg border border-slate-100 shadow-sm px-6 py-12 text-center">
+                            <div className="w-16 h-16 mx-auto mb-3 rounded-lg bg-gradient-to-br from-slate-50 to-slate-100 border-2 border-slate-200 flex items-center justify-center">
+                                <CubeIcon className="w-8 h-8 text-slate-400" />
+                            </div>
+                            <p className="text-sm font-semibold text-slate-600 mb-1">Aucune expédition Interville à réceptionner</p>
+                            <p className="text-xs text-slate-400">Les expéditions parties vers votre agence apparaîtront ici</p>
+                        </div>
+                    ) : (
+                        expeditionsInterville.map((exp) => {
+                            const isConfirming = confirmingReceptionId === exp.id;
+                            return (
+                                <div key={exp.id} className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+                                    <div className="flex items-center justify-between gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-indigo-600">
+                                        <Link to={`/expeditions/${exp.id}`} className="flex items-center gap-2 min-w-0">
+                                            <span className="text-xs font-bold text-white truncate">{exp.reference}</span>
+                                            <span className="text-[10px] font-medium text-white/70">
+                                                {exp.commune_depart_nom || getCountryName(exp.code_pays_depart) || exp.pays_depart}
+                                                {' → '}
+                                                {exp.commune_arrivee_nom || getCountryName(exp.code_pays_destination) || exp.pays_destination}
+                                            </span>
+                                        </Link>
+                                        <span className="flex-shrink-0 px-2 py-0.5 bg-white/20 rounded text-[9px] font-bold text-white">
+                                            {(exp.colis || []).length} colis
+                                        </span>
+                                    </div>
+
+                                    <div className="p-4 flex items-center justify-between gap-3">
+                                        <p className="text-xs text-slate-500">
+                                            Ce colis est en route depuis {exp.agence?.nom_agence || "l'agence de départ"}.
+                                            Confirmez sa réception une fois arrivé physiquement dans votre agence.
+                                        </p>
+                                        <button
+                                            onClick={() => handleConfirmerReceptionInterville(exp.id)}
+                                            disabled={isConfirming}
+                                            className="flex-shrink-0 inline-flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                        >
+                                            {isConfirming ? (
+                                                <>
+                                                    <Loader2 className="w-4 h-4 animate-spin" /> Confirmation...
+                                                </>
+                                            ) : "Confirmer la réception"}
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
                 </div>
             )}
 
