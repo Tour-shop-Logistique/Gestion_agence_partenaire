@@ -347,9 +347,32 @@ const ColisAReceptionner = () => {
     };
 
     const handleQRScan = (scannedData) => {
+        // Interville : pas de sélection multiple ni de confirmation
+        // automatique au scan (contrairement à Extraville, la réception ici
+        // est irréversible côté statut) - le scan localise seulement
+        // l'expédition, l'agent confirme explicitement via le bouton dédié.
+        if (activeTab === 'interville') {
+            const exp = expeditionsInterville.find(e =>
+                (e.colis || []).some(c => c.code_colis === scannedData || scannedData.includes(c.code_colis))
+                || e.id === scannedData
+            );
+            if (!exp) {
+                soundNotification.playErrorSound();
+                toast.error(`Aucune expédition Interville à réceptionner ne correspond au code scanné : ${scannedData}`);
+                return;
+            }
+            soundNotification.playScanSound();
+            toast.success(`Expédition ${exp.reference} trouvée. Confirmez la réception ci-dessous.`);
+            setTimeout(() => {
+                const element = document.getElementById(`expedition-interville-${exp.id}`);
+                if (element) element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+            return;
+        }
+
         // Le QR code peut contenir soit le code_colis directement, soit l'ID de l'expédition
         // On va chercher dans la liste des colis
-        
+
         // Chercher par code_colis exact
         let foundColis = filteredColis.find(c => c.code_colis === scannedData);
         
@@ -442,15 +465,13 @@ const ColisAReceptionner = () => {
                                 <span className="hidden sm:inline">Export PDF</span>
                             </button>
                         )}
-                        {activeTab === 'extraville' && (
-                            <button
-                                onClick={() => setScannerOpen(true)}
-                                className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-transparent rounded-lg text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm hover:shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
-                            >
-                                <QrCodeIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
-                                <span className="hidden sm:inline">Scanner</span>
-                            </button>
-                        )}
+                        <button
+                            onClick={() => setScannerOpen(true)}
+                            className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-transparent rounded-lg text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm hover:shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
+                        >
+                            <QrCodeIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
+                            <span className="hidden sm:inline">Scanner</span>
+                        </button>
                         <button
                             onClick={() => activeTab === 'interville' ? fetchInterville() : fetchReceptionData(true)}
                             disabled={activeTab === 'interville' ? loadingInterville : loading}
@@ -474,6 +495,11 @@ const ColisAReceptionner = () => {
                     }`}
                 >
                     Extraville
+                    {reception.length > 0 && (
+                        <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-700">
+                            {reception.length}
+                        </span>
+                    )}
                 </button>
                 <button
                     onClick={() => setActiveTab('interville')}
@@ -1041,7 +1067,7 @@ const ColisAReceptionner = () => {
                         expeditionsInterville.map((exp) => {
                             const isConfirming = confirmingReceptionId === exp.id;
                             return (
-                                <div key={exp.id} className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+                                <div key={exp.id} id={`expedition-interville-${exp.id}`} className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                                     <div className="flex items-center justify-between gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-indigo-600">
                                         <Link to={`/expeditions/${exp.id}`} className="flex items-center gap-2 min-w-0">
                                             <span className="text-xs font-bold text-white truncate">{exp.reference}</span>
@@ -1056,15 +1082,25 @@ const ColisAReceptionner = () => {
                                         </span>
                                     </div>
 
-                                    <div className="p-4 flex items-center justify-between gap-3">
+                                    <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                         <p className="text-xs text-slate-500">
                                             Ce colis est en route depuis {exp.agence?.nom_agence || "l'agence de départ"}.
                                             Confirmez sa réception une fois arrivé physiquement dans votre agence.
                                         </p>
+                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                        <Link
+                                            to={`/expeditions/${exp.id}`}
+                                            className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-900 text-white rounded-lg text-xs font-bold uppercase hover:bg-slate-800 transition-all"
+                                        >
+                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                            </svg>
+                                            Détails
+                                        </Link>
                                         <button
                                             onClick={() => handleConfirmerReceptionInterville(exp.id)}
                                             disabled={isConfirming}
-                                            className="flex-shrink-0 inline-flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                                         >
                                             {isConfirming ? (
                                                 <>
@@ -1072,6 +1108,7 @@ const ColisAReceptionner = () => {
                                                 </>
                                             ) : "Confirmer la réception"}
                                         </button>
+                                        </div>
                                     </div>
                                 </div>
                             );
