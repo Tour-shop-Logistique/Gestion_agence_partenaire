@@ -46,7 +46,7 @@ const KPICard = ({
             </div>
             <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1">
-                    <p className="text-xs sm:text-sm font-medium text-slate-500 truncate">{label}</p>
+                    <p className="text-xs sm:text-sm font-medium text-slate-500">{label}</p>
                     {tooltip && (
                         <div className="relative group/tooltip hidden sm:block">
                             <InformationCircleIcon className="w-3.5 h-3.5 text-slate-300 hover:text-slate-400 cursor-help" />
@@ -59,10 +59,10 @@ const KPICard = ({
                 <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900 mt-1 leading-none truncate">
                     {typeof value === 'number' ? new Intl.NumberFormat('fr-FR').format(value) : value}
                 </h3>
-                <p className="text-[11px] sm:text-xs text-slate-400 mt-1.5 flex items-center gap-1">
-                    {badge && <span className="font-medium text-slate-500">{badge}</span>}
+                <p className="text-[11px] sm:text-xs text-slate-400 mt-1.5 flex items-center gap-1 flex-wrap">
+                    {badge && <span className="font-medium text-slate-500 whitespace-nowrap">{badge}</span>}
                     {badge && unit && <span>·</span>}
-                    <span className="truncate">{unit}</span>
+                    <span>{unit}</span>
                     {isClickable && <ArrowRightIcon className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity ml-auto flex-shrink-0" />}
                 </p>
             </div>
@@ -105,7 +105,7 @@ const KPISection = ({ financial, operational }) => {
                         <p className="text-xs text-slate-500 mt-0.5">Indicateurs de revenus et trésorerie</p>
                     </div>
                 </div>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
                     <KPICard
                         icon={CurrencyDollarIcon}
                         label="Chiffre d'affaires"
@@ -157,7 +157,7 @@ const KPISection = ({ financial, operational }) => {
                         <p className="text-xs text-slate-500 mt-0.5">Volume et flux de colis</p>
                     </div>
                 </div>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
                     <KPICard
                         icon={CubeIcon}
                         label="Expéditions créées"
