@@ -61,12 +61,21 @@ const StatCard = ({ icon: Icon, label, value, color, onClick, active = false }) 
     );
 };
 
-// Statuts pertinents côté arrivée : avant "arrivee_expedition_succes" le
-// colis n'est même pas encore chez l'agence destinataire (recu_agence_depart,
-// en_transit_entrepot, depart_expedition_succes ne concernent que l'agence
-// de départ), donc inutiles à afficher ici. Côté départ on garde tout : on
+// Statuts pertinents côté arrivée : recu_agence_depart et en_transit_entrepot
+// ne concernent que l'agence de départ (colis pas encore parti), donc inutiles
+// ici. depart_expedition_succes reste pertinent : en Interville c'est le seul
+// statut "en route" entre la confirmation de départ et la réception (pas de
+// en_transit_entrepot/arrivee_expedition_succes, propres à Extraville où le
+// backoffice intervient) - sans lui, une expédition Interville en route
+// n'a aucune carte où apparaître côté arrivée. Côté départ on garde tout : on
 // peut vouloir suivre l'expédition jusqu'au bout même après l'avoir envoyée.
-const ARRIVEE_STATUSES = ['arrivee_expedition_succes', 'recu_agence_destination', 'en_cours_livraison', 'termined'];
+const ARRIVEE_STATUSES = ['depart_expedition_succes', 'arrivee_expedition_succes', 'recu_agence_destination', 'en_cours_livraison', 'termined'];
+
+// Depuis l'agence d'arrivée, "Départ Confirmé" n'a pas de sens (elle ne l'a
+// pas confirmé, elle l'attend) - libellé adapté au rôle plutôt qu'au statut brut.
+const ARRIVEE_LABEL_OVERRIDES = {
+    depart_expedition_succes: 'En route',
+};
 
 const StatsCards = ({ expeditions, currentAgenceId, onFilter, activeFilters = {} }) => {
     const [activeTab, setActiveTab] = useState('depart');
@@ -144,7 +153,7 @@ const StatsCards = ({ expeditions, currentAgenceId, onFilter, activeFilters = {}
                     <StatCard
                         key={`${activeTab}-${key}`}
                         icon={config.icon}
-                        label={config.label}
+                        label={activeTab === 'arrivee' ? (ARRIVEE_LABEL_OVERRIDES[key] || config.label) : config.label}
                         value={counts[key] || 0}
                         color={config.color}
                         onClick={() => onFilter(key, activeTab)}
