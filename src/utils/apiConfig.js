@@ -149,6 +149,10 @@ export const API_ENDPOINTS = {
     // départ elle-même, jamais le backoffice - voir cahier des charges §8.1
     // et AgenceExpeditionController::confirmerDepart.
     CONFIRMER_DEPART: "/expedition/agence/:id/confirmer-depart",
+    // Confirmation de réception à l'arrivée (Interville uniquement) : par
+    // l'agence de destination elle-même - voir cahier des charges §8.1
+    // et AgenceExpeditionController::confirmReceptionArrivee.
+    CONFIRMER_RECEPTION_ARRIVEE: "/expedition/agence/:id/confirmer-reception-arrivee",
   },
 
   // Produits

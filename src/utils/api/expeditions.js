@@ -641,5 +641,30 @@ export const expeditionsApi = {
                 errors: error.errors || error.response?.data?.errors,
             };
         }
+    },
+
+    /**
+     * Confirme la réception d'une expédition Interville à l'arrivée, par
+     * l'agence de destination elle-même.
+     * @param {string} expeditionId
+     * @returns {Promise<Object>}
+     */
+    async confirmerReceptionArrivee(expeditionId) {
+        try {
+            const url = API_ENDPOINTS.EXPEDITIONS.CONFIRMER_RECEPTION_ARRIVEE.replace(':id', expeditionId);
+            const response = await apiService.put(url);
+
+            return {
+                success: response.success !== false,
+                data: response.expedition || response.data || response,
+                message: response.message || "Réception confirmée",
+            };
+        } catch (error) {
+            return {
+                success: false,
+                message: error.message || "Erreur lors de la confirmation de réception",
+                errors: error.errors || error.response?.data?.errors,
+            };
+        }
     }
 };

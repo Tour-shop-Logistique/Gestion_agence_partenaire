@@ -157,6 +157,22 @@ const ExpeditionDetails = () => {
         }
     };
 
+    const [isConfirmingReceptionArrivee, setIsConfirmingReceptionArrivee] = React.useState(false);
+    const handleConfirmerReceptionArrivee = async () => {
+        setIsConfirmingReceptionArrivee(true);
+        try {
+            const result = await expeditionsApi.confirmerReceptionArrivee(expedition.id);
+            if (result.success) {
+                toast.success(result.message);
+                getExpeditionDetails(id);
+            } else {
+                toast.error(result.message);
+            }
+        } finally {
+            setIsConfirmingReceptionArrivee(false);
+        }
+    };
+
     // Gestion des transactions
     const handleRecordTransaction = (type) => {
         setTransactionType(type);
@@ -471,6 +487,37 @@ const ExpeditionDetails = () => {
                                 ) : "Confirmer le départ"}
                             </Button>
                         )}
+                    </div>
+                )}
+
+                {/* 📍 RÉCEPTION À L'ARRIVÉE (Interville uniquement, côté agence de
+                    destination) : cahier des charges §8.1 étape 5 - l'agence
+                    d'arrivée réceptionne et valide elle-même, jamais le
+                    backoffice. Distinct du bloc ci-dessus (agence de départ). */}
+                {canControl
+                    && expedition.type_expedition === 'interville'
+                    && expedition.agence_arrivee?.id === currentUser?.agence_id
+                    && expedition.statut_expedition === 'depart_expedition_succes' && (
+                    <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 space-y-3">
+                        <div className="flex items-center gap-2">
+                            <MapPinned className="w-4 h-4 text-indigo-600" />
+                            <span className="text-sm font-bold text-slate-800">Réception à l'arrivée</span>
+                        </div>
+                        <p className="text-xs text-slate-500">
+                            Ce colis vous a été envoyé par l'agence de départ. Confirmez sa réception
+                            une fois arrivé physiquement dans votre agence pour le rendre disponible au retrait.
+                        </p>
+                        <Button
+                            onClick={handleConfirmerReceptionArrivee}
+                            disabled={isConfirmingReceptionArrivee}
+                            className="w-full sm:w-auto"
+                        >
+                            {isConfirmingReceptionArrivee ? (
+                                <span className="inline-flex items-center gap-2">
+                                    <Loader2 className="w-4 h-4 animate-spin" /> Confirmation...
+                                </span>
+                            ) : "Confirmer la réception"}
+                        </Button>
                     </div>
                 )}
 
