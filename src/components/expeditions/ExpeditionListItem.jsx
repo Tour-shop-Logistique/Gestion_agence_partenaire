@@ -116,8 +116,10 @@ const ExpeditionListItem = ({
                 </button>
             </div>
 
-            {/* Sous-lignes colis */}
-            {colisList.length > 0 && (
+            {/* Sous-lignes colis : uniquement utiles quand il y a plusieurs
+                colis à distinguer - avec un seul colis, le statut de
+                l'expédition suffit déjà et répéter la ligne n'ajoute rien. */}
+            {colisList.length > 1 && (
                 <div className="bg-slate-50/60 border-t border-slate-100">
                     {colisList.map((item) => {
                         const receptionStatus = getColisReceptionStatus(item);
@@ -125,12 +127,13 @@ const ExpeditionListItem = ({
                             <div
                                 key={item.id || item.code_colis}
                                 onClick={() => onSelectColis?.(item)}
-                                className="flex items-center gap-2.5 pl-8 pr-4 py-2.5 border-t border-slate-100 first:border-t-0 hover:bg-white cursor-pointer transition-colors"
+                                className="flex items-center gap-2 pl-8 pr-4 py-2 border-t border-slate-100 first:border-t-0 hover:bg-white cursor-pointer transition-colors"
                             >
                                 <span className="text-slate-300 text-xs flex-shrink-0">└</span>
-                                <span className="text-sm flex-shrink-0">📦</span>
                                 <span className="text-xs font-bold text-indigo-600 truncate">{item.code_colis}</span>
-                                <span className="text-xs text-slate-400 truncate hidden sm:inline">· {item.designation || 'Sans désignation'}</span>
+                                {item.designation && (
+                                    <span className="text-xs text-slate-400 truncate hidden sm:inline">· {item.designation}</span>
+                                )}
                                 <span className={`ml-auto px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border flex-shrink-0 ${receptionStatus.className}`}>
                                     {receptionStatus.label}
                                 </span>

@@ -220,6 +220,18 @@ const Demandes = () => {
         }
     };
 
+    // Un colis n'a pas de champ "produit_nom" côté API : sa désignation
+    // libre (`designation`) ou celle de ses articles structurés
+    // (`articles[].designation`, résolue côté backend depuis produit_id)
+    // sont les seules sources de texte lisible.
+    const getColisProduitLabel = (colis) => {
+        if (colis.designation) return colis.designation;
+        if (Array.isArray(colis.articles) && colis.articles.length > 0) {
+            return colis.articles.map(a => a.designation).filter(Boolean).join(', ');
+        }
+        return '';
+    };
+
     // Interville : départ et arrivée sont dans le même pays, donc on affiche
     // les communes résolues côté backend (commune_depart_nom/commune_arrivee_nom)
     // plutôt que le pays répété deux fois (ex: "Espagne → Espagne").
@@ -287,7 +299,7 @@ const Demandes = () => {
         const query = searchQuery.toLowerCase();
         const code = colis.code_colis?.toLowerCase() || '';
         const reference = colis.expedition?.reference?.toLowerCase() || '';
-        const produit = colis.produit_nom?.toLowerCase() || '';
+        const produit = getColisProduitLabel(colis).toLowerCase();
         const destination = (getCountryName(colis.expedition?.code_pays_destination) || colis.expedition?.pays_destination || '').toLowerCase();
         
         return code.includes(query) ||
@@ -647,7 +659,7 @@ const Demandes = () => {
                                                     <span>{demande.colis?.length || 0} Colis</span>
                                                 </div>
                                                 <div className="text-xs text-slate-400 font-medium truncate">
-                                                    {demande.colis?.map(c => c.produit_nom).join(', ')}
+                                                    {demande.colis?.map(c => getColisProduitLabel(c)).filter(Boolean).join(', ')}
                                                 </div>
                                             </div>
                                         </td>
@@ -963,7 +975,7 @@ const Demandes = () => {
                                                 <Package className="w-4 h-4 text-slate-400 flex-shrink-0" />
                                                 <div className="flex flex-col min-w-0">
                                                     <span className="text-sm font-bold text-slate-900 truncate">{colis.code_colis}</span>
-                                                    <span className="text-xs text-slate-400 truncate">{colis.produit_nom}</span>
+                                                    <span className="text-xs text-slate-400 truncate">{getColisProduitLabel(colis)}</span>
                                                 </div>
                                             </div>
                                         </td>
