@@ -1003,12 +1003,19 @@ const Comptabilite = () => {
                       <p className="text-lg font-bold text-blue-600 tabular-nums">{formatCurrency(selectedExpedition.accounting_details?.agence_depart)} {getCurrencyLabel()}</p>
                     </div>
                     <div className="space-y-2 pl-3 border-l-2 border-blue-200">
-                      {parseFloat(selectedExpedition.montant_prestation || 0) > 0 && (
-                        <div className="flex justify-between text-xs">
-                          <span className="text-slate-600">Montant Expédition (Com.)</span>
-                          <span className="text-slate-800 font-semibold tabular-nums">{formatCurrency(selectedExpedition.montant_prestation)} {getCurrencyLabel()}</span>
-                        </div>
-                      )}
+                      {selectedExpedition.type_expedition === 'interville'
+                        ? (parseFloat(selectedExpedition.commission_details?.trajet_interville?.agence_depart || 0) > 0 && (
+                          <div className="flex justify-between text-xs">
+                            <span className="text-slate-600">Trajet Interville (Part)</span>
+                            <span className="text-slate-800 font-semibold tabular-nums">{formatCurrency(selectedExpedition.commission_details.trajet_interville.agence_depart)} {getCurrencyLabel()}</span>
+                          </div>
+                        ))
+                        : (parseFloat(selectedExpedition.montant_prestation || 0) > 0 && (
+                          <div className="flex justify-between text-xs">
+                            <span className="text-slate-600">Montant Expédition (Com.)</span>
+                            <span className="text-slate-800 font-semibold tabular-nums">{formatCurrency(selectedExpedition.montant_prestation)} {getCurrencyLabel()}</span>
+                          </div>
+                        ))}
                       {selectedExpedition.commission_details?.enlevement && parseFloat(selectedExpedition.commission_details.enlevement.agence || 0) > 0 && (
                         <div className="flex justify-between text-xs">
                           <span className="text-slate-600">Frais d'Enlèvement (Part)</span>
@@ -1033,6 +1040,12 @@ const Comptabilite = () => {
                       <p className="text-lg font-bold text-blue-600 tabular-nums">{formatCurrency(selectedExpedition.accounting_details?.agence_arrivee)} {getCurrencyLabel()}</p>
                     </div>
                     <div className="space-y-2 pl-3 border-l-2 border-blue-200">
+                      {parseFloat(selectedExpedition.commission_details?.trajet_interville?.agence_arrivee || 0) > 0 && (
+                        <div className="flex justify-between text-xs">
+                          <span className="text-slate-600">Trajet Interville (Part)</span>
+                          <span className="text-slate-800 font-semibold tabular-nums">{formatCurrency(selectedExpedition.commission_details.trajet_interville.agence_arrivee)} {getCurrencyLabel()}</span>
+                        </div>
+                      )}
                       {selectedExpedition.commission_details?.livraison && parseFloat(selectedExpedition.commission_details.livraison.agence || 0) > 0 && (
                         <div className="flex justify-between text-xs">
                           <span className="text-slate-600">Frais de Livraison (Part)</span>
