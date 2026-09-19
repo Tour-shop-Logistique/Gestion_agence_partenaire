@@ -824,19 +824,19 @@ const Comptabilite = () => {
                   <div>
                     <p className="text-[9px] font-semibold text-slate-400 uppercase mb-0.5">CA Client</p>
                     <p className="text-xs font-semibold text-slate-700 tabular-nums">
-                      {new Intl.NumberFormat('fr-FR', { notation: 'compact' }).format(item.accounting_details?.total_client_due || 0)}
+                      {new Intl.NumberFormat('fr-FR').format(item.accounting_details?.total_client_due || 0)}
                     </p>
                   </div>
                   <div>
                     <p className="text-[9px] font-semibold text-slate-400 uppercase mb-0.5">Agence</p>
                     <p className="text-xs font-bold text-blue-600 tabular-nums">
-                      {new Intl.NumberFormat('fr-FR', { notation: 'compact' }).format((parseFloat(item.accounting_details?.agence_depart || 0) + parseFloat(item.accounting_details?.agence_arrivee || 0)))}
+                      {new Intl.NumberFormat('fr-FR').format((parseFloat(item.accounting_details?.agence_depart || 0) + parseFloat(item.accounting_details?.agence_arrivee || 0)))}
                     </p>
                   </div>
                   <div>
                     <p className="text-[9px] font-semibold text-slate-400 uppercase mb-0.5">HUB</p>
                     <p className="text-xs font-medium text-slate-500 tabular-nums">
-                      {new Intl.NumberFormat('fr-FR', { notation: 'compact' }).format((parseFloat(item.accounting_details?.backoffice_depart || 0) + parseFloat(item.accounting_details?.backoffice_arrivee || 0)))}
+                      {new Intl.NumberFormat('fr-FR').format((parseFloat(item.accounting_details?.backoffice_depart || 0) + parseFloat(item.accounting_details?.backoffice_arrivee || 0)))}
                     </p>
                   </div>
                 </div>

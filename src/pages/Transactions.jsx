@@ -346,7 +346,7 @@ const Transactions = () => {
                     <span className={`text-sm font-semibold tabular-nums ${
                       t.type === 'encaissement' ? 'text-emerald-600' : 'text-rose-600'
                     }`}>
-                      {t.type === 'encaissement' ? '+' : '-'}{new Intl.NumberFormat('fr-FR', { notation: 'compact' }).format(t.amount)}
+                      {t.type === 'encaissement' ? '+' : '-'}{new Intl.NumberFormat('fr-FR').format(t.amount)}
                     </span>
                     <span className="text-[9px] text-slate-400 font-medium">{getCurrencyLabel()}</span>
                   </div>
