@@ -29,7 +29,6 @@ import {
   XMarkIcon,
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
-  ChartBarIcon,
   DocumentArrowDownIcon,
   TableCellsIcon,
   CreditCardIcon,
@@ -38,7 +37,6 @@ import {
   ExclamationTriangleIcon,
   BellAlertIcon,
   InformationCircleIcon,
-  CurrencyDollarIcon,
   CalculatorIcon,
   ScaleIcon,
   ChevronDownIcon,
@@ -676,8 +674,7 @@ const TransactionsPro = () => {
         <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg w-fit">
           {[
             { id: 'dashboard', label: 'Tableau de bord', icon: Squares2X2Icon },
-            { id: 'journal', label: 'Journal', icon: TableCellsIcon },
-            { id: 'analyses', label: 'Analyses', icon: ChartBarIcon }
+            { id: 'journal', label: 'Journal', icon: TableCellsIcon }
           ].map(view => (
             <button
               key={view.id}
@@ -832,7 +829,7 @@ const TransactionsPro = () => {
           )}
 
           {/* 📊 Cartes KPI Principaux */}
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {/* Solde de Caisse */}
             <div className={`p-4 rounded-lg border-2 ${
               financialKPIs.soldeCaisse >= 0 
@@ -886,60 +883,41 @@ const TransactionsPro = () => {
               </p>
             </div>
 
-            {/* Moyenne Encaissement */}
+            {/* Total Encaissement */}
             <div className="p-4 rounded-lg border-2 bg-gradient-to-br from-emerald-50 to-white border-emerald-200">
               <div className="flex items-start justify-between mb-2">
                 <div className="p-2 rounded-lg bg-emerald-100">
                   <ArrowDownLeftIcon className="w-5 h-5 text-emerald-600" />
                 </div>
               </div>
-              <p className="text-xs font-medium text-slate-500 mb-1">Moy. Encaissement</p>
+              <p className="text-xs font-medium text-slate-500 mb-1">Total Encaissement</p>
               <div className="flex items-baseline gap-1">
                 <span className="text-xl font-bold text-emerald-600">
-                  {formatCurrency(Math.round(financialKPIs.moyenneEncaissement))}
+                  {formatCurrency(financialKPIs.totalEncaissements)}
                 </span>
                 <span className="text-xs text-slate-400 font-medium">{getCurrencyLabel()}</span>
               </div>
               <p className="text-[10px] text-slate-500 mt-1">
-                Par transaction
+                {financialKPIs.nombreTransactions.encaissements} transaction(s)
               </p>
             </div>
 
-            {/* Plus Gros Encaissement */}
-            <div className="p-4 rounded-lg border-2 bg-gradient-to-br from-violet-50 to-white border-violet-200">
-              <div className="flex items-start justify-between mb-2">
-                <div className="p-2 rounded-lg bg-violet-100">
-                  <CurrencyDollarIcon className="w-5 h-5 text-violet-600" />
-                </div>
-              </div>
-              <p className="text-xs font-medium text-slate-500 mb-1">Max. Encaissement</p>
-              <div className="flex items-baseline gap-1">
-                <span className="text-xl font-bold text-violet-600">
-                  {formatCurrency(financialKPIs.plusGrosEncaissement)}
-                </span>
-                <span className="text-xs text-slate-400 font-medium">{getCurrencyLabel()}</span>
-              </div>
-              <p className="text-[10px] text-slate-500 mt-1">
-                Transaction la plus élevée
-              </p>
-            </div>
-
-            {/* Plus Gros Décaissement */}
+            {/* Total Décaissement */}
             <div className="p-4 rounded-lg border-2 bg-gradient-to-br from-orange-50 to-white border-orange-200">
               <div className="flex items-start justify-between mb-2">
                 <div className="p-2 rounded-lg bg-orange-100">
                   <ArrowUpRightIcon className="w-5 h-5 text-orange-600" />
                 </div>
               </div>
-              <p className="text-xs font-medium text-slate-500 mb-1">Max. Décaissement</p>
+              <p className="text-xs font-medium text-slate-500 mb-1">Total Décaissement</p>
               <div className="flex items-baseline gap-1">
                 <span className="text-xl font-bold text-orange-600">
-                  {formatCurrency(financialKPIs.plusGrosDecaissement)}
+                  {formatCurrency(financialKPIs.totalDecaissements)}
                 </span>
                 <span className="text-xs text-slate-400 font-medium">{getCurrencyLabel()}</span>
               </div>
               <p className="text-[10px] text-slate-500 mt-1">
-                Sortie la plus importante
+                {financialKPIs.nombreTransactions.decaissements} transaction(s)
               </p>
             </div>
           </div>
@@ -1054,6 +1032,78 @@ const TransactionsPro = () => {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* Indicateurs de performance (fusionnés depuis l'ancien onglet Analyses) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white border border-slate-200 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <CalculatorIcon className="w-5 h-5 text-purple-600" />
+                </div>
+                <h4 className="text-sm font-bold text-slate-900">Moyennes</h4>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-600">Moy. Encaissement</span>
+                  <span className="text-sm font-bold text-emerald-600">
+                    {formatCurrency(Math.round(financialKPIs.moyenneEncaissement))} {getCurrencyLabel()}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-600">Moy. Décaissement</span>
+                  <span className="text-sm font-bold text-rose-600">
+                    {formatCurrency(Math.round(financialKPIs.moyenneDecaissement))} {getCurrencyLabel()}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white border border-slate-200 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <ArrowTrendingUpIcon className="w-5 h-5 text-green-600" />
+                </div>
+                <h4 className="text-sm font-bold text-slate-900">Maximum</h4>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-600">Plus gros +</span>
+                  <span className="text-sm font-bold text-emerald-600">
+                    {formatCurrency(financialKPIs.plusGrosEncaissement)} {getCurrencyLabel()}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-600">Plus gros -</span>
+                  <span className="text-sm font-bold text-rose-600">
+                    {formatCurrency(financialKPIs.plusGrosDecaissement)} {getCurrencyLabel()}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white border border-slate-200 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <ClockIcon className="w-5 h-5 text-blue-600" />
+                </div>
+                <h4 className="text-sm font-bold text-slate-900">Période</h4>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-600">Du</span>
+                  <span className="text-sm font-bold text-slate-900">
+                    {formatDate(dateDebut)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-600">Au</span>
+                  <span className="text-sm font-bold text-slate-900">
+                    {formatDate(dateFin)}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </>
@@ -1297,165 +1347,6 @@ const TransactionsPro = () => {
               </div>
             </div>
           )}
-        </div>
-      )}
-
-      {/* 📊 VUE ANALYSES */}
-      {activeView === 'analyses' && (
-        <div className="space-y-6">
-          <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
-            <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
-              <ChartBarIcon className="w-6 h-6 text-blue-600" />
-              Analyses Financières Détaillées
-            </h3>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Répartition Encaissements/Décaissements */}
-              <div className="p-4 bg-slate-50 rounded-lg">
-                <h4 className="text-sm font-bold text-slate-900 mb-4">Répartition des flux</h4>
-                <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <Pie
-                      data={[
-                        { name: 'Encaissements', value: financialKPIs.totalEncaissements, color: '#10b981' },
-                        { name: 'Décaissements', value: financialKPIs.totalDecaissements, color: '#ef4444' }
-                      ]}
-                      dataKey="value"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(1)}%`}
-                    >
-                      <Cell fill="#10b981" />
-                      <Cell fill="#ef4444" />
-                    </Pie>
-                    <Tooltip 
-                      formatter={(value) => formatCurrency(value) + ' ' + getCurrencyLabel()}
-                      contentStyle={{ fontSize: '12px', borderRadius: '8px' }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-
-              {/* Statistiques comparatives */}
-              <div className="space-y-3">
-                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
-                  <p className="text-xs font-medium text-emerald-700 mb-1">Total Encaissements</p>
-                  <p className="text-2xl font-bold text-emerald-900">
-                    {formatCurrency(financialKPIs.totalEncaissements)} <span className="text-sm font-normal">{getCurrencyLabel()}</span>
-                  </p>
-                  <p className="text-xs text-emerald-600 mt-2">
-                    {financialKPIs.nombreTransactions.encaissements} opération(s)
-                  </p>
-                </div>
-
-                <div className="p-4 bg-rose-50 border border-rose-200 rounded-lg">
-                  <p className="text-xs font-medium text-rose-700 mb-1">Total Décaissements</p>
-                  <p className="text-2xl font-bold text-rose-900">
-                    {formatCurrency(financialKPIs.totalDecaissements)} <span className="text-sm font-normal">{getCurrencyLabel()}</span>
-                  </p>
-                  <p className="text-xs text-rose-600 mt-2">
-                    {financialKPIs.nombreTransactions.decaissements} opération(s)
-                  </p>
-                </div>
-
-                <div className={`p-4 border rounded-lg ${
-                  financialKPIs.soldeCaisse >= 0 
-                  ? 'bg-blue-50 border-blue-200' 
-                  : 'bg-orange-50 border-orange-200'
-                }`}>
-                  <p className={`text-xs font-medium mb-1 ${
-                    financialKPIs.soldeCaisse >= 0 ? 'text-blue-700' : 'text-orange-700'
-                  }`}>
-                    Solde Net
-                  </p>
-                  <p className={`text-2xl font-bold ${
-                    financialKPIs.soldeCaisse >= 0 ? 'text-blue-900' : 'text-orange-900'
-                  }`}>
-                    {formatCurrency(Math.abs(financialKPIs.soldeCaisse))} <span className="text-sm font-normal">{getCurrencyLabel()}</span>
-                  </p>
-                  <p className={`text-xs mt-2 ${
-                    financialKPIs.soldeCaisse >= 0 ? 'text-blue-600' : 'text-orange-600'
-                  }`}>
-                    {financialKPIs.soldeCaisse >= 0 ? 'Situation saine ✓' : 'Attention requise ⚠'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Indicateurs de performance */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white border border-slate-200 rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <CalculatorIcon className="w-5 h-5 text-purple-600" />
-                </div>
-                <h4 className="text-sm font-bold text-slate-900">Moyennes</h4>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-600">Moy. Encaissement</span>
-                  <span className="text-sm font-bold text-emerald-600">
-                    {formatCurrency(Math.round(financialKPIs.moyenneEncaissement))} {getCurrencyLabel()}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-600">Moy. Décaissement</span>
-                  <span className="text-sm font-bold text-rose-600">
-                    {formatCurrency(Math.round(financialKPIs.moyenneDecaissement))} {getCurrencyLabel()}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white border border-slate-200 rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <ArrowTrendingUpIcon className="w-5 h-5 text-green-600" />
-                </div>
-                <h4 className="text-sm font-bold text-slate-900">Maximum</h4>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-600">Plus gros +</span>
-                  <span className="text-sm font-bold text-emerald-600">
-                    {formatCurrency(financialKPIs.plusGrosEncaissement)} {getCurrencyLabel()}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-600">Plus gros -</span>
-                  <span className="text-sm font-bold text-rose-600">
-                    {formatCurrency(financialKPIs.plusGrosDecaissement)} {getCurrencyLabel()}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white border border-slate-200 rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <ClockIcon className="w-5 h-5 text-blue-600" />
-                </div>
-                <h4 className="text-sm font-bold text-slate-900">Période</h4>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-600">Du</span>
-                  <span className="text-sm font-bold text-slate-900">
-                    {formatDate(dateDebut)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-600">Au</span>
-                  <span className="text-sm font-bold text-slate-900">
-                    {formatDate(dateFin)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       )}
 

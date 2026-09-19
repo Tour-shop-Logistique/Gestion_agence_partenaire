@@ -649,9 +649,8 @@ const Comptabilite = () => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Potentiel Stats */}
         {[
-          { label: "Commission Agence (Total)", value: summary.potential?.total_agence, sub: "Déjà perçu + Attendue", color: "text-blue-600", bg: "bg-blue-50/50", icon: BuildingOfficeIcon, isMain: true },
           { label: "Montant Global", value: summary.potential?.total_client_due, sub: "Montant total facturé", color: "text-slate-900", bg: "bg-slate-50", icon: ShoppingBagIcon },
-          { label: "Réel Encaissé en Agence", value: summary.real?.total_cash_received, sub: "Physiquement perçu", color: "text-emerald-600", bg: "bg-emerald-50/50", icon: CheckCircleIcon, indicator: "bg-emerald-500" },
+          { label: "Commission Agence (Total)", value: summary.potential?.total_agence, sub: "Déjà perçu + Attendue", color: "text-blue-600", bg: "bg-blue-50/50", icon: BuildingOfficeIcon, isMain: true },
           { label: "Part Backoffice / HUB", value: summary.potential?.total_backoffice, sub: "Frais de service système", color: "text-slate-600", bg: "bg-slate-50", icon: BanknotesIcon }
         ].map((kpi, idx) => (
           <div key={idx} className={`p-3 sm:p-4 rounded-lg border border-slate-200 bg-white shadow-sm relative overflow-hidden`}>
@@ -669,6 +668,39 @@ const Comptabilite = () => {
             <p className="text-[9px] sm:text-[10px] text-slate-400 mt-1 sm:mt-1.5 font-medium line-clamp-1">{kpi.sub}</p>
           </div>
         ))}
+
+        {/* Réel Encaissé : dernière carte, avec répartition Agence/Backoffice
+            dans le montant réellement perçu (pas le potentiel) - proportion
+            calculée sur les parts potentielles, appliquée au réel encaissé. */}
+        {(() => {
+          const totalPotentiel = (summary.potential?.total_agence || 0) + (summary.potential?.total_backoffice || 0);
+          const reelEncaisse = summary.real?.total_cash_received || 0;
+          const partAgenceRatio = totalPotentiel > 0 ? (summary.potential?.total_agence || 0) / totalPotentiel : 0;
+          const reelAgence = reelEncaisse * partAgenceRatio;
+          const reelBackoffice = reelEncaisse - reelAgence;
+          return (
+            <div className="p-3 sm:p-4 rounded-lg border border-slate-200 bg-white shadow-sm relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500" />
+              <div className="flex justify-between items-start mb-1.5 sm:mb-2">
+                <p className="text-[10px] sm:text-[11px] font-semibold text-slate-500 uppercase tracking-tight">Réel Encaissé en Agence</p>
+                <CheckCircleIcon className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-emerald-600 opacity-40" />
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="text-base sm:text-xl font-bold tabular-nums text-emerald-600">
+                  {formatCurrency(reelEncaisse)}
+                </span>
+                <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400">{getCurrencyLabel()}</span>
+              </div>
+              {reelEncaisse > 0 ? (
+                <p className="text-[9px] sm:text-[10px] text-slate-400 mt-1 sm:mt-1.5 font-medium">
+                  Agence {formatCurrency(reelAgence)} · HUB {formatCurrency(reelBackoffice)}
+                </p>
+              ) : (
+                <p className="text-[9px] sm:text-[10px] text-slate-400 mt-1 sm:mt-1.5 font-medium line-clamp-1">Physiquement perçu</p>
+              )}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Détail des Commissions Agence - Responsive */}
@@ -679,18 +711,18 @@ const Comptabilite = () => {
             <h2 className="text-xs sm:text-sm font-bold text-slate-900 uppercase tracking-tight">Détail des Commissions Agence</h2>
             <span className="ml-auto text-[10px] sm:text-xs text-slate-500 font-medium">Période sélectionnée</span>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
             {[
               { label: "Marge Prestation", value: summary.potential.details_agence.marge_prestation, icon: ShoppingBagIcon },
-              { label: "Commission Enlèvement", value: summary.potential.details_agence.com_enlevement, icon: TruckIcon },
-              { label: "Commission Emballage", value: summary.potential.details_agence.com_emballage, icon: InboxIcon },
-              { label: "Commission Livraison", value: summary.potential.details_agence.com_livraison, icon: MapPinIcon },
-              { label: "Commission Retard", value: summary.potential.details_agence.com_retard, icon: InformationCircleIcon }
+              { label: "Enlèvement", value: summary.potential.details_agence.com_enlevement, icon: TruckIcon },
+              { label: "Emballage", value: summary.potential.details_agence.com_emballage, icon: InboxIcon },
+              { label: "Livraison", value: summary.potential.details_agence.com_livraison, icon: MapPinIcon },
+              { label: "Retard", value: summary.potential.details_agence.com_retard, icon: InformationCircleIcon }
             ].map((item, idx) => (
               <div key={idx} className="bg-white rounded-lg p-2.5 sm:p-3 border border-slate-200">
                 <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
-                  <item.icon className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-blue-500" />
-                  <p className="text-[9px] sm:text-[10px] font-semibold text-slate-500 uppercase line-clamp-1">{item.label}</p>
+                  <item.icon className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-blue-500 flex-shrink-0" />
+                  <p className="text-[9px] sm:text-[10px] font-semibold text-slate-500 uppercase truncate">{item.label}</p>
                 </div>
                 <div className="flex items-baseline gap-1">
                   <span className="text-sm sm:text-lg font-bold text-blue-600 tabular-nums">{formatCurrency(item.value)}</span>
