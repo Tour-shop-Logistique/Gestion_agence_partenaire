@@ -111,21 +111,13 @@ const StatusOverview = ({ expedition }) => {
         refused: 'Demande refusée',
     };
 
+    // Chiffres courts (grid compact) : colis/poids/montant, toujours brefs.
+    // Trajet et agence d'arrivée sont du texte variable (nom de commune, nom
+    // d'agence) qui peut être long - traités à part, en pleine largeur, pour
+    // ne jamais se retrouver tronqués dans une case de grid étroite.
     const kpis = [
         { icon: Package, label: 'Colis', value: totalParcels, unit: totalParcels > 1 ? 'unités' : 'unité', color: 'indigo' },
         { icon: Weight, label: 'Poids', value: totalWeight.toFixed(1), unit: 'KG', color: 'blue' },
-        {
-            icon: MapPin,
-            label: 'Trajet',
-            // Interville : départ/arrivée sont dans le même pays, afficher
-            // les communes (résolues côté backend) donne le vrai trajet
-            // plutôt qu'un pays répété deux fois.
-            value: expedition.type_expedition === 'interville'
-                ? `${expedition.commune_depart_nom || getCountryName(expedition.code_pays_depart) || expedition.pays_depart || ''} → ${expedition.commune_arrivee_nom || getCountryName(expedition.code_pays_destination) || expedition.pays_destination || ''}`
-                : `${getCountryName(expedition.code_pays_depart) || expedition.pays_depart || ''} → ${getCountryName(expedition.code_pays_destination) || expedition.pays_destination || ''}`,
-            unit: '',
-            color: 'purple',
-        },
         {
             icon: FileText,
             label: 'Montant total',
@@ -133,18 +125,19 @@ const StatusOverview = ({ expedition }) => {
             unit: getCurrencyLabel(),
             color: 'emerald',
         },
-        // Interville uniquement : une fois choisie, l'agence d'arrivée reste
-        // visible même après confirmation du départ (le bloc de sélection
-        // disparaît alors, voir ExpeditionDetails.jsx) - sinon plus aucune
-        // trace de l'agence sélectionnée n'est affichée à l'agence de départ.
-        ...(expedition.type_expedition === 'interville' && expedition.agence_arrivee ? [{
-            icon: Building2,
-            label: "Agence d'arrivée",
-            value: expedition.agence_arrivee.nom_agence,
-            unit: expedition.agence_arrivee.commune?.nom || '',
-            color: 'indigo',
-        }] : []),
     ];
+
+    const trajetValue = expedition.type_expedition === 'interville'
+        ? `${expedition.commune_depart_nom || getCountryName(expedition.code_pays_depart) || expedition.pays_depart || ''} → ${expedition.commune_arrivee_nom || getCountryName(expedition.code_pays_destination) || expedition.pays_destination || ''}`
+        : `${getCountryName(expedition.code_pays_depart) || expedition.pays_depart || ''} → ${getCountryName(expedition.code_pays_destination) || expedition.pays_destination || ''}`;
+
+    // Interville uniquement : une fois choisie, l'agence d'arrivée reste
+    // visible même après confirmation du départ (le bloc de sélection
+    // disparaît alors, voir ExpeditionDetails.jsx) - sinon plus aucune trace
+    // de l'agence sélectionnée n'est affichée à l'agence de départ.
+    const agenceArriveeValue = expedition.type_expedition === 'interville' && expedition.agence_arrivee
+        ? `${expedition.agence_arrivee.nom_agence}${expedition.agence_arrivee.commune?.nom ? ` (${expedition.agence_arrivee.commune.nom})` : ''}`
+        : null;
 
     const kpiColors = {
         indigo: 'bg-indigo-50 border-indigo-100 text-indigo-600',
@@ -210,8 +203,8 @@ const StatusOverview = ({ expedition }) => {
                 </div>
             </div>
 
-            {/* Chiffres clés */}
-            <div className={`grid grid-cols-2 divide-x divide-y divide-slate-100 ${kpis.length > 4 ? 'lg:grid-cols-5 lg:divide-y-0' : 'lg:grid-cols-4 lg:divide-y-0'}`}>
+            {/* Chiffres clés (courts) */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-x sm:divide-y-0 divide-slate-100 border-b border-slate-100">
                 {kpis.map((kpi, index) => {
                     const Icon = kpi.icon;
                     return (
@@ -228,6 +221,31 @@ const StatusOverview = ({ expedition }) => {
                         </div>
                     );
                 })}
+            </div>
+
+            {/* Trajet et agence d'arrivée : texte variable, pleine largeur,
+                jamais tronqué (contrairement aux chiffres clés ci-dessus). */}
+            <div className="divide-y divide-slate-100">
+                <div className="p-4 flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-lg border flex items-center justify-center flex-shrink-0 bg-purple-50 border-purple-100 text-purple-600">
+                        <MapPin className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Trajet</p>
+                        <p className="text-sm font-bold text-slate-900 leading-snug break-words">{trajetValue}</p>
+                    </div>
+                </div>
+                {agenceArriveeValue && (
+                    <div className="p-4 flex items-start gap-3">
+                        <div className="w-9 h-9 rounded-lg border flex items-center justify-center flex-shrink-0 bg-indigo-50 border-indigo-100 text-indigo-600">
+                            <Building2 className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Agence d'arrivée</p>
+                            <p className="text-sm font-bold text-slate-900 leading-snug break-words">{agenceArriveeValue}</p>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
