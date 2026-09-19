@@ -15,10 +15,14 @@ import {
     ChevronRightIcon,
     QrCodeIcon
 } from "@heroicons/react/24/outline";
+import { MapPinned, Loader2 } from "lucide-react";
 import QRScanner from "../components/QRScanner";
 import ColisDetailsDrawer from "../components/common/ColisDetailsDrawer";
 import PageHeader from "../components/ui/PageHeader";
+import SearchableDropdown from "../components/common/SearchableDropdown";
 import { getCountryName } from "../utils/countries";
+import { expeditionsApi } from "../utils/api/expeditions";
+import { agencesApi } from "../utils/api/agences";
 
 const Colis = () => {
     const { currentUser } = useAuth();
@@ -31,6 +35,11 @@ const Colis = () => {
     const [selectedCodes, setSelectedCodes] = useState([]);
     const [processing, setProcessing] = useState(false);
     const [scannerOpen, setScannerOpen] = useState(false);
+    // Interville ne passe jamais par l'entrepôt (pas de backoffice dans son
+    // cycle, cahier des charges §8.1) : son envoi se fait par expédition
+    // (choix de l'agence d'arrivée + confirmation de départ), pas par
+    // sélection multiple de colis comme Extraville - onglet séparé.
+    const [activeTab, setActiveTab] = useState('extraville');
     const [detailsColis, setDetailsColis] = useState(null);
     
     // Suivre les colis déjà scannés pour éviter les messages en double
@@ -137,9 +146,11 @@ const Colis = () => {
     }, [expeditions]);
 
     // Filtrer uniquement les colis "Envoi pour expédition" : Colis avec statut expédition "recu_agence_depart"
-    // qui ne sont PAS encore expédiés vers l'entrepôt
+    // qui ne sont PAS encore expédiés vers l'entrepôt. Extraville uniquement -
+    // Interville n'a pas d'entrepôt dans son cycle (voir tabExpeditionsInterville).
     const tabColis = useMemo(() => {
-        const filtered = allColis.filter(c => 
+        const filtered = allColis.filter(c =>
+            c.expedition?.type_expedition !== 'interville' &&
             c.expedition_status === 'recu_agence_depart' && !c.is_sent
         );
         console.log("🚚 Colis reçus à envoyer:", {
@@ -147,6 +158,21 @@ const Colis = () => {
             expeditions: [...new Set(filtered.map(c => c.expedition?.reference))],
         });
         return filtered;
+    }, [allColis]);
+
+    // Expéditions Interville à traiter : acceptées ou déjà reçues en agence,
+    // pas encore parties - l'action se fait par expédition (agence d'arrivée
+    // + confirmation de départ), pas par colis coché individuellement.
+    const tabExpeditionsInterville = useMemo(() => {
+        const map = new Map();
+        allColis.forEach(c => {
+            const exp = c.expedition;
+            if (!exp || exp.type_expedition !== 'interville') return;
+            if (!['accepted', 'recu_agence_depart'].includes(exp.statut_expedition)) return;
+            if (!map.has(exp.id)) map.set(exp.id, { ...exp, colis: [] });
+            map.get(exp.id).colis.push(c);
+        });
+        return Array.from(map.values());
     }, [allColis]);
 
     const handlePageChange = (page) => {
@@ -233,6 +259,63 @@ const Colis = () => {
         setProcessing(false);
     };
 
+    // ========== INTERVILLE : agence d'arrivée + confirmation de départ ==========
+    // État par expédition (pas un seul état global) : plusieurs expéditions
+    // Interville peuvent être listées et traitées en même temps ici.
+    const [agencesArriveeParExpedition, setAgencesArriveeParExpedition] = useState({});
+    const [loadingAgencesExpeditionIds, setLoadingAgencesExpeditionIds] = useState(new Set());
+    const [savingAgenceExpeditionId, setSavingAgenceExpeditionId] = useState(null);
+    const [confirmingDepartExpeditionId, setConfirmingDepartExpeditionId] = useState(null);
+
+    // Charge la liste d'agences d'arrivée disponibles pour chaque expédition
+    // Interville affichée, une seule fois par expédition (pas à chaque render).
+    useEffect(() => {
+        tabExpeditionsInterville.forEach((exp) => {
+            const communeArriveeId = exp?.destinataire?.commune_id;
+            if (!communeArriveeId) return;
+            if (agencesArriveeParExpedition[exp.id] || loadingAgencesExpeditionIds.has(exp.id)) return;
+
+            setLoadingAgencesExpeditionIds(prev => new Set(prev).add(exp.id));
+            agencesApi.getAgencesByCommune(communeArriveeId).then((result) => {
+                if (result.success) {
+                    setAgencesArriveeParExpedition(prev => ({ ...prev, [exp.id]: result.data }));
+                } else {
+                    toast.error(result.message);
+                }
+                setLoadingAgencesExpeditionIds(prev => {
+                    const next = new Set(prev);
+                    next.delete(exp.id);
+                    return next;
+                });
+            });
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [tabExpeditionsInterville]);
+
+    const handleSaveAgenceArrivee = async (expeditionId, agenceId) => {
+        setSavingAgenceExpeditionId(expeditionId);
+        const result = await expeditionsApi.choisirAgenceArrivee(expeditionId, agenceId);
+        if (result.success) {
+            toast.success(result.message);
+            fetchColisData(true);
+        } else {
+            toast.error(result.message);
+        }
+        setSavingAgenceExpeditionId(null);
+    };
+
+    const handleConfirmerDepartInterville = async (expeditionId) => {
+        setConfirmingDepartExpeditionId(expeditionId);
+        const result = await expeditionsApi.confirmerDepart(expeditionId);
+        if (result.success) {
+            toast.success(result.message);
+            fetchColisData(true);
+        } else {
+            toast.error(result.message);
+        }
+        setConfirmingDepartExpeditionId(null);
+    };
+
     const handleQRScan = (scannedData) => {
         // Chercher le colis dans la liste filtrée
         let foundColis = filteredColis.find(c => c.code_colis === scannedData);
@@ -302,16 +385,20 @@ const Colis = () => {
             {/* Header Section - Responsive */}
             <PageHeader
                 title="Gestion des Colis - À envoyer"
-                subtitle="Envoyez les colis reçus vers l'entrepôt"
+                subtitle={activeTab === 'interville'
+                    ? "Choisissez l'agence d'arrivée et confirmez le départ"
+                    : "Envoyez les colis reçus vers l'entrepôt"}
                 actions={
                     <>
-                        <button
-                            onClick={() => setScannerOpen(true)}
-                            className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-transparent rounded-lg text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm hover:shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
-                        >
-                            <QrCodeIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
-                            <span className="hidden sm:inline">Scanner</span>
-                        </button>
+                        {activeTab === 'extraville' && (
+                            <button
+                                onClick={() => setScannerOpen(true)}
+                                className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-transparent rounded-lg text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm hover:shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
+                            >
+                                <QrCodeIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
+                                <span className="hidden sm:inline">Scanner</span>
+                            </button>
+                        )}
                         <button
                             onClick={() => fetchColisData(true)}
                             disabled={loadingColis}
@@ -324,14 +411,43 @@ const Colis = () => {
                 }
             />
 
+            {/* Onglets Extraville / Interville : deux mecaniques d'envoi
+                differentes (entrepot + backoffice vs agence d'arrivee
+                choisie directement), pas de selection multiple commune. */}
+            <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 w-fit">
+                <button
+                    onClick={() => setActiveTab('extraville')}
+                    className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-all ${
+                        activeTab === 'extraville' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                >
+                    Extraville
+                </button>
+                <button
+                    onClick={() => setActiveTab('interville')}
+                    className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-all ${
+                        activeTab === 'interville' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                >
+                    Interville
+                    {tabExpeditionsInterville.length > 0 && (
+                        <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-700">
+                            {tabExpeditionsInterville.length}
+                        </span>
+                    )}
+                </button>
+            </div>
+
             {/* QR Scanner Modal */}
-            <QRScanner 
+            <QRScanner
                 isOpen={scannerOpen}
                 onClose={() => setScannerOpen(false)}
                 onScan={handleQRScan}
             />
 
             {/* Search Bar - Responsive */}
+            {activeTab === 'extraville' && (
+            <>
             <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
                     <MagnifyingGlassIcon className="h-4 w-4 sm:h-5 sm:w-5 text-slate-400" />
@@ -797,6 +913,99 @@ const Colis = () => {
                     </div>
                 )}
             </div>
+            </>
+            )}
+
+            {/* Onglet Interville : liste par expédition */}
+            {activeTab === 'interville' && (
+                <div className="space-y-3 pb-6">
+                    {loadingColis && tabExpeditionsInterville.length === 0 ? (
+                        Array(2).fill(0).map((_, i) => (
+                            <div key={i} className="bg-white rounded-lg p-4 border border-slate-100 shadow-sm animate-pulse space-y-2">
+                                <div className="h-4 bg-slate-100 rounded w-1/3"></div>
+                                <div className="h-3 bg-slate-100 rounded w-full"></div>
+                            </div>
+                        ))
+                    ) : tabExpeditionsInterville.length === 0 ? (
+                        <div className="bg-white rounded-lg border border-slate-100 shadow-sm px-6 py-12 text-center">
+                            <div className="w-16 h-16 mx-auto mb-3 rounded-lg bg-gradient-to-br from-slate-50 to-slate-100 border-2 border-slate-200 flex items-center justify-center">
+                                <CubeIcon className="w-8 h-8 text-slate-400" />
+                            </div>
+                            <p className="text-sm font-semibold text-slate-600 mb-1">Aucune expédition Interville à traiter</p>
+                            <p className="text-xs text-slate-400">Les expéditions acceptées ou reçues en agence apparaîtront ici</p>
+                        </div>
+                    ) : (
+                        tabExpeditionsInterville.map((exp) => {
+                            const agencesArrivee = agencesArriveeParExpedition[exp.id] || [];
+                            const isLoadingAgences = loadingAgencesExpeditionIds.has(exp.id);
+                            const isSavingAgence = savingAgenceExpeditionId === exp.id;
+                            const isConfirmingDepart = confirmingDepartExpeditionId === exp.id;
+                            return (
+                                <div key={exp.id} className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+                                    <div className="flex items-center justify-between gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-indigo-600">
+                                        <Link to={`/expeditions/${exp.id}`} className="flex items-center gap-2 min-w-0">
+                                            <span className="text-xs font-bold text-white truncate">{exp.reference}</span>
+                                            <span className="text-[10px] font-medium text-white/70">
+                                                {exp.commune_depart_nom || getCountryName(exp.code_pays_depart) || exp.pays_depart}
+                                                {' → '}
+                                                {exp.commune_arrivee_nom || getCountryName(exp.code_pays_destination) || exp.pays_destination}
+                                            </span>
+                                        </Link>
+                                        <span className="flex-shrink-0 px-2 py-0.5 bg-white/20 rounded text-[9px] font-bold text-white">
+                                            {exp.colis.length} colis
+                                        </span>
+                                    </div>
+
+                                    <div className="p-4 space-y-3">
+                                        <div className="flex items-center gap-2">
+                                            <MapPinned className="w-4 h-4 text-indigo-600" />
+                                            <span className="text-sm font-bold text-slate-800">Agence d'arrivée</span>
+                                            {!exp.agence_arrivee && (
+                                                <span className="px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-bold uppercase rounded">
+                                                    À renseigner
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        {isLoadingAgences ? (
+                                            <div className="flex items-center gap-2 text-sm text-slate-500">
+                                                <Loader2 className="w-4 h-4 animate-spin" /> Chargement des agences...
+                                            </div>
+                                        ) : agencesArrivee.length === 0 ? (
+                                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
+                                                Aucune agence active n'est disponible dans la commune de destination.
+                                            </div>
+                                        ) : (
+                                            <SearchableDropdown
+                                                options={agencesArrivee.map((a) => ({ id: a.id, label: `${a.nom_agence} (${a.commune?.nom || a.pays})` }))}
+                                                onSelect={(option) => handleSaveAgenceArrivee(exp.id, option.id)}
+                                                placeholder={
+                                                    exp.agence_arrivee
+                                                        ? `${exp.agence_arrivee.nom_agence} (${exp.agence_arrivee.commune?.nom || ''})`
+                                                        : "Sélectionner une agence..."
+                                                }
+                                                disabled={isSavingAgence}
+                                            />
+                                        )}
+
+                                        <button
+                                            onClick={() => handleConfirmerDepartInterville(exp.id)}
+                                            disabled={!exp.agence_arrivee || isConfirmingDepart}
+                                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                        >
+                                            {isConfirmingDepart ? (
+                                                <>
+                                                    <Loader2 className="w-4 h-4 animate-spin" /> Confirmation...
+                                                </>
+                                            ) : "Confirmer le départ"}
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
+                </div>
+            )}
 
             {/* ColisDetailsDrawer */}
             <ColisDetailsDrawer colis={detailsColis} onClose={() => setDetailsColis(null)} />
