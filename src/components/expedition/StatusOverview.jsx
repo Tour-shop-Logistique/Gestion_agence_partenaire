@@ -8,6 +8,7 @@ import {
     Truck,
     AlertCircle,
     Weight,
+    Building2,
 } from 'lucide-react';
 import { getCountryName } from '../../utils/countries';
 import { getCurrencyLabel } from '../../utils/format';
@@ -33,7 +34,13 @@ const StatusOverview = ({ expedition }) => {
     // choisi entre "payé maintenant" et "à percevoir à l'arrivée" - un choix
     // fait (même "à l'arrivée") lève le blocage, indépendamment du paiement réel.
     const decisionAgenceEnAttente = hasFraisAnnexes && !expedition.frais_decision_agence_prise;
+    const isInterville = expedition.type_expedition === 'interville';
 
+    // Interville (cahier des charges §8.1) : le backoffice n'intervient
+    // jamais, donc pas d'étape HUB/Contrôle ni de statut en_transit_entrepot/
+    // arrivee_expedition_succes - le cycle saute directement de la réception
+    // en agence de départ à la confirmation de départ, puis à la réception
+    // par l'agence de destination.
     const steps = [
         {
             id: 'registration',
@@ -57,34 +64,36 @@ const StatusOverview = ({ expedition }) => {
             completed: ['recu_agence_depart', 'en_transit_entrepot', 'depart_expedition_succes', 'arrivee_expedition_succes', 'recu_agence_destination', 'en_cours_livraison', 'termined'].includes(status),
             active: status === 'recu_agence_depart',
         },
-        {
+        ...(isInterville ? [] : [{
             id: 'hub',
             label: 'HUB / Contrôle',
             icon: AlertCircle,
             completed: ['depart_expedition_succes', 'arrivee_expedition_succes', 'recu_agence_destination', 'en_cours_livraison', 'termined'].includes(status),
             active: status === 'en_transit_entrepot',
             blocked: decisionAgenceEnAttente,
-        },
+        }]),
         {
             id: 'transit',
-            label: 'Transit',
-            icon: Plane,
+            label: isInterville ? 'Départ confirmé' : 'Transit',
+            icon: isInterville ? Truck : Plane,
             completed: ['arrivee_expedition_succes', 'recu_agence_destination', 'en_cours_livraison', 'termined'].includes(status),
             active: status === 'depart_expedition_succes',
         },
-        {
+        ...(isInterville ? [] : [{
             id: 'arrival',
             label: 'Arrivée',
             icon: MapPin,
             completed: ['recu_agence_destination', 'en_cours_livraison', 'termined'].includes(status),
             active: status === 'arrivee_expedition_succes',
-        },
+        }]),
         {
-            id: 'delivery',
-            label: 'Livraison',
-            icon: Truck,
-            completed: ['termined', 'delivered'].includes(status),
-            active: status === 'en_cours_livraison',
+            id: isInterville ? 'reception_destination' : 'delivery',
+            label: isInterville ? 'Reçue à destination' : 'Livraison',
+            icon: isInterville ? MapPin : Truck,
+            completed: isInterville
+                ? ['recu_agence_destination', 'en_cours_livraison', 'termined'].includes(status)
+                : ['termined', 'delivered'].includes(status),
+            active: status === (isInterville ? 'recu_agence_destination' : 'en_cours_livraison'),
         },
     ];
 
@@ -93,7 +102,7 @@ const StatusOverview = ({ expedition }) => {
         accepted: 'Acceptée - En préparation',
         recu_agence_depart: "Reçue à l'agence de départ",
         en_transit_entrepot: 'Au contrôle HUB',
-        depart_expedition_succes: 'En transit international',
+        depart_expedition_succes: isInterville ? 'Départ confirmé - En route' : 'En transit international',
         arrivee_expedition_succes: 'Arrivée à destination',
         recu_agence_destination: 'Reçue à destination',
         en_cours_livraison: 'En cours de livraison',
@@ -124,6 +133,17 @@ const StatusOverview = ({ expedition }) => {
             unit: getCurrencyLabel(),
             color: 'emerald',
         },
+        // Interville uniquement : une fois choisie, l'agence d'arrivée reste
+        // visible même après confirmation du départ (le bloc de sélection
+        // disparaît alors, voir ExpeditionDetails.jsx) - sinon plus aucune
+        // trace de l'agence sélectionnée n'est affichée à l'agence de départ.
+        ...(expedition.type_expedition === 'interville' && expedition.agence_arrivee ? [{
+            icon: Building2,
+            label: "Agence d'arrivée",
+            value: expedition.agence_arrivee.nom_agence,
+            unit: expedition.agence_arrivee.commune?.nom || '',
+            color: 'indigo',
+        }] : []),
     ];
 
     const kpiColors = {
@@ -191,7 +211,7 @@ const StatusOverview = ({ expedition }) => {
             </div>
 
             {/* Chiffres clés */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-y lg:divide-y-0 divide-slate-100">
+            <div className={`grid grid-cols-2 divide-x divide-y divide-slate-100 ${kpis.length > 4 ? 'lg:grid-cols-5 lg:divide-y-0' : 'lg:grid-cols-4 lg:divide-y-0'}`}>
                 {kpis.map((kpi, index) => {
                     const Icon = kpi.icon;
                     return (
