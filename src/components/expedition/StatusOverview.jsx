@@ -223,9 +223,10 @@ const StatusOverview = ({ expedition }) => {
                 })}
             </div>
 
-            {/* Trajet et agence d'arrivée : texte variable, pleine largeur,
-                jamais tronqué (contrairement aux chiffres clés ci-dessus). */}
-            <div className="divide-y divide-slate-100">
+            {/* Trajet et agence d'arrivée : texte variable, jamais tronqué
+                (contrairement aux chiffres clés ci-dessus). Empilés sur
+                mobile (manque de largeur), côte à côte à partir de sm. */}
+            <div className={`divide-y sm:divide-y-0 divide-slate-100 ${agenceArriveeValue ? 'sm:grid sm:grid-cols-2 sm:divide-x' : ''}`}>
                 <div className="p-4 flex items-start gap-3">
                     <div className="w-9 h-9 rounded-lg border flex items-center justify-center flex-shrink-0 bg-purple-50 border-purple-100 text-purple-600">
                         <MapPin className="w-4 h-4" />

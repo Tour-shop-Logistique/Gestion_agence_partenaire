@@ -72,9 +72,11 @@ const StatCard = ({ icon: Icon, label, value, color, onClick, active = false }) 
 const ARRIVEE_STATUSES = ['depart_expedition_succes', 'arrivee_expedition_succes', 'recu_agence_destination', 'en_cours_livraison', 'termined'];
 
 // Depuis l'agence d'arrivée, "Départ Confirmé" n'a pas de sens (elle ne l'a
-// pas confirmé, elle l'attend) - libellé adapté au rôle plutôt qu'au statut brut.
+// pas confirmé, elle l'attend) - libellé adapté au rôle plutôt qu'au statut
+// brut. "Arrivée confirmée" fait pendant à "Départ confirmé" côté départ.
 const ARRIVEE_LABEL_OVERRIDES = {
     depart_expedition_succes: 'En route',
+    recu_agence_destination: 'Arrivée confirmée',
 };
 
 const StatsCards = ({ expeditions, currentAgenceId, onFilter, activeFilters = {} }) => {

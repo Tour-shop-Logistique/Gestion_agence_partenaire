@@ -207,6 +207,23 @@ const Colis = () => {
         );
     }, [tabColis, searchQuery]);
 
+    // Même filtre texte que l'onglet Extraville, appliqué ici par expédition
+    // (référence, agence d'arrivée, trajet) et par colis contenu.
+    const filteredExpeditionsInterville = useMemo(() => {
+        if (!searchQuery) return tabExpeditionsInterville;
+        const lowerQuery = searchQuery.toLowerCase();
+        return tabExpeditionsInterville.filter(exp =>
+            exp.reference?.toLowerCase().includes(lowerQuery) ||
+            exp.agence_arrivee?.nom_agence?.toLowerCase().includes(lowerQuery) ||
+            exp.commune_depart_nom?.toLowerCase().includes(lowerQuery) ||
+            exp.commune_arrivee_nom?.toLowerCase().includes(lowerQuery) ||
+            exp.colis.some(c =>
+                c.code_colis?.toLowerCase().includes(lowerQuery) ||
+                c.designation?.toLowerCase().includes(lowerQuery)
+            )
+        );
+    }, [tabExpeditionsInterville, searchQuery]);
+
     // Grouper les colis par expédition pour l'affichage structuré
     const groupedExpeditions = useMemo(() => {
         const groups = {};
@@ -472,9 +489,8 @@ const Colis = () => {
                 onScan={handleQRScan}
             />
 
-            {/* Search Bar - Responsive */}
-            {activeTab === 'extraville' && (
-            <>
+            {/* Search Bar - Responsive (les deux onglets, filtre par colis
+                pour Extraville, par expédition pour Interville) */}
             <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
                     <MagnifyingGlassIcon className="h-4 w-4 sm:h-5 sm:w-5 text-slate-400" />
@@ -488,6 +504,8 @@ const Colis = () => {
                 />
             </div>
 
+            {activeTab === 'extraville' && (
+            <>
             {/* Selection Bar - Responsive */}
             {selectedCodes.length > 0 && (
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-0 px-3 sm:px-4 py-2 sm:py-3 bg-indigo-50 border border-indigo-200 rounded-lg shadow-sm animate-fade-in-down">
@@ -954,16 +972,20 @@ const Colis = () => {
                                 <div className="h-3 bg-slate-100 rounded w-full"></div>
                             </div>
                         ))
-                    ) : tabExpeditionsInterville.length === 0 ? (
+                    ) : filteredExpeditionsInterville.length === 0 ? (
                         <div className="bg-white rounded-lg border border-slate-100 shadow-sm px-6 py-12 text-center">
                             <div className="w-16 h-16 mx-auto mb-3 rounded-lg bg-gradient-to-br from-slate-50 to-slate-100 border-2 border-slate-200 flex items-center justify-center">
                                 <CubeIcon className="w-8 h-8 text-slate-400" />
                             </div>
-                            <p className="text-sm font-semibold text-slate-600 mb-1">Aucune expédition Interville à traiter</p>
-                            <p className="text-xs text-slate-400">Les expéditions acceptées ou reçues en agence apparaîtront ici</p>
+                            <p className="text-sm font-semibold text-slate-600 mb-1">
+                                {searchQuery ? 'Aucun résultat pour cette recherche' : 'Aucune expédition Interville à traiter'}
+                            </p>
+                            <p className="text-xs text-slate-400">
+                                {searchQuery ? 'Essayez un autre terme de recherche' : 'Les expéditions acceptées ou reçues en agence apparaîtront ici'}
+                            </p>
                         </div>
                     ) : (
-                        tabExpeditionsInterville.map((exp) => {
+                        filteredExpeditionsInterville.map((exp) => {
                             const agencesArrivee = agencesArriveeParExpedition[exp.id] || [];
                             const isLoadingAgences = loadingAgencesExpeditionIds.has(exp.id);
                             const isSavingAgence = savingAgenceExpeditionId === exp.id;

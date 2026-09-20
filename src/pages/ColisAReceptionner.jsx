@@ -238,6 +238,23 @@ const ColisAReceptionner = () => {
         });
     }, [flatColis, searchQuery]);
 
+    // Même filtre texte que l'onglet Extraville, appliqué par expédition
+    // (référence, agence de départ, trajet) et par colis contenu.
+    const filteredExpeditionsInterville = useMemo(() => {
+        if (!searchQuery) return expeditionsInterville;
+        const lowQuery = searchQuery.toLowerCase();
+        return expeditionsInterville.filter(exp =>
+            exp.reference?.toLowerCase().includes(lowQuery) ||
+            exp.agence?.nom_agence?.toLowerCase().includes(lowQuery) ||
+            exp.commune_depart_nom?.toLowerCase().includes(lowQuery) ||
+            exp.commune_arrivee_nom?.toLowerCase().includes(lowQuery) ||
+            exp.colis?.some(c =>
+                c.code_colis?.toLowerCase().includes(lowQuery) ||
+                c.designation?.toLowerCase().includes(lowQuery)
+            )
+        );
+    }, [expeditionsInterville, searchQuery]);
+
     const handlePageChange = (page) => {
         if (page >= 1 && page <= (receptionMeta?.last_page || 1)) {
             setCurrentPage(page);
@@ -523,9 +540,8 @@ const ColisAReceptionner = () => {
                 onScan={handleQRScan}
             />
 
-            {activeTab === 'extraville' && (
-            <>
-            {/* Search Bar - Responsive */}
+            {/* Search Bar - Responsive (les deux onglets, filtre par colis
+                pour Extraville, par expédition pour Interville) */}
             <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
                     <MagnifyingGlassIcon className="h-4 w-4 sm:h-5 sm:w-5 text-slate-400" />
@@ -539,6 +555,8 @@ const ColisAReceptionner = () => {
                 />
             </div>
 
+            {activeTab === 'extraville' && (
+            <>
             {/* Selection Bar - Responsive */}
             {selectedCodes.length > 0 && (
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-0 px-3 sm:px-4 py-2 sm:py-3 bg-indigo-50 border border-indigo-200 rounded-lg shadow-sm animate-fade-in-down">
@@ -1055,16 +1073,20 @@ const ColisAReceptionner = () => {
                                 <div className="h-3 bg-slate-100 rounded w-full"></div>
                             </div>
                         ))
-                    ) : expeditionsInterville.length === 0 ? (
+                    ) : filteredExpeditionsInterville.length === 0 ? (
                         <div className="bg-white rounded-lg border border-slate-100 shadow-sm px-6 py-12 text-center">
                             <div className="w-16 h-16 mx-auto mb-3 rounded-lg bg-gradient-to-br from-slate-50 to-slate-100 border-2 border-slate-200 flex items-center justify-center">
                                 <CubeIcon className="w-8 h-8 text-slate-400" />
                             </div>
-                            <p className="text-sm font-semibold text-slate-600 mb-1">Aucune expédition Interville à réceptionner</p>
-                            <p className="text-xs text-slate-400">Les expéditions parties vers votre agence apparaîtront ici</p>
+                            <p className="text-sm font-semibold text-slate-600 mb-1">
+                                {searchQuery ? 'Aucun résultat pour cette recherche' : 'Aucune expédition Interville à réceptionner'}
+                            </p>
+                            <p className="text-xs text-slate-400">
+                                {searchQuery ? 'Essayez un autre terme de recherche' : 'Les expéditions parties vers votre agence apparaîtront ici'}
+                            </p>
                         </div>
                     ) : (
-                        expeditionsInterville.map((exp) => {
+                        filteredExpeditionsInterville.map((exp) => {
                             const isConfirming = confirmingReceptionId === exp.id;
                             return (
                                 <div key={exp.id} id={`expedition-interville-${exp.id}`} className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
