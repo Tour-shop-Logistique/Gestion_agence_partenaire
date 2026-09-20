@@ -72,10 +72,14 @@ const StatCard = ({ icon: Icon, label, value, color, onClick, active = false }) 
 const ARRIVEE_STATUSES = ['depart_expedition_succes', 'arrivee_expedition_succes', 'recu_agence_destination', 'en_cours_livraison', 'termined'];
 
 // Depuis l'agence d'arrivée, "Départ Confirmé" n'a pas de sens (elle ne l'a
-// pas confirmé, elle l'attend) - libellé adapté au rôle plutôt qu'au statut
-// brut. "Arrivée confirmée" fait pendant à "Départ confirmé" côté départ.
+// pas confirmé, elle l'attend) - libellé adapté au rôle plutôt qu'au statut brut.
 const ARRIVEE_LABEL_OVERRIDES = {
     depart_expedition_succes: 'En route',
+};
+
+// "Arrivée confirmée" fait pendant à "Départ Confirmé" (visible des deux
+// côtés : l'agence de départ veut aussi savoir si son envoi est bien arrivé).
+const COMMON_LABEL_OVERRIDES = {
     recu_agence_destination: 'Arrivée confirmée',
 };
 
@@ -155,7 +159,11 @@ const StatsCards = ({ expeditions, currentAgenceId, onFilter, activeFilters = {}
                     <StatCard
                         key={`${activeTab}-${key}`}
                         icon={config.icon}
-                        label={activeTab === 'arrivee' ? (ARRIVEE_LABEL_OVERRIDES[key] || config.label) : config.label}
+                        label={
+                            (activeTab === 'arrivee' && ARRIVEE_LABEL_OVERRIDES[key])
+                            || COMMON_LABEL_OVERRIDES[key]
+                            || config.label
+                        }
                         value={counts[key] || 0}
                         color={config.color}
                         onClick={() => onFilter(key, activeTab)}

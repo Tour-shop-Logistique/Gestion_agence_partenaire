@@ -1306,15 +1306,14 @@ const CreateExpeditionV2 = () => {
                                         <label className="block text-xs font-semibold text-slate-600">
                                             Type d'expédition <span className="text-amber-600">*</span>
                                         </label>
-                                        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3">
+                                        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
                                             {[
                                                 { value: 'SIMPLE',                label: 'Livraison à domicile',           icon: '📦' },
                                                 { value: 'GROUPAGE_DHD_AERIEN',   label: 'DHD Aérien',   icon: '✈️' },
                                                 { value: 'GROUPAGE_DHD_MARITIME', label: 'DHD Maritime', icon: '🚢' },
                                                 { value: 'GROUPAGE_AFRIQUE',      label: 'Afrique',      icon: '🌍' },
                                                 { value: 'GROUPAGE_CA',           label: 'CA',           icon: '📮' },
-                                                // Interville masqué pour l'instant (chantier pas encore
-                                                // prêt côté produit) - voir { value: 'INTERVILLE', label: 'Interville (National)', icon: '🏙️' }.
+                                                { value: 'INTERVILLE',            label: 'Interville (National)', icon: '🏙️' },
                                             ].map(type => (
                                                 <button
                                                     key={type.value}
@@ -1381,7 +1380,17 @@ const CreateExpeditionV2 = () => {
                                                         id="commune-arrivee-select"
                                                         options={intervilleAvailableCommunes}
                                                         onSelect={(commune) => {
-                                                            setFormData(prev => ({ ...prev, destinataire_commune_id: commune.id }));
+                                                            // destinataire_ville (texte libre affiché) doit être
+                                                            // rempli en plus de destinataire_commune_id (la vraie
+                                                            // source de vérité) : canProceedToStep2() exige les
+                                                            // deux, et le nom de la commune sert d'affichage côté
+                                                            // trajet - voir le bug historique de désynchronisation
+                                                            // ville/commune_id corrigé côté affichage agence.
+                                                            setFormData(prev => ({
+                                                                ...prev,
+                                                                destinataire_commune_id: commune.id,
+                                                                destinataire_ville: commune.label,
+                                                            }));
                                                         }}
                                                         disabled={intervilleAvailableCommunes.length === 0}
                                                         placeholder={formData.destinataire_commune_id
