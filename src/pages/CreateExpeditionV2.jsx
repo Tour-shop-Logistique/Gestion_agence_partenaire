@@ -199,23 +199,33 @@ const CreateExpeditionV2 = () => {
     // en lecture seule côté UI - voir le champ correspondant) : les tarifs
     // LD sont configurés par le backoffice de rattachement de l'agence, une
     // expédition "depuis" un autre pays n'aurait pas de tarif cohérent.
+    // La ville de départ par défaut est celle de la commune réelle de
+    // l'agence (plutôt qu'une valeur en dur type "Abidjan") - l'utilisateur
+    // reste libre de la corriger si besoin (champ texte, pas verrouillé).
     useEffect(() => {
         const agence = agencyData?.agence || agencyData;
         const codePays = agence?.code_pays;
         if (!codePays) return;
 
         const paysName = getCountryName(codePays) || agence?.pays || codePays;
+        const villeAgence = agence?.commune?.nom;
         setFormData(prev => ({
             ...prev,
             pays_depart: paysName,
             code_pays_depart: codePays,
             expediteur_pays: paysName,
+            ...(villeAgence ? { expediteur_ville: villeAgence } : {}),
         }));
     }, [agencyData]);
 
     // Gestion des pays par défaut selon le type
     useEffect(() => {
         const type = formData.type_expedition;
+        // Ville de départ = commune réelle de l'agence si connue, sinon on
+        // garde la valeur déjà présente (ne jamais régresser vers une valeur
+        // en dur comme "Abidjan" qui ne correspond à aucune agence en particulier).
+        const agence = agencyData?.agence || agencyData;
+        const villeAgence = agence?.commune?.nom;
         // SIMPLE (LD) reste forcé sur la France (comportement existant,
         // hors scope de la règle géographique DHD/CA/Afrique). DHD couvre
         // désormais tous les pays hors Afrique : plus de valeur par défaut,
@@ -227,7 +237,7 @@ const CreateExpeditionV2 = () => {
                 code_pays_destination: "FR",
                 destinataire_ville: "",
                 destinataire_commune_id: "",
-                expediteur_ville: "Abidjan"
+                expediteur_ville: villeAgence || prev.expediteur_ville
             }));
         } else if (type === "INTERVILLE") {
             // Trajet intra-pays : le pays de destination est toujours celui
@@ -239,7 +249,7 @@ const CreateExpeditionV2 = () => {
                 code_pays_destination: prev.code_pays_depart,
                 destinataire_ville: "",
                 destinataire_commune_id: "",
-                expediteur_ville: "Abidjan"
+                expediteur_ville: villeAgence || prev.expediteur_ville
             }));
         } else {
             setFormData(prev => ({
@@ -248,7 +258,7 @@ const CreateExpeditionV2 = () => {
                 code_pays_destination: "",
                 destinataire_ville: "",
                 destinataire_commune_id: "",
-                expediteur_ville: "Abidjan"
+                expediteur_ville: villeAgence || prev.expediteur_ville
             }));
         }
         // Réinitialiser la route sélectionnée lorsque le type change
@@ -1586,14 +1596,16 @@ const CreateExpeditionV2 = () => {
                                             <label htmlFor="destinataire_ville" className="block text-xs font-semibold text-slate-600">
                                                 Ville destination <span className="text-amber-600">*</span>
                                             </label>
-                                            {(formData.type_expedition === 'GROUPAGE_DHD_AERIEN' || formData.type_expedition === 'GROUPAGE_DHD_MARITIME') ? (
-                                                // La ville de destination provient du trajet DHD sélectionné
-                                                // ci-dessus (voir handleRouteSelect) : lecture seule pour ne
-                                                // pas contredire le trajet réellement tarifé.
+                                            {(formData.type_expedition === 'GROUPAGE_DHD_AERIEN' || formData.type_expedition === 'GROUPAGE_DHD_MARITIME' || formData.type_expedition === 'INTERVILLE') ? (
+                                                // La ville de destination provient du trajet DHD ou de la
+                                                // commune Interville sélectionnés ci-dessus : lecture seule
+                                                // pour ne pas contredire le trajet réellement tarifé.
                                                 <div
                                                     id="destinataire_ville"
                                                     className="w-full h-11 px-3 flex items-center rounded-lg border border-slate-200 bg-slate-50 text-sm font-medium text-slate-600 cursor-not-allowed"
-                                                    title="La ville de destination correspond au trajet sélectionné et ne peut pas être modifiée"
+                                                    title={formData.type_expedition === 'INTERVILLE'
+                                                        ? "La ville de destination correspond à la commune sélectionnée et ne peut pas être modifiée"
+                                                        : "La ville de destination correspond au trajet sélectionné et ne peut pas être modifiée"}
                                                 >
                                                     {formData.destinataire_ville || "—"}
                                                 </div>
@@ -1619,13 +1631,13 @@ const CreateExpeditionV2 = () => {
                                         </div>
                                         <div className="space-y-1.5">
                                             <label htmlFor="expediteur_ville" className="block text-xs font-semibold text-slate-600">Ville départ</label>
-                                            <input
+                                            <div
                                                 id="expediteur_ville"
-                                                type="text" name="expediteur_ville"
-                                                value={formData.expediteur_ville} onChange={handleInputChange}
-                                                placeholder="Abidjan…"
-                                                className={inputCls(formData.expediteur_ville)}
-                                            />
+                                                className="w-full h-11 px-3 flex items-center rounded-lg border border-slate-200 bg-slate-50 text-sm font-medium text-slate-600 cursor-not-allowed"
+                                                title="La ville de départ correspond à la commune de votre agence et ne peut pas être modifiée"
+                                            >
+                                                {formData.expediteur_ville || "—"}
+                                            </div>
                                         </div>
                                     </div>
 
