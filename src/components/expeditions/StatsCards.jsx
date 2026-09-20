@@ -69,7 +69,16 @@ const StatCard = ({ icon: Icon, label, value, color, onClick, active = false }) 
 // backoffice intervient) - sans lui, une expédition Interville en route
 // n'a aucune carte où apparaître côté arrivée. Côté départ on garde tout : on
 // peut vouloir suivre l'expédition jusqu'au bout même après l'avoir envoyée.
+//
+// en_attente/accepted absents de STATUS_CONFIG (gérés dans "Demandes" côté
+// départ), mais en Interville l'agence d'arrivée est désignée dès accepted -
+// bien avant tout envoi -, donc déjà comptée dans arriveeTotal sans jamais
+// matcher une carte de statut sans ces deux entrées ajoutées séparément.
 const ARRIVEE_STATUSES = ['depart_expedition_succes', 'arrivee_expedition_succes', 'recu_agence_destination', 'en_cours_livraison', 'termined'];
+const ARRIVEE_EXTRA_STATUSES = {
+    en_attente: { label: 'En attente', icon: STATUS_CONFIG.recu_agence_depart.icon, color: 'amber' },
+    accepted: { label: 'Acceptée', icon: STATUS_CONFIG.recu_agence_depart.icon, color: 'sky' },
+};
 
 // Depuis l'agence d'arrivée, "Départ Confirmé" n'a pas de sens (elle ne l'a
 // pas confirmé, elle l'attend) - libellé adapté au rôle plutôt qu'au statut brut.
@@ -118,7 +127,7 @@ const StatsCards = ({ expeditions, currentAgenceId, onFilter, activeFilters = {}
     const counts = activeTab === 'depart' ? departCounts : arriveeCounts;
     const visibleStatuses = activeTab === 'depart'
         ? Object.entries(STATUS_CONFIG)
-        : Object.entries(STATUS_CONFIG).filter(([key]) => ARRIVEE_STATUSES.includes(key));
+        : [...Object.entries(ARRIVEE_EXTRA_STATUSES), ...Object.entries(STATUS_CONFIG).filter(([key]) => ARRIVEE_STATUSES.includes(key))];
 
     return (
         <div className="space-y-3">
