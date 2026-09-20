@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { Package, Scissors, Calculator, Loader2, Plus, Trash2, ArrowLeft, Pencil, ChevronDown, ChevronUp, MapPinned } from 'lucide-react';
+import { Package, Scissors, Calculator, Loader2, Plus, Trash2, ArrowLeft, Pencil, ChevronDown, ChevronUp } from 'lucide-react';
 import Spinner from '../components/common/Spinner';
 import { Button, PageHeader } from '../components/ui';
 import SearchableDropdown from '../components/common/SearchableDropdown';
@@ -11,7 +11,6 @@ import { useWebSocket } from '../hooks/useWebSocket';
 import useHasPermission from '../hooks/useHasPermission';
 import { toast } from '../utils/toast';
 import { expeditionsApi } from '../utils/api/expeditions';
-import { agencesApi } from '../utils/api/agences';
 import {
     updateColisControl,
     splitColisControl,
@@ -119,22 +118,6 @@ const ExpeditionControl = () => {
     useEffect(() => {
         if (error) { toast.error(error); resetStatus(); }
     }, [error, resetStatus]);
-
-    // Charge les agences actives de la commune de destination, pour le
-    // sélecteur d'agence d'arrivée (Interville uniquement, expédition déjà
-    // reliée à une commune de destination choisie par le client).
-    const communeArriveeId = expedition?.destinataire?.commune_id;
-    useEffect(() => {
-        if (expedition?.type_expedition !== 'interville' || !communeArriveeId) {
-            setAgencesArrivee([]);
-            return;
-        }
-        setIsLoadingAgencesArrivee(true);
-        agencesApi.getAgencesByCommune(communeArriveeId).then((result) => {
-            if (result.success) setAgencesArrivee(result.data);
-            else toast.error(result.message);
-        }).finally(() => setIsLoadingAgencesArrivee(false));
-    }, [expedition?.type_expedition, communeArriveeId]);
 
     if (!expedition) {
         return (
