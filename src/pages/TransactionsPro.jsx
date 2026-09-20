@@ -673,7 +673,7 @@ const TransactionsPro = () => {
         {/* Onglets de vue */}
         <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg w-fit">
           {[
-            { id: 'dashboard', label: 'Tableau de bord', icon: Squares2X2Icon },
+            { id: 'dashboard', label: 'Analyse', icon: Squares2X2Icon },
             { id: 'journal', label: 'Journal', icon: TableCellsIcon }
           ].map(view => (
             <button
@@ -981,57 +981,6 @@ const TransactionsPro = () => {
                   </div>
                 )}
               </div>
-            </div>
-          </div>
-
-          {/* Mini aperçu du journal */}
-          <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
-            <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-sm font-bold text-slate-900">Dernières Transactions</h3>
-              <button
-                onClick={() => setActiveView('journal')}
-                className="text-xs text-blue-600 hover:text-blue-700 font-medium"
-              >
-                Voir tout →
-              </button>
-            </div>
-            
-            <div className="divide-y divide-slate-100">
-              {paginatedTransactions.slice(0, 5).map((t) => (
-                <div key={t.id} className="p-4 hover:bg-slate-50 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                      t.type === 'encaissement' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
-                    }`}>
-                      {t.type === 'encaissement' ? (
-                        <ArrowDownLeftIcon className="w-5 h-5" />
-                      ) : (
-                        <ArrowUpRightIcon className="w-5 h-5" />
-                      )}
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-slate-900 truncate">
-                        {t.payment_object?.replace(/_/g, ' ') || 'Transaction'}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        {formatDate(t.recorded_at || t.created_at, true)} • {
-                          t.payment_method === 'cash' ? '💵' : '📱'
-                        } {paymentMethods.find(pm => pm.value === t.payment_method)?.label}
-                      </p>
-                    </div>
-                    
-                    <div className="text-right">
-                      <p className={`text-sm font-bold ${
-                        t.type === 'encaissement' ? 'text-emerald-600' : 'text-rose-600'
-                      }`}>
-                        {t.type === 'encaissement' ? '+' : '-'}{formatCurrency(t.amount)}
-                      </p>
-                      <p className="text-xs text-slate-400">{getCurrencyLabel()}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
 
