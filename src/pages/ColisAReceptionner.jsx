@@ -511,7 +511,7 @@ const ColisAReceptionner = () => {
                         activeTab === 'extraville' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
                     }`}
                 >
-                    Extraville
+                    International
                     {reception.length > 0 && (
                         <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-700">
                             {reception.length}
