@@ -45,7 +45,7 @@ const STATUS_CONFIG = {
         hoverColor: 'hover:bg-purple-100'
     },
     arrivee_expedition_succes: {
-        label: 'Arrivée',
+        label: 'Arrivée Confirmée',
         icon: MapPinIcon,
         color: 'pink',
         bgColor: 'bg-pink-50',
