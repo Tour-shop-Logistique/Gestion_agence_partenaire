@@ -12,7 +12,8 @@ import {
     ArrowRightCircleIcon,
     ShieldCheckIcon,
     ChevronRightIcon,
-    XMarkIcon
+    XMarkIcon,
+    MapPinIcon
 } from "@heroicons/react/24/outline";
 import { useExpedition } from "../hooks/useExpedition";
 import { toast } from "../utils/toast";
@@ -462,7 +463,7 @@ const RetraitColis = () => {
                                                         valeur que secret côté agence (envoyé au client par
                                                         SMS/email), l'afficher ici permettrait de valider un
                                                         retrait sans que le client ait rien reçu. */}
-                                                    <div className="flex flex-col flex-1 min-w-0">
+                                                    <div className="flex flex-col min-w-[130px] sm:min-w-[160px]">
                                                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight leading-none mb-0.5">Destinataire</span>
                                                         <div className="flex items-center gap-1.5 min-w-0">
                                                             <UserIcon className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
@@ -475,6 +476,19 @@ const RetraitColis = () => {
                                                                 {item.expedition.destinataire.telephone}
                                                             </span>
                                                         )}
+                                                    </div>
+
+                                                    {/* Trajet + statut du code de retrait */}
+                                                    <div className="flex flex-col flex-1 min-w-[120px]">
+                                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight leading-none mb-0.5">Trajet</span>
+                                                        <div className="flex items-center gap-1.5 min-w-0">
+                                                            <MapPinIcon className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                                                            <span className="text-xs sm:text-sm font-semibold text-slate-700 truncate">
+                                                                {getCountryName(item.expedition?.code_pays_depart) || item.expedition?.pays_depart || '—'}
+                                                                {' → '}
+                                                                {getCountryName(item.expedition?.code_pays_destination) || item.expedition?.pays_destination || '—'}
+                                                            </span>
+                                                        </div>
                                                         {item.date_limite_retrait ? (
                                                             <span className="inline-flex items-center gap-1 text-[9px] text-emerald-600 font-bold uppercase mt-1">
                                                                 <ShieldCheckIcon className="w-3 h-3" /> Code envoyé · Limite {new Date(item.date_limite_retrait).toLocaleDateString('fr-FR')}
