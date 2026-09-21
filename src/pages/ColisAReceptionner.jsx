@@ -316,16 +316,25 @@ const ColisAReceptionner = () => {
 
     const handleExportPDF = () => {
         try {
-            const agenceName = agencyData?.agence?.nom_agence || 
-                              currentUser?.agence?.nom || 
+            const agenceName = agencyData?.agence?.nom_agence ||
+                              currentUser?.agence?.nom ||
                               'Agence Partenaire';
-            
-            const result = exportColisAReceptionnerPDF(flatColis, {
+
+            // Interville : is_received_by_backoffice n'est jamais peuplé (le
+            // backoffice n'y intervient pas) - le filtre par défaut du helper
+            // exclurait donc tout, includeReceivedColis:true le désactive.
+            const colisAExporter = activeTab === 'interville'
+                ? expeditionsInterville.flatMap(exp => (exp.colis || []).map(c => ({ ...c, expedition: exp })))
+                : flatColis;
+
+            const result = exportColisAReceptionnerPDF(colisAExporter, {
                 agenceName: agenceName,
-                title: 'Liste des colis à réceptionner',
-                includeReceivedColis: false // Exporter uniquement les colis à récupérer
+                title: activeTab === 'interville'
+                    ? 'Liste des expéditions Interville à réceptionner'
+                    : 'Liste des colis à réceptionner',
+                includeReceivedColis: activeTab === 'interville' ? true : false
             });
-            
+
             toast.success(`PDF exporté : ${result.count} colis (${result.totalPoids.toFixed(2)} kg)`);
             soundNotification.playSuccess();
         } catch (error) {
@@ -472,16 +481,14 @@ const ColisAReceptionner = () => {
                     : "Gérez les colis en transit vers votre agence"}
                 actions={
                     <>
-                        {activeTab === 'extraville' && (
-                            <button
-                                onClick={handleExportPDF}
-                                className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-slate-300 rounded-lg text-xs sm:text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50 hover:border-indigo-400 shadow-sm hover:shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
-                                title="Exporter la liste des colis à réceptionner en PDF"
-                            >
-                                <ArrowDownTrayIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
-                                <span className="hidden sm:inline">Export PDF</span>
-                            </button>
-                        )}
+                        <button
+                            onClick={handleExportPDF}
+                            className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-slate-300 rounded-lg text-xs sm:text-sm font-semibold text-slate-700 bg-white hover:bg-slate-50 hover:border-indigo-400 shadow-sm hover:shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"
+                            title="Exporter la liste des colis à réceptionner en PDF"
+                        >
+                            <ArrowDownTrayIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 sm:mr-2" />
+                            <span className="hidden sm:inline">Export PDF</span>
+                        </button>
                         <button
                             onClick={() => setScannerOpen(true)}
                             className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-transparent rounded-lg text-xs sm:text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm hover:shadow-md active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all"

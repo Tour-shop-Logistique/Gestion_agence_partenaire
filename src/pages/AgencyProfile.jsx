@@ -305,7 +305,11 @@ const AgencyProfile = () => {
       if (a.email)       next.email       = a.email;
       if (a.website)     next.website     = a.website;
       if (a.description) next.description = a.description;
-      if (a.commune)     next.commune     = a.commune;
+      // a.commune est la relation Eloquent chargée ({id, nom}), pas un
+      // texte libre - ne jamais l'assigner tel quel à formData.commune
+      // (rendu directement plus loin), commune_id fait foi et le nom est
+      // résolu via communes.find() à l'affichage.
+      if (a.commune?.nom) next.commune     = a.commune.nom;
       if (a.commune_id)  next.commune_id  = a.commune_id;
       if (a.logo)        next.logo        = a.logo;
       if (a.zone_couverture_km != null) next.zone_couverture_km = String(a.zone_couverture_km);

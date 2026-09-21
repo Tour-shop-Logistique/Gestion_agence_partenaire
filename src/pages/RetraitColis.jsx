@@ -26,6 +26,10 @@ const RetraitColis = () => {
     const canInitiate = useHasPermission("retrait_colis.initiate");
     const canValidate = useHasPermission("retrait_colis.validate");
     const [searchQuery, setSearchQuery] = useState("");
+    // Par défaut on ne montre que les colis reçus en agence pas encore
+    // retirés (ce qu'il reste à traiter) - ce toggle permet d'inclure
+    // aussi l'historique des retraits déjà effectués dans la recherche.
+    const [showCollected, setShowCollected] = useState(false);
     const [selectedColis, setSelectedColis] = useState([]);
     const [localLoading, setLocalLoading] = useState(false);
     const [searchResults, setSearchResults] = useState([]);
@@ -99,9 +103,12 @@ const RetraitColis = () => {
 
         setLocalLoading(true);
         setHasSearched(true);
-        const result = await loadColis({ 
-            search: searchQuery, 
-            is_collected: false 
+        const result = await loadColis({
+            search: searchQuery,
+            retrait: 1,
+            // Toggle actif : pas de filtre is_collected, on veut aussi
+            // l'historique des retraits déjà effectués.
+            ...(showCollected ? {} : { is_collected: false }),
         }, true);
         
         if (result && result.payload) {
@@ -110,6 +117,15 @@ const RetraitColis = () => {
         }
         setLocalLoading(false);
     };
+
+    // Relance la recherche si le toggle change après une première recherche,
+    // pour ne pas laisser des résultats obtenus avec l'ancien filtre.
+    useEffect(() => {
+        if (hasSearched && searchQuery) {
+            handleSearch();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [showCollected]);
 
     const handleInitiateRecup = async () => {
         if (selectedColis.length === 0) return;
@@ -187,7 +203,10 @@ const RetraitColis = () => {
     };
 
     const selectAll = () => {
-        const selectable = searchResults.map(c => c.code_colis);
+        // Un colis déjà retiré par le client ne peut plus être sélectionné
+        // pour un nouveau retrait (visible seulement si le toggle historique
+        // est actif).
+        const selectable = searchResults.filter(c => !c.is_collected_by_client).map(c => c.code_colis);
         if (selectedColis.length === selectable.length && selectable.length > 0) {
             setSelectedColis([]);
         } else {
@@ -204,28 +223,39 @@ const RetraitColis = () => {
                 title="Retrait Colis"
                 subtitle="Validation de la remise physique des colis aux clients après authentification."
                 actions={
-                    <form onSubmit={handleSearch} className="flex items-center gap-3 w-full md:w-auto">
-                        <div className="relative flex-1 md:w-80">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <MagnifyingGlassIcon className="h-4 w-4 text-slate-400" />
-                            </div>
+                    <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 w-full md:w-auto">
+                        <label className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-600 cursor-pointer select-none whitespace-nowrap">
                             <input
-                                type="text"
-                                className="block w-full pl-9 pr-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400"
-                                placeholder="Rechercher (Tél ou Code)..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
+                                type="checkbox"
+                                checked={showCollected}
+                                onChange={(e) => setShowCollected(e.target.checked)}
+                                className="w-4 h-4 text-slate-900 border-slate-300 rounded focus:ring-slate-500 cursor-pointer"
                             />
-                        </div>
-                        <button
-                            type="submit"
-                            disabled={isRefreshing || !searchQuery}
-                            className="inline-flex items-center justify-center px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-semibold hover:bg-slate-800 transition-colors disabled:opacity-50"
-                        >
-                            {isRefreshing ? <ArrowPathIcon className="w-4 h-4 animate-spin mr-2" /> : <ArrowPathIcon className="w-4 h-4 mr-2" />}
-                            Actualiser
-                        </button>
-                    </form>
+                            Voir aussi les colis déjà retirés
+                        </label>
+                        <form onSubmit={handleSearch} className="flex items-center gap-3 w-full md:w-auto">
+                            <div className="relative flex-1 md:w-80">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <MagnifyingGlassIcon className="h-4 w-4 text-slate-400" />
+                                </div>
+                                <input
+                                    type="text"
+                                    className="block w-full pl-9 pr-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400"
+                                    placeholder="Rechercher (Tél ou Code)..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                            </div>
+                            <button
+                                type="submit"
+                                disabled={isRefreshing || !searchQuery}
+                                className="inline-flex items-center justify-center px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-semibold hover:bg-slate-800 transition-colors disabled:opacity-50"
+                            >
+                                {isRefreshing ? <ArrowPathIcon className="w-4 h-4 animate-spin mr-2" /> : <ArrowPathIcon className="w-4 h-4 mr-2" />}
+                                Actualiser
+                            </button>
+                        </form>
+                    </div>
                 }
             />
 
@@ -337,29 +367,40 @@ const RetraitColis = () => {
                                         {group.colis.map((item, idx) => {
                                             const isSelected = selectedColis.includes(item.code_colis);
                                             const isLastColis = idx === group.colis.length - 1;
-                                            
+                                            const isAlreadyCollected = !!item.is_collected_by_client;
+
                                             return (
-                                                <div 
+                                                <div
                                                     key={item.id}
-                                                    onClick={() => toggleSelection(item.code_colis)}
-                                                    className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 transition-all cursor-pointer ${
-                                                        isSelected 
-                                                            ? 'bg-indigo-50 ring-2 ring-inset ring-indigo-200' 
-                                                            : 'bg-white hover:bg-slate-50'
+                                                    onClick={() => !isAlreadyCollected && toggleSelection(item.code_colis)}
+                                                    className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 transition-all ${
+                                                        isAlreadyCollected
+                                                            ? 'bg-slate-50 opacity-60 cursor-not-allowed'
+                                                            : 'cursor-pointer'
                                                     } ${
-                                                        isLastColis 
-                                                            ? 'border-b-2 border-slate-200' 
+                                                        isSelected
+                                                            ? 'bg-indigo-50 ring-2 ring-inset ring-indigo-200'
+                                                            : !isAlreadyCollected && 'bg-white hover:bg-slate-50'
+                                                    } ${
+                                                        isLastColis
+                                                            ? 'border-b-2 border-slate-200'
                                                             : 'border-b border-slate-100'
                                                     }`}
                                                 >
                                                     {/* Checkbox */}
                                                     <div className="flex-shrink-0">
-                                                        <input 
-                                                            type="checkbox"
-                                                            checked={isSelected}
-                                                            readOnly
-                                                            className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer"
-                                                        />
+                                                        {isAlreadyCollected ? (
+                                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase bg-slate-200 text-slate-600 whitespace-nowrap">
+                                                                Retiré
+                                                            </span>
+                                                        ) : (
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={isSelected}
+                                                                readOnly
+                                                                className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 cursor-pointer"
+                                                            />
+                                                        )}
                                                     </div>
 
                                                     {/* Colis Info */}
