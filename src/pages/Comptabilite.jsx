@@ -98,6 +98,7 @@ const Comptabilite = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isExportDropdownOpen, setIsExportDropdownOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, journal, reversements, creances
+  const [accountingScope, setAccountingScope] = useState('international'); // international, interville
   const [dateRange, setDateRange] = useState('jour'); // jour, semaine, mois, annee
   const dropdownRef = useRef(null);
 
@@ -198,9 +199,68 @@ const Comptabilite = () => {
     if (statusFilter) {
       result = result.filter(item => item.statut_paiement === statusFilter);
     }
-    
+
+    result = result.filter(item =>
+      accountingScope === 'interville'
+        ? item.type_expedition === 'interville'
+        : item.type_expedition !== 'interville'
+    );
+
     return result;
-  }, [data, searchQuery, statusFilter]);
+  }, [data, searchQuery, statusFilter, accountingScope]);
+
+  // Comptabilité International et Interville sont deux périmètres distincts :
+  // le résumé du backend (`summary.potential`) agrège toute la période sans
+  // distinguer le type, donc on recalcule les totaux localement à partir des
+  // expéditions déjà filtrées par scope pour que les chiffres affichés
+  // correspondent réellement à l'onglet actif.
+  const scopedSummary = useMemo(() => {
+    const totals = {
+      total_client_due: 0,
+      total_agence: 0,
+      total_backoffice: 0,
+      total_livreur: 0,
+      total_cash_received: 0,
+      details_agence: {
+        marge_prestation: 0,
+        com_enlevement: 0,
+        com_emballage: 0,
+        com_livraison: 0,
+        com_retard: 0,
+        retenue_parrainage: 0
+      }
+    };
+
+    filteredData.forEach(item => {
+      const acc = item.accounting_details || {};
+      const com = item.commission_details || {};
+      const agenceTotal = parseFloat(acc.agence_depart || 0) + parseFloat(acc.agence_arrivee || 0);
+      const backofficeTotal = parseFloat(acc.backoffice_depart || 0) + parseFloat(acc.backoffice_arrivee || 0);
+      const livreurTotal = parseFloat(acc.livreur_depart || 0) + parseFloat(acc.livreur_arrivee || 0);
+
+      totals.total_client_due += parseFloat(acc.total_client_due || 0);
+      totals.total_agence += agenceTotal;
+      totals.total_backoffice += backofficeTotal;
+      totals.total_livreur += livreurTotal;
+      if (item.statut_paiement === 'paye') {
+        totals.total_cash_received += parseFloat(acc.total_client_due || 0);
+      }
+
+      if (item.type_expedition === 'interville') {
+        totals.details_agence.com_enlevement += parseFloat(com.trajet_interville?.agence_depart || 0);
+        totals.details_agence.com_livraison += parseFloat(com.trajet_interville?.agence_arrivee || 0);
+      } else {
+        totals.details_agence.marge_prestation += parseFloat(item.montant_prestation || 0);
+        totals.details_agence.com_enlevement += parseFloat(com.enlevement?.agence || 0);
+        totals.details_agence.com_emballage += parseFloat(com.emballage?.agence || 0);
+        totals.details_agence.com_livraison += parseFloat(com.livraison?.agence || 0);
+        totals.details_agence.com_retard += parseFloat(com.retard?.agence || 0);
+      }
+      totals.details_agence.retenue_parrainage += parseFloat(com.parrainage?.montant || 0);
+    });
+
+    return { potential: totals, real: { total_cash_received: totals.total_cash_received } };
+  }, [filteredData]);
 
   // Données pour le graphique d'évolution du CA (basé sur les vraies données)
   const revenueEvolution = useMemo(() => {
@@ -671,25 +731,48 @@ const Comptabilite = () => {
           }
         />
 
-      {/* Onglets Analyse / Journal - même pattern que TransactionsPro.jsx */}
-      <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg w-fit">
-        {[
-          { id: 'dashboard', label: 'Analyse', icon: ArrowTrendingUpIcon },
-          { id: 'journal', label: 'Journal', icon: TableCellsIcon }
-        ].map(view => (
-          <button
-            key={view.id}
-            onClick={() => setActiveTab(view.id)}
-            className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 ${
-              activeTab === view.id
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <view.icon className="w-4 h-4" />
-            <span>{view.label}</span>
-          </button>
-        ))}
+      {/* Scope de comptabilité - International et Interville sont deux
+          périmètres distincts, chacun avec ses propres chiffres et journal */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg w-fit">
+          {[
+            { id: 'international', label: 'International' },
+            { id: 'interville', label: 'Interville' }
+          ].map(scope => (
+            <button
+              key={scope.id}
+              onClick={() => setAccountingScope(scope.id)}
+              className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+                accountingScope === scope.id
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              {scope.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Onglets Analyse / Journal - même pattern que TransactionsPro.jsx */}
+        <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg w-fit">
+          {[
+            { id: 'dashboard', label: 'Analyse', icon: ArrowTrendingUpIcon },
+            { id: 'journal', label: 'Journal', icon: TableCellsIcon }
+          ].map(view => (
+            <button
+              key={view.id}
+              onClick={() => setActiveTab(view.id)}
+              className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 ${
+                activeTab === view.id
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <view.icon className="w-4 h-4" />
+              <span>{view.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {activeTab === 'dashboard' && (
@@ -698,9 +781,9 @@ const Comptabilite = () => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Potentiel Stats */}
         {[
-          { label: "Montant Global", value: summary.potential?.total_client_due, sub: "Montant total facturé", color: "text-slate-900", bg: "bg-slate-50", icon: ShoppingBagIcon },
-          { label: "Commission Agence (Total)", value: summary.potential?.total_agence, sub: "Déjà perçu + Attendue", color: "text-blue-600", bg: "bg-blue-50/50", icon: BuildingOfficeIcon, isMain: true },
-          { label: "Part Backoffice / HUB", value: summary.potential?.total_backoffice, sub: "Frais de service système", color: "text-slate-600", bg: "bg-slate-50", icon: BanknotesIcon }
+          { label: "Montant Global", value: scopedSummary.potential.total_client_due, sub: "Montant total facturé", color: "text-slate-900", bg: "bg-slate-50", icon: ShoppingBagIcon },
+          { label: "Commission Agence (Total)", value: scopedSummary.potential.total_agence, sub: "Déjà perçu + Attendue", color: "text-blue-600", bg: "bg-blue-50/50", icon: BuildingOfficeIcon, isMain: true },
+          { label: "Part Backoffice / HUB", value: scopedSummary.potential.total_backoffice, sub: "Frais de service système", color: "text-slate-600", bg: "bg-slate-50", icon: BanknotesIcon }
         ].map((kpi, idx) => (
           <div key={idx} className={`p-3 sm:p-4 rounded-lg border border-slate-200 bg-white shadow-sm relative overflow-hidden`}>
             {kpi.indicator && <div className={`absolute top-0 left-0 w-1 h-full ${kpi.indicator}`} />}
@@ -722,9 +805,9 @@ const Comptabilite = () => {
             dans le montant réellement perçu (pas le potentiel) - proportion
             calculée sur les parts potentielles, appliquée au réel encaissé. */}
         {(() => {
-          const totalPotentiel = (summary.potential?.total_agence || 0) + (summary.potential?.total_backoffice || 0);
-          const reelEncaisse = summary.real?.total_cash_received || 0;
-          const partAgenceRatio = totalPotentiel > 0 ? (summary.potential?.total_agence || 0) / totalPotentiel : 0;
+          const totalPotentiel = (scopedSummary.potential.total_agence || 0) + (scopedSummary.potential.total_backoffice || 0);
+          const reelEncaisse = scopedSummary.real.total_cash_received || 0;
+          const partAgenceRatio = totalPotentiel > 0 ? (scopedSummary.potential.total_agence || 0) / totalPotentiel : 0;
           const reelAgence = reelEncaisse * partAgenceRatio;
           const reelBackoffice = reelEncaisse - reelAgence;
           return (
@@ -753,7 +836,7 @@ const Comptabilite = () => {
       </div>
 
       {/* Détail des Commissions Agence - Responsive */}
-      {summary.potential?.details_agence && (
+      {(
         <div className="bg-gradient-to-br from-blue-50 to-slate-50 border border-blue-100 rounded-lg p-4 sm:p-5 shadow-sm">
           <div className="flex items-center gap-2 mb-3 sm:mb-4">
             <ReceiptPercentIcon className="w-4 sm:w-5 h-4 sm:h-5 text-blue-600" />
@@ -761,14 +844,18 @@ const Comptabilite = () => {
             <span className="ml-auto text-[10px] sm:text-xs text-slate-500 font-medium">Période sélectionnée</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-            {[
-              { label: "Marge Prestation", value: summary.potential.details_agence.marge_prestation, icon: ShoppingBagIcon },
-              { label: "Enlèvement", value: summary.potential.details_agence.com_enlevement, icon: TruckIcon },
-              { label: "Emballage", value: summary.potential.details_agence.com_emballage, icon: InboxIcon },
-              { label: "Livraison", value: summary.potential.details_agence.com_livraison, icon: MapPinIcon },
-              { label: "Retard", value: summary.potential.details_agence.com_retard, icon: InformationCircleIcon },
-              { label: "Parrainage (Retenue)", value: summary.potential.details_agence.retenue_parrainage, icon: InformationCircleIcon, negative: true },
-            ].map((item, idx) => (
+            {(accountingScope === 'interville' ? [
+              { label: "Trajet Départ", value: scopedSummary.potential.details_agence.com_enlevement, icon: TruckIcon },
+              { label: "Trajet Arrivée", value: scopedSummary.potential.details_agence.com_livraison, icon: MapPinIcon },
+              { label: "Parrainage (Retenue)", value: scopedSummary.potential.details_agence.retenue_parrainage, icon: InformationCircleIcon, negative: true },
+            ] : [
+              { label: "Marge Prestation", value: scopedSummary.potential.details_agence.marge_prestation, icon: ShoppingBagIcon },
+              { label: "Enlèvement", value: scopedSummary.potential.details_agence.com_enlevement, icon: TruckIcon },
+              { label: "Emballage", value: scopedSummary.potential.details_agence.com_emballage, icon: InboxIcon },
+              { label: "Livraison", value: scopedSummary.potential.details_agence.com_livraison, icon: MapPinIcon },
+              { label: "Retard", value: scopedSummary.potential.details_agence.com_retard, icon: InformationCircleIcon },
+              { label: "Parrainage (Retenue)", value: scopedSummary.potential.details_agence.retenue_parrainage, icon: InformationCircleIcon, negative: true },
+            ]).map((item, idx) => (
               <div key={idx} className={`bg-white rounded-lg p-2.5 sm:p-3 border ${item.negative ? 'border-rose-200' : 'border-slate-200'}`}>
                 <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
                   <item.icon className={`w-3 sm:w-3.5 h-3 sm:h-3.5 flex-shrink-0 ${item.negative ? 'text-rose-500' : 'text-blue-500'}`} />
