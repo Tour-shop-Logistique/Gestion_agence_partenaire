@@ -153,6 +153,32 @@ const Comptabilite = () => {
     }
   };
 
+  // Distinguer rapidement le type d'expédition dans le journal - même
+  // libellés que ExpeditionsPremium.jsx, couleurs dédiées par type.
+  const getTypeLabel = (type) => {
+    switch (type) {
+      case 'simple': return 'Simple';
+      case 'groupage_dhd_aerien': return 'DHD Aérien';
+      case 'groupage_dhd_maritine': return 'DHD Maritime';
+      case 'groupage_afrique': return 'Afrique';
+      case 'groupage_ca': return 'CA';
+      case 'interville': return 'Interville';
+      default: return type || 'Inconnu';
+    }
+  };
+
+  const getTypeStyle = (type) => {
+    switch (type) {
+      case 'simple': return 'bg-blue-50 text-blue-700 border-blue-100';
+      case 'groupage_dhd_aerien': return 'bg-sky-50 text-sky-700 border-sky-100';
+      case 'groupage_dhd_maritine': return 'bg-cyan-50 text-cyan-700 border-cyan-100';
+      case 'groupage_afrique': return 'bg-amber-50 text-amber-700 border-amber-100';
+      case 'groupage_ca': return 'bg-violet-50 text-violet-700 border-violet-100';
+      case 'interville': return 'bg-pink-50 text-pink-700 border-pink-100';
+      default: return 'bg-slate-50 text-slate-700 border-slate-100';
+    }
+  };
+
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('fr-FR').format(amount || 0);
   };
@@ -645,6 +671,29 @@ const Comptabilite = () => {
           }
         />
 
+      {/* Onglets Analyse / Journal - même pattern que TransactionsPro.jsx */}
+      <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg w-fit">
+        {[
+          { id: 'dashboard', label: 'Analyse', icon: ArrowTrendingUpIcon },
+          { id: 'journal', label: 'Journal', icon: TableCellsIcon }
+        ].map(view => (
+          <button
+            key={view.id}
+            onClick={() => setActiveTab(view.id)}
+            className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 ${
+              activeTab === view.id
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <view.icon className="w-4 h-4" />
+            <span>{view.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'dashboard' && (
+      <>
       {/* KPI Section - Responsive Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Potentiel Stats */}
@@ -787,10 +836,14 @@ const Comptabilite = () => {
           </LineChart>
         </ResponsiveContainer>
       </div>
+      </>
+      )}
 
+      {activeTab === 'journal' && (
+      <>
       {/* Combined Table Area */}
       <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
-        
+
         {/* Table Toolbar - Responsive */}
         <div className="px-3 sm:px-4 py-2.5 sm:py-3 bg-slate-50/50 border-b border-slate-100 flex flex-col gap-3 sm:gap-4">
           <div className="relative w-full">
@@ -847,6 +900,11 @@ const Comptabilite = () => {
                         {getStatusLabel(item.statut_paiement)}
                       </span>
                     </div>
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <span className={`px-1.5 py-0.5 rounded border text-[8px] font-bold ${getTypeStyle(item.type_expedition)}`}>
+                        {getTypeLabel(item.type_expedition)}
+                      </span>
+                    </div>
                     <p className="text-[10px] text-slate-400 font-medium truncate">{item.expediteur?.nom_prenom || "Client Standard"}</p>
                   </div>
                   <ChevronRightIcon className="w-4 h-4 text-slate-300 flex-shrink-0" />
@@ -896,6 +954,7 @@ const Comptabilite = () => {
             <thead>
               <tr className="bg-slate-50/30 border-b border-slate-100">
                 <th className="px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Référence</th>
+                <th className="px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Type</th>
                 <th className="px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider text-right">CA Client</th>
                 <th className="px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider text-right">Part Agence</th>
                 <th className="px-5 py-3 text-[11px] font-semibold text-slate-500 uppercase tracking-wider text-right">HUB / Syst.</th>
@@ -907,7 +966,7 @@ const Comptabilite = () => {
             <tbody className="divide-y divide-slate-100">
               {status === 'loading' && filteredData.length === 0 ? (
                 Array(5).fill(0).map((_, i) => (
-                  <tr key={i}><td colSpan="7" className="px-5 py-5 animate-pulse"><div className="h-4 bg-slate-50 rounded" /></td></tr>
+                  <tr key={i}><td colSpan="8" className="px-5 py-5 animate-pulse"><div className="h-4 bg-slate-50 rounded" /></td></tr>
                 ))
               ) : filteredData.length > 0 ? (
                 filteredData.map((item) => (
@@ -921,6 +980,11 @@ const Comptabilite = () => {
                         <span className="text-sm font-semibold text-slate-900">{item.reference}</span>
                         <span className="text-[11px] text-slate-400 font-medium">{item.expediteur?.nom_prenom || "Client Standard"}</span>
                       </div>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <span className={`px-2 py-0.5 rounded border text-[10px] font-bold ${getTypeStyle(item.type_expedition)}`}>
+                        {getTypeLabel(item.type_expedition)}
+                      </span>
                     </td>
                     <td className="px-5 py-3.5 text-right font-semibold text-slate-700 tabular-nums text-sm">
                       {formatCurrency(item.accounting_details?.total_client_due)}
@@ -958,6 +1022,8 @@ const Comptabilite = () => {
           </table>
         </div>
       </div>
+      </>
+      )}
 
       {/* Professional Detail Modal */}
       {isModalOpen && selectedExpedition && (
