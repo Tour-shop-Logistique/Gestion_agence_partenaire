@@ -99,18 +99,17 @@ const RetraitColis = () => {
 
     const handleSearch = async (e) => {
         if (e) e.preventDefault();
-        if (!searchQuery) return;
 
         setLocalLoading(true);
         setHasSearched(true);
         const result = await loadColis({
-            search: searchQuery,
             retrait: 1,
+            ...(searchQuery ? { search: searchQuery } : {}),
             // Toggle actif : pas de filtre is_collected, on veut aussi
             // l'historique des retraits déjà effectués.
             ...(showCollected ? {} : { is_collected: false }),
         }, true);
-        
+
         if (result && result.payload) {
             setSearchResults(result.payload.data || []);
             setSelectedColis([]);
@@ -118,10 +117,18 @@ const RetraitColis = () => {
         setLocalLoading(false);
     };
 
-    // Relance la recherche si le toggle change après une première recherche,
+    // Charge la liste dès l'arrivée sur la page (colis reçus en agence, pas
+    // encore retirés) - pas besoin de taper une recherche pour voir quoi que
+    // ce soit, cohérent avec les autres écrans de colis de l'agence.
+    useEffect(() => {
+        handleSearch();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Relance la recherche si le toggle change après le premier chargement,
     // pour ne pas laisser des résultats obtenus avec l'ancien filtre.
     useEffect(() => {
-        if (hasSearched && searchQuery) {
+        if (hasSearched) {
             handleSearch();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -248,7 +255,7 @@ const RetraitColis = () => {
                             </div>
                             <button
                                 type="submit"
-                                disabled={isRefreshing || !searchQuery}
+                                disabled={isRefreshing}
                                 className="inline-flex items-center justify-center px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-semibold hover:bg-slate-800 transition-colors disabled:opacity-50"
                             >
                                 {isRefreshing ? <ArrowPathIcon className="w-4 h-4 animate-spin mr-2" /> : <ArrowPathIcon className="w-4 h-4 mr-2" />}
@@ -491,14 +498,18 @@ const RetraitColis = () => {
                         Aucun colis trouvé
                     </p>
                     <p className="text-xs text-slate-500 text-center max-w-md">
-                        Ce contact n'a pas de colis en agence ou le numéro/code saisi est incorrect.
+                        {searchQuery
+                            ? "Ce contact n'a pas de colis en agence ou le numéro/code saisi est incorrect."
+                            : showCollected
+                                ? "Aucun colis reçu par votre agence pour l'instant."
+                                : "Aucun colis en attente de retrait pour l'instant."}
                     </p>
                 </div>
             ) : (
                 <div className="flex flex-col items-center justify-center py-20 bg-white border border-slate-200 rounded-lg">
                     <CubeIcon className="w-10 h-10 text-slate-200 mb-4" />
                     <p className="text-sm font-medium text-slate-500">
-                        Entrez un numéro de téléphone ou un code colis pour commencer.
+                        Chargement des colis...
                     </p>
                 </div>
             )}
