@@ -711,21 +711,22 @@ const Comptabilite = () => {
             <h2 className="text-xs sm:text-sm font-bold text-slate-900 uppercase tracking-tight">Détail des Commissions Agence</h2>
             <span className="ml-auto text-[10px] sm:text-xs text-slate-500 font-medium">Période sélectionnée</span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
             {[
               { label: "Marge Prestation", value: summary.potential.details_agence.marge_prestation, icon: ShoppingBagIcon },
               { label: "Enlèvement", value: summary.potential.details_agence.com_enlevement, icon: TruckIcon },
               { label: "Emballage", value: summary.potential.details_agence.com_emballage, icon: InboxIcon },
               { label: "Livraison", value: summary.potential.details_agence.com_livraison, icon: MapPinIcon },
-              { label: "Retard", value: summary.potential.details_agence.com_retard, icon: InformationCircleIcon }
+              { label: "Retard", value: summary.potential.details_agence.com_retard, icon: InformationCircleIcon },
+              { label: "Parrainage (Retenue)", value: summary.potential.details_agence.retenue_parrainage, icon: InformationCircleIcon, negative: true },
             ].map((item, idx) => (
-              <div key={idx} className="bg-white rounded-lg p-2.5 sm:p-3 border border-slate-200">
+              <div key={idx} className={`bg-white rounded-lg p-2.5 sm:p-3 border ${item.negative ? 'border-rose-200' : 'border-slate-200'}`}>
                 <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
-                  <item.icon className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-blue-500 flex-shrink-0" />
+                  <item.icon className={`w-3 sm:w-3.5 h-3 sm:h-3.5 flex-shrink-0 ${item.negative ? 'text-rose-500' : 'text-blue-500'}`} />
                   <p className="text-[9px] sm:text-[10px] font-semibold text-slate-500 uppercase truncate">{item.label}</p>
                 </div>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-sm sm:text-lg font-bold text-blue-600 tabular-nums">{formatCurrency(item.value)}</span>
+                  <span className={`text-sm sm:text-lg font-bold tabular-nums ${item.negative ? 'text-rose-600' : 'text-blue-600'}`}>{item.negative && item.value > 0 ? '-' : ''}{formatCurrency(item.value)}</span>
                   <span className="text-[8px] sm:text-[9px] font-semibold text-slate-400">{getCurrencyLabel()}</span>
                 </div>
               </div>
@@ -1026,6 +1027,12 @@ const Comptabilite = () => {
                         <div className="flex justify-between text-xs">
                           <span className="text-slate-600">Frais d'Emballage (Part)</span>
                           <span className="text-slate-800 font-semibold tabular-nums">{formatCurrency(selectedExpedition.commission_details.emballage.agence)} {getCurrencyLabel()}</span>
+                        </div>
+                      )}
+                      {parseFloat(selectedExpedition.commission_details?.parrainage?.montant || 0) > 0 && (
+                        <div className="flex justify-between text-xs">
+                          <span className="text-rose-600">Parrainage (Retenue)</span>
+                          <span className="text-rose-600 font-semibold tabular-nums">-{formatCurrency(selectedExpedition.commission_details.parrainage.montant)} {getCurrencyLabel()}</span>
                         </div>
                       )}
                     </div>
