@@ -253,9 +253,11 @@ const Comptabilite = () => {
       } else {
         totals.details_agence.marge_prestation += parseFloat(item.montant_prestation || 0);
       }
-      // Enlèvement/emballage/livraison/retard existent aussi bien pour
+      // Enlèvement/emballage/livraison existent aussi bien pour
       // l'international que pour l'interville (livraison à domicile), donc
-      // toujours cumulés, quel que soit le type d'expédition.
+      // toujours cumulés. Retard n'existe pas en interville (pas de délai de
+      // passage par le backoffice) : com.retard.agence y vaut toujours 0
+      // côté backend, cumulé sans condition ici par simplicité.
       totals.details_agence.com_enlevement += parseFloat(com.enlevement?.agence || 0);
       totals.details_agence.com_emballage += parseFloat(com.emballage?.agence || 0);
       totals.details_agence.com_livraison += parseFloat(com.livraison?.agence || 0);
@@ -828,7 +830,6 @@ const Comptabilite = () => {
               { label: "Trajet Arrivée", value: scopedSummary.potential.details_agence.trajet_arrivee, icon: MapPinIcon },
               { label: "Enlèvement", value: scopedSummary.potential.details_agence.com_enlevement, icon: TruckIcon },
               { label: "Livraison", value: scopedSummary.potential.details_agence.com_livraison, icon: MapPinIcon },
-              { label: "Retard", value: scopedSummary.potential.details_agence.com_retard, icon: InformationCircleIcon },
               { label: "Parrainage (Retenue)", value: scopedSummary.potential.details_agence.retenue_parrainage, icon: InformationCircleIcon, negative: true },
             ] : [
               { label: "Marge Prestation", value: scopedSummary.potential.details_agence.marge_prestation, icon: ShoppingBagIcon },
