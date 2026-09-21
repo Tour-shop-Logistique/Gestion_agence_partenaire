@@ -693,12 +693,14 @@ const ColisAReceptionner = () => {
                                 </div>
 
                                 {/* Expedition Badge */}
-                                <Link 
+                                <Link
                                     to={`/expeditions/${item.expedition?.id || item.expedition_id}`}
                                     onClick={(e) => e.stopPropagation()}
-                                    className="flex-shrink-0 px-2 py-1 bg-slate-100 rounded text-[9px] font-bold text-slate-700 hover:bg-indigo-600 hover:text-white transition-all"
+                                    title="Voir les détails de l'expédition"
+                                    className="flex-shrink-0 flex items-center gap-1 px-2 py-1 bg-slate-100 rounded text-[9px] font-bold text-slate-700 hover:bg-indigo-600 hover:text-white transition-all"
                                 >
                                     {item.expedition?.reference}
+                                    <ChevronRightIcon className="w-2.5 h-2.5" />
                                 </Link>
                             </div>
 

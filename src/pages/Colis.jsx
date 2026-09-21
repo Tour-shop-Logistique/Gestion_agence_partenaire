@@ -561,6 +561,7 @@ const Colis = () => {
                             <Link
                                 to={`/expeditions/${exp.id}`}
                                 className="flex items-center justify-between gap-2 px-3 py-2.5 bg-gradient-to-r from-indigo-500 to-indigo-600"
+                                title="Voir les détails de l'expédition"
                             >
                                 <div className="flex items-center gap-2 min-w-0">
                                     <svg className="w-4 h-4 text-white/80 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -573,9 +574,12 @@ const Colis = () => {
                                         {getCountryName(exp.code_pays_destination) || exp.pays_destination}
                                     </span>
                                 </div>
-                                <span className="flex-shrink-0 px-2 py-0.5 bg-white/20 rounded text-[9px] font-bold text-white">
-                                    {exp.colis.length} colis
-                                </span>
+                                <div className="flex items-center gap-1.5 flex-shrink-0">
+                                    <span className="px-2 py-0.5 bg-white/20 rounded text-[9px] font-bold text-white">
+                                        {exp.colis.length} colis
+                                    </span>
+                                    <ChevronRightIcon className="w-3.5 h-3.5 text-white/80" />
+                                </div>
                             </Link>
 
                             <div className="divide-y divide-slate-100">
@@ -841,15 +845,22 @@ const Colis = () => {
                                                             </div>
                                                         </td>
                                                         <td className="px-4 py-4">
-                                                            <Link to={`/expeditions/${item.expedition_id}`} className="group/exp">
-                                                                <span className="text-xs font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg group-hover/exp:bg-indigo-600 group-hover/exp:text-white transition-all">
-                                                                    {item.expedition?.reference}
-                                                                </span>
-                                                                <div className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 mt-1">
-                                                                    <span>{getCountryName(item.expedition?.code_pays_depart) || item.expedition?.pays_depart}</span>
-                                                                    <ArrowPathIcon className="w-2.5 h-2.5" />
-                                                                    <span className="text-indigo-600">{getCountryName(item.expedition?.code_pays_destination) || item.expedition?.pays_destination}</span>
+                                                            <Link
+                                                                to={`/expeditions/${item.expedition_id}`}
+                                                                className="group/exp inline-flex items-center gap-1.5"
+                                                                title="Voir les détails de l'expédition"
+                                                            >
+                                                                <div>
+                                                                    <span className="text-xs font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg group-hover/exp:bg-indigo-600 group-hover/exp:text-white transition-all">
+                                                                        {item.expedition?.reference}
+                                                                    </span>
+                                                                    <div className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500 mt-1">
+                                                                        <span>{getCountryName(item.expedition?.code_pays_depart) || item.expedition?.pays_depart}</span>
+                                                                        <ArrowPathIcon className="w-2.5 h-2.5" />
+                                                                        <span className="text-indigo-600">{getCountryName(item.expedition?.code_pays_destination) || item.expedition?.pays_destination}</span>
+                                                                    </div>
                                                                 </div>
+                                                                <ChevronRightIcon className="w-3.5 h-3.5 text-slate-400 group-hover/exp:text-indigo-600 flex-shrink-0" />
                                                             </Link>
                                                         </td>
                                                         <td className="px-4 py-4 text-center">
