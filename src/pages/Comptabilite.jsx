@@ -97,7 +97,6 @@ const Comptabilite = () => {
   const [selectedExpedition, setSelectedExpedition] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isExportDropdownOpen, setIsExportDropdownOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, journal, reversements, creances
   const [accountingScope, setAccountingScope] = useState('international'); // international, interville
   const [dateRange, setDateRange] = useState('jour'); // jour, semaine, mois, annee
   const dropdownRef = useRef(null);
@@ -733,50 +732,25 @@ const Comptabilite = () => {
 
       {/* Scope de comptabilité - International et Interville sont deux
           périmètres distincts, chacun avec ses propres chiffres et journal */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg w-fit">
-          {[
-            { id: 'international', label: 'International' },
-            { id: 'interville', label: 'Interville' }
-          ].map(scope => (
-            <button
-              key={scope.id}
-              onClick={() => setAccountingScope(scope.id)}
-              className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
-                accountingScope === scope.id
-                  ? 'bg-slate-900 text-white shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              {scope.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Onglets Analyse / Journal - même pattern que TransactionsPro.jsx */}
-        <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg w-fit">
-          {[
-            { id: 'dashboard', label: 'Analyse', icon: ArrowTrendingUpIcon },
-            { id: 'journal', label: 'Journal', icon: TableCellsIcon }
-          ].map(view => (
-            <button
-              key={view.id}
-              onClick={() => setActiveTab(view.id)}
-              className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 ${
-                activeTab === view.id
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <view.icon className="w-4 h-4" />
-              <span>{view.label}</span>
-            </button>
-          ))}
-        </div>
+      <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg w-fit">
+        {[
+          { id: 'international', label: 'International' },
+          { id: 'interville', label: 'Interville' }
+        ].map(scope => (
+          <button
+            key={scope.id}
+            onClick={() => setAccountingScope(scope.id)}
+            className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+              accountingScope === scope.id
+                ? 'bg-slate-900 text-white shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            {scope.label}
+          </button>
+        ))}
       </div>
 
-      {activeTab === 'dashboard' && (
-      <>
       {/* KPI Section - Responsive Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Potentiel Stats */}
@@ -923,11 +897,7 @@ const Comptabilite = () => {
           </LineChart>
         </ResponsiveContainer>
       </div>
-      </>
-      )}
 
-      {activeTab === 'journal' && (
-      <>
       {/* Combined Table Area */}
       <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
 
@@ -1109,8 +1079,6 @@ const Comptabilite = () => {
           </table>
         </div>
       </div>
-      </>
-      )}
 
       {/* Professional Detail Modal */}
       {isModalOpen && selectedExpedition && (
