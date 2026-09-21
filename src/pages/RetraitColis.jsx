@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
+import { Link } from "react-router-dom";
 import {
     MagnifyingGlassIcon,
     ArrowPathIcon,
@@ -74,6 +75,22 @@ const RetraitColis = () => {
         return first?.expedition?.destinataire || null;
     }, [searchResults, selectedColis]);
 
+    // Un seul code OTP est envoyé à un seul destinataire (voir otpRecipient
+    // ci-dessus) : si la sélection mélange des colis de destinataires
+    // différents, ce code ne parviendrait qu'à l'un d'eux mais validerait
+    // quand même le retrait des colis de l'autre - le backend refuse déjà
+    // cette situation (initierRetraitColis), on la détecte ici en amont
+    // pour bloquer le bouton et expliquer pourquoi avant l'échec serveur.
+    const hasMultipleDestinataires = useMemo(() => {
+        const telephones = new Set(
+            searchResults
+                .filter(item => selectedColis.includes(item.code_colis))
+                .map(item => item.expedition?.destinataire?.telephone)
+                .filter(Boolean)
+        );
+        return telephones.size > 1;
+    }, [searchResults, selectedColis]);
+
     const {
         loadColis,
         initiateRecupColis,
@@ -136,6 +153,10 @@ const RetraitColis = () => {
 
     const handleInitiateRecup = async () => {
         if (selectedColis.length === 0) return;
+        if (hasMultipleDestinataires) {
+            toast.error('Les colis sélectionnés appartiennent à des destinataires différents. Initiez un retrait séparé pour chacun.');
+            return;
+        }
         setLocalLoading(true);
         const res = await initiateRecupColis(selectedColis);
         setLocalLoading(false);
@@ -270,7 +291,8 @@ const RetraitColis = () => {
             {searchResults.length > 0 ? (
                 <div className="space-y-4">
                     {/* Bulk Action Header */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg">
+                    <div className="flex flex-col gap-3 px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
                             <input
                                 type="checkbox"
@@ -285,7 +307,8 @@ const RetraitColis = () => {
                         {selectedColis.length > 0 && canInitiate && (
                             <button
                                 onClick={handleInitiateRecup}
-                                disabled={isRefreshing}
+                                disabled={isRefreshing || hasMultipleDestinataires}
+                                title={hasMultipleDestinataires ? 'Les colis sélectionnés appartiennent à des destinataires différents' : undefined}
                                 className="w-full sm:w-auto justify-center px-4 py-1.5 bg-slate-900 text-white text-xs font-semibold rounded hover:bg-slate-800 transition-colors flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                             >
                                 {isRefreshing ? (
@@ -301,6 +324,12 @@ const RetraitColis = () => {
                                 )}
                             </button>
                         )}
+                      </div>
+                      {hasMultipleDestinataires && (
+                        <p className="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+                          Les colis sélectionnés appartiennent à des destinataires différents : un seul code de retrait ne peut être envoyé qu'à une seule personne. Sélectionnez uniquement les colis d'un même destinataire.
+                        </p>
+                      )}
                     </div>
 
                     {/* Grouped List of Colis (Same style as ColisAReceptionner) */}
@@ -356,13 +385,25 @@ const RetraitColis = () => {
                                                     </div>
                                                 </div>
 
-                                                {/* Compteur colis */}
-                                                <div className="flex items-center gap-2 px-3 py-1.5 bg-white/20 rounded-lg backdrop-blur-sm border border-white/30">
-                                                    <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                                                    </svg>
-                                                    <span className="text-xs font-bold text-white">{group.colis.length}</span>
-                                                    <span className="text-xs font-medium text-white/80">colis</span>
+                                                <div className="flex items-center gap-2">
+                                                    {/* Compteur colis */}
+                                                    <div className="flex items-center gap-2 px-3 py-1.5 bg-white/20 rounded-lg backdrop-blur-sm border border-white/30">
+                                                        <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                                        </svg>
+                                                        <span className="text-xs font-bold text-white">{group.colis.length}</span>
+                                                        <span className="text-xs font-medium text-white/80">colis</span>
+                                                    </div>
+                                                    {expId && (
+                                                        <Link
+                                                            to={`/expeditions/${expId}`}
+                                                            title="Voir les détails de l'expédition"
+                                                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-bold text-white transition-all"
+                                                        >
+                                                            Détails
+                                                            <ChevronRightIcon className="w-3.5 h-3.5" />
+                                                        </Link>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
