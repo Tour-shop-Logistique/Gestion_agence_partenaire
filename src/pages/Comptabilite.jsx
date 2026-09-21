@@ -222,6 +222,8 @@ const Comptabilite = () => {
       total_cash_received: 0,
       details_agence: {
         marge_prestation: 0,
+        trajet_depart: 0,
+        trajet_arrivee: 0,
         com_enlevement: 0,
         com_emballage: 0,
         com_livraison: 0,
@@ -246,15 +248,18 @@ const Comptabilite = () => {
       }
 
       if (item.type_expedition === 'interville') {
-        totals.details_agence.com_enlevement += parseFloat(com.trajet_interville?.agence_depart || 0);
-        totals.details_agence.com_livraison += parseFloat(com.trajet_interville?.agence_arrivee || 0);
+        totals.details_agence.trajet_depart += parseFloat(com.trajet_interville?.agence_depart || 0);
+        totals.details_agence.trajet_arrivee += parseFloat(com.trajet_interville?.agence_arrivee || 0);
       } else {
         totals.details_agence.marge_prestation += parseFloat(item.montant_prestation || 0);
-        totals.details_agence.com_enlevement += parseFloat(com.enlevement?.agence || 0);
-        totals.details_agence.com_emballage += parseFloat(com.emballage?.agence || 0);
-        totals.details_agence.com_livraison += parseFloat(com.livraison?.agence || 0);
-        totals.details_agence.com_retard += parseFloat(com.retard?.agence || 0);
       }
+      // Enlèvement/emballage/livraison/retard existent aussi bien pour
+      // l'international que pour l'interville (livraison à domicile), donc
+      // toujours cumulés, quel que soit le type d'expédition.
+      totals.details_agence.com_enlevement += parseFloat(com.enlevement?.agence || 0);
+      totals.details_agence.com_emballage += parseFloat(com.emballage?.agence || 0);
+      totals.details_agence.com_livraison += parseFloat(com.livraison?.agence || 0);
+      totals.details_agence.com_retard += parseFloat(com.retard?.agence || 0);
       totals.details_agence.retenue_parrainage += parseFloat(com.parrainage?.montant || 0);
     });
 
@@ -819,8 +824,11 @@ const Comptabilite = () => {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
             {(accountingScope === 'interville' ? [
-              { label: "Trajet Départ", value: scopedSummary.potential.details_agence.com_enlevement, icon: TruckIcon },
-              { label: "Trajet Arrivée", value: scopedSummary.potential.details_agence.com_livraison, icon: MapPinIcon },
+              { label: "Trajet Départ", value: scopedSummary.potential.details_agence.trajet_depart, icon: TruckIcon },
+              { label: "Trajet Arrivée", value: scopedSummary.potential.details_agence.trajet_arrivee, icon: MapPinIcon },
+              { label: "Enlèvement", value: scopedSummary.potential.details_agence.com_enlevement, icon: TruckIcon },
+              { label: "Livraison", value: scopedSummary.potential.details_agence.com_livraison, icon: MapPinIcon },
+              { label: "Retard", value: scopedSummary.potential.details_agence.com_retard, icon: InformationCircleIcon },
               { label: "Parrainage (Retenue)", value: scopedSummary.potential.details_agence.retenue_parrainage, icon: InformationCircleIcon, negative: true },
             ] : [
               { label: "Marge Prestation", value: scopedSummary.potential.details_agence.marge_prestation, icon: ShoppingBagIcon },
