@@ -458,19 +458,29 @@ const RetraitColis = () => {
                                                         <span className="text-[10px] sm:text-xs font-semibold text-slate-600 truncate mt-0.5">{item.designation || 'Sans désignation'}</span>
                                                     </div>
 
-                                                    {/* Code Validation */}
+                                                    {/* Destinataire - jamais le code OTP lui-même : il n'a de
+                                                        valeur que secret côté agence (envoyé au client par
+                                                        SMS/email), l'afficher ici permettrait de valider un
+                                                        retrait sans que le client ait rien reçu. */}
                                                     <div className="flex flex-col flex-1 min-w-0">
-                                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight leading-none mb-0.5">Code Validation</span>
+                                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight leading-none mb-0.5">Destinataire</span>
                                                         <div className="flex items-center gap-1.5 min-w-0">
-                                                            <ShieldCheckIcon className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                                                            <span className="text-xs sm:text-sm font-mono font-bold text-slate-900">
-                                                                {item.code_validation_retrait || 'N/A'}
+                                                            <UserIcon className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                                                            <span className="text-xs sm:text-sm font-semibold text-slate-900 truncate">
+                                                                {item.expedition?.destinataire?.nom_prenom || item.expedition?.destinataire?.telephone || '—'}
                                                             </span>
                                                         </div>
-                                                        {item.date_limite_retrait && (
-                                                            <span className="text-[9px] text-amber-600 font-medium mt-0.5">
-                                                                Limite: {new Date(item.date_limite_retrait).toLocaleDateString('fr-FR')}
+                                                        {item.expedition?.destinataire?.telephone && (
+                                                            <span className="text-[10px] text-slate-500 font-medium mt-0.5 truncate">
+                                                                {item.expedition.destinataire.telephone}
                                                             </span>
+                                                        )}
+                                                        {item.date_limite_retrait ? (
+                                                            <span className="inline-flex items-center gap-1 text-[9px] text-emerald-600 font-bold uppercase mt-1">
+                                                                <ShieldCheckIcon className="w-3 h-3" /> Code envoyé · Limite {new Date(item.date_limite_retrait).toLocaleDateString('fr-FR')}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-[9px] text-slate-400 font-medium mt-1">Code non généré</span>
                                                         )}
                                                     </div>
 

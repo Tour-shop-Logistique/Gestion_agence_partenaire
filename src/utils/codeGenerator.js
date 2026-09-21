@@ -18,7 +18,8 @@ const TYPE_PREFIXES = {
     'AFRIQUE': 'AF',
     'CA': 'CA',
     'LD': 'LD',
-    'SIMPLE': 'LD' // SIMPLE = Livraison à domicile
+    'SIMPLE': 'LD', // SIMPLE = Livraison à domicile
+    'INTERVILLE': 'IV'
 };
 
 /**
@@ -110,6 +111,7 @@ export const parseColisCode = (code) => {
     else if (prefix === 'AF') typeExpedition = 'AFRIQUE';
     else if (prefix === 'CA') typeExpedition = 'CA';
     else if (prefix === 'LD') typeExpedition = 'LD';
+    else if (prefix === 'IV') typeExpedition = 'INTERVILLE';
     
     return {
         prefix,
