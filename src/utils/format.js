@@ -3,21 +3,42 @@
  * Module utilitaire pour les fonctions de validation et formatage
  */
 
+import { getStore } from '../store/storeAccessor';
+
 // Code ISO (norme Intl) -> libellé affiché. Seule source de vérité pour le
 // texte de la devise dans toute l'app : ajouter une devise ici suffit,
 // jamais de "FCFA"/"CFA" recodé en dur ailleurs dans le JSX.
 const CURRENCY_LABELS = {
   XOF: 'FCFA',
+  XAF: 'FCFA',
   USD: 'USD',
   EUR: '€',
+  GBP: '£',
+  MAD: 'MAD',
+  DZD: 'DZD',
+  TND: 'TND',
+  GHS: 'GHS',
+  NGN: 'NGN',
+  CAD: 'CAD',
 };
 
 /**
- * Libellé affichable d'un code devise ISO (ex: 'XOF' -> 'FCFA').
- * @param {string} currencyCode - Code ISO de la devise (XOF, USD, EUR...)
+ * Libellé affichable de la devise du backoffice qui supervise l'agence
+ * connectée (ex: 'XOF' -> 'FCFA', 'EUR' -> '€'). Lit agence.devise via le
+ * store Redux (voir AgenceController::showAgence, dérivée du backoffice par
+ * pays) plutôt qu'un code fixe, pour qu'une agence France/Espagne affiche
+ * sa vraie devise au lieu du FCFA appliqué à tout le monde jusqu'ici.
+ *
+ * Un code explicite peut toujours être passé (ex: affichage volontaire
+ * d'une autre devise), sinon repli sur celle de l'agence courante, puis
+ * XOF si aucune agence n'est encore chargée (état initial de l'app).
+ * @param {string} [currencyCode] - Code ISO de la devise (XOF, USD, EUR...)
  * @returns {string} Libellé à afficher
  */
-export const getCurrencyLabel = (currencyCode = 'XOF') => CURRENCY_LABELS[currencyCode] || currencyCode;
+export const getCurrencyLabel = (currencyCode) => {
+  const code = currencyCode || getStore()?.getState()?.agency?.data?.devise || 'XOF';
+  return CURRENCY_LABELS[code] || code;
+};
 
 /**
  * Formater un prix selon la devise
