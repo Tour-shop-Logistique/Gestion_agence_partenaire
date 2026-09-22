@@ -6,7 +6,7 @@ import { getCurrencyLabel } from '../../utils/format';
  * 📦 TABLE DES COLIS AMÉLIORÉE
  * Zebra rows, highlight, résumé
  */
-const ParcelTable = ({ colis = [], formatCurrency }) => {
+const ParcelTable = ({ colis = [], formatCurrency, devise }) => {
     const totalWeight = colis.reduce((sum, c) => sum + parseFloat(c.poids || 0), 0);
     const totalAmount = colis.reduce((sum, c) => sum + parseFloat(c.montant_colis_total || 0), 0);
     const totalEstimation = colis.reduce((sum, c) => sum + parseFloat(c.prix_estimation || 0), 0);
@@ -48,7 +48,7 @@ const ParcelTable = ({ colis = [], formatCurrency }) => {
                     <div className="text-right">
                         <p className="text-xs text-slate-500 uppercase tracking-wide">Total frais</p>
                         <p className="text-lg font-bold text-indigo-600">
-                            {new Intl.NumberFormat('fr-FR').format(totalAmount)} {getCurrencyLabel()}
+                            {new Intl.NumberFormat('fr-FR').format(totalAmount)} {getCurrencyLabel(devise)}
                         </p>
                     </div>
                 </div>
@@ -135,7 +135,7 @@ const ParcelTable = ({ colis = [], formatCurrency }) => {
                                         <span className="text-sm font-bold text-slate-900 tabular-nums">
                                             {new Intl.NumberFormat('fr-FR').format(parcel.prix_estimation || 0)}
                                         </span>
-                                        <span className="text-[9px] text-slate-500 font-bold">{getCurrencyLabel()}</span>
+                                        <span className="text-[9px] text-slate-500 font-bold">{getCurrencyLabel(devise)}</span>
                                     </div>
                                 </td>
 
@@ -145,7 +145,7 @@ const ParcelTable = ({ colis = [], formatCurrency }) => {
                                         <span className="text-sm font-bold text-slate-900 tabular-nums">
                                             {new Intl.NumberFormat('fr-FR').format(parcel.montant_colis_total || 0)}
                                         </span>
-                                        <span className="text-[9px] text-slate-500 font-bold">{getCurrencyLabel()}</span>
+                                        <span className="text-[9px] text-slate-500 font-bold">{getCurrencyLabel(devise)}</span>
                                     </div>
                                 </td>
                             </tr>
@@ -174,7 +174,7 @@ const ParcelTable = ({ colis = [], formatCurrency }) => {
                                     <span className="text-base font-bold text-slate-700 tabular-nums">
                                         {new Intl.NumberFormat('fr-FR').format(totalEstimation)}
                                     </span>
-                                    <span className="text-[10px] text-slate-500 font-bold">{getCurrencyLabel()}</span>
+                                    <span className="text-[10px] text-slate-500 font-bold">{getCurrencyLabel(devise)}</span>
                                 </div>
                             </td>
                             <td className="px-3 py-3 text-right">
@@ -182,7 +182,7 @@ const ParcelTable = ({ colis = [], formatCurrency }) => {
                                     <span className="text-base font-bold text-indigo-600 tabular-nums">
                                         {new Intl.NumberFormat('fr-FR').format(totalAmount)}
                                     </span>
-                                    <span className="text-[10px] text-indigo-500 font-bold">{getCurrencyLabel()}</span>
+                                    <span className="text-[10px] text-indigo-500 font-bold">{getCurrencyLabel(devise)}</span>
                                 </div>
                             </td>
                         </tr>

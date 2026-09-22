@@ -535,6 +535,7 @@ const ExpeditionDetails = () => {
                 <ParcelTable
                     colis={expedition.colis || []}
                     formatCurrency={formatCurrency}
+                    devise={expedition.devise_origine}
                 />
 
                 {/* 💼 COMMISSIONS AGENCE (si disponible) */}

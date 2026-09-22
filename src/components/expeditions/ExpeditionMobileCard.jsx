@@ -72,7 +72,7 @@ const ExpeditionMobileCard = ({
                     <span className="text-base font-bold text-slate-900 tabular-nums">
                         {formatCurrency(expedition.montant_expedition)}
                     </span>
-                    <span className="text-[10px] font-semibold text-slate-400">{getCurrencyLabel()}</span>
+                    <span className="text-[10px] font-semibold text-slate-400">{getCurrencyLabel(expedition.devise_origine)}</span>
                 </div>
 
                 <div className="flex items-center gap-2">

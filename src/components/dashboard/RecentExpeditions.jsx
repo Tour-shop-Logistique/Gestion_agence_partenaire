@@ -262,7 +262,7 @@ const RecentExpeditions = ({ expeditions = [] }) => {
                                                 <p className="text-sm font-bold text-white">
                                                     {new Intl.NumberFormat('fr-FR').format(exp.montant_expedition || exp.montant || 0)}
                                                 </p>
-                                                <p className="text-[9px] text-white/70 font-medium">{getCurrencyLabel()}</p>
+                                                <p className="text-[9px] text-white/70 font-medium">{getCurrencyLabel(exp.devise_origine)}</p>
                                             </div>
 
                                             {/* Icône d'expansion - Desktop */}
@@ -288,7 +288,7 @@ const RecentExpeditions = ({ expeditions = [] }) => {
                                         </span>
                                         <div className="ml-auto text-right">
                                             <p className="text-xs font-bold text-white">
-                                                {new Intl.NumberFormat('fr-FR').format(exp.montant_expedition || exp.montant || 0)} {getCurrencyLabel()}
+                                                {new Intl.NumberFormat('fr-FR').format(exp.montant_expedition || exp.montant || 0)} {getCurrencyLabel(exp.devise_origine)}
                                             </p>
                                         </div>
                                     </div>

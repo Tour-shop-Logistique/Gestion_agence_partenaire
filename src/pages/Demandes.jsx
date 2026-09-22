@@ -526,7 +526,7 @@ const Demandes = () => {
                                         <div>
                                             <p className="text-[10px] font-semibold text-slate-400 uppercase mb-0.5">Montant</p>
                                             <p className="text-sm font-bold text-slate-900 tabular-nums">
-                                                {new Intl.NumberFormat('fr-FR').format(demande.montant_expedition || 0)} {getCurrencyLabel()}
+                                                {new Intl.NumberFormat('fr-FR').format(demande.montant_expedition || 0)} {getCurrencyLabel(demande.devise_origine)}
                                             </p>
                                         </div>
                                     </div>
@@ -671,7 +671,7 @@ const Demandes = () => {
                                                 <span className="text-base font-bold text-slate-900 tabular-nums">
                                                     {new Intl.NumberFormat('fr-FR').format(demande.montant_expedition || 0)}
                                                 </span>
-                                                <span className="text-xs font-bold text-slate-400 uppercase">{getCurrencyLabel()}</span>
+                                                <span className="text-xs font-bold text-slate-400 uppercase">{getCurrencyLabel(demande.devise_origine)}</span>
                                             </div>
                                         </td>
                                         <td className="px-4 py-4 text-right">
@@ -987,7 +987,7 @@ const Demandes = () => {
                                                 <span className="text-sm font-bold text-slate-900 tabular-nums">
                                                     {new Intl.NumberFormat('fr-FR').format(colis.montant_colis_total || 0)}
                                                 </span>
-                                                <span className="text-xs font-bold text-slate-400 uppercase">{getCurrencyLabel()}</span>
+                                                <span className="text-xs font-bold text-slate-400 uppercase">{getCurrencyLabel(colis.expedition?.devise_origine)}</span>
                                             </div>
                                         </td>
                                         <td className="px-4 py-4 text-right" onClick={(e) => e.stopPropagation()}>

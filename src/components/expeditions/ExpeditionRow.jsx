@@ -138,7 +138,7 @@ const ExpeditionRow = ({
                     <div className="flex items-baseline gap-1 mt-0.5">
                         <span className="text-[9px] text-indigo-400 font-medium">Com.</span>
                         <span className="text-[10px] font-bold text-indigo-600 tabular-nums">
-                            {new Intl.NumberFormat('fr-FR').format(getAgencyCommission(expedition))} {getCurrencyLabel()}
+                            {new Intl.NumberFormat('fr-FR').format(getAgencyCommission(expedition))} {getCurrencyLabel(expedition.devise_origine)}
                         </span>
                     </div>
                 </div>

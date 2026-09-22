@@ -159,7 +159,7 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
                                     <th className="px-4 py-2.5 text-center">Qté</th>
                                     <th className="px-4 py-2.5 text-center">Poids (kg)</th>
                                     <th className="px-4 py-2.5 text-center">Dimensions</th>
-                                    <th className="px-4 py-2.5 text-right">Montant ({getCurrencyLabel()})</th>
+                                    <th className="px-4 py-2.5 text-right">Montant ({getCurrencyLabel(expedition.devise_origine)})</th>
                                 </tr>
                             </thead>
                             <tbody className="text-xs font-bold">
@@ -202,14 +202,14 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
                             {/* Montant d'expédition */}
                             <div className="flex justify-between items-center text-xs font-bold text-slate-600">
                                 <span className="uppercase tracking-wide">Montant d'expédition</span>
-                                <span className="font-mono">{montantExpedition.toLocaleString()} {getCurrencyLabel()}</span>
+                                <span className="font-mono">{montantExpedition.toLocaleString()} {getCurrencyLabel(expedition.devise_origine)}</span>
                             </div>
 
                             {/* Frais annexes */}
                             {fraisAnnexes > 0 && (
                                 <div className="flex justify-between items-center text-xs font-bold text-slate-600">
                                     <span className="uppercase tracking-wide">Frais annexes</span>
-                                    <span className="font-mono">{fraisAnnexes.toLocaleString()} {getCurrencyLabel()}</span>
+                                    <span className="font-mono">{fraisAnnexes.toLocaleString()} {getCurrencyLabel(expedition.devise_origine)}</span>
                                 </div>
                             )}
 
@@ -217,7 +217,7 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
                             {fraisEmballage > 0 && (
                                 <div className="flex justify-between items-center text-xs font-bold text-slate-600">
                                     <span className="uppercase tracking-wide">Frais d'emballage</span>
-                                    <span className="font-mono">{fraisEmballage.toLocaleString()} {getCurrencyLabel()}</span>
+                                    <span className="font-mono">{fraisEmballage.toLocaleString()} {getCurrencyLabel(expedition.devise_origine)}</span>
                                 </div>
                             )}
 
@@ -225,7 +225,7 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
                             {fraisEnlevement > 0 && (
                                 <div className="flex justify-between items-center text-xs font-bold text-slate-600">
                                     <span className="uppercase tracking-wide">Frais enlèvement domicile</span>
-                                    <span className="font-mono">{fraisEnlevement.toLocaleString()} {getCurrencyLabel()}</span>
+                                    <span className="font-mono">{fraisEnlevement.toLocaleString()} {getCurrencyLabel(expedition.devise_origine)}</span>
                                 </div>
                             )}
 
@@ -233,7 +233,7 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
                             {fraisLivraison > 0 && (
                                 <div className="flex justify-between items-center text-xs font-bold text-slate-600">
                                     <span className="uppercase tracking-wide">Frais livraison domicile</span>
-                                    <span className="font-mono">{fraisLivraison.toLocaleString()} {getCurrencyLabel()}</span>
+                                    <span className="font-mono">{fraisLivraison.toLocaleString()} {getCurrencyLabel(expedition.devise_origine)}</span>
                                 </div>
                             )}
 
@@ -241,7 +241,7 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
                             {fraisRetard > 0 && (
                                 <div className="flex justify-between items-center text-xs font-bold text-slate-600">
                                     <span className="uppercase tracking-wide">Frais retard retrait</span>
-                                    <span className="font-mono">{fraisRetard.toLocaleString()} {getCurrencyLabel()}</span>
+                                    <span className="font-mono">{fraisRetard.toLocaleString()} {getCurrencyLabel(expedition.devise_origine)}</span>
                                 </div>
                             )}
 
@@ -251,7 +251,7 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
                                 <span className="text-sm font-bold uppercase tracking-wide text-slate-900">Total Net À Payer</span>
                                 <div className="text-right">
                                     <span className="text-xl font-bold font-mono text-indigo-700 leading-none block">
-                                        {totalAPayer.toLocaleString()} {getCurrencyLabel()}
+                                        {totalAPayer.toLocaleString()} {getCurrencyLabel(expedition.devise_origine)}
                                     </span>
                                     {isFrance && (
                                         <span className="text-sm font-bold font-mono text-blue-600 leading-none block mt-1.5">

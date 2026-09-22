@@ -53,7 +53,7 @@ const KPICards = ({ expedition, formatCurrency }) => {
             icon: DollarSign,
             label: 'Montant total',
             value: new Intl.NumberFormat('fr-FR').format(totalAmount),
-            unit: getCurrencyLabel(),
+            unit: getCurrencyLabel(expedition.devise_origine),
             color: 'emerald',
             bgColor: 'bg-emerald-50',
             iconColor: 'text-emerald-600',

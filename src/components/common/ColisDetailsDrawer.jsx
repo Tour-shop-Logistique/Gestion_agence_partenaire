@@ -116,16 +116,16 @@ const ColisDetailsDrawer = ({ colis, onClose }) => {
                         <div className="space-y-1.5">
                             <div className="flex justify-between text-sm">
                                 <span className="text-slate-500">Valeur estimée</span>
-                                <span className="font-bold text-slate-900">{new Intl.NumberFormat('fr-FR').format(colis.prix_estimation || 0)} {getCurrencyLabel()}</span>
+                                <span className="font-bold text-slate-900">{new Intl.NumberFormat('fr-FR').format(colis.prix_estimation || 0)} {getCurrencyLabel(colis.expedition?.devise_origine)}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-slate-500">Frais</span>
-                                <span className="font-bold text-slate-900">{new Intl.NumberFormat('fr-FR').format(colis.total_a_payer_client || 0)} {getCurrencyLabel()}</span>
+                                <span className="font-bold text-slate-900">{new Intl.NumberFormat('fr-FR').format(colis.total_a_payer_client || 0)} {getCurrencyLabel(colis.expedition?.devise_origine)}</span>
                             </div>
                             {parseFloat(colis.frais_retard_retrait || 0) > 0 && (
                                 <div className="flex justify-between text-sm">
                                     <span className="text-amber-600">Frais de retard</span>
-                                    <span className="font-bold text-amber-700">{new Intl.NumberFormat('fr-FR').format(colis.frais_retard_retrait)} {getCurrencyLabel()}</span>
+                                    <span className="font-bold text-amber-700">{new Intl.NumberFormat('fr-FR').format(colis.frais_retard_retrait)} {getCurrencyLabel(colis.expedition?.devise_origine)}</span>
                                 </div>
                             )}
                         </div>
