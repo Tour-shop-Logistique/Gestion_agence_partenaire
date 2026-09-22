@@ -1,6 +1,6 @@
 import React from 'react';
 import { DollarSign, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { getCurrencyLabel } from '../../utils/format';
+import ConvertedAmount from '../common/ConvertedAmount';
 
 /**
  * 💰 CARTE FINANCIÈRE
@@ -92,21 +92,21 @@ const FinanceCard = ({ expedition, formatCurrency, onRecordTransaction, onOpenFr
                     <div>
                         <p className="text-[10px] font-bold text-slate-400 uppercase">Frais expédition</p>
                         <p className="text-sm font-bold text-slate-900 tabular-nums">
-                            {new Intl.NumberFormat('fr-FR').format(montantExpedition)} <span className="text-[10px] text-slate-500">{getCurrencyLabel()}</span>
+                            <ConvertedAmount amount={montantExpedition} sourceCurrency={expedition.devise_origine} />
                         </p>
                     </div>
                     {fraisAnnexes > 0 && (
                         <div>
                             <p className="text-[10px] font-bold text-slate-400 uppercase">Frais annexes</p>
                             <p className="text-sm font-bold text-rose-600 tabular-nums">
-                                +{new Intl.NumberFormat('fr-FR').format(fraisAnnexes)} <span className="text-[10px] text-rose-400">{getCurrencyLabel()}</span>
+                                +<ConvertedAmount amount={fraisAnnexes} sourceCurrency={expedition.devise_origine} />
                             </p>
                         </div>
                     )}
                     <div>
                         <p className="text-[10px] font-bold text-slate-400 uppercase">Total</p>
                         <p className="text-base font-bold text-slate-900 tabular-nums">
-                            {new Intl.NumberFormat('fr-FR').format(totalAmount)} <span className="text-[10px] text-slate-500">{getCurrencyLabel()}</span>
+                            <ConvertedAmount amount={totalAmount} sourceCurrency={expedition.devise_origine} />
                         </p>
                     </div>
                 </div>

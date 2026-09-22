@@ -122,7 +122,7 @@ const StatusOverview = ({ expedition }) => {
             icon: FileText,
             label: 'Montant total',
             value: new Intl.NumberFormat('fr-FR').format(totalAmount),
-            unit: getCurrencyLabel(),
+            unit: getCurrencyLabel(expedition.devise_origine),
             color: 'emerald',
         },
     ];

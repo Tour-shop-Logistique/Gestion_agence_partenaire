@@ -11,6 +11,7 @@ import { realtimeExpeditionPatched } from '../store/slices/expeditionSlice';
 import PrintSuccessModal from '../components/Receipts/PrintSuccessModal';
 import { getLogoUrl } from '../utils/apiConfig';
 import { getCurrencyLabel } from '../utils/format';
+import ConvertedAmount from '../components/common/ConvertedAmount';
 import { toast } from '../utils/toast';
 import { Copy, Loader2, MapPinned } from 'lucide-react';
 import { Button, PageHeader } from "../components/ui";
@@ -232,15 +233,12 @@ const ExpeditionDetails = () => {
         });
     };
 
+    // Montant dans sa devise d'origine (celle du pays de départ de cette
+    // expédition, voir expedition.devise_origine) - utilisé dans du texte
+    // simple (modals de confirmation) où <ConvertedAmount> ne peut pas
+    // s'utiliser (hooks React impossibles hors JSX).
     const formatCurrency = (amount) => {
-        const cfa = new Intl.NumberFormat('fr-FR').format(amount || 0) + ' ' + getCurrencyLabel();
-        const eur = new Intl.NumberFormat('fr-FR', {
-            style: 'currency',
-            currency: 'EUR',
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        }).format((amount || 0) / 655.957);
-        return `${cfa} (${eur})`;
+        return `${new Intl.NumberFormat('fr-FR').format(amount || 0)} ${getCurrencyLabel(expedition?.devise_origine)}`;
     };
 
     // Normalisation des données
@@ -556,28 +554,28 @@ const ExpeditionDetails = () => {
                                     <p className="text-xs font-medium text-gray-400 mb-1 sm:mb-2">Enlèvement</p>
                                     <p className="text-base sm:text-lg font-semibold text-white">
                                         {new Intl.NumberFormat('fr-FR').format(expedition.commission_details.enlevement?.agence || 0)}
-                                        <span className="text-xs text-indigo-400 ml-1">{getCurrencyLabel()}</span>
+                                        <span className="text-xs text-indigo-400 ml-1">{getCurrencyLabel(expedition?.devise_origine)}</span>
                                     </p>
                                 </div>
                                 <div className="p-3 sm:p-4 bg-white/5 rounded-lg border border-white/10">
                                     <p className="text-xs font-medium text-gray-400 mb-1 sm:mb-2">Livraison</p>
                                     <p className="text-base sm:text-lg font-semibold text-white">
                                         {new Intl.NumberFormat('fr-FR').format(expedition.commission_details.livraison?.agence || 0)}
-                                        <span className="text-xs text-indigo-400 ml-1">{getCurrencyLabel()}</span>
+                                        <span className="text-xs text-indigo-400 ml-1">{getCurrencyLabel(expedition?.devise_origine)}</span>
                                     </p>
                                 </div>
                                 <div className="p-3 sm:p-4 bg-white/5 rounded-lg border border-white/10">
                                     <p className="text-xs font-medium text-gray-400 mb-1 sm:mb-2">Emballage</p>
                                     <p className="text-base sm:text-lg font-semibold text-white">
                                         {new Intl.NumberFormat('fr-FR').format(expedition.commission_details.emballage?.agence || 0)}
-                                        <span className="text-xs text-indigo-400 ml-1">{getCurrencyLabel()}</span>
+                                        <span className="text-xs text-indigo-400 ml-1">{getCurrencyLabel(expedition?.devise_origine)}</span>
                                     </p>
                                 </div>
                                 <div className="p-3 sm:p-4 bg-white/5 rounded-lg border border-white/10">
                                     <p className="text-xs font-medium text-gray-400 mb-1 sm:mb-2">Retards</p>
                                     <p className="text-base sm:text-lg font-semibold text-white">
                                         {new Intl.NumberFormat('fr-FR').format(expedition.commission_details.retard?.agence || 0)}
-                                        <span className="text-xs text-indigo-400 ml-1">{getCurrencyLabel()}</span>
+                                        <span className="text-xs text-indigo-400 ml-1">{getCurrencyLabel(expedition?.devise_origine)}</span>
                                     </p>
                                 </div>
                             </div>
@@ -587,13 +585,15 @@ const ExpeditionDetails = () => {
                             <div className="text-right">
                                 <p className="text-xs font-medium text-indigo-400 uppercase mb-2">Total Commission</p>
                                 <p className="text-2xl sm:text-3xl font-bold text-white">
-                                    {new Intl.NumberFormat('fr-FR').format(
-                                        (expedition.commission_details.enlevement?.agence || 0) +
-                                        (expedition.commission_details.livraison?.agence || 0) +
-                                        (expedition.commission_details.emballage?.agence || 0) +
-                                        (expedition.commission_details.retard?.agence || 0)
-                                    )}
-                                    <span className="text-sm text-indigo-400 ml-2">{getCurrencyLabel()}</span>
+                                    <ConvertedAmount
+                                        amount={
+                                            (expedition.commission_details.enlevement?.agence || 0) +
+                                            (expedition.commission_details.livraison?.agence || 0) +
+                                            (expedition.commission_details.emballage?.agence || 0) +
+                                            (expedition.commission_details.retard?.agence || 0)
+                                        }
+                                        sourceCurrency={expedition?.devise_origine}
+                                    />
                                 </p>
                             </div>
                         </div>
