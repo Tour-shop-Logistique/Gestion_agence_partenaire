@@ -35,6 +35,7 @@ import {
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { getCountryName } from "../utils/countries";
 import PageHeader from "../components/ui/PageHeader";
+import ConvertedAmount from "../components/common/ConvertedAmount";
 
 const Comptabilite = () => {
   const navigate = useNavigate();
@@ -1053,13 +1054,13 @@ const Comptabilite = () => {
                       </span>
                     </td>
                     <td className="px-5 py-3.5 text-right font-semibold text-slate-700 tabular-nums text-sm">
-                      {formatCurrency(item.accounting_details?.total_client_due)}
+                      <ConvertedAmount amount={item.accounting_details?.total_client_due} sourceCurrency={item.devise_origine} />
                     </td>
                     <td className="px-5 py-3.5 text-right font-bold text-blue-600 tabular-nums text-sm">
-                      {formatCurrency((parseFloat(item.accounting_details?.agence_depart || 0) + parseFloat(item.accounting_details?.agence_arrivee || 0)))}
+                      <ConvertedAmount amount={(parseFloat(item.accounting_details?.agence_depart || 0) + parseFloat(item.accounting_details?.agence_arrivee || 0))} sourceCurrency={item.devise_origine} />
                     </td>
                     <td className="px-5 py-3.5 text-right font-medium text-slate-500 tabular-nums text-sm">
-                      {formatCurrency((parseFloat(item.accounting_details?.backoffice_depart || 0) + parseFloat(item.accounting_details?.backoffice_arrivee || 0)))}
+                      <ConvertedAmount amount={(parseFloat(item.accounting_details?.backoffice_depart || 0) + parseFloat(item.accounting_details?.backoffice_arrivee || 0))} sourceCurrency={item.devise_origine} />
                     </td>
                     <td className="px-5 py-3.5 text-center">
                       <span className={`px-2 py-0.5 rounded border text-[10px] font-bold uppercase ${getStatusStyle(item.statut_paiement)}`}>
