@@ -11,6 +11,7 @@ import StatusTimeline from './StatusTimeline';
 import PaymentBadge from './PaymentBadge';
 import { getCountryName } from '../../utils/countries';
 import { getCurrencyLabel } from '../../utils/format';
+import ConvertedAmount from '../common/ConvertedAmount';
 
 /**
  * 📋 LIGNE D'EXPÉDITION (DESKTOP)
@@ -21,13 +22,12 @@ import { getCurrencyLabel } from '../../utils/format';
  * - Design moderne
  */
 
-const ExpeditionRow = ({ 
-    expedition, 
-    onPrint, 
+const ExpeditionRow = ({
+    expedition,
+    onPrint,
     getStatusBorderColor,
     getTypeStyle,
     getTypeLabel,
-    formatPriceDual,
     getAgencyCommission
 }) => {
     const navigate = useNavigate();
@@ -126,7 +126,7 @@ const ExpeditionRow = ({
             <td className="px-3 py-3 2xl:px-5 2xl:py-4">
                 <div className="flex flex-col gap-1">
                     <span className="text-sm font-bold text-slate-900 tabular-nums">
-                        {formatPriceDual(expedition.montant_expedition)}
+                        <ConvertedAmount amount={expedition.montant_expedition} sourceCurrency={expedition.devise_origine} />
                     </span>
                     <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
                         <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">

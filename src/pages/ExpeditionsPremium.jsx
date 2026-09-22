@@ -11,7 +11,6 @@ import PageHeader from "../components/ui/PageHeader";
 import PrintSuccessModal from "../components/Receipts/PrintSuccessModal";
 import ColisDetailsDrawer from "../components/common/ColisDetailsDrawer";
 import { getLogoUrl } from "../utils/apiConfig";
-import { formatPriceDual } from "../utils/format";
 import { showToast } from "../utils/toast";
 import { getStatusLabel } from "../utils/expeditionHelpers";
 import { getCountryName } from "../utils/countries";
@@ -752,7 +751,6 @@ const ExpeditionsPremium = () => {
                                                 expedition={exp}
                                                 getTypeStyle={getTypeStyle}
                                                 getTypeLabel={getTypeLabel}
-                                                formatPriceDual={formatPriceDual}
                                                 onSelectColis={setDetailsColis}
                                             />
                                         ))}

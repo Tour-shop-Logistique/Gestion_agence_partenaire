@@ -3,7 +3,7 @@ import { useExpedition } from "../hooks/useExpedition";
 import { useAgency } from "../hooks/useAgency";
 import { useAuth } from "../hooks/useAuth";
 import { useWebSocket } from "../hooks/useWebSocket";
-import { formatPriceDual, getCurrencyLabel } from "../utils/format";
+import { getCurrencyLabel } from "../utils/format";
 import { Link, useNavigate } from "react-router-dom";
 import { toast, showToast } from "../utils/toast";
 import soundNotification from "../utils/soundNotification";

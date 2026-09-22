@@ -3,7 +3,7 @@ import { useExpedition } from "../hooks/useExpedition";
 import { useAuth } from "../hooks/useAuth";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { Link } from "react-router-dom";
-import { formatPriceDual } from "../utils/format";
+import ConvertedAmount from "../components/common/ConvertedAmount";
 import { toast, showToast } from "../utils/toast";
 import soundNotification from "../utils/soundNotification";
 import {
@@ -873,7 +873,7 @@ const Colis = () => {
                                                         </td>
                                                         <td className="px-4 py-4 text-right">
                                                             <div className="text-sm font-bold text-slate-900">
-                                                                {formatPriceDual(item.montant_colis_total)}
+                                                                <ConvertedAmount amount={item.montant_colis_total} sourceCurrency={item.expedition?.devise_origine} />
                                                             </div>
                                                         </td>
                                                         <td className="px-4 py-4 text-center" onClick={(e) => e.stopPropagation()}>

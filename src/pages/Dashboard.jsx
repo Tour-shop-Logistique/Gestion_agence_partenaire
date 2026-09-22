@@ -10,7 +10,6 @@ import { useDashboardWebSocket } from "../hooks/useDashboardWebSocket";
 
 // Composants modulaires
 import PageHeader from "../components/ui/PageHeader";
-import ExchangeRateWidget from "../components/dashboard/ExchangeRateWidget";
 import DemandesAlert from "../components/dashboard/DemandesAlert";
 import PriorityActions from "../components/dashboard/PriorityActions";
 import KPISection from "../components/dashboard/KPISection";
@@ -151,7 +150,6 @@ const Dashboard = () => {
                 }
                 actions={
                     <>
-                        <ExchangeRateWidget />
                         <button
                             onClick={refreshAll}
                             disabled={isRefreshing}

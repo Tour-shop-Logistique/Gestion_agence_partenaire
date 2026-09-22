@@ -8,7 +8,8 @@ import {
     ChevronDownIcon,
     ChevronUpIcon
 } from "@heroicons/react/24/outline";
-import { formatPriceDual, getCurrencyLabel } from "../../utils/format";
+import { getCurrencyLabel } from "../../utils/format";
+import ConvertedAmount from "../common/ConvertedAmount";
 import { expeditionsApi } from "../../utils/api/expeditions";
 import { expeditionsCache } from "../../utils/expeditionsCache";
 import Spinner from '../common/Spinner';
@@ -347,7 +348,7 @@ const RecentExpeditions = ({ expeditions = [] }) => {
                                                     {/* Montant - Desktop */}
                                                     <div className="hidden sm:block text-right flex-shrink-0 min-w-[90px]">
                                                         <p className="text-xs font-bold text-slate-900">
-                                                            {formatPriceDual(colis.montant_colis_total)}
+                                                            <ConvertedAmount amount={colis.montant_colis_total} sourceCurrency={exp.devise_origine} />
                                                         </p>
                                                     </div>
 
@@ -365,7 +366,7 @@ const RecentExpeditions = ({ expeditions = [] }) => {
                                                         {parseFloat(colis.poids || 0).toFixed(2)} kg
                                                     </span>
                                                     <span className="font-bold text-slate-900">
-                                                        {formatPriceDual(colis.montant_colis_total)}
+                                                        <ConvertedAmount amount={colis.montant_colis_total} sourceCurrency={exp.devise_origine} />
                                                     </span>
                                                 </div>
                                             </div>

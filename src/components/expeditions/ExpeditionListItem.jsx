@@ -4,6 +4,7 @@ import { EyeIcon, MapPinIcon, ChevronRightIcon } from '@heroicons/react/24/outli
 import { STATUS_CONFIG } from './StatusFilter';
 import { getStatusLabel, formatRelativeDate } from '../../utils/expeditionHelpers';
 import { getCountryName } from '../../utils/countries';
+import ConvertedAmount from '../common/ConvertedAmount';
 
 /**
  * 📋 LIGNE DE LISTE EXPÉDITION + COLIS
@@ -38,7 +39,6 @@ const ExpeditionListItem = ({
     expedition,
     getTypeStyle,
     getTypeLabel,
-    formatPriceDual,
     onSelectColis
 }) => {
     const navigate = useNavigate();
@@ -91,7 +91,7 @@ const ExpeditionListItem = ({
 
                 {/* Montant */}
                 <span className="text-sm font-bold text-slate-900 tabular-nums w-24 flex-shrink-0 text-right">
-                    {formatPriceDual(expedition.montant_expedition)}
+                    <ConvertedAmount amount={expedition.montant_expedition} sourceCurrency={expedition.devise_origine} />
                 </span>
 
                 {/* Badge statut */}

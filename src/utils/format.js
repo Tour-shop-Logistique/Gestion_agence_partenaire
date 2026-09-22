@@ -56,36 +56,6 @@ export const formatPrice = (price, currency = 'XOF') => {
 };
 
 /**
- * Convertir un montant en XOF vers l'EUR
- * @param {number} cfa - Montant en XOF
- * @returns {number} Montant en Euro
- */
-export const cfaToEur = (cfa) => {
-  const rate = parseFloat(localStorage.getItem('exchange_rate_cfa_eur')) || 655.957;
-  return parseFloat(cfa || 0) / rate;
-};
-
-/**
- * Formater un prix en double devise (devise locale & EUR)
- * @param {number} priceCfa - Prix en devise locale (XOF)
- * @param {string} currencyCode - Code ISO de la devise locale (défaut XOF)
- * @returns {string} Prix formaté
- */
-export const formatPriceDual = (priceCfa, currencyCode = 'XOF') => {
-  const priceEur = cfaToEur(priceCfa);
-  const formattedCfa = new Intl.NumberFormat('fr-FR').format(priceCfa);
-  const formattedEur = new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
-    currency: 'EUR',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(priceEur);
-
-  return `${formattedCfa} ${getCurrencyLabel(currencyCode)} (${formattedEur})`;
-};
-
-
-/**
  * Valider un email
  * @param {string} email - Email à valider
  * @returns {boolean} True si l'email est valide
