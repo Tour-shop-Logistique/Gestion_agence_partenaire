@@ -492,7 +492,7 @@ const RecordTransactionModal = ({
                         {foundExpedition.expediteur && (
                           <p className="text-[10px] text-emerald-700 mt-0.5">
                             De {foundExpedition.expediteur} → {foundExpedition.destinataire}
-                            {foundExpedition.montant && ` • ${new Intl.NumberFormat('fr-FR').format(foundExpedition.montant)} ${getCurrencyLabel()}`}
+                            {foundExpedition.montant && ` • ${new Intl.NumberFormat('fr-FR').format(foundExpedition.montant)} ${getCurrencyLabel(foundExpedition.devise_origine)}`}
                           </p>
                         )}
                       </div>
@@ -865,7 +865,7 @@ const RecordTransactionModal = ({
                             )}
                             {expedition.montant_expedition && (
                               <p className="text-slate-500">
-                                Montant: <span className="font-semibold text-slate-700">{new Intl.NumberFormat('fr-FR').format(expedition.montant_expedition)} {getCurrencyLabel()}</span>
+                                Montant: <span className="font-semibold text-slate-700">{new Intl.NumberFormat('fr-FR').format(expedition.montant_expedition)} {getCurrencyLabel(expedition.devise_origine)}</span>
                               </p>
                             )}
                           </div>

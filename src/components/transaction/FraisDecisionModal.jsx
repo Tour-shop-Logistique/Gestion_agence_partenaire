@@ -114,7 +114,7 @@ const FraisDecisionModal = ({ expedition, onClose }) => {
           <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Montant des frais</span>
             <span className="text-lg font-bold text-slate-900">
-              {montant.toLocaleString('fr-FR')} <span className="text-xs text-slate-500">{getCurrencyLabel()}</span>
+              {montant.toLocaleString('fr-FR')} <span className="text-xs text-slate-500">{getCurrencyLabel(expedition.devise_origine)}</span>
             </span>
           </div>
 
