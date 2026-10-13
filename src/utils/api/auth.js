@@ -13,6 +13,8 @@ export const authApi = {
    * @param {string} userData.lastName - Prénoms
    * @param {string} userData.dialCode - Indicatif téléphonique (ex: "+225")
    * @param {string} userData.phone - Téléphone (numéro local seul)
+   * @param {string} userData.whatsappDialCode - Indicatif WhatsApp (ex: "+225")
+   * @param {string} userData.whatsappPhone - Numéro WhatsApp local seul
    * @param {string} userData.email - Email
    * @param {string} userData.password - Mot de passe
    * @param {string} userData.confirmPassword - Confirmation du mot de passe
@@ -25,6 +27,7 @@ export const authApi = {
         prenoms: userData.lastName,
         indicatif_telephone: userData.dialCode,
         telephone: userData.phone,
+        whatsapp_number: `${userData.whatsappDialCode}${userData.whatsappPhone}`,
         email: userData.email,
         password: userData.password,
         password_confirmation: userData.confirmPassword,

@@ -42,6 +42,8 @@ const Agents = () => {
     email: "",
     dialCode: "",
     phone: "",
+    whatsappDialCode: "",
+    whatsappPhone: "",
     password: "",
     type: "agence",
     role_id: "",
@@ -243,6 +245,10 @@ const Agents = () => {
       toast.error("Veuillez sélectionner l'indicatif téléphonique");
       return;
     }
+    if (!editingAgent && (!formData.whatsappDialCode || !formData.whatsappPhone)) {
+      toast.error("Veuillez renseigner le numéro WhatsApp");
+      return;
+    }
 
     setLoading(true);
 
@@ -275,6 +281,7 @@ const Agents = () => {
           prenoms: (formData.prenoms || "").trim(),
           indicatif_telephone: formData.dialCode || "",
           telephone: formData.phone || "",
+          whatsapp_number: `${formData.whatsappDialCode}${formData.whatsappPhone}`,
           email: formData.email || "",
           password: formData.password || "12345678",
           password_confirmation: formData.password || "12345678",
@@ -357,6 +364,8 @@ const Agents = () => {
       email: "",
       dialCode: "",
       phone: "",
+      whatsappDialCode: "",
+      whatsappPhone: "",
       type: "agence",
       password: "",
       role_id: "",
@@ -1002,6 +1011,24 @@ const Agents = () => {
                           inputClassName="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                         />
                       </div>
+
+                      {!editingAgent && (
+                        <div className="space-y-2">
+                          <label
+                            htmlFor="whatsapp"
+                            className="block text-sm font-medium text-gray-700"
+                          >
+                            Numéro WhatsApp <span className="text-red-500">*</span>
+                          </label>
+                          <PhoneInput
+                            dialCode={formData.whatsappDialCode}
+                            localNumber={formData.whatsappPhone}
+                            onDialCodeChange={(whatsappDialCode) => setFormData((prev) => ({ ...prev, whatsappDialCode }))}
+                            onLocalNumberChange={(whatsappPhone) => setFormData((prev) => ({ ...prev, whatsappPhone }))}
+                            inputClassName="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
 

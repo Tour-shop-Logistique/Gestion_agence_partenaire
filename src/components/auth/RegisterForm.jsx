@@ -21,6 +21,8 @@ const RegisterForm = ({ onVerificationRequired, switchToLogin }) => {
     confirmPassword: "",
     dialCode: "",
     phone: "",
+    whatsappDialCode: "",
+    whatsappPhone: "",
     type: "agence",
   });
   const [localError, setLocalError] = useState("");
@@ -48,6 +50,10 @@ const RegisterForm = ({ onVerificationRequired, switchToLogin }) => {
       setLocalError("Veuillez sélectionner l'indicatif téléphonique");
       return;
     }
+    if (!formData.whatsappDialCode || !formData.whatsappPhone) {
+      setLocalError("Veuillez renseigner le numéro WhatsApp");
+      return;
+    }
 
     try {
       const userData = {
@@ -55,6 +61,8 @@ const RegisterForm = ({ onVerificationRequired, switchToLogin }) => {
         lastName: formData.lastName,
         dialCode: formData.dialCode,
         phone: formData.phone,
+        whatsappDialCode: formData.whatsappDialCode,
+        whatsappPhone: formData.whatsappPhone,
         email: formData.email,
         password: formData.password,
         confirmPassword: formData.confirmPassword,
@@ -140,6 +148,19 @@ const RegisterForm = ({ onVerificationRequired, switchToLogin }) => {
           localNumber={formData.phone}
           onDialCodeChange={(dialCode) => setFormData((prev) => ({ ...prev, dialCode }))}
           onLocalNumberChange={(phone) => setFormData((prev) => ({ ...prev, phone }))}
+          inputClassName={inputClasses}
+        />
+      </div>
+
+      <div>
+        <label htmlFor="whatsapp" className={labelClasses}>
+          Numéro WhatsApp *
+        </label>
+        <PhoneInput
+          dialCode={formData.whatsappDialCode}
+          localNumber={formData.whatsappPhone}
+          onDialCodeChange={(whatsappDialCode) => setFormData((prev) => ({ ...prev, whatsappDialCode }))}
+          onLocalNumberChange={(whatsappPhone) => setFormData((prev) => ({ ...prev, whatsappPhone }))}
           inputClassName={inputClasses}
         />
       </div>
