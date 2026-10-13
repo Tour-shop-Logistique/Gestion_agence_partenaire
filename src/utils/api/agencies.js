@@ -43,7 +43,11 @@ export const agenciesApi = {
 
       return {
         success: response.success !== false,
-        data: response,
+        // response.agence (pas response entier) : la réponse backend
+        // enveloppe l'objet agence sous cette clé (voir
+        // AgenceController::setupAgence) - sans ça, agency.data.devise
+        // (et tout autre champ direct) reste toujours undefined.
+        data: response.agence ?? response,
         message: response.message || "Agence configurée avec succès",
       };
     } catch (error) {
@@ -61,11 +65,13 @@ export const agenciesApi = {
   async getAgency() {
     try {
       const response = await apiService.get(API_ENDPOINTS.AGENCIES.SHOW);
-      console.log("Données de l'agence (agence/show):", response);
 
       return {
         success: response.success !== false,
-        data: response,
+        // response.agence (pas response entier) : voir setupAgency()
+        // ci-dessus pour la raison - inclut déjà `devise` (voir
+        // AgenceController::showAgence).
+        data: response.agence ?? response,
         message: response.message || "Informations de l'agence récupérées",
       };
     } catch (error) {
@@ -82,7 +88,6 @@ export const agenciesApi = {
    * @returns {Promise<Object>}
    */
   async updateAgency(agencyData) {
-    console.log("Données de l'agence (agence/update):", agencyData);
     try {
       let payload = agencyData;
       let method = 'PUT';
@@ -124,7 +129,8 @@ export const agenciesApi = {
 
       return {
         success: response.success !== false,
-        data: response,
+        // response.agence (pas response entier) : voir setupAgency() plus haut.
+        data: response.agence ?? response,
         message: response.message || "Agence mise à jour avec succès",
       };
     } catch (error) {

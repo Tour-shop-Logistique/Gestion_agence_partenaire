@@ -5,6 +5,7 @@ import CompanyLogo from '../../assets/logo_transparent.png';
 import AppLogo from '../../assets/logo_blanc_shop.jpg';
 import { getCountryName } from '../../utils/countries';
 import { getCurrencyLabel } from '../../utils/format';
+import { useExchangeRate } from '../../hooks/useExchangeRate';
 
 const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
     if (!expedition) return null;
@@ -32,10 +33,15 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
     const paysDestination = getCountryName(expedition.code_pays_destination)
         || expedition.destinataire?.pays || expedition.destinataire_pays || expedition.pays_destination || '';
     const isFrance = paysDestination.toLowerCase().includes('france');
-    
-    // Taux de conversion FCFA vers EUR (1 EUR = 655.957 FCFA)
-    const tauxConversion = 655.957;
-    const totalEnEuros = totalAPayer / tauxConversion;
+
+    // Taux à jour (GET /exchange-rate, mis en cache 24h côté backend) au
+    // lieu d'un taux EUR/FCFA figé en dur - voir useExchangeRate(). Couvre
+    // aussi le cas où l'expédition n'est pas en FCFA (ex. agence
+    // espagnole en EUR) : la devise source réelle vient de
+    // expedition.devise_origine, jamais supposée FCFA.
+    const deviseOrigine = expedition.devise_origine || 'XOF';
+    const tauxConversion = useExchangeRate(deviseOrigine, 'EUR');
+    const totalEnEuros = tauxConversion ? totalAPayer * tauxConversion : null;
 
     const date = expedition.created_at ? new Date(expedition.created_at) : new Date();
     // Utiliser la référence existante comme numéro de facture
@@ -253,7 +259,7 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
                                     <span className="text-xl font-bold font-mono text-indigo-700 leading-none block">
                                         {totalAPayer.toLocaleString()} {getCurrencyLabel(expedition.devise_origine)}
                                     </span>
-                                    {isFrance && (
+                                    {isFrance && totalEnEuros !== null && (
                                         <span className="text-sm font-bold font-mono text-blue-600 leading-none block mt-1.5">
                                             ≈ {totalEnEuros.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} EUR
                                         </span>
