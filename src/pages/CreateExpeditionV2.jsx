@@ -117,6 +117,12 @@ const CreateExpeditionV2 = () => {
     // Prochain numéro séquentiel de colis pour le type sélectionné,
     // déduit du dernier colis du même type trouvé dans les "dernières expéditions" du dashboard
     const [nextColisNumero, setNextColisNumero] = useState(1);
+    // Ignore le tout premier passage de l'effet "Gestion des pays par défaut
+    // selon le type" ci-dessous (déclenché au montage avec la valeur initiale
+    // de type_expedition, pas un vrai changement fait par l'utilisateur) -
+    // sans cette garde, le colis vide par défaut serait écrasé par un
+    // colis vide identique à chaque montage, inutilement.
+    const isFirstTypeEffect = useRef(true);
 
     const [formData, setFormData] = useState({
         type_expedition: "SIMPLE",
@@ -266,6 +272,33 @@ const CreateExpeditionV2 = () => {
         setSelectedRouteId(""); // Réinitialiser aussi l'ID pour le select
         setSelectedDhdCountryCode(""); // Réinitialiser le pays DHD choisi
         cleanSimulation();
+
+        // Vide aussi les colis déjà saisis : poids/dimensions/catégorie/
+        // articles d'un type ne sont pas forcément valides pour un autre
+        // (ex. catégorie DHD Aérien incompatible avec CA), et le backend
+        // validerait sur des champs qui n'ont plus le même sens une fois le
+        // type changé. Sans ça, revenir en arrière dans le formulaire
+        // (changer de type sans recharger la page) laissait les anciens
+        // colis du type précédent affichés comme s'ils appartenaient au
+        // nouveau type.
+        if (!isFirstTypeEffect.current) {
+            setFormData(prev => ({
+                ...prev,
+                colis: [{
+                    designation: "",
+                    category_id: "",
+                    format_colis_id: null,
+                    poids: "",
+                    longueur: "",
+                    largeur: "",
+                    hauteur: "",
+                    prix_emballage: 0,
+                    prix_estimation: 0,
+                    articles: []
+                }]
+            }));
+        }
+        isFirstTypeEffect.current = false;
     }, [formData.type_expedition]);
 
     // Nombre maximal de pages de la liste complète des expéditions à parcourir
@@ -1217,6 +1250,13 @@ const CreateExpeditionV2 = () => {
         );
     }
 
+    // Longueur/largeur/hauteur n'ont de sens que pour LD (indice de
+    // tarification par poids/volume) et Interville (format de colis déduit
+    // du volume, voir determinerFormatColisLocal) - les types groupage
+    // (DHD Aérien/Maritime, Afrique, CA) tarifient uniquement sur le poids
+    // agrégé par catégorie, ces champs y seraient sans effet.
+    const showDimensions = formData.type_expedition === 'SIMPLE' || formData.type_expedition === 'INTERVILLE';
+
     return (
         <>
             {/* Bandeau tarif mobile — affiché en bas quand simulationResult existe à l'étape 2 */}
@@ -1766,7 +1806,7 @@ const CreateExpeditionV2 = () => {
                                                         )}
                                                     </div>
 
-                                                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3">
+                                                    <div className={`grid grid-cols-2 gap-2 sm:gap-3 ${showDimensions ? 'sm:grid-cols-5' : 'sm:grid-cols-2'}`}>
                                                         <div className="space-y-1.5">
                                                             <label className="block text-[11px] font-semibold text-slate-600">Poids (kg) <span className="text-amber-600">*</span></label>
                                                             <input
@@ -1777,10 +1817,11 @@ const CreateExpeditionV2 = () => {
                                                                 value={colis.poids}
                                                                 onChange={(e) => handleColisChange(index, 'poids', e.target.value)}
                                                                 onFocus={(e) => e.target.select()}
-                                                                placeholder="0.0" 
-                                                                className={inputCls(colis.poids, true)} 
+                                                                placeholder="0.0"
+                                                                className={inputCls(colis.poids, true)}
                                                             />
                                                         </div>
+                                                        {showDimensions && (
                                                         <div className="space-y-1.5">
                                                             <label className="block text-[11px] font-semibold text-slate-600">Long. (cm)</label>
                                                             <input
@@ -1791,10 +1832,12 @@ const CreateExpeditionV2 = () => {
                                                                 value={colis.longueur}
                                                                 onChange={(e) => handleColisChange(index, 'longueur', e.target.value)}
                                                                 onFocus={(e) => e.target.select()}
-                                                                placeholder="0" 
-                                                                className={inputCls(colis.longueur)} 
+                                                                placeholder="0"
+                                                                className={inputCls(colis.longueur)}
                                                             />
                                                         </div>
+                                                        )}
+                                                        {showDimensions && (
                                                         <div className="space-y-1.5">
                                                             <label className="block text-[11px] font-semibold text-slate-600">Larg. (cm)</label>
                                                             <input
@@ -1805,10 +1848,12 @@ const CreateExpeditionV2 = () => {
                                                                 value={colis.largeur}
                                                                 onChange={(e) => handleColisChange(index, 'largeur', e.target.value)}
                                                                 onFocus={(e) => e.target.select()}
-                                                                placeholder="0" 
-                                                                className={inputCls(colis.largeur)} 
+                                                                placeholder="0"
+                                                                className={inputCls(colis.largeur)}
                                                             />
                                                         </div>
+                                                        )}
+                                                        {showDimensions && (
                                                         <div className="space-y-1.5">
                                                             <label className="block text-[11px] font-semibold text-slate-600">Haut. (cm)</label>
                                                             <input
@@ -1819,10 +1864,11 @@ const CreateExpeditionV2 = () => {
                                                                 value={colis.hauteur}
                                                                 onChange={(e) => handleColisChange(index, 'hauteur', e.target.value)}
                                                                 onFocus={(e) => e.target.select()}
-                                                                placeholder="0" 
-                                                                className={inputCls(colis.hauteur)} 
+                                                                placeholder="0"
+                                                                className={inputCls(colis.hauteur)}
                                                             />
                                                         </div>
+                                                        )}
                                                         <div className="space-y-1.5 col-span-2 sm:col-span-1">
                                                             <label className="block text-[11px] font-semibold text-slate-600">Emballage ({getCurrencyLabel()})</label>
                                                             <input
