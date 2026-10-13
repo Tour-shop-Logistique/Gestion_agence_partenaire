@@ -519,9 +519,17 @@ const CreateExpedition = () => {
         });
     };
 
+    // Champs numériques du colis sans sens négatif possible (poids,
+    // dimensions, montants) - min="0" sur l'<input> seul n'empêche pas de
+    // taper "-5" au clavier, seulement les flèches du spinner natif.
+    const CHAMPS_COLIS_POSITIFS = ['poids', 'longueur', 'largeur', 'hauteur', 'prix_emballage'];
+
     const handleColisChange = (index, field, value) => {
+        const valeurFinale = CHAMPS_COLIS_POSITIFS.includes(field) && value !== '' && Number(value) < 0
+            ? '0'
+            : value;
         const newColis = [...formData.colis];
-        newColis[index] = { ...newColis[index], [field]: value };
+        newColis[index] = { ...newColis[index], [field]: valeurFinale };
         setFormData(prev => ({ ...prev, colis: newColis }));
     };
 
@@ -1090,6 +1098,7 @@ const CreateExpedition = () => {
                                                             </label>
                                                             <input
                                                                 type="number"
+                                                                min="0"
                                                                 value={c.poids}
                                                                 onChange={(e) => handleColisChange(index, 'poids', e.target.value)}
                                                                 placeholder="0"
@@ -1142,19 +1151,19 @@ const CreateExpedition = () => {
                                                             <div className="grid grid-cols-4 gap-2">
                                                                 <div>
                                                                     <label className="block text-xs font-semibold text-slate-400 text-center mb-1">Long. cm</label>
-                                                                    <input type="number" placeholder="0" value={c.longueur} onChange={(e) => handleColisChange(index, 'longueur', e.target.value)} className="w-full border-2 border-slate-300 rounded-lg text-xs p-2 bg-white text-center h-9 px-3 focus:border-slate-500 focus:ring-2 focus:ring-slate-500/20" />
+                                                                    <input type="number" min="0" placeholder="0" value={c.longueur} onChange={(e) => handleColisChange(index, 'longueur', e.target.value)} className="w-full border-2 border-slate-300 rounded-lg text-xs p-2 bg-white text-center h-9 px-3 focus:border-slate-500 focus:ring-2 focus:ring-slate-500/20" />
                                                                 </div>
                                                                 <div>
                                                                     <label className="block text-xs font-semibold text-slate-400 text-center mb-1">Larg. cm</label>
-                                                                    <input type="number" placeholder="0" value={c.largeur} onChange={(e) => handleColisChange(index, 'largeur', e.target.value)} className="w-full border-2 border-slate-300 rounded-lg text-xs p-2 bg-white text-center h-9 px-3 focus:border-slate-500 focus:ring-2 focus:ring-slate-500/20" />
+                                                                    <input type="number" min="0" placeholder="0" value={c.largeur} onChange={(e) => handleColisChange(index, 'largeur', e.target.value)} className="w-full border-2 border-slate-300 rounded-lg text-xs p-2 bg-white text-center h-9 px-3 focus:border-slate-500 focus:ring-2 focus:ring-slate-500/20" />
                                                                 </div>
                                                                 <div>
                                                                     <label className="block text-xs font-semibold text-slate-400 text-center mb-1">Haut. cm</label>
-                                                                    <input type="number" placeholder="0" value={c.hauteur} onChange={(e) => handleColisChange(index, 'hauteur', e.target.value)} className="w-full border-2 border-slate-300 rounded-lg text-xs p-2 bg-white text-center h-9 px-3 focus:border-slate-500 focus:ring-2 focus:ring-slate-500/20" />
+                                                                    <input type="number" min="0" placeholder="0" value={c.hauteur} onChange={(e) => handleColisChange(index, 'hauteur', e.target.value)} className="w-full border-2 border-slate-300 rounded-lg text-xs p-2 bg-white text-center h-9 px-3 focus:border-slate-500 focus:ring-2 focus:ring-slate-500/20" />
                                                                 </div>
                                                                 <div>
                                                                     <label className="block text-xs font-semibold text-slate-400 text-center mb-1">Emb. {getCurrencyLabel()}</label>
-                                                                    <input type="number" value={c.prix_emballage} onChange={(e) => handleColisChange(index, 'prix_emballage', e.target.value)} className="w-full border-2 border-slate-300 rounded-lg text-xs p-2 bg-white text-center font-semibold text-slate-700 h-9 px-3 focus:border-slate-500 focus:ring-2 focus:ring-slate-500/20" />
+                                                                    <input type="number" min="0" value={c.prix_emballage} onChange={(e) => handleColisChange(index, 'prix_emballage', e.target.value)} className="w-full border-2 border-slate-300 rounded-lg text-xs p-2 bg-white text-center font-semibold text-slate-700 h-9 px-3 focus:border-slate-500 focus:ring-2 focus:ring-slate-500/20" />
                                                                 </div>
                                                             </div>
                                                         </div>

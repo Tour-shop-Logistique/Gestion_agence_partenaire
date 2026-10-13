@@ -761,8 +761,9 @@ const TransactionsPro = () => {
               <label className="block text-xs font-medium text-slate-700 mb-1.5">Montant minimum</label>
               <input
                 type="number"
+                min="0"
                 value={filters.montant_min}
-                onChange={(e) => setFilters({ ...filters, montant_min: e.target.value })}
+                onChange={(e) => setFilters({ ...filters, montant_min: e.target.value !== '' && Number(e.target.value) < 0 ? '0' : e.target.value })}
                 className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-blue-500"
                 placeholder="0"
               />
@@ -772,8 +773,9 @@ const TransactionsPro = () => {
               <label className="block text-xs font-medium text-slate-700 mb-1.5">Montant maximum</label>
               <input
                 type="number"
+                min="0"
                 value={filters.montant_max}
-                onChange={(e) => setFilters({ ...filters, montant_max: e.target.value })}
+                onChange={(e) => setFilters({ ...filters, montant_max: e.target.value !== '' && Number(e.target.value) < 0 ? '0' : e.target.value })}
                 className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-blue-500"
                 placeholder="Illimité"
               />

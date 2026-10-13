@@ -86,7 +86,9 @@ const AddAgencyTarifModal = ({ show, onClose, editingTarif, selectedBaseRate }) 
 
   const handlePercentageChange = (value) => {
     if (!tarifData) return;
-    const pct = value === "" ? "" : Number(value);
+    // Clamp 0-100 : min/max HTML sur l'<input> n'empêchent pas la saisie
+    // clavier d'un signe moins, seulement les flèches du spinner natif.
+    const pct = value === "" ? "" : Math.min(100, Math.max(0, Number(value)));
     const pctNum = pct === "" ? 0 : pct;
     const prestation = parseFloat(((tarifData.montant_base * pctNum) / 100).toFixed(2));
     const total = parseFloat((tarifData.montant_base + prestation).toFixed(2));

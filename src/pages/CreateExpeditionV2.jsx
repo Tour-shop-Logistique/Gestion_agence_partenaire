@@ -787,9 +787,17 @@ const CreateExpeditionV2 = () => {
         }));
     };
 
+    // Champs numériques du colis sans sens négatif possible (poids,
+    // dimensions, montants) - min="0" sur l'<input> seul n'empêche pas de
+    // taper "-5" au clavier, seulement les flèches du spinner natif.
+    const CHAMPS_COLIS_POSITIFS = ['poids', 'longueur', 'largeur', 'hauteur', 'prix_emballage', 'prix_estimation'];
+
     const handleColisChange = (index, field, value) => {
+        const valeurFinale = CHAMPS_COLIS_POSITIFS.includes(field) && value !== '' && Number(value) < 0
+            ? '0'
+            : value;
         const newColis = [...formData.colis];
-        newColis[index] = { ...newColis[index], [field]: value };
+        newColis[index] = { ...newColis[index], [field]: valeurFinale };
         setFormData(prev => ({ ...prev, colis: newColis }));
     };
 
@@ -1758,10 +1766,11 @@ const CreateExpeditionV2 = () => {
                                                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3">
                                                         <div className="space-y-1.5">
                                                             <label className="block text-[11px] font-semibold text-slate-600">Poids (kg) <span className="text-amber-600">*</span></label>
-                                                            <input 
-                                                                type="number" 
-                                                                step="0.1" 
-                                                                inputMode="decimal" 
+                                                            <input
+                                                                type="number"
+                                                                step="0.1"
+                                                                min="0"
+                                                                inputMode="decimal"
                                                                 value={colis.poids}
                                                                 onChange={(e) => handleColisChange(index, 'poids', e.target.value)}
                                                                 onFocus={(e) => e.target.select()}
@@ -1771,10 +1780,11 @@ const CreateExpeditionV2 = () => {
                                                         </div>
                                                         <div className="space-y-1.5">
                                                             <label className="block text-[11px] font-semibold text-slate-600">Long. (cm)</label>
-                                                            <input 
-                                                                type="number" 
-                                                                step="0.1" 
-                                                                inputMode="decimal" 
+                                                            <input
+                                                                type="number"
+                                                                step="0.1"
+                                                                min="0"
+                                                                inputMode="decimal"
                                                                 value={colis.longueur}
                                                                 onChange={(e) => handleColisChange(index, 'longueur', e.target.value)}
                                                                 onFocus={(e) => e.target.select()}
@@ -1784,10 +1794,11 @@ const CreateExpeditionV2 = () => {
                                                         </div>
                                                         <div className="space-y-1.5">
                                                             <label className="block text-[11px] font-semibold text-slate-600">Larg. (cm)</label>
-                                                            <input 
-                                                                type="number" 
-                                                                step="0.1" 
-                                                                inputMode="decimal" 
+                                                            <input
+                                                                type="number"
+                                                                step="0.1"
+                                                                min="0"
+                                                                inputMode="decimal"
                                                                 value={colis.largeur}
                                                                 onChange={(e) => handleColisChange(index, 'largeur', e.target.value)}
                                                                 onFocus={(e) => e.target.select()}
@@ -1797,10 +1808,11 @@ const CreateExpeditionV2 = () => {
                                                         </div>
                                                         <div className="space-y-1.5">
                                                             <label className="block text-[11px] font-semibold text-slate-600">Haut. (cm)</label>
-                                                            <input 
-                                                                type="number" 
-                                                                step="0.1" 
-                                                                inputMode="decimal" 
+                                                            <input
+                                                                type="number"
+                                                                step="0.1"
+                                                                min="0"
+                                                                inputMode="decimal"
                                                                 value={colis.hauteur}
                                                                 onChange={(e) => handleColisChange(index, 'hauteur', e.target.value)}
                                                                 onFocus={(e) => e.target.select()}
@@ -1810,10 +1822,11 @@ const CreateExpeditionV2 = () => {
                                                         </div>
                                                         <div className="space-y-1.5 col-span-2 sm:col-span-1">
                                                             <label className="block text-[11px] font-semibold text-slate-600">Emballage ({getCurrencyLabel()})</label>
-                                                            <input 
-                                                                type="number" 
-                                                                step="0" 
-                                                                inputMode="numeric" 
+                                                            <input
+                                                                type="number"
+                                                                step="0"
+                                                                min="0"
+                                                                inputMode="numeric"
                                                                 value={colis.prix_emballage}
                                                                 onChange={(e) => handleColisChange(index, 'prix_emballage', e.target.value)}
                                                                 onFocus={(e) => e.target.select()}
@@ -1823,10 +1836,11 @@ const CreateExpeditionV2 = () => {
                                                         </div>
                                                         <div className="space-y-1.5 col-span-2 sm:col-span-1">
                                                             <label className="block text-[11px] font-semibold text-slate-600">Estimation ({getCurrencyLabel()})</label>
-                                                            <input 
-                                                                type="number" 
-                                                                step="0" 
-                                                                inputMode="numeric" 
+                                                            <input
+                                                                type="number"
+                                                                step="0"
+                                                                min="0"
+                                                                inputMode="numeric"
                                                                 value={colis.prix_estimation}
                                                                 onChange={(e) => handleColisChange(index, 'prix_estimation', e.target.value)}
                                                                 onFocus={(e) => e.target.select()}
