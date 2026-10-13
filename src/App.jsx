@@ -138,6 +138,12 @@ function AppContent() {
   const hasLoadedDataRef = useRef(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  // location.key change à chaque navigate(), même vers la même URL (ex:
+  // cliquer "Nouvelle expédition" en étant déjà sur /create-expedition) -
+  // utilisé comme key React sur CreateExpeditionV2 pour forcer un remount
+  // complet et vider le formulaire, qu'un simple changement de route ne
+  // déclenche pas puisque le composant resterait monté à l'identique.
+  const location = useLocation();
 
   // ========== INITIALISATION WEBSOCKET ==========
   useEffect(() => {
@@ -384,7 +390,7 @@ function AppContent() {
           <Route path="/colis-a-receptionner" element={<AgencySetupGuard><PageGuard pageKey="colis_a_receptionner"><ColisAReceptionner /></PageGuard></AgencySetupGuard>} />
           <Route path="/expeditions/:id" element={<AgencySetupGuard><PageGuard pageKey="expeditions"><ExpeditionDetails /></PageGuard></AgencySetupGuard>} />
           <Route path="/expeditions/:id/controle" element={<AgencySetupGuard><PageGuard pageKey="expeditions"><ExpeditionControl /></PageGuard></AgencySetupGuard>} />
-          <Route path="/create-expedition" element={<AgencySetupGuard><PageGuard pageKey="expeditions"><CreateExpeditionV2 /></PageGuard></AgencySetupGuard>} />
+          <Route path="/create-expedition" element={<AgencySetupGuard><PageGuard pageKey="expeditions"><CreateExpeditionV2 key={location.key} /></PageGuard></AgencySetupGuard>} />
           <Route path="/retrait-colis" element={<AgencySetupGuard><PageGuard pageKey="retrait_colis"><RetraitColis /></PageGuard></AgencySetupGuard>} />
           <Route path="/transactions" element={<AgencySetupGuard><PageGuard pageKey="transactions"><TransactionsPro /></PageGuard></AgencySetupGuard>} />
           <Route path="/transactions-legacy" element={<AgencySetupGuard><PageGuard pageKey="transactions"><Transactions /></PageGuard></AgencySetupGuard>} />

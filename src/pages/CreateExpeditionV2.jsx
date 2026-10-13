@@ -840,15 +840,20 @@ const CreateExpeditionV2 = () => {
     };
 
     const handleAddArticle = (colisIndex, option) => {
-        if (!option || !option.label) return;
-        const productDesignation = option.label;
+        if (!option || !option.id || !option.label) return;
+        // {produit_id, designation} - et non le seul libellé texte : le
+        // backend exige colis.*.articles.*.produit_id (required|uuid|exists),
+        // voir handleSubmit()/handleSimulate() plus bas qui envoient ces
+        // objets tels quels. Stocker uniquement option.label ici faisait
+        // échouer la validation côté serveur malgré un article bien
+        // sélectionné à l'écran.
         const newColis = [...formData.colis];
         const currentArticles = newColis[colisIndex].articles || [];
 
-        if (!currentArticles.includes(productDesignation)) {
+        if (!currentArticles.some(a => a.produit_id === option.id)) {
             newColis[colisIndex] = {
                 ...newColis[colisIndex],
-                articles: [...currentArticles, productDesignation]
+                articles: [...currentArticles, { produit_id: option.id, designation: option.label }]
             };
             setFormData(prev => ({ ...prev, colis: newColis }));
         }
@@ -965,11 +970,10 @@ const CreateExpeditionV2 = () => {
                     if (formatDeduit) item.format_colis_id = formatDeduit.id;
                 }
 
-                // N'envoyer articles que s'il y en a, sous forme d'objets {designation}
+                // N'envoyer articles que s'il y en a - déjà sous forme
+                // d'objets {produit_id, designation} (voir handleAddArticle()).
                 if (c.articles && c.articles.length > 0) {
-                    item.articles = c.articles.map(a =>
-                        typeof a === 'string' ? { designation: a } : a
-                    );
+                    item.articles = c.articles;
                 }
 
                 if (c.category_id) item.category_id = c.category_id;
@@ -1010,11 +1014,10 @@ const CreateExpeditionV2 = () => {
                     if (formatDeduit) item.format_colis_id = formatDeduit.id;
                 }
 
-                // N'envoyer articles que s'il y en a, sous forme d'objets {designation}
+                // N'envoyer articles que s'il y en a - déjà sous forme
+                // d'objets {produit_id, designation} (voir handleAddArticle()).
                 if (c.articles && c.articles.length > 0) {
-                    item.articles = c.articles.map(a =>
-                        typeof a === 'string' ? { designation: a } : a
-                    );
+                    item.articles = c.articles;
                 }
 
                 if (c.category_id) item.category_id = c.category_id;
@@ -1902,10 +1905,10 @@ const CreateExpeditionV2 = () => {
                                                             <div className="flex flex-wrap gap-2 mt-2">
                                                                 {colis.articles.map((article, artIdx) => (
                                                                     <span key={artIdx} className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs font-semibold">
-                                                                        {article}
+                                                                        {article.designation}
                                                                         <button
                                                                             onClick={() => handleRemoveArticle(index, artIdx)}
-                                                                            aria-label={`Retirer l'article ${article}`}
+                                                                            aria-label={`Retirer l'article ${article.designation}`}
                                                                             className="hover:text-indigo-900"
                                                                         >
                                                                             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
