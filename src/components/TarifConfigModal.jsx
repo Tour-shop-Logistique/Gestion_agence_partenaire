@@ -1,5 +1,10 @@
 import React from "react";
-import { formatPrice } from "../utils/format";
+import { getCurrencyLabel } from "../utils/format";
+
+// Devise toujours résolue dynamiquement (voir getCurrencyLabel()) plutôt
+// que figée sur "XOF" : une agence facturant en EUR doit voir ses
+// montants affichés en €, pas en FCFA.
+const formatMontant = (amount) => `${(amount || 0).toLocaleString('fr-FR')} ${getCurrencyLabel()}`;
 import {
   XMarkIcon,
   InformationCircleIcon,
@@ -79,7 +84,7 @@ const TarifConfigModal = ({
                           Zone {zone.zone_destination_id.replace(/z/i, "")}
                         </td>
                         <td className="px-6 py-3 text-sm font-medium text-slate-500">
-                          {formatPrice(zone.montant_base || 0, "XOF")}
+                          {formatMontant(zone.montant_base || 0)}
                         </td>
                         <td className="px-6 py-3">
                           <div className="flex items-center group/input">
@@ -95,10 +100,10 @@ const TarifConfigModal = ({
                           </div>
                         </td>
                         <td className="px-6 py-3 text-sm font-bold text-indigo-600">
-                          {formatPrice(zone.montant_prestation || 0, "XOF")}
+                          {formatMontant(zone.montant_prestation || 0)}
                         </td>
                         <td className="px-6 py-3 text-sm font-bold text-slate-900">
-                          {formatPrice(zone.montant_expedition || 0, "XOF")}
+                          {formatMontant(zone.montant_expedition || 0)}
                         </td>
                         <td className="px-6 py-3 text-right">
                           <button

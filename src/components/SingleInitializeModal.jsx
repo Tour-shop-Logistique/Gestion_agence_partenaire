@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { formatPrice } from '../utils/format';
+import { getCurrencyLabel } from '../utils/format';
+
+// Devise toujours résolue dynamiquement (voir getCurrencyLabel()) plutôt
+// que figée sur "XOF" : une agence facturant en EUR doit voir ses
+// montants affichés en €, pas en FCFA.
+const formatMontant = (amount) => `${(amount || 0).toLocaleString('fr-FR')} ${getCurrencyLabel()}`;
 import {
     XMarkIcon,
     CheckIcon,
@@ -109,15 +114,15 @@ const SingleInitializeModal = ({
                             <div className="divide-y divide-slate-100 bg-white rounded-lg border border-slate-100 overflow-hidden shadow-sm">
                                 <div className="px-4 py-3 flex justify-between items-center text-sm font-medium">
                                     <span className="text-slate-500">Montant de Base</span>
-                                    <span className="text-slate-900 font-bold">{formatPrice(tarif.montant_base, "XOF")}</span>
+                                    <span className="text-slate-900 font-bold">{formatMontant(tarif.montant_base)}</span>
                                 </div>
                                 <div className="px-4 py-3 flex justify-between items-center text-sm font-medium">
                                     <span className="text-slate-500">Frais Prestation (+{percentage}%)</span>
-                                    <span className="text-indigo-600 font-bold">+{formatPrice((tarif.montant_base * percentage) / 100, "XOF")}</span>
+                                    <span className="text-indigo-600 font-bold">+{formatMontant((tarif.montant_base * percentage) / 100)}</span>
                                 </div>
                                 <div className="px-4 py-4 flex justify-between items-center bg-indigo-50/50">
                                     <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Total Expédition</span>
-                                    <span className="text-xl font-bold text-indigo-700">{formatPrice(calculatedTotal, "XOF")}</span>
+                                    <span className="text-xl font-bold text-indigo-700">{formatMontant(calculatedTotal)}</span>
                                 </div>
                             </div>
                         </div>

@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTarifs } from '../hooks/useTarifs';
-import { formatPrice } from '../utils/format';
+import { getCurrencyLabel } from '../utils/format';
+
+// Devise toujours résolue dynamiquement (voir getCurrencyLabel()) plutôt
+// que figée sur "XOF" : une agence facturant en EUR doit voir ses
+// montants affichés en €, pas en FCFA.
+const formatMontant = (amount) => `${(amount || 0).toLocaleString('fr-FR')} ${getCurrencyLabel()}`;
 import {
   XMarkIcon,
   MapPinIcon,
@@ -314,7 +319,7 @@ const SaveTarifModal = ({
                               </div>
                             </td>
                             <td className="px-6 py-4">
-                              <span className="text-xs font-bold text-slate-600">{formatPrice(ligne.montant_base, "XOF")}</span>
+                              <span className="text-xs font-bold text-slate-600">{formatMontant(ligne.montant_base)}</span>
                             </td>
                             <td className="px-6 py-4">
                               <div className="flex items-center justify-center gap-1">
@@ -347,11 +352,11 @@ const SaveTarifModal = ({
                               </div>
                             </td>
                             <td className="px-6 py-4">
-                              <span className="text-xs font-bold text-indigo-600">{formatPrice(ligne.montant_prestation, "XOF")}</span>
+                              <span className="text-xs font-bold text-indigo-600">{formatMontant(ligne.montant_prestation)}</span>
                             </td>
                             <td className="px-6 py-4 text-right">
                               <span className="inline-flex items-center px-3 py-1 bg-indigo-600 text-white text-xs font-bold rounded-lg shadow-sm">
-                                {formatPrice(ligne.montant_expedition, "XOF")}
+                                {formatMontant(ligne.montant_expedition)}
                               </span>
                             </td>
                           </tr>
@@ -360,10 +365,10 @@ const SaveTarifModal = ({
                       <tfoot className="sticky bottom-0 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white">
                         <tr className="border-t-2 border-indigo-500">
                           <td className="px-6 py-4 text-xs font-bold uppercase tracking-wide">Total</td>
-                          <td className="px-6 py-4 text-xs font-bold">{formatPrice(totalMontantBase, "XOF")}</td>
+                          <td className="px-6 py-4 text-xs font-bold">{formatMontant(totalMontantBase)}</td>
                           <td className="px-6 py-4 text-center text-xs font-bold">-</td>
-                          <td className="px-6 py-4 text-xs font-bold">{formatPrice(totalMontantPrestation, "XOF")}</td>
-                          <td className="px-6 py-4 text-right text-sm font-bold">{formatPrice(totalMontantExpedition, "XOF")}</td>
+                          <td className="px-6 py-4 text-xs font-bold">{formatMontant(totalMontantPrestation)}</td>
+                          <td className="px-6 py-4 text-right text-sm font-bold">{formatMontant(totalMontantExpedition)}</td>
                         </tr>
                       </tfoot>
                     </table>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import SaveTarifModal from "../components/SaveTarifModal";
 
-import { formatPrice, getCurrencyLabel } from "../utils/format";
+import { getCurrencyLabel } from "../utils/format";
 import { useTarifs } from "../hooks/useTarifs";
 import { useAuth } from "../hooks/useAuth";
 import { tarifsApi } from "../utils/api/tarifs";
@@ -21,6 +21,11 @@ import SingleInitializeModal from "../components/SingleInitializeModal";
 import { toast } from "../utils/toast";
 import ExportButton from "../components/common/ExportButton";
 
+
+// Devise toujours résolue dynamiquement (voir getCurrencyLabel()) plutôt
+// que figée sur "XOF" : une agence facturant en EUR doit voir ses montants
+// affichés en €, pas en FCFA.
+const formatMontant = (amount) => `${(amount || 0).toLocaleString('fr-FR')} ${getCurrencyLabel()}`;
 
 const TableSkeleton = () => (
   <div className="divide-y divide-slate-100">
@@ -660,17 +665,17 @@ const TarifSimpleComponent = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 border-r border-slate-100/30 font-medium text-sm text-slate-600">
-                        {formatPrice(tarif.montant_base, "XOF")}
+                        {formatMontant(tarif.montant_base)}
                       </td>
                       <td className="px-6 py-4 border-r border-slate-100/30">
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-bold text-indigo-600">+{tarif.pourcentage_prestation}%</span>
-                          <span className="text-[10px] text-slate-400 font-medium">{formatPrice(tarif.montant_prestation, "XOF")}</span>
+                          <span className="text-[10px] text-slate-400 font-medium">{formatMontant(tarif.montant_prestation)}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 border-r border-slate-200 transition-colors bg-indigo-50/10 group-hover:bg-indigo-50/40">
                         <span className="text-sm font-bold text-slate-950">
-                          {formatPrice(tarif.montant_expedition, "XOF")}
+                          {formatMontant(tarif.montant_expedition)}
                         </span>
                       </td>
                       {activeTab === "agency" && (
@@ -773,7 +778,7 @@ const TarifSimpleComponent = () => {
                   <div className="grid grid-cols-2 gap-3 pt-2">
                     <div className="p-3 rounded-lg border bg-slate-50 border-slate-100">
                       <p className="text-[9px] font-bold uppercase tracking-wider mb-1 text-slate-400">Base</p>
-                      <p className="text-xs font-bold text-slate-900">{formatPrice(tarif.montant_base, "XOF")}</p>
+                      <p className="text-xs font-bold text-slate-900">{formatMontant(tarif.montant_base)}</p>
                     </div>
                     <div className="p-3 rounded-lg border bg-indigo-50/50 border-indigo-100">
                       <p className="text-[9px] font-bold uppercase tracking-wider mb-1 text-indigo-400">Prestation</p>
@@ -781,7 +786,7 @@ const TarifSimpleComponent = () => {
                     </div>
                     <div className="col-span-2 p-3 rounded-lg flex items-center justify-between shadow-sm bg-indigo-600">
                       <p className="text-[10px] font-semibold uppercase tracking-wide text-indigo-100">Total Expédition</p>
-                      <p className="text-base font-bold text-white">{formatPrice(tarif.montant_expedition, "XOF")}</p>
+                      <p className="text-base font-bold text-white">{formatMontant(tarif.montant_expedition)}</p>
                     </div>
                   </div>
                 </div>
