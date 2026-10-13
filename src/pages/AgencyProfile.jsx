@@ -237,23 +237,16 @@ const AgencyProfile = () => {
   const [waDialCode, setWaDialCode] = useState('');
   const [waLocalNumber, setWaLocalNumber] = useState('');
 
-  // Communes du backoffice du pays de l'agence, pour le select "Commune"
-  // (référentiel utilisé par la tarification interville). Tant que l'agence
-  // n'est pas encore configurée, getCommunes() (authentifié, résout le
-  // backoffice via l'agence déjà rattachée à l'utilisateur) échouerait
-  // toujours - on utilise alors la variante publique filtrée par le pays
-  // choisi dans le formulaire (formData.code_pays), refetchée à chaque
-  // changement de pays. Une fois l'agence configurée, le pays est fixe et
-  // getCommunes() (déjà correct côté backend) reste utilisé.
+  // Communes du backoffice du pays CHOISI DANS LE FORMULAIRE (pas celui déjà
+  // enregistré en base) - toujours la variante publique filtrée par pays,
+  // y compris une fois l'agence configurée : getCommunes() (authentifié)
+  // résout le backoffice depuis le pays déjà en base de l'agence
+  // (CommuneController::listCommunes), donc ignorerait tout changement de
+  // pays tant que le formulaire n'est pas encore sauvegardé - l'utilisateur
+  // voyait alors les communes de l'ancien pays même après avoir choisi le
+  // nouveau. Refetchée à chaque changement de pays dans le select.
   const [communes, setCommunes] = useState([]);
   useEffect(() => {
-    if (agencyConfigured) {
-      communesApi.getCommunes().then((res) => {
-        if (res.success) setCommunes(res.data || []);
-      });
-      return;
-    }
-
     if (!formData.code_pays) {
       setCommunes([]);
       return;
@@ -262,8 +255,7 @@ const AgencyProfile = () => {
     communesApi.getCommunesByPays(formData.code_pays).then((res) => {
       if (res.success) setCommunes(res.data || []);
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [agencyConfigured, formData.code_pays]);
+  }, [formData.code_pays]);
 
   // Pays disposant d'un backoffice actif : une agence ne peut être
   // rattachée qu'à l'un de ces pays (le backend rejette tout autre pays à
