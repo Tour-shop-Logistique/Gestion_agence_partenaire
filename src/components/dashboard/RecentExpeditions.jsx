@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+﻿import React, { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
     CubeIcon,
@@ -104,7 +104,7 @@ const RecentExpeditions = ({ expeditions = [] }) => {
             'livre': 'bg-emerald-50 text-emerald-700 border-emerald-200',
             'recupere': 'bg-green-50 text-green-700 border-green-200'
         };
-        return colors[statut] || 'bg-slate-50 text-slate-700 border-slate-200';
+        return colors[statut] || 'bg-slate-50 text-slate-700 border-white/60';
     };
 
     const getStatusLabel = (statut) => {
@@ -141,9 +141,9 @@ const RecentExpeditions = ({ expeditions = [] }) => {
     };
 
     return (
-        <div className="bg-white rounded-lg border border-slate-100 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
+        <div className="bg-white rounded-lg border border-white/60 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
             {/* Header compact */}
-            <div className="px-4 sm:px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-slate-50 to-white">
+            <div className="px-4 sm:px-5 py-4 border-b border-white/60 flex items-center justify-between bg-gradient-to-r from-slate-50 to-white">
                 <div className="flex items-center gap-2">
                     <h3 className="text-sm sm:text-base font-semibold text-slate-900 flex items-center gap-1.5">Dernières Expéditions</h3>
                     <span className="hidden sm:inline text-xs text-slate-500">(5 plus récentes)</span>
@@ -190,7 +190,7 @@ const RecentExpeditions = ({ expeditions = [] }) => {
                             <React.Fragment key={exp.id || `exp-${expIndex}`}>
                                 {/* ══ SÉPARATEUR ENTRE EXPÉDITIONS ══ */}
                                 {expIndex > 0 && (
-                                    <div className="h-2 sm:h-3 bg-gradient-to-r from-slate-100 via-slate-50 to-slate-100 border-t-2 sm:border-t-4 border-slate-200"></div>
+                                    <div className="h-2 sm:h-3 bg-gradient-to-r from-slate-100 via-slate-50 to-slate-100 border-t-2 sm:border-t-4 border-white/60"></div>
                                 )}
 
                                 {/* 📦 EXPEDITION HEADER - Design Card-like avec ombre - CLIQUABLE */}
@@ -310,8 +310,8 @@ const RecentExpeditions = ({ expeditions = [] }) => {
                                                 key={colis.id || `${exp.id}-colis-${colisIndex}`}
                                                 className={`flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-2.5 bg-white hover:bg-slate-50 transition-colors ${
                                                     isLastColis 
-                                                        ? 'border-b-2 border-slate-200' 
-                                                        : 'border-b border-slate-100'
+                                                        ? 'border-b-2 border-white/60' 
+                                                        : 'border-b border-white/60'
                                                 }`}
                                             >
                                                 {/* Ligne principale */}
@@ -373,7 +373,7 @@ const RecentExpeditions = ({ expeditions = [] }) => {
                                         );
                                     })
                                 ) : isExpanded && colisList.length === 0 ? (
-                                    <div className="px-3 sm:px-4 py-3 text-center bg-slate-50 border-b-2 border-slate-200">
+                                    <div className="px-3 sm:px-4 py-3 text-center bg-slate-50 border-b-2 border-white/60">
                                         <p className="text-[10px] text-slate-400 italic">Aucun colis disponible</p>
                                     </div>
                                 ) : null}
@@ -382,7 +382,7 @@ const RecentExpeditions = ({ expeditions = [] }) => {
                                 {isExpanded && colisList.length > 3 && (
                                     <Link
                                         to={`/expeditions/${exp.id}`}
-                                        className="block px-3 sm:px-4 py-2 text-center bg-slate-50 hover:bg-indigo-50 transition-colors border-b-2 border-slate-200"
+                                        className="block px-3 sm:px-4 py-2 text-center bg-slate-50 hover:bg-indigo-50 transition-colors border-b-2 border-white/60"
                                         onClick={(e) => e.stopPropagation()}
                                     >
                                         <p className="text-[10px] font-bold text-indigo-600">
@@ -396,7 +396,7 @@ const RecentExpeditions = ({ expeditions = [] }) => {
                 </div>
             ) : (
                 <div className="px-6 py-16 text-center">
-                    <div className="w-20 h-20 mx-auto mb-4 rounded-lg bg-gradient-to-br from-slate-50 to-slate-100 border-2 border-slate-200 flex items-center justify-center">
+                    <div className="w-20 h-20 mx-auto mb-4 rounded-lg bg-gradient-to-br from-slate-50 to-slate-100 border-2 border-white/60 flex items-center justify-center">
                         <CubeIcon className="w-10 h-10 text-slate-400" />
                     </div>
                     <p className="text-sm font-semibold text-slate-600 mb-1">Aucune expédition ce mois-ci</p>
@@ -413,3 +413,4 @@ const RecentExpeditions = ({ expeditions = [] }) => {
 };
 
 export default RecentExpeditions;
+

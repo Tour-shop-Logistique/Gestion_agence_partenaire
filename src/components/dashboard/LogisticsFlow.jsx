@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import {
     ArchiveBoxIcon,
     BuildingStorefrontIcon,
@@ -100,7 +100,7 @@ const LogisticsFlow = ({ operational }) => {
     };
 
     return (
-        <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-6">
+        <div className="bg-white rounded-lg border border-white/60 shadow-sm p-6">
             <div className="mb-6">
                 <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
                     <span className="text-purple-600">🔄</span>
@@ -166,7 +166,7 @@ const LogisticsFlow = ({ operational }) => {
             </div>
 
             {/* Légende */}
-            <div className="mt-6 pt-6 border-t border-slate-100">
+            <div className="mt-6 pt-6 border-t border-white/60">
                 <p className="text-xs text-slate-500 text-center">
                     <span className="font-semibold text-slate-700">Pipeline complet :</span> De la réception client jusqu'à la livraison finale
                 </p>
@@ -176,3 +176,4 @@ const LogisticsFlow = ({ operational }) => {
 };
 
 export default LogisticsFlow;
+
