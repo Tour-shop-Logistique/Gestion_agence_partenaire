@@ -5,7 +5,6 @@ import { useAgency } from "../hooks/useAgency";
 import { useExpedition } from "../hooks/useExpedition";
 import { getLogoUrl } from "../utils/apiConfig";
 import { Bell, Menu, Plus } from "lucide-react";
-import { ChevronRightIcon } from "@heroicons/react/24/outline";
 import { useNavigate } from "react-router-dom";
 import WebSocketStatus from "./WebSocketStatus";
 import { selectUnreadCount } from "../store/slices/notificationsSlice";
@@ -21,7 +20,6 @@ const Header = ({ onToggleSidebar }) => {
   const { data: agencyData } = useAgency();
   const { demandesMeta, loadDemandes } = useExpedition();
 
-  const [showDropdown, setShowDropdown] = useState(false);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const [agencyName, setAgencyName] = useState("Dashboard");
   const [agencyLogo, setAgencyLogo] = useState(null);
@@ -94,24 +92,54 @@ const Header = ({ onToggleSidebar }) => {
   const unreadInAppCount = useSelector(selectInAppUnreadCount);
   const unreadNotifTotal = unreadAnnouncementsCount + unreadInAppCount;
 
-  const initials = (currentUser?.name || "")
+  const displayName = currentUser?.name || `${currentUser?.prenoms || ""} ${currentUser?.nom || ""}`.trim() || "?";
+  const initials = displayName
     .split(" ")
+    .filter(Boolean)
     .map((n) => n[0])
     .join("")
-    .toUpperCase();
+    .toUpperCase()
+    .slice(0, 2) || "?";
 
   return (
-    <header className="h-16 sticky top-0 bg-white border-b border-gray-100 z-50">
-      <div className="h-full px-6 flex items-center justify-between">
+    <header className="h-16 sticky top-0 z-50 relative overflow-hidden" style={{ background: "linear-gradient(90deg, #003d47 0%, #005566 50%, #003d47 100%)", borderBottom: "1px solid rgba(0,180,200,0.25)" }}>
+      {/* Mosaïque losanges — même motif que le sidebar */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" className="absolute inset-0">
+          <defs>
+            <pattern id="hdr-grid" x="0" y="0" width="30" height="30" patternUnits="userSpaceOnUse">
+              <circle cx="1" cy="1" r="1.2" fill="#7ff0ff" />
+            </pattern>
+            <pattern id="hdr-mosaic" x="0" y="0" width="56" height="56" patternUnits="userSpaceOnUse">
+              <polygon points="28,0 56,28 28,28" fill="#00d4e8" opacity="0.45" />
+              <polygon points="56,28 28,56 28,28" fill="#00b4c8" opacity="0.4" />
+              <polygon points="28,56 0,28 28,28" fill="#009ab0" opacity="0.38" />
+              <polygon points="0,28 28,0 28,28" fill="#00c8dc" opacity="0.35" />
+              <polygon points="28,0 56,28 28,56 0,28" fill="none" stroke="#b2f0f8" strokeWidth="0.6" opacity="0.3" />
+            </pattern>
+            <pattern id="hdr-mosaic-lg" x="14" y="0" width="112" height="112" patternUnits="userSpaceOnUse">
+              <polygon points="56,0 112,56 56,56" fill="#00b4c8" opacity="0.22" />
+              <polygon points="112,56 56,112 56,56" fill="#00c8dc" opacity="0.2" />
+              <polygon points="56,112 0,56 56,56" fill="#009ab0" opacity="0.18" />
+              <polygon points="0,56 56,0 56,56" fill="#00d4e8" opacity="0.16" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#hdr-grid)" opacity="0.08" />
+          <rect width="100%" height="100%" fill="url(#hdr-mosaic-lg)" opacity="0.12" />
+          <rect width="100%" height="100%" fill="url(#hdr-mosaic)" opacity="0.14" />
+        </svg>
+        <div className="absolute inset-0 bg-gradient-to-b from-[#002833]/30 to-[#002833]/10" />
+      </div>
+      <div className="relative z-10 h-full px-6 flex items-center justify-between">
 
         {/* LEFT */}
         <div className="flex items-center gap-4">
           {/* Burger - mobile only */}
           <button
             onClick={onToggleSidebar}
-            className="lg:hidden p-2 rounded-lg hover:bg-slate-100 transition"
+            className="lg:hidden p-2 rounded-lg hover:bg-white/10 transition"
           >
-            <Menu className="w-6 h-6 text-slate-700" />
+            <Menu className="w-6 h-6 text-white" />
           </button>
         </div>
 
@@ -137,9 +165,9 @@ const Header = ({ onToggleSidebar }) => {
           <div className="relative">
             <button
               onClick={() => setShowNotifDropdown((v) => !v)}
-              className="relative p-2 rounded-lg hover:bg-slate-100 transition"
+              className="relative p-2 rounded-lg hover:bg-white/10 transition"
             >
-              <Bell className="w-5 h-5 text-slate-600" />
+              <Bell className="w-5 h-5 text-white/80" />
               {unreadNotifTotal > 0 && (
                 <span className="absolute top-1 right-1 flex h-4 w-4">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
@@ -158,87 +186,41 @@ const Header = ({ onToggleSidebar }) => {
             )}
           </div>
 
-          {/* Settings Icon */}
-          <button className="p-2 rounded-lg hover:bg-slate-100 transition">
-            <svg className="w-5 h-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
+          {/* Séparateur */}
+          <div className="w-px h-6 bg-white/20" />
+
+          {/* Profil */}
+          <button
+            onClick={() => navigate('/agent-profile')}
+            className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-xl hover:bg-white/10 transition"
+            title={currentUser?.name}
+          >
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00b4c8] to-[#007a8a] flex items-center justify-center text-white font-bold text-sm shadow-md">
+              {initials}
+            </div>
+            <span className="hidden md:block text-sm font-semibold text-white leading-tight">
+              {displayName}
+            </span>
           </button>
 
-          {/* USER */}
-          <div className="relative">
-            <button
-              onClick={() => setShowDropdown(!showDropdown)}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-100 transition"
-            >
-              {/* Avatar */}
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm">
-                {initials}
-              </div>
+          {/* Séparateur */}
+          <div className="w-px h-6 bg-white/20" />
 
-              {/* Name */}
-              <div className="hidden md:block text-left">
-                <p className="text-sm font-semibold text-slate-900">
-                  {currentUser?.name}
-                </p>
-              </div>
-
-              <ChevronRightIcon className="w-4 h-4 text-slate-400" />
-            </button>
-
-            {/* DROPDOWN */}
-            {showDropdown && (
-              <>
-                {/* Overlay */}
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setShowDropdown(false)}
-                />
-                
-                {/* Dropdown Menu */}
-                <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-slate-200 p-2 z-50">
-                  {/* User card */}
-                  <div className="p-3 rounded-lg bg-slate-50 mb-2">
-                    <p className="text-sm font-semibold text-slate-900">
-                      {currentUser?.name}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {currentUser?.email}
-                    </p>
-                  </div>
-
-                  {/* Actions */}
-                  <button 
-                    onClick={() => {
-                      navigate('/agent-profile');
-                      setShowDropdown(false);
-                    }}
-                    className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 text-sm flex items-center gap-2 text-slate-700 transition-colors"
-                  >
-                    <span className="w-7 h-7 flex items-center justify-center bg-slate-100 rounded-lg">👤</span>
-                    Mon profil
-                  </button>
-
-                  <div className="h-px bg-slate-200 my-2" />
-
-                  <button
-                    onClick={() => {
-                      handleLogout();
-                      setShowDropdown(false);
-                    }}
-                    className="w-full text-left px-3 py-2 rounded-lg hover:bg-red-50 text-red-600 text-sm font-medium transition-colors"
-                  >
-                    🚪 Se déconnecter
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+          {/* Déconnexion */}
+          <button
+            onClick={handleLogout}
+            className="p-2 rounded-lg hover:bg-white/10 transition group"
+            title="Se déconnecter"
+          >
+            <svg className="w-5 h-5 text-red-400 group-hover:text-red-300 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          </button>
         </div>
       </div>
 
     </header>
+
   );
 };
 

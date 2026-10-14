@@ -536,7 +536,7 @@ const Agents = () => {
             type="button"
             onClick={() => setActiveTab("agents")}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors ${
-              activeTab === "agents" ? "bg-gray-900 text-white shadow-sm" : "text-gray-500 hover:text-gray-800 hover:bg-gray-50"
+              activeTab === "agents" ? "bg-[#005566] text-white shadow-sm" : "text-gray-500 hover:text-gray-800 hover:bg-gray-50"
             }`}
           >
             <UserGroupIcon className="w-3.5 h-3.5" />
@@ -546,7 +546,7 @@ const Agents = () => {
             type="button"
             onClick={() => setActiveTab("roles")}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors ${
-              activeTab === "roles" ? "bg-gray-900 text-white shadow-sm" : "text-gray-500 hover:text-gray-800 hover:bg-gray-50"
+              activeTab === "roles" ? "bg-[#005566] text-white shadow-sm" : "text-gray-500 hover:text-gray-800 hover:bg-gray-50"
             }`}
           >
             <KeyIcon className="w-3.5 h-3.5" />

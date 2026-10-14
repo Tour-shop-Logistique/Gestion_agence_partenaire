@@ -247,7 +247,9 @@ const ExpeditionDetails = () => {
         telephone: expedition?.expediteur_telephone,
         email: expedition?.expediteur_email,
         adresse: expedition?.expediteur_adresse,
-        ville: expedition?.expediteur_ville
+        ville: expedition?.expediteur_ville,
+        numero_piece_identite: expedition?.expediteur_numero_piece_identite,
+        date_expiration_piece_identite: expedition?.expediteur_date_expiration_piece_identite
     };
 
     const destinataire = expedition?.destinataire || {

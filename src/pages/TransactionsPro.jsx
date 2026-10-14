@@ -671,7 +671,7 @@ const TransactionsPro = () => {
         </div>
 
         {/* Onglets de vue */}
-        <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg w-fit">
+        <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 w-fit">
           {[
             { id: 'dashboard', label: 'Analyse', icon: Squares2X2Icon },
             { id: 'journal', label: 'Journal', icon: TableCellsIcon }
@@ -679,10 +679,10 @@ const TransactionsPro = () => {
             <button
               key={view.id}
               onClick={() => setActiveView(view.id)}
-              className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 ${
+              className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-all flex items-center gap-2 ${
                 activeView === view.id
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-[#005566] text-white shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
               }`}
             >
               <view.icon className="w-4 h-4" />
@@ -830,97 +830,69 @@ const TransactionsPro = () => {
             </div>
           )}
 
-          {/* 📊 Cartes KPI Principaux */}
+          {/* 📊 Cartes KPI Principaux - même pattern que StatsCards.jsx
+              (barre d'accent + icône + label/valeur sur fond blanc uni) plutôt
+              que des cartes pleines dégradées, pour rester cohérent avec le
+              reste de l'app. */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {/* Solde de Caisse */}
-            <div className={`p-4 rounded-lg border-2 ${
-              financialKPIs.soldeCaisse >= 0 
-              ? 'bg-gradient-to-br from-emerald-50 to-white border-emerald-200' 
-              : 'bg-gradient-to-br from-rose-50 to-white border-rose-200'
-            }`}>
-              <div className="flex items-start justify-between mb-2">
-                <div className={`p-2 rounded-lg ${
-                  financialKPIs.soldeCaisse >= 0 ? 'bg-emerald-100' : 'bg-rose-100'
-                }`}>
-                  <ScaleIcon className={`w-5 h-5 ${
-                    financialKPIs.soldeCaisse >= 0 ? 'text-emerald-600' : 'text-rose-600'
-                  }`} />
+            <div className="flex items-center gap-2.5 bg-white border border-slate-200 rounded-lg pl-3 pr-3 py-3 min-w-0">
+              <span className={`self-stretch w-1 rounded-sm shrink-0 ${financialKPIs.soldeCaisse >= 0 ? 'bg-emerald-600' : 'bg-rose-600'}`} aria-hidden="true" />
+              <ScaleIcon className={`w-8 h-8 shrink-0 ${financialKPIs.soldeCaisse >= 0 ? 'text-emerald-600' : 'text-rose-600'}`} />
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide leading-snug">Solde de Caisse</p>
+                <div className="flex items-baseline gap-1">
+                  <span className={`text-xl font-bold tabular-nums leading-tight ${financialKPIs.soldeCaisse >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    {formatCurrency(Math.abs(financialKPIs.soldeCaisse))}
+                  </span>
+                  <span className="text-xs text-slate-400 font-medium">{getCurrencyLabel()}</span>
                 </div>
-                {financialKPIs.soldeCaisse >= 0 ? (
-                  <ArrowTrendingUpIcon className="w-4 h-4 text-emerald-500" />
-                ) : (
-                  <ArrowTrendingDownIcon className="w-4 h-4 text-rose-500" />
-                )}
               </div>
-              <p className="text-xs font-medium text-slate-500 mb-1">Solde de Caisse</p>
-              <div className="flex items-baseline gap-1">
-                <span className={`text-xl font-bold ${
-                  financialKPIs.soldeCaisse >= 0 ? 'text-emerald-600' : 'text-rose-600'
-                }`}>
-                  {formatCurrency(Math.abs(financialKPIs.soldeCaisse))}
-                </span>
-                <span className="text-xs text-slate-400 font-medium">{getCurrencyLabel()}</span>
-              </div>
-              <p className="text-[10px] text-slate-500 mt-1">
-                {financialKPIs.soldeCaisse >= 0 ? 'Positif ✓' : 'Négatif ⚠️'}
-              </p>
             </div>
 
             {/* Nombre de Transactions */}
-            <div className="p-4 rounded-lg border-2 bg-gradient-to-br from-blue-50 to-white border-blue-200">
-              <div className="flex items-start justify-between mb-2">
-                <div className="p-2 rounded-lg bg-blue-100">
-                  <CalculatorIcon className="w-5 h-5 text-blue-600" />
+            <div className="flex items-center gap-2.5 bg-white border border-slate-200 rounded-lg pl-3 pr-3 py-3 min-w-0">
+              <span className="self-stretch w-1 rounded-sm shrink-0 bg-blue-600" aria-hidden="true" />
+              <CalculatorIcon className="w-8 h-8 shrink-0 text-blue-600" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide leading-snug">Transactions</p>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-xl font-bold text-blue-600 tabular-nums leading-tight">
+                    {financialKPIs.nombreTransactions.total}
+                  </span>
+                  <span className="text-xs text-slate-400 font-medium">OPS</span>
                 </div>
               </div>
-              <p className="text-xs font-medium text-slate-500 mb-1">Transactions</p>
-              <div className="flex items-baseline gap-1">
-                <span className="text-xl font-bold text-blue-600">
-                  {financialKPIs.nombreTransactions.total}
-                </span>
-                <span className="text-xs text-slate-400 font-medium">OPS</span>
-              </div>
-              <p className="text-[10px] text-slate-500 mt-1">
-                {financialKPIs.nombreTransactions.encaissements}↗ / {financialKPIs.nombreTransactions.decaissements}↘
-              </p>
             </div>
 
             {/* Total Encaissement */}
-            <div className="p-4 rounded-lg border-2 bg-gradient-to-br from-emerald-50 to-white border-emerald-200">
-              <div className="flex items-start justify-between mb-2">
-                <div className="p-2 rounded-lg bg-emerald-100">
-                  <ArrowDownLeftIcon className="w-5 h-5 text-emerald-600" />
+            <div className="flex items-center gap-2.5 bg-white border border-slate-200 rounded-lg pl-3 pr-3 py-3 min-w-0">
+              <span className="self-stretch w-1 rounded-sm shrink-0 bg-emerald-600" aria-hidden="true" />
+              <ArrowDownLeftIcon className="w-8 h-8 shrink-0 text-emerald-600" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide leading-snug">Total Encaissement</p>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-xl font-bold text-emerald-600 tabular-nums leading-tight">
+                    {formatCurrency(financialKPIs.totalEncaissements)}
+                  </span>
+                  <span className="text-xs text-slate-400 font-medium">{getCurrencyLabel()}</span>
                 </div>
               </div>
-              <p className="text-xs font-medium text-slate-500 mb-1">Total Encaissement</p>
-              <div className="flex items-baseline gap-1">
-                <span className="text-xl font-bold text-emerald-600">
-                  {formatCurrency(financialKPIs.totalEncaissements)}
-                </span>
-                <span className="text-xs text-slate-400 font-medium">{getCurrencyLabel()}</span>
-              </div>
-              <p className="text-[10px] text-slate-500 mt-1">
-                {financialKPIs.nombreTransactions.encaissements} transaction(s)
-              </p>
             </div>
 
             {/* Total Décaissement */}
-            <div className="p-4 rounded-lg border-2 bg-gradient-to-br from-orange-50 to-white border-orange-200">
-              <div className="flex items-start justify-between mb-2">
-                <div className="p-2 rounded-lg bg-orange-100">
-                  <ArrowUpRightIcon className="w-5 h-5 text-orange-600" />
+            <div className="flex items-center gap-2.5 bg-white border border-slate-200 rounded-lg pl-3 pr-3 py-3 min-w-0">
+              <span className="self-stretch w-1 rounded-sm shrink-0 bg-orange-600" aria-hidden="true" />
+              <ArrowUpRightIcon className="w-8 h-8 shrink-0 text-orange-600" />
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide leading-snug">Total Décaissement</p>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-xl font-bold text-orange-600 tabular-nums leading-tight">
+                    {formatCurrency(financialKPIs.totalDecaissements)}
+                  </span>
+                  <span className="text-xs text-slate-400 font-medium">{getCurrencyLabel()}</span>
                 </div>
               </div>
-              <p className="text-xs font-medium text-slate-500 mb-1">Total Décaissement</p>
-              <div className="flex items-baseline gap-1">
-                <span className="text-xl font-bold text-orange-600">
-                  {formatCurrency(financialKPIs.totalDecaissements)}
-                </span>
-                <span className="text-xs text-slate-400 font-medium">{getCurrencyLabel()}</span>
-              </div>
-              <p className="text-[10px] text-slate-500 mt-1">
-                {financialKPIs.nombreTransactions.decaissements} transaction(s)
-              </p>
             </div>
           </div>
 

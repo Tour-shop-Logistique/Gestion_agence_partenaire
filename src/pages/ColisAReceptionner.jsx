@@ -28,6 +28,14 @@ import { CubeIcon } from "@heroicons/react/24/outline";
 import { Loader2 } from "lucide-react";
 import { expeditionsApi } from "../utils/api/expeditions";
 
+// Cache module-level (hors composant, survit au démontage/remontage lors
+// d'une navigation entre pages) des expéditions Interville à réceptionner -
+// useRef/useState seuls ne suffisent pas ici car ils sont détruits à chaque
+// démontage du composant, contrairement à la réception Extraville qui vit
+// dans Redux (voir useExpedition::loadReception). Évite de refetch à chaque
+// retour sur cette page tant que les données n'ont pas été invalidées.
+let intervilleCache = { loaded: false, data: [] };
+
 const ColisAReceptionner = () => {
     const dispatch = useDispatch();
     const { currentUser } = useAuth();
@@ -55,7 +63,7 @@ const ColisAReceptionner = () => {
     // confirmant directement - onglet séparé de la réception "classique"
     // (Extraville) où le backoffice notifie l'agence de destination.
     const [activeTab, setActiveTab] = useState('extraville');
-    const [expeditionsInterville, setExpeditionsInterville] = useState([]);
+    const [expeditionsInterville, setExpeditionsInterville] = useState(intervilleCache.data);
     const [loadingInterville, setLoadingInterville] = useState(false);
     const [confirmingReceptionId, setConfirmingReceptionId] = useState(null);
 
@@ -105,7 +113,9 @@ const ColisAReceptionner = () => {
         fetchReceptionData();
     }, [currentPage]);
 
-    const fetchInterville = async () => {
+    const fetchInterville = async (force = false) => {
+        if (!force && intervilleCache.loaded) return;
+        intervilleCache.loaded = true;
         setLoadingInterville(true);
         const result = await expeditionsApi.listExpeditions({
             mode: 'reception',
@@ -113,8 +123,10 @@ const ColisAReceptionner = () => {
             status: 'depart_expedition_succes',
         });
         if (result.success) {
+            intervilleCache.data = result.data;
             setExpeditionsInterville(result.data);
         } else {
+            intervilleCache.loaded = false;
             toast.error(result.message);
         }
         setLoadingInterville(false);
@@ -129,7 +141,7 @@ const ColisAReceptionner = () => {
         const result = await expeditionsApi.confirmerReceptionArrivee(expeditionId);
         if (result.success) {
             toast.success(result.message);
-            fetchInterville();
+            fetchInterville(true);
         } else {
             toast.error(result.message);
         }
@@ -316,7 +328,7 @@ const ColisAReceptionner = () => {
 
     const handleExportPDF = () => {
         try {
-            const agenceName = agencyData?.agence?.nom_agence ||
+            const agenceName = agencyData?.agence?.nom_agence || agencyData?.nom_agence ||
                               currentUser?.agence?.nom ||
                               'Agence Partenaire';
 
@@ -353,8 +365,8 @@ const ColisAReceptionner = () => {
 
             const colisToExport = flatColis.filter(c => selectedCodes.includes(c.code_colis));
             
-            const agenceName = agencyData?.agence?.nom_agence || 
-                              currentUser?.agence?.nom || 
+            const agenceName = agencyData?.agence?.nom_agence || agencyData?.nom_agence ||
+                              currentUser?.agence?.nom ||
                               'Agence Partenaire';
             
             const result = exportBonReceptionPDF(colisToExport, {
@@ -497,7 +509,7 @@ const ColisAReceptionner = () => {
                             <span className="hidden sm:inline">Scanner</span>
                         </button>
                         <button
-                            onClick={() => activeTab === 'interville' ? fetchInterville() : fetchReceptionData(true)}
+                            onClick={() => activeTab === 'interville' ? fetchInterville(true) : fetchReceptionData(true)}
                             disabled={activeTab === 'interville' ? loadingInterville : loading}
                             className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white border-2 border-slate-300 rounded-lg text-sm font-bold text-slate-700 hover:bg-slate-50 hover:border-indigo-400 shadow-sm hover:shadow-md active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
@@ -508,36 +520,54 @@ const ColisAReceptionner = () => {
                 }
             />
 
-            {/* Onglets Extraville / Interville : la reception se fait
-                differemment (backoffice notifie l'agence vs agence
-                d'arrivee confirme elle-meme directement). */}
-            <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 w-fit">
-                <button
-                    onClick={() => setActiveTab('extraville')}
-                    className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-all ${
-                        activeTab === 'extraville' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                    }`}
-                >
-                    International
-                    {reception.length > 0 && (
-                        <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-700">
-                            {reception.length}
-                        </span>
-                    )}
-                </button>
-                <button
-                    onClick={() => setActiveTab('interville')}
-                    className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-all ${
-                        activeTab === 'interville' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                    }`}
-                >
-                    Interville
-                    {expeditionsInterville.length > 0 && (
-                        <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-700">
-                            {expeditionsInterville.length}
-                        </span>
-                    )}
-                </button>
+            {/* Onglets Extraville / Interville (la reception se fait
+                differemment : backoffice notifie l'agence vs agence
+                d'arrivee confirme elle-meme directement) + barre de
+                recherche sur la meme ligne. */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 w-fit shrink-0">
+                    <button
+                        onClick={() => setActiveTab('extraville')}
+                        className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-all ${
+                            activeTab === 'extraville' ? 'bg-[#005566] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                    >
+                        International
+                        {reception.length > 0 && (
+                            <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-700">
+                                {reception.length}
+                            </span>
+                        )}
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('interville')}
+                        className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-all ${
+                            activeTab === 'interville' ? 'bg-[#005566] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                    >
+                        Interville
+                        {expeditionsInterville.length > 0 && (
+                            <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-700">
+                                {expeditionsInterville.length}
+                            </span>
+                        )}
+                    </button>
+                </div>
+
+                {/* Search Bar - Responsive (les deux onglets, filtre par colis
+                    pour Extraville, par expédition pour Interville) */}
+                <div className="relative flex-1">
+                    <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
+                        <MagnifyingGlassIcon className="h-4 w-4 sm:h-5 sm:w-5 text-slate-400" />
+                    </div>
+                    <input
+                        type="text"
+                        className="block w-full pl-9 sm:pl-11 pr-3 py-2.5 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm placeholder-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow"
+                        placeholder="Rechercher..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                </div>
             </div>
 
             {/* QR Scanner Modal */}
@@ -546,21 +576,6 @@ const ColisAReceptionner = () => {
                 onClose={() => setScannerOpen(false)}
                 onScan={handleQRScan}
             />
-
-            {/* Search Bar - Responsive (les deux onglets, filtre par colis
-                pour Extraville, par expédition pour Interville) */}
-            <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
-                    <MagnifyingGlassIcon className="h-4 w-4 sm:h-5 sm:w-5 text-slate-400" />
-                </div>
-                <input
-                    type="text"
-                    className="block w-full pl-9 sm:pl-11 pr-3 py-2.5 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm placeholder-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow"
-                    placeholder="Rechercher..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                />
-            </div>
 
             {activeTab === 'extraville' && (
             <>

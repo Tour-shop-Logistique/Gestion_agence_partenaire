@@ -425,7 +425,7 @@ const Colis = () => {
         <div className="max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 animate-fade-in">
             {/* Header Section - Responsive */}
             <PageHeader
-                title="Gestion des Colis - À envoyer"
+                title="Colis à envoyer"
                 subtitle={activeTab === 'interville'
                     ? "Choisissez l'agence d'arrivée et confirmez le départ"
                     : "Envoyez les colis reçus vers l'entrepôt"}
@@ -450,36 +450,54 @@ const Colis = () => {
                 }
             />
 
-            {/* Onglets Extraville / Interville : deux mecaniques d'envoi
-                differentes (entrepot + backoffice vs agence d'arrivee
-                choisie directement), pas de selection multiple commune. */}
-            <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 w-fit">
-                <button
-                    onClick={() => setActiveTab('extraville')}
-                    className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-all ${
-                        activeTab === 'extraville' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                    }`}
-                >
-                    International
-                    {tabColis.length > 0 && (
-                        <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-700">
-                            {tabColis.length}
-                        </span>
-                    )}
-                </button>
-                <button
-                    onClick={() => setActiveTab('interville')}
-                    className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-all ${
-                        activeTab === 'interville' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                    }`}
-                >
-                    Interville
-                    {tabExpeditionsInterville.length > 0 && (
-                        <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-700">
-                            {tabExpeditionsInterville.length}
-                        </span>
-                    )}
-                </button>
+            {/* Onglets Extraville / Interville (deux mecaniques d'envoi
+                differentes : entrepot + backoffice vs agence d'arrivee
+                choisie directement, pas de selection multiple commune) +
+                barre de recherche sur la meme ligne. */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 w-fit shrink-0">
+                    <button
+                        onClick={() => setActiveTab('extraville')}
+                        className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-all ${
+                            activeTab === 'extraville' ? 'bg-[#005566] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                    >
+                        International
+                        {tabColis.length > 0 && (
+                            <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-700">
+                                {tabColis.length}
+                            </span>
+                        )}
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('interville')}
+                        className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-all ${
+                            activeTab === 'interville' ? 'bg-[#005566] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                    >
+                        Interville
+                        {tabExpeditionsInterville.length > 0 && (
+                            <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-700">
+                                {tabExpeditionsInterville.length}
+                            </span>
+                        )}
+                    </button>
+                </div>
+
+                {/* Search Bar - Responsive (les deux onglets, filtre par colis
+                    pour Extraville, par expédition pour Interville) */}
+                <div className="relative flex-1">
+                    <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
+                        <MagnifyingGlassIcon className="h-4 w-4 sm:h-5 sm:w-5 text-slate-400" />
+                    </div>
+                    <input
+                        type="text"
+                        className="block w-full pl-9 sm:pl-11 pr-3 py-2.5 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm placeholder-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow"
+                        placeholder="Rechercher..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                </div>
             </div>
 
             {/* QR Scanner Modal */}
@@ -488,21 +506,6 @@ const Colis = () => {
                 onClose={() => setScannerOpen(false)}
                 onScan={handleQRScan}
             />
-
-            {/* Search Bar - Responsive (les deux onglets, filtre par colis
-                pour Extraville, par expédition pour Interville) */}
-            <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
-                    <MagnifyingGlassIcon className="h-4 w-4 sm:h-5 sm:w-5 text-slate-400" />
-                </div>
-                <input
-                    type="text"
-                    className="block w-full pl-9 sm:pl-11 pr-3 py-2.5 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm placeholder-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow"
-                    placeholder="Rechercher..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                />
-            </div>
 
             {activeTab === 'extraville' && (
             <>

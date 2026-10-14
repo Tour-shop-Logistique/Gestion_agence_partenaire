@@ -17,10 +17,14 @@ export const useCodeGenerator = () => {
     const [codeAgence, setCodeAgence] = useState('');
     const [isReady, setIsReady] = useState(false);
 
-    // Récupérer le code de l'agence depuis les données
+    // Récupérer le code de l'agence depuis les données - agenciesApi.getAgency()
+    // retourne l'objet agence directement (voir utils/api/agencies.js) :
+    // agencyData EST l'agence, agencyData.agence n'existe pas. Fallback pour
+    // rester robuste si le backend change un jour de forme.
     useEffect(() => {
-        if (agencyData?.agence?.code_agence) {
-            setCodeAgence(agencyData.agence.code_agence);
+        const code = agencyData?.agence?.code_agence || agencyData?.code_agence;
+        if (code) {
+            setCodeAgence(code);
             setIsReady(true);
         }
     }, [agencyData]);

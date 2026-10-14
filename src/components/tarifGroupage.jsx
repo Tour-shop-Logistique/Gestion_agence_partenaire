@@ -226,16 +226,16 @@ const TarifGroupageComponent = () => {
       {/* Premium Action Bar */}
       <div className="flex flex-col sm:flex-row justify-between items-center bg-white p-2 rounded-lg border border-slate-200 shadow-sm gap-2">
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <div className="inline-flex flex-1 sm:flex-none p-1 bg-slate-100 rounded-lg">
+          <div className="inline-flex flex-1 sm:flex-none bg-slate-100 rounded-lg p-1">
             <button
               onClick={() => setActiveTab("agency")}
-              className={`flex-1 sm:flex-none px-6 py-2 text-[11px] font-bold rounded-lg transition-all ${activeTab === "agency" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+              className={`flex-1 sm:flex-none px-3 py-1.5 rounded-md text-sm font-semibold transition-all ${activeTab === "agency" ? "bg-[#005566] text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
             >
               Tarif Agence
             </button>
             <button
               onClick={() => setActiveTab("base")}
-              className={`flex-1 sm:flex-none px-6 py-2 text-[11px] font-bold rounded-lg transition-all ${activeTab === "base" ? "bg-white text-slate-950 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+              className={`flex-1 sm:flex-none px-3 py-1.5 rounded-md text-sm font-semibold transition-all ${activeTab === "base" ? "bg-[#005566] text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
             >
               Tarif de Base
             </button>

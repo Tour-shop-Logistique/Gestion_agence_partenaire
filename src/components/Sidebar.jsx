@@ -210,7 +210,7 @@ const Sidebar = ({ onClose }) => {
     <div
       className="flex flex-col h-full w-64 lg:mt-0 mt-0 relative overflow-hidden"
       style={{
-        background: "linear-gradient(180deg, #070a14 0%, #10152a 50%, #070a14 100%)",
+        background: "linear-gradient(180deg, #003d47 0%, #005566 50%, #003d47 100%)",
       }}
     >
       {/* ========== FOND — MOSAÏQUE GÉOMÉTRIQUE ========== */}
@@ -218,36 +218,36 @@ const Sidebar = ({ onClose }) => {
         <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" className="absolute inset-0">
           <defs>
             <pattern id="nav-grid" x="0" y="0" width="30" height="30" patternUnits="userSpaceOnUse">
-              <circle cx="1" cy="1" r="1.2" fill="#a5f3fc" />
+              <circle cx="1" cy="1" r="1.2" fill="#7ff0ff" />
             </pattern>
             <pattern id="mosaic-tiles" x="0" y="0" width="56" height="56" patternUnits="userSpaceOnUse">
-              <polygon points="28,0 56,28 28,28" fill="#67e8f9" opacity="0.55" />
-              <polygon points="56,28 28,56 28,28" fill="#818cf8" opacity="0.5" />
-              <polygon points="28,56 0,28 28,28" fill="#2dd4bf" opacity="0.45" />
-              <polygon points="0,28 28,0 28,28" fill="#a5b4fc" opacity="0.4" />
-              <polygon points="28,0 56,28 28,56 0,28" fill="none" stroke="#e0f2fe" strokeWidth="0.6" opacity="0.35" />
+              <polygon points="28,0 56,28 28,28" fill="#00d4e8" opacity="0.45" />
+              <polygon points="56,28 28,56 28,28" fill="#00b4c8" opacity="0.4" />
+              <polygon points="28,56 0,28 28,28" fill="#009ab0" opacity="0.38" />
+              <polygon points="0,28 28,0 28,28" fill="#00c8dc" opacity="0.35" />
+              <polygon points="28,0 56,28 28,56 0,28" fill="none" stroke="#b2f0f8" strokeWidth="0.6" opacity="0.3" />
             </pattern>
             <pattern id="mosaic-tiles-lg" x="28" y="28" width="112" height="112" patternUnits="userSpaceOnUse">
-              <polygon points="56,0 112,56 56,56" fill="#5eead4" opacity="0.3" />
-              <polygon points="112,56 56,112 56,56" fill="#67e8f9" opacity="0.28" />
-              <polygon points="56,112 0,56 56,56" fill="#818cf8" opacity="0.26" />
-              <polygon points="0,56 56,0 56,56" fill="#a5b4fc" opacity="0.24" />
+              <polygon points="56,0 112,56 56,56" fill="#00b4c8" opacity="0.22" />
+              <polygon points="112,56 56,112 56,56" fill="#00c8dc" opacity="0.2" />
+              <polygon points="56,112 0,56 56,56" fill="#009ab0" opacity="0.18" />
+              <polygon points="0,56 56,0 56,56" fill="#00d4e8" opacity="0.16" />
             </pattern>
           </defs>
-          <rect width="100%" height="100%" fill="url(#nav-grid)" opacity="0.1" />
+          <rect width="100%" height="100%" fill="url(#nav-grid)" opacity="0.08" />
           <rect width="100%" height="100%" fill="url(#mosaic-tiles-lg)" opacity="0.12" />
-          <rect width="100%" height="100%" fill="url(#mosaic-tiles)" opacity="0.16" />
+          <rect width="100%" height="100%" fill="url(#mosaic-tiles)" opacity="0.14" />
         </svg>
-        <div className="absolute top-0 left-0 right-0 h-36 bg-gradient-to-b from-cyan-400/20 via-transparent to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 h-44 bg-gradient-to-t from-indigo-400/20 via-transparent to-transparent" />
-        <div className="absolute -top-10 -left-10 w-56 h-56 bg-cyan-400/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 -right-10 w-56 h-56 bg-indigo-400/10 rounded-full blur-3xl" />
-        <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-cyan-400/40 to-transparent" />
+        <div className="absolute top-0 left-0 right-0 h-36 bg-gradient-to-b from-[#00b4c8]/20 via-transparent to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-44 bg-gradient-to-t from-[#003d47]/60 via-transparent to-transparent" />
+        <div className="absolute -top-10 -left-10 w-56 h-56 bg-[#00b4c8]/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 -right-10 w-56 h-56 bg-[#009ab0]/10 rounded-full blur-3xl" />
+        <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[#00b4c8]/40 to-transparent" />
       </div>
-      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-[#060811]/65 via-[#060811]/35 to-[#060811]/65" />
+      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-[#002833]/50 via-[#002833]/20 to-[#002833]/50" />
 
       {/* ── Branding Header ─────────────────────────────────────────────────── */}
-      <div className="relative z-10 h-14 flex items-center px-4 shrink-0 border-b border-white/10">
+      <div className="relative z-10 h-16 flex items-center px-4 shrink-0 border-b border-white/10">
         <div className="flex items-center gap-2.5 min-w-0 flex-1">
           {/* Logo container avec ombre et dégradé */}
           <div className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center p-1.5 bg-gradient-to-br from-white to-slate-100 shadow-lg shadow-black/20 ring-1 ring-white/10">
@@ -267,9 +267,6 @@ const Sidebar = ({ onClose }) => {
               style={{ textShadow: "0 1px 3px rgba(0,0,0,0.5)" }}
             >
               {agencyData?.agence?.nom_agence || agencyData?.nom_agence || "Tous Shop"}
-            </span>
-            <span className="text-[10px] text-cyan-100 font-medium tracking-wide uppercase leading-tight">
-              Gestion d'expéditions
             </span>
           </div>
         </div>
@@ -357,41 +354,6 @@ const Sidebar = ({ onClose }) => {
         </nav>
       </div>
 
-      {/* ── User Footer ─────────────────────────────────────────────────────── */}
-      <div className="relative z-10 p-2.5 shrink-0 border-t border-white/10">
-        <div className="flex items-center gap-2.5 p-2 rounded-lg bg-white/[0.04] ring-1 ring-white/10 transition-colors duration-200 hover:bg-white/[0.07]">
-          <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ring-1 ring-white/10"
-            style={{
-              background: isAdminLike
-                ? "linear-gradient(135deg, #dc2626 0%, #ef4444 100%)"
-                : "linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%)",
-            }}
-          >
-            <span className="text-white font-bold text-sm">
-              {(currentUser?.name || currentUser?.nom || "U")[0].toUpperCase()}
-            </span>
-          </div>
-
-          <div className="min-w-0 flex-1">
-            <p
-              className="text-[13.5px] font-semibold text-white truncate leading-tight"
-              style={{ textShadow: "0 1px 3px rgba(0,0,0,0.65)" }}
-            >
-              {currentUser?.name ||
-                `${currentUser?.prenoms || ""} ${currentUser?.nom || ""}`.trim()}
-            </p>
-            <span className="text-[11px] text-slate-200 font-medium">
-              {isAdminLike ? "Administrateur" : "Agent"}
-            </span>
-          </div>
-
-          <span className="relative flex h-2 w-2 shrink-0">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
-          </span>
-        </div>
-      </div>
     </div>
   );
 };

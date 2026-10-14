@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { CubeIcon } from '@heroicons/react/24/outline';
+import { CubeIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { STATUS_CONFIG } from './StatusFilter';
 
 /**
@@ -43,12 +43,12 @@ const StatCard = ({ icon: Icon, label, value, color, onClick, active = false }) 
     return (
         <button
             onClick={onClick}
-            className={`flex items-start gap-2.5 bg-white border rounded-lg pl-3 pr-3 py-3 text-left transition-colors min-w-0 ${
+            className={`group relative flex items-center gap-2.5 bg-white border rounded-lg pl-3 pr-3 py-3 text-left transition-colors min-w-0 ${
                 active ? 'border-slate-900 ring-1 ring-slate-900' : 'border-slate-200 hover:border-slate-400'
             }`}
         >
             <span className={`self-stretch w-1 rounded-sm shrink-0 ${accentBar}`} aria-hidden="true" />
-            <Icon className={`w-5 h-5 shrink-0 mt-0.5 ${accentText}`} />
+            <Icon className={`w-8 h-8 shrink-0 ${accentText}`} />
             <div className="min-w-0 flex-1">
                 <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide leading-snug break-words">
                     {label}
@@ -57,6 +57,7 @@ const StatCard = ({ icon: Icon, label, value, color, onClick, active = false }) 
                     {value}
                 </p>
             </div>
+            <ChevronRightIcon className="w-4 h-4 shrink-0 text-slate-400 group-hover:text-slate-600 transition-colors" aria-hidden="true" />
         </button>
     );
 };
@@ -147,7 +148,7 @@ const StatsCards = ({ expeditions, currentAgenceId, onFilter, activeFilters = {}
                     <button
                         onClick={() => setActiveTab('depart')}
                         className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-                            activeTab === 'depart' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                            activeTab === 'depart' ? 'bg-[#005566] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
                         }`}
                     >
                         Départ <span className="text-xs font-bold">({departTotal})</span>
@@ -155,7 +156,7 @@ const StatsCards = ({ expeditions, currentAgenceId, onFilter, activeFilters = {}
                     <button
                         onClick={() => setActiveTab('arrivee')}
                         className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-                            activeTab === 'arrivee' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                            activeTab === 'arrivee' ? 'bg-[#005566] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
                         }`}
                     >
                         Arrivée <span className="text-xs font-bold">({arriveeTotal})</span>

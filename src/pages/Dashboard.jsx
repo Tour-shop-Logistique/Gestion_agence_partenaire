@@ -186,7 +186,7 @@ const Dashboard = () => {
             <RecentExpeditions expeditions={logistics.dernieres_expeditions} />
 
             {/* ========== 4. STATISTIQUES (En dessous) ========== */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-5">
                 <StatsCards
                     logistics={logistics}
                     operational={operational}

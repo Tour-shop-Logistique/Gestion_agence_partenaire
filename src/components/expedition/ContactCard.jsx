@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, Phone, MapPin, Mail } from 'lucide-react';
+import { User, Phone, MapPin, Mail, IdCard } from 'lucide-react';
 
 /**
  * 👤 FICHE CONTACT CRM STYLE
@@ -96,6 +96,24 @@ const ContactCard = ({ type, contact, country }) => {
                         <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 border border-white/40">
                             <p className="text-sm font-medium text-slate-700 leading-relaxed">
                                 {contact.adresse}
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Pièce d'identité - expéditeur uniquement, non demandée au destinataire */}
+                {isShipper && contact.numero_piece_identite && (
+                    <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-lg ${style.bgColor} border ${style.borderColor} flex items-center justify-center flex-shrink-0`}>
+                            <IdCard className={`w-5 h-5 ${style.iconColor}`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold text-slate-500 uppercase">Pièce d'identité</p>
+                            <p className="text-sm font-bold text-slate-900 truncate">
+                                {contact.numero_piece_identite}
+                                {contact.date_expiration_piece_identite && (
+                                    <span className="font-medium text-slate-500"> · exp. {new Date(contact.date_expiration_piece_identite).toLocaleDateString('fr-FR')}</span>
+                                )}
                             </p>
                         </div>
                     </div>

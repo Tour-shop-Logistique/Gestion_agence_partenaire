@@ -216,6 +216,8 @@ const CreateExpeditionV2 = () => {
         expediteur_adresse: "",
         expediteur_ville: "Abidjan",
         expediteur_pays: getCountryName("CI"),
+        expediteur_numero_piece_identite: "",
+        expediteur_date_expiration_piece_identite: "",
 
         // Destinataire
         destinataire_nom_prenom: "",
@@ -1351,6 +1353,7 @@ const CreateExpeditionV2 = () => {
 
     const canProceedToStep4 = () => {
         return formData.expediteur_nom_prenom && formData.expediteur_telephone &&
+               formData.expediteur_numero_piece_identite && formData.expediteur_date_expiration_piece_identite &&
                formData.destinataire_nom_prenom && formData.destinataire_telephone;
     };
 
@@ -2332,6 +2335,34 @@ const CreateExpeditionV2 = () => {
                                                     onChange={handleInputChange}
                                                     placeholder="Ex: Cocody, Angré..."
                                                     className={inputCls(formData.expediteur_adresse, false)}
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label htmlFor="expediteur_numero_piece_identite" className="block text-xs font-semibold text-slate-600">
+                                                    N° pièce d'identité <span className="text-amber-600">*</span>
+                                                </label>
+                                                <input
+                                                    id="expediteur_numero_piece_identite"
+                                                    type="text"
+                                                    name="expediteur_numero_piece_identite"
+                                                    value={formData.expediteur_numero_piece_identite}
+                                                    onChange={handleInputChange}
+                                                    placeholder="Ex: CI001234567..."
+                                                    className={inputCls(formData.expediteur_numero_piece_identite, true)}
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label htmlFor="expediteur_date_expiration_piece_identite" className="block text-xs font-semibold text-slate-600">
+                                                    Expiration de la pièce <span className="text-amber-600">*</span>
+                                                </label>
+                                                <input
+                                                    id="expediteur_date_expiration_piece_identite"
+                                                    type="date"
+                                                    name="expediteur_date_expiration_piece_identite"
+                                                    value={formData.expediteur_date_expiration_piece_identite}
+                                                    onChange={handleInputChange}
+                                                    min={new Date(Date.now() + 86400000).toISOString().split('T')[0]}
+                                                    className={inputCls(formData.expediteur_date_expiration_piece_identite, true)}
                                                 />
                                             </div>
                                         </div>

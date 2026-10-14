@@ -287,8 +287,13 @@ const AgencyProfile = () => {
 
   /* Remplir le formulaire depuis Redux */
   useEffect(() => {
-    if (agencyData?.agence) {
-      const a = agencyData.agence;
+    // agenciesApi.getAgency() retourne déjà l'objet agence directement
+    // (response.agence ?? response, voir utils/api/agencies.js) : agencyData
+    // EST l'agence, agencyData.agence n'existe pas. Même fallback que
+    // selectAgencyConfigured() pour rester robuste si le backend change un
+    // jour de forme (objet enveloppé vs direct).
+    const a = agencyData?.agence || agencyData;
+    if (a?.nom_agence) {
       const next = { ...formData };
       if (a.nom_agence)  next.name        = a.nom_agence;
       if (a.code_agence) next.code_agence = a.code_agence;
@@ -522,9 +527,9 @@ const AgencyProfile = () => {
               l'endroit de la page où le clic Modifier a eu lieu. */}
           <div className="relative group flex-shrink-0">
             <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg border-2 border-white/20 bg-white flex items-center justify-center overflow-hidden shadow-lg">
-              {logoPreview || agencyData?.agence?.logo ? (
+              {logoPreview || formData.logo ? (
                 <img
-                  src={logoPreview || getLogoUrl(agencyData?.agence?.logo)}
+                  src={logoPreview || getLogoUrl(formData.logo)}
                   alt="Logo agence"
                   className="w-full h-full object-contain"
                 />

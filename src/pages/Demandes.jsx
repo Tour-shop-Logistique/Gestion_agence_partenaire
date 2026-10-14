@@ -351,7 +351,7 @@ const Demandes = () => {
     };
 
     return (
-        <div className="max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 animate-fade-in">
+        <div className="max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-8 py-2 sm:py-3 space-y-4 sm:space-y-6 animate-fade-in">
             {/* Header Section - Responsive */}
             <PageHeader
                 title="Demandes Clients"
@@ -376,7 +376,7 @@ const Demandes = () => {
                         onClick={() => { setActiveTab('demandes'); setSelectedColisCodes([]); }}
                         className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${
                             activeTab === 'demandes'
-                                ? 'bg-white text-indigo-700 shadow-sm'
+                                ? 'bg-[#005566] text-white shadow-sm'
                                 : 'text-slate-500 hover:text-slate-700'
                         }`}
                     >
@@ -386,7 +386,7 @@ const Demandes = () => {
                             {demandesMeta?.total > 0 && (
                                 <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
                                     activeTab === 'demandes'
-                                        ? 'bg-amber-100 text-amber-700'
+                                        ? 'bg-white/20 text-white'
                                         : 'bg-slate-200 text-slate-500'
                                 }`}>
                                     {demandesMeta.total}
@@ -398,7 +398,7 @@ const Demandes = () => {
                         onClick={() => { setActiveTab('en-agence'); setSelectedColisCodes([]); }}
                         className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${
                             activeTab === 'en-agence'
-                                ? 'bg-white text-indigo-700 shadow-sm'
+                                ? 'bg-[#005566] text-white shadow-sm'
                                 : 'text-slate-500 hover:text-slate-700'
                         }`}
                     >
@@ -667,12 +667,9 @@ const Demandes = () => {
                                             onClick={() => navigate(`/expeditions/${demande.id}`)}
                                             className="px-4 py-4"
                                         >
-                                            <div className="flex flex-col gap-0.5">
-                                                <span className="text-base font-bold text-slate-900 tabular-nums">
-                                                    {new Intl.NumberFormat('fr-FR').format(demande.montant_expedition || 0)}
-                                                </span>
-                                                <span className="text-xs font-bold text-slate-400 uppercase">{getCurrencyLabel(demande.devise_origine)}</span>
-                                            </div>
+                                            <span className="text-base font-bold text-slate-900 tabular-nums">
+                                                {new Intl.NumberFormat('fr-FR').format(demande.montant_expedition || 0)} <span className="text-xs font-bold text-slate-400 uppercase">{getCurrencyLabel(demande.devise_origine)}</span>
+                                            </span>
                                         </td>
                                         <td className="px-4 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
@@ -716,7 +713,7 @@ const Demandes = () => {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan="5" className="px-4 py-16 text-center">
+                                    <td colSpan="6" className="px-4 py-16 text-center">
                                         <div className="flex flex-col items-center max-w-md mx-auto">
                                             <div className="relative w-20 h-20 mb-4">
                                                 <div className="absolute inset-0 bg-gradient-to-br from-amber-50 to-amber-100/30 rounded-lg rotate-6"></div>
@@ -983,12 +980,9 @@ const Demandes = () => {
                                             <span className="text-sm font-bold text-slate-900">{colis.poids || 0} kg</span>
                                         </td>
                                         <td className="px-4 py-4">
-                                            <div className="flex flex-col gap-0.5">
-                                                <span className="text-sm font-bold text-slate-900 tabular-nums">
-                                                    {new Intl.NumberFormat('fr-FR').format(colis.montant_colis_total || 0)}
-                                                </span>
-                                                <span className="text-xs font-bold text-slate-400 uppercase">{getCurrencyLabel(colis.expedition?.devise_origine)}</span>
-                                            </div>
+                                            <span className="text-sm font-bold text-slate-900 tabular-nums">
+                                                {new Intl.NumberFormat('fr-FR').format(colis.montant_colis_total || 0)} <span className="text-xs font-bold text-slate-400 uppercase">{getCurrencyLabel(colis.expedition?.devise_origine)}</span>
+                                            </span>
                                         </td>
                                         <td className="px-4 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                                             {canAccept && (
