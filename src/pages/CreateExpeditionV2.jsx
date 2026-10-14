@@ -2787,7 +2787,6 @@ const CreateExpeditionV2 = () => {
                             </div>
                         )}
                     </div>
-                </div>
                 </div> {/* fin max-w-7xl contenu scrollable */}
             </div>
 

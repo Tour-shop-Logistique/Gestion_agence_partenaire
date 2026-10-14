@@ -210,7 +210,7 @@ const Sidebar = ({ onClose }) => {
     <div
       className="flex flex-col h-full w-60 lg:mt-0 mt-0 relative overflow-hidden"
       style={{
-        background: "linear-gradient(180deg, #070a14 0%, #10152a 50%, #070a14 100%)",
+        background: "linear-gradient(180deg, #060b08 0%, #0d1a0f 50%, #060b08 100%)",
       }}
     >
       {/* ========== FOND — MOSAÏQUE GÉOMÉTRIQUE ========== */}
@@ -259,15 +259,15 @@ const Sidebar = ({ onClose }) => {
         </svg>
 
         {/* Lueurs douces en haut / en bas, ancrées à l'accent de la marque */}
-        <div className="absolute top-0 left-0 right-0 h-36 bg-gradient-to-b from-cyan-400/20 via-transparent to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 h-44 bg-gradient-to-t from-indigo-400/20 via-transparent to-transparent" />
+        <div className="absolute top-0 left-0 right-0 h-36 bg-gradient-to-b from-[#9DC41A]/20 via-transparent to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-44 bg-gradient-to-t from-[#9DC41A]/15 via-transparent to-transparent" />
 
         {/* Halos ambiants */}
-        <div className="absolute -top-10 -left-10 w-56 h-56 bg-cyan-400/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 -right-10 w-56 h-56 bg-indigo-400/10 rounded-full blur-3xl" />
+        <div className="absolute -top-10 -left-10 w-56 h-56 bg-[#9DC41A]/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 -right-10 w-56 h-56 bg-[#9DC41A]/8 rounded-full blur-3xl" />
 
         {/* Liseré d'accent sur le bord gauche */}
-        <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-cyan-400/40 to-transparent" />
+        <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[#9DC41A]/50 to-transparent" />
       </div>
 
       {/* Voile de lisibilité : assombrit légèrement les motifs sous le texte sans les effacer */}
@@ -278,9 +278,9 @@ const Sidebar = ({ onClose }) => {
         <div className="flex items-center gap-2.5 min-w-0 flex-1">
           {/* Logo container avec ombre et dégradé */}
           <div className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center p-1.5 bg-gradient-to-br from-white to-slate-100 shadow-lg shadow-black/20 ring-1 ring-white/10">
-            {agencyData?.agence?.logo ? (
+            {(agencyData?.agence?.logo || agencyData?.logo) ? (
               <img
-                src={getLogoUrl(agencyData.agence.logo)}
+                src={getLogoUrl(agencyData?.agence?.logo || agencyData?.logo)}
                 alt="Logo"
                 className="w-full h-full object-contain"
               />
@@ -293,9 +293,9 @@ const Sidebar = ({ onClose }) => {
               className="font-bold text-white tracking-tight text-sm truncate block leading-tight"
               style={{ textShadow: "0 1px 3px rgba(0,0,0,0.5)" }}
             >
-              {agencyData?.agence?.nom_agence || "Tous Shop"}
+              {agencyData?.agence?.nom_agence || agencyData?.nom_agence || "Tous Shop"}
             </span>
-            <span className="text-[10px] text-cyan-100 font-medium tracking-wide uppercase leading-tight">
+            <span className="text-[10px] font-medium tracking-wide uppercase leading-tight" style={{ color: "#9DC41A" }}>
               Gestion d'expéditions
             </span>
           </div>
