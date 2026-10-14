@@ -52,6 +52,77 @@ const isColisComplete = (c) => Boolean(c.poids && c.designation && c.articles &&
 // silencieusement dès que le format diffère de celui stocké sur le backoffice.
 const extractCountryName = (label) => (label || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
 
+// Input ville avec autocomplétion : saisie libre immédiate + suggestions dès que la liste arrive
+const CityAutocomplete = ({ id, value, onChange, cities, loading, inputCls }) => {
+    const [suggestions, setSuggestions] = React.useState([]);
+    const [showSuggestions, setShowSuggestions] = React.useState(false);
+    const wrapperRef = React.useRef(null);
+
+    React.useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+                setShowSuggestions(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleChange = (e) => {
+        const val = e.target.value;
+        onChange(val);
+        if (val.length >= 1 && cities.length > 0) {
+            const q = val.toLowerCase();
+            setSuggestions(cities.filter(c => c.label.toLowerCase().includes(q)).slice(0, 8));
+            setShowSuggestions(true);
+        } else {
+            setShowSuggestions(false);
+        }
+    };
+
+    const handleSelect = (city) => {
+        onChange(city.label);
+        setShowSuggestions(false);
+    };
+
+    return (
+        <div ref={wrapperRef} className="relative">
+            <input
+                id={id}
+                type="text"
+                value={value}
+                onChange={handleChange}
+                onFocus={() => {
+                    if (value.length >= 1 && cities.length > 0) {
+                        const q = value.toLowerCase();
+                        setSuggestions(cities.filter(c => c.label.toLowerCase().includes(q)).slice(0, 8));
+                        setShowSuggestions(true);
+                    }
+                }}
+                placeholder={loading ? "Chargement des villes…" : "Paris…"}
+                className={inputCls(value, true)}
+            />
+            {loading && (
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-400">chargement…</span>
+            )}
+            {showSuggestions && suggestions.length > 0 && (
+                <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    {suggestions.map(city => (
+                        <button
+                            key={city.id}
+                            type="button"
+                            onMouseDown={() => handleSelect(city)}
+                            className="w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                        >
+                            {city.label}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
+
 const CreateExpeditionV2 = () => {
     const navigate = useNavigate();
     const {
@@ -99,6 +170,10 @@ const CreateExpeditionV2 = () => {
     } = useTarifs();
     const { data: agencyData, fetchAgencyData, status: agencyStatus } = useAgency();
     const { logistics, fetchDashboard, status: dashboardStatus } = useDashboard();
+
+    // Villes du pays de destination (LD, Afrique, CA) — chargées via CountriesNow
+    const [citiesForDestination, setCitiesForDestination] = useState([]);
+    const [citiesLoading, setCitiesLoading] = useState(false);
 
     // État pour la navigation interne (4 étapes)
     const [step, setStep] = useState(1);
@@ -318,7 +393,7 @@ const CreateExpeditionV2 = () => {
         let cancelled = false;
 
         const computeNextColisNumero = async () => {
-            const codeAgence = agencyData?.agence?.code_agence;
+            const codeAgence = agencyData?.agence?.code_agence || agencyData?.code_agence;
             const apiType = FORM_TYPE_TO_API_TYPE[formData.type_expedition];
 
             if (!codeAgence || !apiType) {
@@ -374,7 +449,7 @@ const CreateExpeditionV2 = () => {
 
         computeNextColisNumero();
         return () => { cancelled = true; };
-    }, [formData.type_expedition, agencyData?.agence?.code_agence, logistics?.dernieres_expeditions]);
+    }, [formData.type_expedition, agencyData?.agence?.code_agence || agencyData?.code_agence, logistics?.dernieres_expeditions]);
 
     useEffect(() => {
         if (message && status !== 'succeeded') {
@@ -395,6 +470,33 @@ const CreateExpeditionV2 = () => {
             resetStatus();
         }
     }, [error, resetStatus]);
+
+    // Fetch des villes via CountriesNow quand le pays de destination change (LD, Afrique, CA)
+    useEffect(() => {
+        const typesAvecVillesApi = ['SIMPLE', 'GROUPAGE_AFRIQUE', 'GROUPAGE_CA'];
+        const codeISO = formData.code_pays_destination;
+        if (!typesAvecVillesApi.includes(formData.type_expedition) || !codeISO) {
+            setCitiesForDestination([]);
+            return;
+        }
+        let cancelled = false;
+        setCitiesLoading(true);
+        setCitiesForDestination([]);
+        fetch('https://countriesnow.space/api/v0.1/countries/cities', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ iso2: codeISO.toUpperCase() }),
+        })
+            .then(r => r.json())
+            .then(data => {
+                if (cancelled) return;
+                const villes = Array.isArray(data?.data) ? data.data : [];
+                setCitiesForDestination(villes.map(v => ({ id: v, label: v.toUpperCase() })));
+            })
+            .catch(() => { if (!cancelled) setCitiesForDestination([]); })
+            .finally(() => { if (!cancelled) setCitiesLoading(false); });
+        return () => { cancelled = true; };
+    }, [formData.code_pays_destination, formData.type_expedition]);
 
     // Raccourcis clavier pour saisie rapide
     useEffect(() => {
@@ -585,6 +687,7 @@ const CreateExpeditionV2 = () => {
         const countriesList = Object.entries(countryByKey).map(([key, info]) => ({
             id: key,
             ...info,
+            label: (info.label || '').toUpperCase(),
         })).sort((a, b) => a.label.localeCompare(b.label));
 
         return countriesList;
@@ -1069,7 +1172,7 @@ const CreateExpeditionV2 = () => {
                 if (c.category_id) item.category_id = c.category_id;
 
                 item.code_colis = generateColisCode({
-                    codeAgence: agencyData?.agence?.code_agence,
+                    codeAgence: agencyData?.agence?.code_agence || agencyData?.code_agence,
                     numeroColis: nextColisNumero + index,
                     typeExpedition: CODE_COLIS_TYPE_MAP[formData.type_expedition] || 'LD',
                 });
@@ -1119,7 +1222,7 @@ const CreateExpeditionV2 = () => {
                 if (c.category_id) item.category_id = c.category_id;
 
                 item.code_colis = generateColisCode({
-                    codeAgence: agencyData?.agence?.code_agence,
+                    codeAgence: agencyData?.agence?.code_agence || agencyData?.code_agence,
                     numeroColis: nextColisNumero + index,
                     typeExpedition: CODE_COLIS_TYPE_MAP[formData.type_expedition] || 'LD',
                 });
@@ -1240,7 +1343,6 @@ const CreateExpeditionV2 = () => {
     const missingStep1Fields = [
         !formData.pays_destination && "pays de destination",
         !formData.destinataire_ville && "ville de destination",
-        formData.type_expedition === 'INTERVILLE' && !formData.destinataire_commune_id && "commune de destination",
     ].filter(Boolean);
 
     const canProceedToStep3 = () => {
@@ -1286,7 +1388,7 @@ const CreateExpeditionV2 = () => {
     // pendant que les données nécessaires sont encore en cours de chargement
     if (initialLoading) {
         return (
-            <div className="min-h-screen bg-slate-100">
+            <div className="min-h-screen">
                 <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
                     <div className="flex items-center justify-between mb-4 sm:mb-8 gap-3">
                         <div className="space-y-2">
@@ -1295,17 +1397,12 @@ const CreateExpeditionV2 = () => {
                         </div>
                         <Skeleton className="h-10 w-48 rounded-lg" />
                     </div>
-                    <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-                        <div className="px-4 sm:px-6 py-4 border-b border-slate-100">
-                            <Skeleton className="h-4 w-32" />
-                        </div>
-                        <div className="p-4 sm:p-6 space-y-5">
-                            <Skeleton className="h-20 w-full" />
+                    <div className="space-y-5 pt-4">
+                        <Skeleton className="h-20 w-full" />
+                        <Skeleton className="h-11 w-full" />
+                        <div className="grid grid-cols-2 gap-3">
                             <Skeleton className="h-11 w-full" />
-                            <div className="grid grid-cols-2 gap-3">
-                                <Skeleton className="h-11 w-full" />
-                                <Skeleton className="h-11 w-full" />
-                            </div>
+                            <Skeleton className="h-11 w-full" />
                         </div>
                     </div>
                 </div>
@@ -1352,22 +1449,14 @@ const CreateExpeditionV2 = () => {
                 </div>
             )}
 
-            <div className={`min-h-screen bg-slate-100 ${step === 2 && simulationResult ? 'pb-20 lg:pb-0' : ''}`}>
-                <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
-
-                    {/* ── Header ── */}
-                    <div className="mb-4 sm:mb-8">
+            <div className={`min-h-screen ${step === 2 && simulationResult ? 'pb-20 lg:pb-0' : ''}`}>
+                {/* ── Header sticky ── */}
+                <div className="sticky top-0 z-20 border-b border-slate-200/60">
+                    <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-3">
                         <PageHeader
                             title="Nouvelle expédition"
                             subtitle={
-                                <>
-                                    <p className="hidden sm:block">Enregistrement et tarification des envois clients</p>
-                                    <p className="text-[11px] text-slate-400 mt-1 hidden lg:block" aria-hidden="true">
-                                        Raccourcis : <kbd className="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-500">Ctrl+S</kbd> simuler ·{' '}
-                                        <kbd className="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-500">Ctrl+↵</kbd> valider ·{' '}
-                                        <kbd className="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-500">Ctrl+←/→</kbd> naviguer
-                                    </p>
-                                </>
+                                <p className="hidden sm:block">Enregistrement et tarification des envois clients</p>
                             }
                             actions={
                                 /* Stepper — compact sur mobile, complet sur desktop */
@@ -1407,12 +1496,14 @@ const CreateExpeditionV2 = () => {
                             }
                         />
                     </div>
-
+                </div>
+                {/* ── Contenu scrollable ── */}
+                <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
                     <div className="space-y-4 sm:space-y-6">
                         {/* ÉTAPE 1: CHOISIR LE TRAJET */}
                         {step === 1 && (
-                            <section className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-                                <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 flex items-center gap-3">
+                            <>
+                                <div className="py-3 sm:py-4 flex items-center gap-3">
                                     <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
                                         <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
@@ -1423,7 +1514,7 @@ const CreateExpeditionV2 = () => {
                                         <p className="text-xs text-slate-400">Type d'expédition et destination</p>
                                     </div>
                                 </div>
-                                <div className="p-4 sm:p-6 space-y-5">
+                                <div className="space-y-5">
 
                                     {/* Types d'expédition */}
                                     <div className="space-y-2">
@@ -1468,141 +1559,54 @@ const CreateExpeditionV2 = () => {
                                         </div>
                                     </div>
 
-                                    {/* Trajet/Pays disponible - Uniquement pour les types NON-SIMPLE */}
-                                    {formData.type_expedition !== 'SIMPLE' && (
+                                    {/* Trajet — DHD uniquement : pays puis trajet ville-à-ville */}
+                                    {(formData.type_expedition === 'GROUPAGE_DHD_AERIEN' || formData.type_expedition === 'GROUPAGE_DHD_MARITIME') && (
                                         <div className="space-y-3">
-                                            {formData.type_expedition === 'GROUPAGE_CA' ? (
-                                                <div className="space-y-1.5">
-                                                    <label className="block text-xs font-semibold text-slate-600">
-                                                        Trajet disponible
-                                                    </label>
-                                                    <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-500">
-                                                        <svg className="w-4 h-4 flex-shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                        </svg>
-                                                        Non applicable pour les Colis Accompagnés — renseignez directement le pays et la ville de destination ci-dessous.
-                                                    </div>
-                                                </div>
-                                            ) : formData.type_expedition === 'GROUPAGE_AFRIQUE' ? (
-                                                <div className="space-y-1.5">
-                                                    <label className="block text-xs font-semibold text-slate-600">
-                                                        Trajet disponible
-                                                    </label>
-                                                    <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-500">
-                                                        <svg className="w-4 h-4 flex-shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                        </svg>
-                                                        Non applicable pour l'Afrique — renseignez directement le pays de destination ci-dessous.
-                                                    </div>
-                                                </div>
-                                            ) : formData.type_expedition === 'INTERVILLE' ? (
-                                                <div className="space-y-1.5">
-                                                    <label htmlFor="commune-arrivee-select" className="block text-xs font-semibold text-slate-600">
-                                                        Commune de destination <span className="text-amber-600">*</span>
-                                                    </label>
-                                                    <SearchableDropdown
-                                                        id="commune-arrivee-select"
-                                                        options={intervilleAvailableCommunes}
-                                                        onSelect={(commune) => {
-                                                            // destinataire_ville (texte libre affiché) doit être
-                                                            // rempli en plus de destinataire_commune_id (la vraie
-                                                            // source de vérité) : canProceedToStep2() exige les
-                                                            // deux, et le nom de la commune sert d'affichage côté
-                                                            // trajet - voir le bug historique de désynchronisation
-                                                            // ville/commune_id corrigé côté affichage agence.
-                                                            setFormData(prev => ({
-                                                                ...prev,
-                                                                destinataire_commune_id: commune.id,
-                                                                destinataire_ville: commune.label,
-                                                            }));
-                                                        }}
-                                                        disabled={intervilleAvailableCommunes.length === 0}
-                                                        placeholder={formData.destinataire_commune_id
-                                                            ? intervilleAvailableCommunes.find(c => c.id === formData.destinataire_commune_id)?.label || "Rechercher une commune..."
-                                                            : "Rechercher une commune..."}
-                                                        className="w-full"
-                                                        buttonClassName="h-11 text-sm font-medium"
-                                                    />
-                                                    {intervilleAvailableCommunes.length === 0 && (
-                                                        <p className="text-[10px] text-amber-600 mt-1 flex items-center gap-1">
-                                                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                            </svg>
-                                                            Aucun trajet interville configuré depuis votre commune.
-                                                        </p>
-                                                    )}
-                                                </div>
-                                            ) : (formData.type_expedition === 'GROUPAGE_DHD_AERIEN' || formData.type_expedition === 'GROUPAGE_DHD_MARITIME') ? (
-                                                <>
-                                                    {/* DHD couvre tous les pays hors Afrique, par ligne
-                                                        ville-à-ville : on choisit d'abord le pays, puis un
-                                                        trajet parmi ceux configurés pour ce pays. */}
-                                                    <div className="space-y-1.5">
-                                                        <label htmlFor="dhd-country-select" className="block text-xs font-semibold text-slate-600">
-                                                            Pays de destination <span className="text-amber-600">*</span>
-                                                        </label>
-                                                        <SearchableDropdown
-                                                            id="dhd-country-select"
-                                                            options={dhdAvailableCountries}
-                                                            onSelect={(country) => {
-                                                                setSelectedDhdCountryCode(country.code || country.id);
-                                                                setSelectedRouteId("");
-                                                                setSelectedRoute(null);
-                                                            }}
-                                                            placeholder={selectedDhdCountryCode
-                                                                ? dhdAvailableCountries.find(c => c.code === selectedDhdCountryCode)?.label || "Rechercher un pays..."
-                                                                : "Rechercher un pays..."}
-                                                            className="w-full"
-                                                            buttonClassName="h-11 text-sm font-medium"
-                                                        />
-                                                    </div>
-                                                    <div className="space-y-1.5">
-                                                        <label htmlFor="route-select" className="block text-xs font-semibold text-slate-600">
-                                                            Trajet disponible
-                                                        </label>
-                                                        <SearchableDropdown
-                                                            id="route-select"
-                                                            options={availableRouteOptions}
-                                                            onSelect={(option) => handleRouteSelect(option.id)}
-                                                            disabled={!selectedDhdCountryCode}
-                                                            placeholder={!selectedDhdCountryCode
-                                                                ? "Choisissez d'abord un pays"
-                                                                : selectedRouteId
-                                                                    ? availableRouteOptions.find(r => r.id === selectedRouteId)?.label || "Rechercher un trajet..."
-                                                                    : "Rechercher un trajet..."}
-                                                            className="w-full"
-                                                            buttonClassName="h-11 text-sm font-medium"
-                                                        />
-                                                    </div>
-                                                </>
-                                            ) : (
-                                                <div className="space-y-1.5">
-                                                    <label htmlFor="route-select" className="block text-xs font-semibold text-slate-600">
-                                                        Trajet disponible
-                                                    </label>
-                                                    <SearchableDropdown
-                                                        id="route-select"
-                                                        options={availableRouteOptions}
-                                                        onSelect={(option) => handleRouteSelect(option.id)}
-                                                        placeholder={selectedRouteId
+                                            <div className="space-y-1.5">
+                                                <label htmlFor="dhd-country-select" className="block text-xs font-semibold text-slate-600">
+                                                    Pays de destination <span className="text-amber-600">*</span>
+                                                </label>
+                                                <SearchableDropdown
+                                                    id="dhd-country-select"
+                                                    options={dhdAvailableCountries}
+                                                    onSelect={(country) => {
+                                                        setSelectedDhdCountryCode(country.code || country.id);
+                                                        setSelectedRouteId("");
+                                                        setSelectedRoute(null);
+                                                    }}
+                                                    placeholder={selectedDhdCountryCode
+                                                        ? dhdAvailableCountries.find(c => c.code === selectedDhdCountryCode)?.label || "Rechercher un pays..."
+                                                        : "Rechercher un pays..."}
+                                                    className="w-full"
+                                                    buttonClassName="h-11 text-sm font-medium"
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label htmlFor="route-select" className="block text-xs font-semibold text-slate-600">
+                                                    Trajet disponible
+                                                </label>
+                                                <SearchableDropdown
+                                                    id="route-select"
+                                                    options={availableRouteOptions}
+                                                    onSelect={(option) => handleRouteSelect(option.id)}
+                                                    disabled={!selectedDhdCountryCode}
+                                                    placeholder={!selectedDhdCountryCode
+                                                        ? "Choisissez d'abord un pays"
+                                                        : selectedRouteId
                                                             ? availableRouteOptions.find(r => r.id === selectedRouteId)?.label || "Rechercher un trajet..."
                                                             : "Rechercher un trajet..."}
-                                                        className="w-full"
-                                                        buttonClassName="h-11 text-sm font-medium"
-                                                    />
-                                                </div>
-                                            )}
+                                                    className="w-full"
+                                                    buttonClassName="h-11 text-sm font-medium"
+                                                />
+                                            </div>
                                         </div>
                                     )}
 
-                                    {/* Destination + Départ — 2 colonnes sur mobile */}
+                                    {/* Destination + Départ — 2 colonnes */}
                                     <div className="grid grid-cols-2 gap-3 p-4 bg-slate-50/80 rounded-lg border border-slate-200">
-                                        {/* Pour DHD, le pays est déjà choisi juste au-dessus (dropdown
-                                            pays-puis-trajet) : ce second champ générique serait redondant
-                                            et pourrait le contredire, donc masqué pour ce type. Pour
-                                            Interville, le pays est toujours celui du départ (trajet
-                                            intra-pays, voir le useEffect de pays par défaut), jamais un choix. */}
-                                        {(formData.type_expedition === 'GROUPAGE_DHD_AERIEN' || formData.type_expedition === 'GROUPAGE_DHD_MARITIME' || formData.type_expedition === 'INTERVILLE') ? (
+                                        {/* Pour DHD, le pays est déjà choisi via le dropdown pays-puis-trajet
+                                            au-dessus : ce champ générique serait redondant et contradictoire. */}
+                                        {(formData.type_expedition === 'GROUPAGE_DHD_AERIEN' || formData.type_expedition === 'GROUPAGE_DHD_MARITIME') ? (
                                             <div className="space-y-1.5">
                                                 <label className="block text-xs font-semibold text-slate-600">Pays destination</label>
                                                 <div className="w-full h-11 px-3 flex items-center rounded-lg border border-slate-200 bg-slate-50 text-sm font-medium text-slate-600 uppercase">
@@ -1632,10 +1636,9 @@ const CreateExpeditionV2 = () => {
                                                             // même fallback côté backend.
                                                             setSelectedRoute(country.tarif || null);
 
-                                                            // country.label garde l'abréviation pour l'affichage
-                                                            // (ex: "Argentine(AR)"), mais on stocke le nom de
-                                                            // pays propre - voir extractCountryName ci-dessus.
-                                                            const paysName = extractCountryName(country.label);
+                                                            // Utiliser getCountryName(code) pour avoir le nom en casse
+                                                            // correcte indépendamment du label affiché (qui est en majuscules).
+                                                            const paysName = country.code ? getCountryName(country.code) : extractCountryName(country.label);
 
                                                             setFormData(prev => ({
                                                                 ...prev,
@@ -1644,9 +1647,11 @@ const CreateExpeditionV2 = () => {
                                                                 destinataire_ville: "",
                                                             }));
                                                         }}
-                                                        placeholder={selectedRouteId ?
-                                                            availableCountriesForLD.find(c => c.id === selectedRouteId)?.label || "Rechercher un pays..."
-                                                            : "Rechercher un pays..."}
+                                                        placeholder={selectedRouteId
+                                                            ? availableCountriesForLD.find(c => c.id === selectedRouteId)?.label || "Rechercher un pays..."
+                                                            : formData.pays_destination
+                                                                ? formData.pays_destination.toUpperCase()
+                                                                : "Rechercher un pays..."}
                                                         className="w-full"
                                                         buttonClassName="h-11 text-sm font-medium"
                                                     />
@@ -1678,6 +1683,7 @@ const CreateExpeditionV2 = () => {
                                                             ...prev,
                                                             pays_destination: paysName,
                                                             code_pays_destination: country.code || "",
+                                                            destinataire_ville: "",
                                                         }));
                                                     }}
                                                     placeholder={formData.pays_destination || "Rechercher un pays..."}
@@ -1697,6 +1703,7 @@ const CreateExpeditionV2 = () => {
                                                             ...prev,
                                                             pays_destination: paysName,
                                                             code_pays_destination: country.code || "",
+                                                            destinataire_ville: "",
                                                         }));
                                                     }}
                                                     placeholder={formData.pays_destination || "Rechercher un pays..."}
@@ -1710,26 +1717,52 @@ const CreateExpeditionV2 = () => {
                                             <label htmlFor="destinataire_ville" className="block text-xs font-semibold text-slate-600">
                                                 Ville destination <span className="text-amber-600">*</span>
                                             </label>
-                                            {(formData.type_expedition === 'GROUPAGE_DHD_AERIEN' || formData.type_expedition === 'GROUPAGE_DHD_MARITIME' || formData.type_expedition === 'INTERVILLE') ? (
-                                                // La ville de destination provient du trajet DHD ou de la
-                                                // commune Interville sélectionnés ci-dessus : lecture seule
-                                                // pour ne pas contredire le trajet réellement tarifé.
+                                            {(formData.type_expedition === 'GROUPAGE_DHD_AERIEN' || formData.type_expedition === 'GROUPAGE_DHD_MARITIME') ? (
+                                                // Lecture seule : ville déduite du trajet DHD sélectionné
                                                 <div
                                                     id="destinataire_ville"
                                                     className="w-full h-11 px-3 flex items-center rounded-lg border border-slate-200 bg-slate-50 text-sm font-medium text-slate-600 cursor-not-allowed"
-                                                    title={formData.type_expedition === 'INTERVILLE'
-                                                        ? "La ville de destination correspond à la commune sélectionnée et ne peut pas être modifiée"
-                                                        : "La ville de destination correspond au trajet sélectionné et ne peut pas être modifiée"}
+                                                    title="La ville de destination correspond au trajet sélectionné et ne peut pas être modifiée"
                                                 >
                                                     {formData.destinataire_ville || "—"}
                                                 </div>
+                                            ) : formData.type_expedition === 'INTERVILLE' ? (
+                                                // Interville : liste des communes configurées dans le pays de l'agence
+                                                <>
+                                                    <SearchableDropdown
+                                                        id="destinataire_ville"
+                                                        options={intervilleAvailableCommunes.map(c => ({ ...c, label: c.label.toUpperCase() }))}
+                                                        onSelect={(commune) => {
+                                                            setFormData(prev => ({
+                                                                ...prev,
+                                                                destinataire_commune_id: commune.id,
+                                                                destinataire_ville: commune.label,
+                                                            }));
+                                                        }}
+                                                        disabled={intervilleAvailableCommunes.length === 0}
+                                                        placeholder={formData.destinataire_commune_id
+                                                            ? (intervilleAvailableCommunes.find(c => c.id === formData.destinataire_commune_id)?.label || "").toUpperCase() || "Rechercher une commune..."
+                                                            : "Rechercher une commune..."}
+                                                        className="w-full"
+                                                        buttonClassName="h-11 text-sm font-medium"
+                                                    />
+                                                    {intervilleAvailableCommunes.length === 0 && (
+                                                        <p className="text-[10px] text-amber-600 mt-1 flex items-center gap-1">
+                                                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                            </svg>
+                                                            Aucune commune configurée.
+                                                        </p>
+                                                    )}
+                                                </>
                                             ) : (
-                                                <input
+                                                <CityAutocomplete
                                                     id="destinataire_ville"
-                                                    type="text" name="destinataire_ville"
-                                                    value={formData.destinataire_ville} onChange={handleInputChange}
-                                                    placeholder="Paris…"
-                                                    className={inputCls(formData.destinataire_ville, true)}
+                                                    value={formData.destinataire_ville}
+                                                    onChange={(val) => setFormData(prev => ({ ...prev, destinataire_ville: val }))}
+                                                    cities={citiesForDestination}
+                                                    loading={citiesLoading}
+                                                    inputCls={inputCls}
                                                 />
                                             )}
                                         </div>
@@ -1778,7 +1811,7 @@ const CreateExpeditionV2 = () => {
                                         )}
                                     </div>
                                 </div>
-                            </section>
+                            </>
                         )}
 
 
@@ -1786,8 +1819,8 @@ const CreateExpeditionV2 = () => {
                         {step === 2 && (
                             <div className={simulationResult ? "grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6" : "space-y-4 sm:space-y-6"}>
                                 <div className={simulationResult ? "lg:col-span-2 space-y-4 sm:space-y-6" : "space-y-4 sm:space-y-6"}>
-                                    <section className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-                                        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 flex items-center gap-3">
+                                    <section className="overflow-hidden">
+                                        <div className="py-3 sm:py-4 flex items-center gap-3">
                                             <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
                                                 <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
@@ -1798,7 +1831,7 @@ const CreateExpeditionV2 = () => {
                                                 <p className="text-xs text-slate-400">Poids, dimensions, contenu</p>
                                             </div>
                                         </div>
-                                        <div className="p-4 sm:p-6 space-y-4 sm:space-y-5">
+                                        <div className="space-y-4 sm:space-y-5">
                                             {formData.colis.map((colis, index) => (
                                                 <div key={index} className="p-3 sm:p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-3 sm:space-y-4">
                                                     <div className="flex items-center justify-between">
@@ -2225,8 +2258,8 @@ const CreateExpeditionV2 = () => {
 
                         {/* Étape 3: Identifier les clients avec inputs uniformisés */}
                         {step === 3 && (
-                            <section className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-                                <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 flex items-center gap-3">
+                            <section className="overflow-hidden">
+                                <div className="py-3 sm:py-4 flex items-center gap-3">
                                     <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
                                         <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -2237,7 +2270,7 @@ const CreateExpeditionV2 = () => {
                                         <p className="text-xs text-slate-400">Expéditeur et destinataire</p>
                                     </div>
                                 </div>
-                                <div className="p-4 sm:p-6 space-y-6">
+                                <div className="space-y-6">
                                     {/* Expéditeur */}
                                     <div className="space-y-4">
                                         <div className="flex items-center gap-2">
@@ -2428,8 +2461,8 @@ const CreateExpeditionV2 = () => {
                         {step === 4 && (
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                                 <div className="lg:col-span-2">
-                                    <section className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-                                        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 flex items-center gap-3">
+                                    <section className="overflow-hidden">
+                                        <div className="py-3 sm:py-4 flex items-center gap-3">
                                             <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
                                                 <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -2440,7 +2473,7 @@ const CreateExpeditionV2 = () => {
                                                 <p className="text-xs text-slate-400">Mode de paiement et finalisation</p>
                                             </div>
                                         </div>
-                                        <div className="p-4 sm:p-6 space-y-6">
+                                        <div className="space-y-6">
                                             {/* Récapitulatif de l'expédition */}
                                             <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
                                                 <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wide">Récapitulatif</h3>
@@ -2755,6 +2788,7 @@ const CreateExpeditionV2 = () => {
                         )}
                     </div>
                 </div>
+                </div> {/* fin max-w-7xl contenu scrollable */}
             </div>
 
             {/* Confirmation avant création définitive de l'expédition */}

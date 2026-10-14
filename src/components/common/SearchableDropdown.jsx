@@ -14,7 +14,7 @@ const stripAccents = (value) => value.normalize('NFD').replace(/[̀-ͯ]/g, '');
  * @param {String} placeholder - Texte du placeholder
  * @param {String} className - Classes CSS additionnelles
  */
-const SearchableDropdown = ({ options = [], onSelect, placeholder = "Sélectionner...", className = "", buttonClassName = "h-9 text-xs", id, disabled = false }) => {
+const SearchableDropdown = ({ options = [], onSelect, placeholder = "Sélectionner...", className = "", buttonClassName = "h-9 text-xs", id, disabled = false, onFreeText }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [menuPos, setMenuPos] = useState(null);
@@ -126,8 +126,17 @@ const SearchableDropdown = ({ options = [], onSelect, placeholder = "Sélectionn
                                 </button>
                             ))
                         ) : (
-                            <div className="px-3 py-4 text-xs text-slate-400 text-center">
+                            <div className="px-3 py-2 text-xs text-slate-400 text-center">
                                 Aucun résultat trouvé
+                                {onFreeText && searchTerm && (
+                                    <button
+                                        type="button"
+                                        onClick={() => { onFreeText(searchTerm); setIsOpen(false); setSearchTerm(''); }}
+                                        className="block w-full mt-2 px-3 py-1.5 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                                    >
+                                        Utiliser « {searchTerm} »
+                                    </button>
+                                )}
                             </div>
                         )}
                     </div>
