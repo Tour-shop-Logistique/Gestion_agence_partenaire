@@ -210,7 +210,7 @@ const Sidebar = ({ onClose }) => {
     <div
       className="flex flex-col h-full w-60 lg:mt-0 mt-0 relative overflow-hidden"
       style={{
-        background: "linear-gradient(180deg, #060b08 0%, #0d1a0f 50%, #060b08 100%)",
+        background: "linear-gradient(180deg, #111e04 0%, #1a2d06 50%, #111e04 100%)",
       }}
     >
       {/* ========== FOND — MOSAÏQUE GÉOMÉTRIQUE ========== */}
