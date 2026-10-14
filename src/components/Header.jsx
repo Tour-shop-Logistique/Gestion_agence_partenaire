@@ -101,7 +101,7 @@ const Header = ({ onToggleSidebar }) => {
     .toUpperCase();
 
   return (
-    <header className="h-16 sticky top-0 z-50 border-b border-white/5" style={{ background: "#111827" }}>
+    <header className="h-16 sticky top-0 z-50 border-b border-white/5" style={{ background: "#0f172a" }}>
       <div className="h-full px-6 flex items-center justify-between">
 
         {/* LEFT */}
