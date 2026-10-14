@@ -208,7 +208,7 @@ const Sidebar = ({ onClose }) => {
 
   return (
     <div
-      className="flex flex-col h-full w-60 lg:mt-0 mt-0 relative overflow-hidden"
+      className="flex flex-col h-full w-64 lg:mt-0 mt-0 relative overflow-hidden"
       style={{
         background: "#0d1a08",
       }}
