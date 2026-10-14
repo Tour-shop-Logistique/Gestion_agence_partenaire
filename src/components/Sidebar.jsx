@@ -213,65 +213,8 @@ const Sidebar = ({ onClose }) => {
         background: "#152204",
       }}
     >
-      {/* ========== FOND — MOSAÏQUE GÉOMÉTRIQUE ========== */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" className="absolute inset-0">
-          <defs>
-            {/* Grille de repère fine en fond, façon carte de navigation */}
-            <pattern id="nav-grid" x="0" y="0" width="30" height="30" patternUnits="userSpaceOnUse">
-              <circle cx="1" cy="1" r="1.2" fill="#a5f3fc" />
-            </pattern>
-
-            {/* Mosaïque géométrique : tuiles losange en pointe-de-diamant */}
-            <pattern id="mosaic-tiles" x="0" y="0" width="56" height="56" patternUnits="userSpaceOnUse">
-              <polygon points="28,0 56,28 28,28" fill="#67e8f9" opacity="0.55" />
-              <polygon points="56,28 28,56 28,28" fill="#818cf8" opacity="0.5" />
-              <polygon points="28,56 0,28 28,28" fill="#2dd4bf" opacity="0.45" />
-              <polygon points="0,28 28,0 28,28" fill="#a5b4fc" opacity="0.4" />
-              <polygon
-                points="28,0 56,28 28,56 0,28"
-                fill="none"
-                stroke="#e0f2fe"
-                strokeWidth="0.6"
-                opacity="0.35"
-              />
-            </pattern>
-
-            {/* Second calque, décalé et à plus grande échelle, pour la profondeur */}
-            <pattern
-              id="mosaic-tiles-lg"
-              x="28"
-              y="28"
-              width="112"
-              height="112"
-              patternUnits="userSpaceOnUse"
-            >
-              <polygon points="56,0 112,56 56,56" fill="#5eead4" opacity="0.3" />
-              <polygon points="112,56 56,112 56,56" fill="#67e8f9" opacity="0.28" />
-              <polygon points="56,112 0,56 56,56" fill="#818cf8" opacity="0.26" />
-              <polygon points="0,56 56,0 56,56" fill="#a5b4fc" opacity="0.24" />
-            </pattern>
-          </defs>
-
-          <rect width="100%" height="100%" fill="url(#nav-grid)" opacity="0.1" />
-          <rect width="100%" height="100%" fill="url(#mosaic-tiles-lg)" opacity="0.12" />
-          <rect width="100%" height="100%" fill="url(#mosaic-tiles)" opacity="0.16" />
-        </svg>
-
-        {/* Lueurs douces en haut / en bas, ancrées à l'accent de la marque */}
-        <div className="absolute top-0 left-0 right-0 h-36 bg-gradient-to-b from-[#9DC41A]/20 via-transparent to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 h-44 bg-gradient-to-t from-[#9DC41A]/15 via-transparent to-transparent" />
-
-        {/* Halos ambiants */}
-        <div className="absolute -top-10 -left-10 w-56 h-56 bg-[#9DC41A]/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 -right-10 w-56 h-56 bg-[#9DC41A]/8 rounded-full blur-3xl" />
-
-        {/* Liseré d'accent sur le bord gauche */}
-        <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[#9DC41A]/50 to-transparent" />
-      </div>
-
-      {/* Voile de lisibilité : assombrit légèrement les motifs sous le texte sans les effacer */}
-      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-[#060811]/65 via-[#060811]/35 to-[#060811]/65" />
+      {/* Liseré d'accent sur le bord droit */}
+      <div className="absolute right-0 top-0 bottom-0 w-px bg-[#9DC41A]/30 pointer-events-none" />
 
       {/* ── Branding Header ─────────────────────────────────────────────────── */}
       <div className="relative z-10 h-14 flex items-center px-4 shrink-0 border-b border-white/10">
