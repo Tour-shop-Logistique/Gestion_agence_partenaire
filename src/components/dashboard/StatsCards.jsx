@@ -28,14 +28,14 @@ const StatsCards = ({ logistics, operational }) => {
                                 <div key={index} className="flex items-center justify-between group hover:bg-slate-50 -mx-2 px-2 py-1 sm:py-1.5 rounded-lg transition-colors">
                                     <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                                         <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full ${colors[index]} flex items-center justify-center flex-shrink-0 shadow-sm`}>
-                                            <span className="text-xs sm:text-sm font-black text-white">{index + 1}</span>
+                                            <span className="text-xs sm:text-sm font-bold text-white">{index + 1}</span>
                                         </div>
                                         <span className="text-xs sm:text-sm font-bold text-slate-700 truncate group-hover:text-slate-900 transition-colors">
                                             {getCountryName(dest.code_pays) || dest.pays}
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-1 sm:gap-2">
-                                        <span className="text-sm sm:text-base font-black text-slate-900">{dest.total}</span>
+                                        <span className="text-sm sm:text-base font-bold text-slate-900">{dest.total}</span>
                                         <span className="text-[10px] sm:text-xs text-slate-400 font-medium">exp.</span>
                                     </div>
                                 </div>
@@ -76,7 +76,7 @@ const StatsCards = ({ logistics, operational }) => {
                                             {vol.type}
                                         </span>
                                         <div className="flex items-center gap-1 sm:gap-2">
-                                            <span className="text-xs sm:text-sm font-black text-slate-900">{vol.total}</span>
+                                            <span className="text-xs sm:text-sm font-bold text-slate-900">{vol.total}</span>
                                             <span className={`text-[9px] sm:text-xs font-bold ${color.text} ${color.bg} px-1.5 sm:px-2 py-0.5 rounded-full`}>
                                                 {Math.round(percentage)}%
                                             </span>
