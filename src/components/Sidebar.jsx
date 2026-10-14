@@ -210,7 +210,7 @@ const Sidebar = ({ onClose }) => {
     <div
       className="flex flex-col h-full w-60 lg:mt-0 mt-0 relative overflow-hidden"
       style={{
-        background: "#152204",
+        background: "#111827",
       }}
     >
       {/* Liseré d'accent sur le bord droit */}
