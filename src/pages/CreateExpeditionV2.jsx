@@ -872,6 +872,57 @@ const CreateExpeditionV2 = () => {
         return rangParPoids >= rangParVolume ? formatParPoids : formatParVolume;
     };
 
+    // Grille des formats triée du plus petit au plus grand (même ordre que
+    // determinerFormatColisLocal), pour l'affichage des cartes sélectionnables.
+    const grilleFormatsColis = [...(formatsColis || [])].sort((a, b) => {
+        const poidsA = a.poids_max ?? Infinity;
+        const poidsB = b.poids_max ?? Infinity;
+        if (poidsA !== poidsB) return poidsA - poidsB;
+        return (a.volume_max ?? Infinity) - (b.volume_max ?? Infinity);
+    });
+
+    /**
+     * Valeurs de poids/dimensions suggérées quand l'utilisateur sélectionne
+     * un format directement (plutôt que de saisir poids/dimensions à la
+     * main) - prend la borne haute du format (poids_max/volume_max), avec un
+     * repli raisonnable si la borne est illimitée (null, dernier format de
+     * la grille). Les dimensions suggérées forment un cube dont le volume
+     * correspond à volume_max, pour rester cohérent si l'utilisateur les
+     * ajuste ensuite.
+     */
+    const valeursSuggereesPourFormat = (format, grille) => {
+        const rang = grille.indexOf(format);
+        const formatPrecedent = rang > 0 ? grille[rang - 1] : null;
+
+        const poidsMin = formatPrecedent?.poids_max ?? 0;
+        const poids = format.poids_max != null ? format.poids_max : poidsMin + 5;
+
+        const volumeMin = formatPrecedent?.volume_max ?? 0;
+        const volume = format.volume_max != null ? format.volume_max : volumeMin + 10000;
+        const cote = Math.round(Math.cbrt(volume));
+
+        return {
+            poids: String(poids),
+            longueur: String(cote),
+            largeur: String(cote),
+            hauteur: String(cote),
+        };
+    };
+
+    /**
+     * Sélection explicite d'un format par l'utilisateur (cartes cliquables,
+     * interville) : pré-remplit poids/dimensions avec des valeurs
+     * représentatives du format et fixe format_colis_id - l'utilisateur
+     * peut ensuite ajuster les champs, ce qui redéduira le format via
+     * determinerFormatColisLocal (même logique qu'avant cette fonctionnalité).
+     */
+    const handleSelectFormatColis = (index, format) => {
+        const suggestions = valeursSuggereesPourFormat(format, grilleFormatsColis);
+        const newColis = [...formData.colis];
+        newColis[index] = { ...newColis[index], ...suggestions, format_colis_id: format.id };
+        setFormData(prev => ({ ...prev, colis: newColis }));
+    };
+
     const handleAddArticle = (colisIndex, option) => {
         if (!option || !option.id || !option.label) return;
         // {produit_id, designation} - et non le seul libellé texte : le
@@ -996,8 +1047,14 @@ const CreateExpeditionV2 = () => {
                 };
 
                 // Format (interville uniquement, le tarif de ce trajet en
-                // dépend) : déduit du poids/volume, jamais choisi
-                // manuellement - le backend reste l'autorité finale.
+                // dépend) : l'utilisateur choisit le format directement via
+                // les cartes (handleSelectFormatColis), mais on redéduit
+                // toujours depuis le poids/volume réels avant envoi - si un
+                // ajustement manuel après sélection fait sortir le colis du
+                // format choisi, c'est le format réel qui est facturé,
+                // jamais un format figé incohérent avec les dimensions
+                // saisies (même règle que côté backend, voir
+                // ExpeditionTarificationService::determinerFormatColis()).
                 if (formData.type_expedition === 'INTERVILLE') {
                     const formatDeduit = determinerFormatColisLocal(c.poids, c.longueur, c.largeur, c.hauteur);
                     if (formatDeduit) item.format_colis_id = formatDeduit.id;
@@ -1040,8 +1097,14 @@ const CreateExpeditionV2 = () => {
                 };
 
                 // Format (interville uniquement, le tarif de ce trajet en
-                // dépend) : déduit du poids/volume, jamais choisi
-                // manuellement - le backend reste l'autorité finale.
+                // dépend) : l'utilisateur choisit le format directement via
+                // les cartes (handleSelectFormatColis), mais on redéduit
+                // toujours depuis le poids/volume réels avant envoi - si un
+                // ajustement manuel après sélection fait sortir le colis du
+                // format choisi, c'est le format réel qui est facturé,
+                // jamais un format figé incohérent avec les dimensions
+                // saisies (même règle que côté backend, voir
+                // ExpeditionTarificationService::determinerFormatColis()).
                 if (formData.type_expedition === 'INTERVILLE') {
                     const formatDeduit = determinerFormatColisLocal(c.poids, c.longueur, c.largeur, c.hauteur);
                     if (formatDeduit) item.format_colis_id = formatDeduit.id;
@@ -1806,6 +1869,51 @@ const CreateExpeditionV2 = () => {
                                                         )}
                                                     </div>
 
+                                                    {/* Formats de colis - Uniquement pour Interville (tarif forfaitaire par format/trajet) :
+                                                        sélection directe du format au lieu de saisir poids/dimensions à la main, qui
+                                                        pré-remplit les champs ci-dessous (ajustables ensuite). */}
+                                                    {formData.type_expedition === 'INTERVILLE' && grilleFormatsColis.length > 0 && (
+                                                        <div className="space-y-1.5">
+                                                            <label className="block text-xs font-semibold text-slate-600">
+                                                                Format du colis <span className="text-amber-600">*</span>
+                                                            </label>
+                                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                                                {grilleFormatsColis.map((format, rangFormat) => {
+                                                                    const estSelectionne = colis.format_colis_id === format.id;
+                                                                    // Taille de l'icône croissante selon le rang dans la grille (plus
+                                                                    // petit format = icône la plus petite) - repère visuel rapide.
+                                                                    const tailleIcone = 14 + rangFormat * 3;
+                                                                    return (
+                                                                        <button
+                                                                            key={format.id}
+                                                                            type="button"
+                                                                            onClick={() => handleSelectFormatColis(index, format)}
+                                                                            className={`flex flex-col items-center gap-1 p-2.5 rounded-lg border text-center transition ${
+                                                                                estSelectionne
+                                                                                    ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500'
+                                                                                    : 'border-slate-200 bg-white hover:border-indigo-300 hover:bg-indigo-50/50'
+                                                                            }`}
+                                                                        >
+                                                                            <svg
+                                                                                width={tailleIcone} height={tailleIcone}
+                                                                                className={estSelectionne ? 'text-indigo-600' : 'text-slate-400'}
+                                                                                fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                                                            >
+                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                                                            </svg>
+                                                                            <span className={`text-xs font-semibold ${estSelectionne ? 'text-indigo-700' : 'text-slate-600'}`}>
+                                                                                {format.nom}
+                                                                            </span>
+                                                                            <span className="text-[10px] text-slate-400 leading-tight">
+                                                                                {format.poids_max != null ? `≤ ${format.poids_max} kg` : 'illimité'}
+                                                                            </span>
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
                                                     <div className={`grid grid-cols-2 gap-2 sm:gap-3 ${showDimensions ? 'sm:grid-cols-5' : 'sm:grid-cols-2'}`}>
                                                         <div className="space-y-1.5">
                                                             <label className="block text-[11px] font-semibold text-slate-600">Poids (kg) <span className="text-amber-600">*</span></label>
@@ -1899,17 +2007,32 @@ const CreateExpeditionV2 = () => {
                                                         </div>
                                                     </div>
 
-                                                    {/* Format du colis - Uniquement pour Interville (tarif dépendant du format) : déduit automatiquement du poids/volume, non modifiable ici */}
+                                                    {/* Format du colis - Uniquement pour Interville (tarif dépendant du format) : alerte si
+                                                        l'ajustement manuel du poids/des dimensions fait sortir le colis du format choisi
+                                                        via les cartes ci-dessus (le backend facture toujours selon poids/dimensions réels,
+                                                        jamais le format figé - voir determinerFormatColis côté serveur). */}
                                                     {formData.type_expedition === 'INTERVILLE' && (() => {
                                                         const formatDeduit = determinerFormatColisLocal(colis.poids, colis.longueur, colis.largeur, colis.hauteur);
+                                                        const formatChoisi = grilleFormatsColis.find(f => f.id === colis.format_colis_id);
+                                                        const incoherent = formatChoisi && formatDeduit && formatChoisi.id !== formatDeduit.id;
+
+                                                        if (!colis.format_colis_id) {
+                                                            return (
+                                                                <p className="text-xs text-amber-600">⚠️ Sélectionnez un format de colis ci-dessus.</p>
+                                                            );
+                                                        }
+
                                                         return (
-                                                            <div className="flex items-center gap-2 p-2.5 rounded-lg bg-indigo-50 border border-indigo-100">
-                                                                <svg className="w-4 h-4 text-indigo-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <div className={`flex items-center gap-2 p-2.5 rounded-lg border ${incoherent ? 'bg-amber-50 border-amber-200' : 'bg-indigo-50 border-indigo-100'}`}>
+                                                                <svg className={`w-4 h-4 shrink-0 ${incoherent ? 'text-amber-500' : 'text-indigo-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                                                                 </svg>
-                                                                <p className="text-xs text-indigo-700">
-                                                                    Format déduit : <span className="font-semibold">{formatDeduit?.nom || (colis.poids ? 'à déterminer' : '—')}</span>
-                                                                    <span className="text-indigo-400"> (selon le poids et le volume saisis)</span>
+                                                                <p className={`text-xs ${incoherent ? 'text-amber-700' : 'text-indigo-700'}`}>
+                                                                    {incoherent ? (
+                                                                        <>Poids/dimensions ajustés : le format facturé sera <span className="font-semibold">{formatDeduit.nom}</span>, pas {formatChoisi.nom}.</>
+                                                                    ) : (
+                                                                        <>Format sélectionné : <span className="font-semibold">{formatChoisi.nom}</span></>
+                                                                    )}
                                                                 </p>
                                                             </div>
                                                         );
