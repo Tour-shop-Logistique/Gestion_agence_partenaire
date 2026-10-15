@@ -249,7 +249,7 @@ const RetraitColis = () => {
         <div className="max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 animate-fade-in">
             {/* Header Section */}
             <PageHeader
-                title="Retrait Colis"
+                title="Colis à retirer"
                 subtitle="Validation de la remise physique des colis aux clients après authentification."
                 actions={
                     <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 w-full md:w-auto">

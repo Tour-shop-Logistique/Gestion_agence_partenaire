@@ -89,19 +89,21 @@ const FinanceCard = ({ expedition, formatCurrency, onRecordTransaction, onOpenFr
 
                 {/* Montants */}
                 <div className="flex items-center gap-4 shrink-0">
-                    <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase">Frais expédition</p>
-                        <p className="text-sm font-bold text-slate-900 tabular-nums">
-                            <ConvertedAmount amount={montantExpedition} sourceCurrency={expedition.devise_origine} />
-                        </p>
-                    </div>
                     {fraisAnnexes > 0 && (
-                        <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase">Frais annexes</p>
-                            <p className="text-sm font-bold text-rose-600 tabular-nums">
-                                +<ConvertedAmount amount={fraisAnnexes} sourceCurrency={expedition.devise_origine} />
-                            </p>
-                        </div>
+                        <>
+                            <div>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase">Frais expédition</p>
+                                <p className="text-sm font-bold text-slate-900 tabular-nums">
+                                    <ConvertedAmount amount={montantExpedition} sourceCurrency={expedition.devise_origine} />
+                                </p>
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase">Frais annexes</p>
+                                <p className="text-sm font-bold text-rose-600 tabular-nums">
+                                    +<ConvertedAmount amount={fraisAnnexes} sourceCurrency={expedition.devise_origine} />
+                                </p>
+                            </div>
+                        </>
                     )}
                     <div>
                         <p className="text-[10px] font-bold text-slate-400 uppercase">Total</p>

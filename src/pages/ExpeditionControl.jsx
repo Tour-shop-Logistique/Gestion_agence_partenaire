@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { Package, Scissors, Calculator, Loader2, Plus, Trash2, ArrowLeft, Pencil, ChevronDown, ChevronUp } from 'lucide-react';
@@ -7,6 +7,8 @@ import { Button, PageHeader } from '../components/ui';
 import SearchableDropdown from '../components/common/SearchableDropdown';
 import { useExpedition } from '../hooks/useExpedition';
 import { useAuth } from '../hooks/useAuth';
+import { useTarifs } from '../hooks/useTarifs';
+import { useAgency } from '../hooks/useAgency';
 import { useWebSocket } from '../hooks/useWebSocket';
 import useHasPermission from '../hooks/useHasPermission';
 import { toast } from '../utils/toast';
@@ -34,6 +36,7 @@ const TYPE_LABELS = {
     groupage_dhd_maritime: 'Groupage DHD Maritime',
     groupage_afrique: 'Groupage Afrique',
     groupage_ca: 'Groupage CA',
+    interville: 'Interville (National)',
 };
 
 const STATUT_PAIEMENT_LABELS = {
@@ -77,8 +80,35 @@ const ExpeditionControl = () => {
     const [colisCategories, setColisCategories] = useState({});
     const [isSavingExpedition, setIsSavingExpedition] = useState(false);
 
+    const { data: agencyData } = useAgency();
+    const { intervilleTarifs, fetchTarifsInterville, formatsColis, fetchFormatsColis } = useTarifs();
+
+    useEffect(() => { fetchTarifsInterville(); }, [fetchTarifsInterville]);
+    useEffect(() => { fetchFormatsColis(); }, [fetchFormatsColis]);
+
+    const communeDepartId = agencyData?.agence?.commune_id || agencyData?.commune_id || null;
+    const intervilleAvailableCommunes = useMemo(() => {
+        if (!communeDepartId) return [];
+        const tarifs = Array.isArray(intervilleTarifs) ? intervilleTarifs : [];
+        const byId = {};
+        tarifs.forEach((t) => {
+            if (t.commune_a_id === communeDepartId && t.commune_b) {
+                byId[t.commune_b.id] = { id: t.commune_b.id, label: t.commune_b.nom };
+            } else if (t.commune_b_id === communeDepartId && t.commune_a) {
+                byId[t.commune_a.id] = { id: t.commune_a.id, label: t.commune_a.nom };
+            }
+        });
+        return Object.values(byId).sort((a, b) => a.label.localeCompare(b.label));
+    }, [intervilleTarifs, communeDepartId]);
+
     useEffect(() => {
         if (id) getExpeditionDetails(id);
+    }, [id, getExpeditionDetails]);
+
+    useEffect(() => {
+        const onVisible = () => { if (!document.hidden && id) getExpeditionDetails(id); };
+        document.addEventListener('visibilitychange', onVisible);
+        return () => document.removeEventListener('visibilitychange', onVisible);
     }, [id, getExpeditionDetails]);
 
     useEffect(() => {
@@ -106,6 +136,18 @@ const ExpeditionControl = () => {
             onExpeditionTarifRecalculated: (data) => {
                 const updated = Array.isArray(data) ? data[0] : data;
                 if (updated) dispatch(realtimeExpeditionPatched(updated));
+            },
+            onExpeditionStatusChanged: (data) => {
+                const items = Array.isArray(data) ? data : [data];
+                if (items.some((e) => String(e?.id) === String(id)) && id) {
+                    getExpeditionDetails(id);
+                }
+            },
+            onExpeditionPaymentConfirmed: (data) => {
+                const items = Array.isArray(data) ? data : [data];
+                if (items.some((e) => String(e?.id) === String(id)) && id) {
+                    getExpeditionDetails(id);
+                }
             },
         },
         !!currentUser?.agence_id
@@ -144,6 +186,25 @@ const ExpeditionControl = () => {
         );
     }
 
+    if (expedition.statut_paiement_expedition === 'paye') {
+        return (
+            <div className="max-w-2xl mx-auto px-4 py-12 text-center">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-emerald-100 mb-4">
+                    <svg className="w-6 h-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+                <p className="text-sm font-semibold text-slate-700">
+                    Les frais d'expédition ont déjà été encaissés.
+                </p>
+                <p className="text-xs text-slate-500 mt-1">
+                    Le contrôle n'est plus possible une fois le paiement confirmé.
+                </p>
+                <Button className="mt-4" onClick={() => navigate(-1)}>Retour</Button>
+            </div>
+        );
+    }
+
     const colisList = expedition.colis || [];
 
     const startEdit = (colis) => {
@@ -156,6 +217,7 @@ const ExpeditionControl = () => {
             hauteur: colis.hauteur ?? '',
             prix_emballage: colis.prix_emballage ?? '',
             designation: colis.designation ?? '',
+            format_colis_id: colis.format_colis_id ?? '',
         });
     };
 
@@ -174,10 +236,12 @@ const ExpeditionControl = () => {
                 hauteur: editForm.hauteur === '' ? 0 : parseFloat(editForm.hauteur),
                 prix_emballage: editForm.prix_emballage === '' ? 0 : parseFloat(editForm.prix_emballage),
                 designation: editForm.designation || null,
+                ...(editForm.format_colis_id ? { format_colis_id: editForm.format_colis_id } : {}),
             };
             const result = await dispatch(updateColisControl({ expeditionId: expedition.id, colisId, data: payload }));
             if (!result.error) {
                 cancelEdit();
+                await handleRecalculate();
             }
         } finally {
             setIsSubmitting(false);
@@ -251,6 +315,7 @@ const ExpeditionControl = () => {
             statut_paiement: expedition.statut_paiement || 'en_attente',
             expediteur: { ...emptyPersonForm(), ...(expedition.expediteur || {}) },
             destinataire: { ...emptyPersonForm(), ...(expedition.destinataire || {}) },
+            destinataire_commune_id: expedition.destinataire_commune_id || null,
         });
         // Pré-remplir avec les category_id déjà présentes, pour ne
         // redemander que celles qui manquent réellement.
@@ -291,6 +356,9 @@ const ExpeditionControl = () => {
                 is_paiement_credit: expeditionForm.is_paiement_credit,
                 is_livraison_domicile: expeditionForm.is_livraison_domicile,
                 statut_paiement: expeditionForm.statut_paiement,
+                ...(expeditionForm.type_expedition === 'interville' && expeditionForm.destinataire_commune_id
+                    ? { destinataire_commune_id: expeditionForm.destinataire_commune_id }
+                    : {}),
             };
             Object.entries(expeditionForm.expediteur).forEach(([k, v]) => {
                 payload[`expediteur_${k}`] = v || null;
@@ -346,8 +414,10 @@ const ExpeditionControl = () => {
 
     return (
         <div className="min-h-screen bg-transparent">
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
-                <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-5">
+                {/* ── En-tête ── */}
+                <div className="bg-white/80 backdrop-blur-sm border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                    <div className="h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-400" />
                     <div className="px-4 sm:px-6 py-3 sm:py-4">
                         <PageHeader
                             onBack={() => navigate(-1)}
@@ -359,7 +429,7 @@ const ExpeditionControl = () => {
                 </div>
 
                 {!canControl && (
-                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800">
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
                         Vous n'avez pas la permission de contrôler les expéditions. Contactez l'administrateur de votre agence.
                     </div>
                 )}
@@ -368,15 +438,17 @@ const ExpeditionControl = () => {
                     page systématiquement visitée par l'agence, contrairement à
                     cet écran de contrôle qui reste optionnel si rien à ajuster. */}
 
-                {/* Édition complète de l'expédition : type, expéditeur, destinataire, pays, paiement/livraison */}
+                {/* ── Modifier l'expédition ── */}
                 {canControl && (
-                    <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+                    <div className="bg-white/80 backdrop-blur-sm border border-slate-200 rounded-xl overflow-hidden shadow-sm">
                         <button
                             onClick={() => isEditingExpedition ? cancelEditExpedition() : startEditExpedition()}
-                            className="w-full px-4 sm:px-5 py-3 sm:py-4 flex items-center justify-between gap-3 bg-gradient-to-r from-slate-50 to-white"
+                            className="w-full px-4 sm:px-5 py-3 sm:py-4 flex items-center justify-between gap-3 bg-gradient-to-r from-indigo-50 to-white hover:from-indigo-100/60 transition-colors"
                         >
                             <div className="flex items-center gap-2">
-                                <Pencil className="w-4 h-4 text-indigo-600" />
+                                <div className="w-7 h-7 rounded-lg bg-indigo-100 flex items-center justify-center">
+                                    <Pencil className="w-3.5 h-3.5 text-indigo-600" />
+                                </div>
                                 <span className="text-sm font-bold text-slate-800">Modifier l'expédition</span>
                                 <span className="text-xs text-slate-400 hidden sm:inline">(type, expéditeur, destinataire, pays, paiement)</span>
                             </div>
@@ -384,7 +456,9 @@ const ExpeditionControl = () => {
                         </button>
 
                         {isEditingExpedition && expeditionForm && (
-                            <div className="px-4 sm:px-5 py-4 space-y-5 bg-indigo-50/30 border-t border-slate-100">
+                            <div className="border-t border-indigo-100">
+                                {/* Sous-sections avec fond alterné */}
+                                <div className="px-4 sm:px-5 py-4 space-y-6">
                                 {/* Type d'expédition */}
                                 <div>
                                     <label className="text-[10px] font-bold text-slate-500 uppercase">Type d'expédition</label>
@@ -424,56 +498,75 @@ const ExpeditionControl = () => {
                                 )}
 
                                 {/* Pays */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div className="rounded-lg border border-slate-200 overflow-hidden">
+                                    <div className="px-3 py-2 bg-slate-50 border-b border-slate-200 flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-slate-400" />
+                                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Trajet</p>
+                                    </div>
+                                    <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
                                         <label className="text-[10px] font-bold text-slate-500 uppercase">Pays de départ</label>
                                         <input
                                             type="text"
                                             value={expeditionForm.pays_depart}
+                                            readOnly={expeditionForm.type_expedition === 'interville'}
                                             onChange={(e) => setExpeditionForm({ ...expeditionForm, pays_depart: e.target.value })}
-                                            className="w-full mt-1 px-2.5 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                                            className={`w-full mt-1 px-2.5 py-1.5 text-sm border rounded-lg outline-none ${expeditionForm.type_expedition === 'interville' ? 'bg-slate-50 border-slate-200 text-slate-500 cursor-not-allowed' : 'border-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
                                         />
                                     </div>
                                     <div>
                                         <label className="text-[10px] font-bold text-slate-500 uppercase">Pays de destination</label>
                                         <input
                                             type="text"
-                                            value={expeditionForm.pays_destination}
+                                            value={expeditionForm.type_expedition === 'interville' ? expeditionForm.pays_depart : expeditionForm.pays_destination}
+                                            readOnly={expeditionForm.type_expedition === 'interville'}
                                             onChange={(e) => setExpeditionForm({ ...expeditionForm, pays_destination: e.target.value })}
-                                            className="w-full mt-1 px-2.5 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                                            className={`w-full mt-1 px-2.5 py-1.5 text-sm border rounded-lg outline-none ${expeditionForm.type_expedition === 'interville' ? 'bg-slate-50 border-slate-200 text-slate-500 cursor-not-allowed' : 'border-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
                                         />
                                     </div>
-                                </div>
+                                </div>{/* fin grid pays */}
+                                </div>{/* fin card Trajet */}
 
                                 {/* Expéditeur */}
-                                <div>
-                                    <p className="text-xs font-bold text-slate-700 mb-2">Expéditeur</p>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <div className="rounded-lg border border-blue-100 overflow-hidden">
+                                    <div className="px-3 py-2 bg-blue-50 border-b border-blue-100 flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-blue-400" />
+                                        <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wide">Expéditeur</p>
+                                    </div>
+                                    <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
                                         {[
                                             ['nom_prenom', 'Nom et prénom'], ['telephone', 'Téléphone'], ['email', 'Email'],
                                             ['adresse', 'Adresse'], ['ville', 'Ville'], ['societe', 'Société'],
                                             ['code_postal', 'Code postal'], ['etat', 'État / Région'], ['quartier', 'Quartier'],
-                                        ].map(([field, label]) => (
-                                            <div key={field}>
-                                                <label className="text-[10px] font-bold text-slate-500 uppercase">{label}</label>
-                                                <input
-                                                    type="text"
-                                                    value={expeditionForm.expediteur[field] || ''}
-                                                    onChange={(e) => setExpeditionForm({
-                                                        ...expeditionForm,
-                                                        expediteur: { ...expeditionForm.expediteur, [field]: e.target.value },
-                                                    })}
-                                                    className="w-full mt-1 px-2.5 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
-                                                />
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
+                                        ].map(([field, label]) => {
+                                            const isVilleInterville = field === 'ville' && expeditionForm.type_expedition === 'interville';
+                                            const villeAgence = agencyData?.agence?.commune?.nom || agencyData?.commune?.nom || '';
+                                            return (
+                                                <div key={field}>
+                                                    <label className="text-[10px] font-bold text-slate-500 uppercase">{label}</label>
+                                                    <input
+                                                        type="text"
+                                                        value={isVilleInterville ? villeAgence : (expeditionForm.expediteur[field] || '')}
+                                                        readOnly={isVilleInterville}
+                                                        onChange={(e) => !isVilleInterville && setExpeditionForm({
+                                                            ...expeditionForm,
+                                                            expediteur: { ...expeditionForm.expediteur, [field]: e.target.value },
+                                                        })}
+                                                        className={`w-full mt-1 px-2.5 py-1.5 text-sm border rounded-lg outline-none ${isVilleInterville ? 'bg-slate-50 border-slate-200 text-slate-500 cursor-not-allowed' : 'border-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
+                                                    />
+                                                </div>
+                                            );
+                                        })}
+                                    </div>{/* fin grid expéditeur */}
+                                </div>{/* fin card Expéditeur */}
 
                                 {/* Destinataire */}
-                                <div>
-                                    <p className="text-xs font-bold text-slate-700 mb-2">Destinataire</p>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <div className="rounded-lg border border-emerald-100 overflow-hidden">
+                                    <div className="px-3 py-2 bg-emerald-50 border-b border-emerald-100 flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                                        <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wide">Destinataire</p>
+                                    </div>
+                                    <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
                                         {[
                                             ['nom_prenom', 'Nom et prénom'], ['telephone', 'Téléphone'], ['email', 'Email'],
                                             ['adresse', 'Adresse'], ['ville', 'Ville'], ['societe', 'Société'],
@@ -481,22 +574,43 @@ const ExpeditionControl = () => {
                                         ].map(([field, label]) => (
                                             <div key={field}>
                                                 <label className="text-[10px] font-bold text-slate-500 uppercase">{label}</label>
-                                                <input
-                                                    type="text"
-                                                    value={expeditionForm.destinataire[field] || ''}
-                                                    onChange={(e) => setExpeditionForm({
-                                                        ...expeditionForm,
-                                                        destinataire: { ...expeditionForm.destinataire, [field]: e.target.value },
-                                                    })}
-                                                    className="w-full mt-1 px-2.5 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
-                                                />
+                                                {field === 'ville' && expeditionForm.type_expedition === 'interville' ? (
+                                                    <div className="mt-1">
+                                                        <SearchableDropdown
+                                                            options={intervilleAvailableCommunes.map(c => ({ ...c, label: c.label.toUpperCase() }))}
+                                                            onSelect={(commune) => setExpeditionForm({
+                                                                ...expeditionForm,
+                                                                destinataire: { ...expeditionForm.destinataire, ville: commune.label },
+                                                                destinataire_commune_id: commune.id,
+                                                            })}
+                                                            placeholder={expeditionForm.destinataire.ville?.toUpperCase() || 'Rechercher une commune...'}
+                                                            disabled={intervilleAvailableCommunes.length === 0}
+                                                            buttonClassName="h-9 text-sm font-medium"
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    <input
+                                                        type="text"
+                                                        value={expeditionForm.destinataire[field] || ''}
+                                                        onChange={(e) => setExpeditionForm({
+                                                            ...expeditionForm,
+                                                            destinataire: { ...expeditionForm.destinataire, [field]: e.target.value },
+                                                        })}
+                                                        className="w-full mt-1 px-2.5 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                                                    />
+                                                )}
                                             </div>
                                         ))}
-                                    </div>
-                                </div>
+                                    </div>{/* fin grid destinataire */}
+                                </div>{/* fin card Destinataire */}
 
                                 {/* Paiement / livraison */}
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div className="rounded-lg border border-amber-100 overflow-hidden">
+                                    <div className="px-3 py-2 bg-amber-50 border-b border-amber-100 flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-amber-400" />
+                                        <p className="text-[10px] font-bold text-amber-600 uppercase tracking-wide">Paiement & livraison</p>
+                                    </div>
+                                    <div className="p-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
                                     <div>
                                         <label className="text-[10px] font-bold text-slate-500 uppercase">Statut de paiement</label>
                                         <select
@@ -527,9 +641,10 @@ const ExpeditionControl = () => {
                                         />
                                         Livraison à domicile
                                     </label>
-                                </div>
+                                    </div>{/* fin grid paiement */}
+                                </div>{/* fin card Paiement */}
 
-                                <div className="flex justify-end gap-2 pt-1">
+                                <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
                                     <button
                                         onClick={cancelEditExpedition}
                                         disabled={isSavingExpedition}
@@ -546,15 +661,18 @@ const ExpeditionControl = () => {
                                         Enregistrer et recalculer le tarif
                                     </button>
                                 </div>
+                                </div>
                             </div>
                         )}
                     </div>
                 )}
 
+                {/* ── Colis ── */}
                 <div className="space-y-3">
-                    {colisList.map((colis) => (
-                        <div key={colis.id} className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+                    {colisList.map((colis, idx) => (
+                        <div key={colis.id} className="bg-white/80 backdrop-blur-sm border border-slate-200 rounded-xl overflow-hidden shadow-sm">
                             <div className="px-4 py-3 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white flex items-center justify-between gap-3">
+
                                 <div className="flex items-center gap-2 min-w-0">
                                     <Package className="w-4 h-4 text-indigo-600 flex-shrink-0" />
                                     <span className="text-xs font-mono font-bold text-slate-700 truncate">{colis.code_colis}</span>
@@ -591,14 +709,10 @@ const ExpeditionControl = () => {
                                             {colis.longueur || 0}×{colis.largeur || 0}×{colis.hauteur || 0} cm
                                         </p>
                                     </div>
-                                    {expedition.type_expedition === 'interville' && (
+                                    {colis.format_colis && (
                                         <div>
                                             <p className="text-[10px] font-bold text-slate-400 uppercase">Format</p>
-                                            {/* Déduit automatiquement du poids/volume (voir
-                                                ExpeditionTarificationService::determinerFormatColis) -
-                                                redéterminé dès la correction du colis, jamais
-                                                modifiable manuellement ici. */}
-                                            <p className="font-semibold text-slate-800">{colis.format_colis?.nom || '—'}</p>
+                                            <p className="font-semibold text-slate-800">{colis.format_colis.nom}</p>
                                         </div>
                                     )}
                                     <div>
@@ -653,6 +767,52 @@ const ExpeditionControl = () => {
                                             />
                                         </div>
                                     </div>
+                                    {expedition.type_expedition === 'interville' && (
+                                        <div>
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">Format du colis</label>
+                                            <select
+                                                value={editForm.format_colis_id || ''}
+                                                onChange={(e) => {
+                                                    const formatId = e.target.value;
+                                                    if (!formatId) {
+                                                        setEditForm({ ...editForm, format_colis_id: '' });
+                                                        return;
+                                                    }
+                                                    const grille = [...(Array.isArray(formatsColis) ? formatsColis : [])].sort((a, b) => {
+                                                        const pa = a.poids_max ?? Infinity, pb = b.poids_max ?? Infinity;
+                                                        if (pa !== pb) return pa - pb;
+                                                        return (a.volume_max ?? Infinity) - (b.volume_max ?? Infinity);
+                                                    });
+                                                    const format = grille.find(f => String(f.id) === String(formatId));
+                                                    if (!format) { setEditForm({ ...editForm, format_colis_id: formatId }); return; }
+                                                    const rang = grille.indexOf(format);
+                                                    const precedent = rang > 0 ? grille[rang - 1] : null;
+                                                    const poidsMin = precedent?.poids_max ?? 0;
+                                                    const poids = format.poids_max != null ? format.poids_max : poidsMin + 5;
+                                                    const volumeMin = precedent?.volume_max ?? 0;
+                                                    const volume = format.volume_max != null ? format.volume_max : volumeMin + 10000;
+                                                    const cote = Math.round(Math.cbrt(volume));
+                                                    setEditForm({
+                                                        ...editForm,
+                                                        format_colis_id: formatId,
+                                                        poids: String(poids),
+                                                        longueur: String(cote),
+                                                        largeur: String(cote),
+                                                        hauteur: String(cote),
+                                                    });
+                                                }}
+                                                className="w-full mt-1 px-2.5 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none bg-white"
+                                            >
+                                                <option value="">Calculer automatiquement</option>
+                                                {[...(Array.isArray(formatsColis) ? formatsColis : [])].sort((a, b) => {
+                                                    const pa = a.poids_max ?? Infinity, pb = b.poids_max ?? Infinity;
+                                                    return pa !== pb ? pa - pb : (a.volume_max ?? Infinity) - (b.volume_max ?? Infinity);
+                                                }).map((f) => (
+                                                    <option key={f.id} value={f.id}>{f.nom}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    )}
                                     <div className="grid grid-cols-2 gap-3">
                                         <div>
                                             <label className="text-[10px] font-bold text-slate-500 uppercase">Frais d'emballage ({getCurrencyLabel()})</label>
@@ -780,33 +940,39 @@ const ExpeditionControl = () => {
                     ))}
                 </div>
 
-                {/* Recalcul du tarif */}
-                <div className="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div>
-                        <p className="text-sm font-bold text-slate-800">Montant actuel de l'expédition</p>
-                        <p className="text-2xl font-bold text-indigo-600 mt-1">{formatFCFA(expedition.montant_expedition)}</p>
-                        <p className="text-xs text-slate-500 mt-1">
-                            Après correction des colis, recalculez le tarif pour appliquer les changements — le client sera notifié du nouveau montant.
-                        </p>
+                {/* ── Recalcul du tarif ── */}
+                <div className="bg-white/80 backdrop-blur-sm border border-indigo-200 rounded-xl overflow-hidden shadow-sm">
+                    <div className="h-1 bg-gradient-to-r from-indigo-400 to-purple-400" />
+                    <div className="p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div>
+                            <p className="text-sm font-bold text-slate-800">Montant actuel de l'expédition</p>
+                            <p className="text-2xl font-bold text-indigo-600 mt-1">{formatFCFA(expedition.montant_expedition)}</p>
+                            <p className="text-xs text-slate-500 mt-1">
+                                Après correction des colis, recalculez le tarif — le client sera notifié du nouveau montant.
+                            </p>
+                        </div>
+                        {canControl && (
+                            <button
+                                onClick={handleRecalculate}
+                                disabled={isRecalculating}
+                                className="px-5 py-2.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors disabled:opacity-50 flex items-center gap-2 flex-shrink-0 shadow-sm"
+                            >
+                                {isRecalculating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calculator className="w-4 h-4" />}
+                                Recalculer le tarif
+                            </button>
+                        )}
                     </div>
-                    {canControl && (
-                        <button
-                            onClick={handleRecalculate}
-                            disabled={isRecalculating}
-                            className="px-5 py-2.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2 flex-shrink-0"
-                        >
-                            {isRecalculating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calculator className="w-4 h-4" />}
-                            Recalculer le tarif
-                        </button>
-                    )}
                 </div>
 
-                <button
-                    onClick={() => navigate(`/expeditions/${expedition.id}`)}
-                    className="flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-slate-700"
-                >
-                    <ArrowLeft className="w-4 h-4" /> Retour à la fiche expédition
-                </button>
+                <div className="flex justify-start">
+                    <button
+                        onClick={() => navigate(`/expeditions/${expedition.id}`)}
+                        className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-slate-500 hover:text-slate-700 hover:bg-white/80 rounded-xl transition-colors border border-transparent hover:border-slate-200"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                        Retour à la fiche expédition
+                    </button>
+                </div>
             </div>
         </div>
     );

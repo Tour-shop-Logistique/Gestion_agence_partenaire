@@ -203,26 +203,6 @@ const StatusOverview = ({ expedition }) => {
                 </div>
             </div>
 
-            {/* Chiffres clés (courts) */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-x sm:divide-y-0 divide-slate-100 border-b border-slate-100">
-                {kpis.map((kpi, index) => {
-                    const Icon = kpi.icon;
-                    return (
-                        <div key={index} className="p-4 flex items-center gap-3">
-                            <div className={`w-9 h-9 rounded-lg border flex items-center justify-center flex-shrink-0 ${kpiColors[kpi.color]}`}>
-                                <Icon className="w-4 h-4" />
-                            </div>
-                            <div className="min-w-0">
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">{kpi.label}</p>
-                                <p className="text-sm font-bold text-slate-900 truncate">
-                                    {kpi.value} {kpi.unit && <span className="text-xs text-slate-500">{kpi.unit}</span>}
-                                </p>
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-
             {/* Trajet et agence d'arrivée : texte variable, jamais tronqué
                 (contrairement aux chiffres clés ci-dessus). Empilés sur
                 mobile (manque de largeur), côte à côte à partir de sm. */}

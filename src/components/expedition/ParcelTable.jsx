@@ -131,22 +131,16 @@ const ParcelTable = ({ colis = [], formatCurrency, devise }) => {
 
                                 {/* Valeur estimée */}
                                 <td className="px-3 py-3 text-right">
-                                    <div className="flex flex-col items-end">
-                                        <span className="text-sm font-bold text-slate-900 tabular-nums">
-                                            {new Intl.NumberFormat('fr-FR').format(parcel.prix_estimation || 0)}
-                                        </span>
-                                        <span className="text-[9px] text-slate-500 font-bold">{getCurrencyLabel(devise)}</span>
-                                    </div>
+                                    <span className="text-sm font-bold text-slate-900 tabular-nums">
+                                        {new Intl.NumberFormat('fr-FR').format(parcel.prix_estimation || 0)} <span className="text-[9px] text-slate-500 font-bold">{getCurrencyLabel(devise)}</span>
+                                    </span>
                                 </td>
 
                                 {/* Frais */}
                                 <td className="px-3 py-3 text-right">
-                                    <div className="flex flex-col items-end">
-                                        <span className="text-sm font-bold text-slate-900 tabular-nums">
-                                            {new Intl.NumberFormat('fr-FR').format(parcel.montant_colis_total || 0)}
-                                        </span>
-                                        <span className="text-[9px] text-slate-500 font-bold">{getCurrencyLabel(devise)}</span>
-                                    </div>
+                                    <span className="text-sm font-bold text-slate-900 tabular-nums">
+                                        {new Intl.NumberFormat('fr-FR').format(parcel.montant_colis_total || 0)} <span className="text-[9px] text-slate-500 font-bold">{getCurrencyLabel(devise)}</span>
+                                    </span>
                                 </td>
                             </tr>
                         ))}
@@ -170,20 +164,14 @@ const ParcelTable = ({ colis = [], formatCurrency, devise }) => {
                             </td>
                             <td className="px-3 py-3"></td>
                             <td className="px-3 py-3 text-right">
-                                <div className="flex flex-col items-end">
-                                    <span className="text-base font-bold text-slate-700 tabular-nums">
-                                        {new Intl.NumberFormat('fr-FR').format(totalEstimation)}
-                                    </span>
-                                    <span className="text-[10px] text-slate-500 font-bold">{getCurrencyLabel(devise)}</span>
-                                </div>
+                                <span className="text-base font-bold text-slate-700 tabular-nums">
+                                    {new Intl.NumberFormat('fr-FR').format(totalEstimation)} <span className="text-[10px] text-slate-500 font-bold">{getCurrencyLabel(devise)}</span>
+                                </span>
                             </td>
                             <td className="px-3 py-3 text-right">
-                                <div className="flex flex-col items-end">
-                                    <span className="text-base font-bold text-indigo-600 tabular-nums">
-                                        {new Intl.NumberFormat('fr-FR').format(totalAmount)}
-                                    </span>
-                                    <span className="text-[10px] text-indigo-500 font-bold">{getCurrencyLabel(devise)}</span>
-                                </div>
+                                <span className="text-base font-bold text-indigo-600 tabular-nums">
+                                    {new Intl.NumberFormat('fr-FR').format(totalAmount)} <span className="text-[10px] text-indigo-500 font-bold">{getCurrencyLabel(devise)}</span>
+                                </span>
                             </td>
                         </tr>
                     </tfoot>

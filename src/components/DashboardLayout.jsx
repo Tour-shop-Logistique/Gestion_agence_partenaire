@@ -46,7 +46,7 @@ const DashboardLayout = () => {
           <Header onToggleSidebar={() => setSidebarOpen(open => !open)} />
           <main className="flex-1 overflow-y-auto pt-1 pb-4 bg-transparent">
             <PushNotificationPrompt />
-            <div className="px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10 max-w-full">
+            <div className="px-4 py-3 sm:px-5 sm:py-4 lg:px-6 lg:py-5 max-w-full">
               <Outlet />
             </div>
           </main>
