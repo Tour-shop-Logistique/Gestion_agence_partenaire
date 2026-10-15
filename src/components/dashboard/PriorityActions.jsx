@@ -15,14 +15,20 @@ const PriorityActions = ({ operational }) => {
     const actions = [
         {
             id: 'reception',
-            title: 'Colis à réceptionner',
+            // "À réceptionner" prêterait à confusion avec la page/le flux
+            // ColisAReceptionner.jsx (réception à l'agence de DESTINATION,
+            // colis Interville en transit) - ici il s'agit de colis déposés
+            // par le client à cette agence en tant qu'agence de DÉPART, à
+            // confirmer avant envoi vers l'entrepôt (voir page Colis.jsx,
+            // statut recu_agence_depart).
+            title: 'Colis clients à confirmer',
             subtitle: 'Départ',
             count: operational.colis_attente_reception_depart || 0,
             urgent: (operational.colis_attente_reception_depart || 0) > 10,
             icon: ArchiveBoxIcon,
             link: '/colis',
             color: 'orange',
-            description: 'Colis clients en attente de réception physique'
+            description: 'Déposés par le client, en attente de confirmation avant envoi'
         },
         {
             id: 'retrait',

@@ -19,12 +19,12 @@ import {
   MagnifyingGlassIcon,
   ArrowUpRightIcon,
   ArrowDownLeftIcon,
+  ArrowRightIcon,
   BanknotesIcon,
   InboxIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   PlusIcon,
-  FunnelIcon,
   XMarkIcon,
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
@@ -38,8 +38,7 @@ import {
   InformationCircleIcon,
   CalculatorIcon,
   ScaleIcon,
-  ChevronDownIcon,
-  Squares2X2Icon
+  ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { RecordTransactionModal } from '../components/transaction';
@@ -70,12 +69,10 @@ const TransactionsPro = () => {
   const [isNewTransactionModalOpen, setIsNewTransactionModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [activeView, setActiveView] = useState('dashboard'); // dashboard | journal | analyses
   const [isExportDropdownOpen, setIsExportDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  // États des filtres avancés
-  const [showFilters, setShowFilters] = useState(false);
+  // États des filtres - menus déroulants directement au niveau du tableau
   const [filters, setFilters] = useState({
     type: 'all', // all | encaissement | decaissement
     statut: 'all', // all | validee | en_attente | annulee | remboursee
@@ -440,6 +437,13 @@ const TransactionsPro = () => {
   const handleExportPDF = async () => {
     if (!filteredTransactions || filteredTransactions.length === 0) return;
 
+    // Intl.NumberFormat('fr-FR') insère un espace fine insécable (U+202F)
+    // entre les milliers - jsPDF/helvetica (police PDF standard, sans ce
+    // glyphe) le rend comme un caractère cassé affiché "/" dans le PDF (ex.
+    // "6 400" devenait "6/400"). Formatteur dédié au PDF avec un espace
+    // normal, qu'helvetica sait afficher.
+    const formatCurrencyPDF = (amount) => formatCurrency(amount).replace(/ | /g, ' ');
+
     const doc = new jsPDF({
       orientation: 'l',
       unit: 'mm',
@@ -477,11 +481,11 @@ const TransactionsPro = () => {
     const cardHeight = 28;
 
     const cards = [
-      { label: "ENCAISSEMENTS", value: formatCurrency(financialKPIs.totalEncaissements), sub: getCurrencyLabel() },
-      { label: "DÉCAISSEMENTS", value: formatCurrency(financialKPIs.totalDecaissements), sub: getCurrencyLabel() },
-      { label: "SOLDE NET", value: formatCurrency(financialKPIs.soldeCaisse), sub: getCurrencyLabel() },
+      { label: "ENCAISSEMENTS", value: formatCurrencyPDF(financialKPIs.totalEncaissements), sub: getCurrencyLabel() },
+      { label: "DÉCAISSEMENTS", value: formatCurrencyPDF(financialKPIs.totalDecaissements), sub: getCurrencyLabel() },
+      { label: "SOLDE NET", value: formatCurrencyPDF(financialKPIs.soldeCaisse), sub: getCurrencyLabel() },
       { label: "TRANSACTIONS", value: `${financialKPIs.nombreTransactions.total}`, sub: "OPS" },
-      { label: "MOYENNE ENC.", value: formatCurrency(Math.round(financialKPIs.moyenneEncaissement)), sub: getCurrencyLabel() }
+      { label: "MOYENNE ENC.", value: formatCurrencyPDF(Math.round(financialKPIs.moyenneEncaissement)), sub: getCurrencyLabel() }
     ];
 
     cards.forEach((card, i) => {
@@ -513,7 +517,7 @@ const TransactionsPro = () => {
       t.type === 'encaissement' ? 'ENTRÉE' : 'SORTIE',
       t.payment_object?.replace(/_/g, ' ').toUpperCase() || 'N/A',
       t.payment_method === 'cash' ? 'ESPÈCES' : t.payment_method?.replace(/_/g, ' ').toUpperCase(),
-      formatCurrency(t.amount),
+      formatCurrencyPDF(t.amount),
       t.expedition?.reference || '---'
     ]);
 
@@ -522,6 +526,12 @@ const TransactionsPro = () => {
       head: [['#', 'Date & Heure', 'Type', 'Objet', 'Mode Paiement', `Montant (${getCurrencyLabel()})`, 'Réf. Expéd.']],
       body: tableData,
       theme: 'grid',
+      // Largeur totale fixée à la largeur de page utile (marges 15mm de
+      // chaque côté) avec cellWidth 'auto' sur les colonnes variables :
+      // jsPDF-autotable répartit l'espace restant entre elles plutôt que de
+      // laisser le tableau plus étroit que la page (les largeurs fixes en
+      // mm ne totalisaient que 195mm sur les ~267mm disponibles en paysage).
+      tableWidth: pageWidth - 30,
       styles: {
         fontSize: 8,
         cellPadding: 3,
@@ -540,12 +550,12 @@ const TransactionsPro = () => {
       },
       columnStyles: {
         0: { cellWidth: 10, halign: 'center' },
-        1: { cellWidth: 35 },
+        1: { cellWidth: 'auto' },
         2: { cellWidth: 20, halign: 'center' },
-        3: { cellWidth: 40 },
-        4: { cellWidth: 30 },
-        5: { cellWidth: 30, halign: 'right', fontStyle: 'bold' },
-        6: { cellWidth: 30, halign: 'center' }
+        3: { cellWidth: 'auto' },
+        4: { cellWidth: 'auto' },
+        5: { cellWidth: 'auto', halign: 'right', fontStyle: 'bold' },
+        6: { cellWidth: 'auto', halign: 'center' }
       },
       alternateRowStyles: {
         fillColor: [252, 254, 255]
@@ -565,66 +575,49 @@ const TransactionsPro = () => {
   return (
     <div className="max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 animate-fade-in">
       
-      {/* Header - seules l'action principale (nouvelle transaction) et les
-          dates restent sur la ligne du titre ; export/actualiser/filtres
-          sont trop nombreux pour y tenir, deplaces sur la ligne des onglets. */}
+      {/* Header - seule l'action principale (nouvelle transaction) reste sur
+          la ligne du titre ; dates deplacees sur la ligne suivante a gauche,
+          export/actualiser a droite de cette meme ligne. */}
       <PageHeader
         title="Gestion Financière"
         subtitle="Journal de trésorerie et analyses financières professionnelles"
         actions={
-          <>
-            <button
-              onClick={() => setIsNewTransactionModalOpen(true)}
-              className="h-8 sm:h-9 px-3 sm:px-4 flex items-center gap-1.5 sm:gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all shadow-sm active:scale-95 text-xs font-semibold"
-            >
-              <PlusIcon className="w-4 h-4" />
-              <span className="hidden sm:inline">Nouvelle transaction</span>
-            </button>
-
-            <div className="flex items-center bg-white border border-slate-200 rounded-lg overflow-hidden">
-              <div className="flex items-center px-2 sm:px-3 py-1.5 gap-1 sm:gap-2 border-r border-slate-100">
-                <input
-                  type="date"
-                  className="text-[11px] sm:text-xs font-medium text-slate-700 bg-transparent border-none focus:ring-0 p-0 cursor-pointer w-full"
-                  value={dateDebut}
-                  onChange={(e) => setDateDebut(e.target.value)}
-                />
-              </div>
-              <div className="flex items-center px-2 sm:px-3 py-1.5 gap-1 sm:gap-2">
-                <input
-                  type="date"
-                  className="text-[11px] sm:text-xs font-medium text-slate-700 bg-transparent border-none focus:ring-0 p-0 cursor-pointer w-full"
-                  value={dateFin}
-                  onChange={(e) => setDateFin(e.target.value)}
-                />
-              </div>
-            </div>
-          </>
+          <button
+            onClick={() => setIsNewTransactionModalOpen(true)}
+            className="h-8 sm:h-9 px-3 sm:px-4 flex items-center gap-1.5 sm:gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all shadow-sm active:scale-95 text-xs font-semibold"
+          >
+            <PlusIcon className="w-4 h-4" />
+            <span className="hidden sm:inline">Nouvelle transaction</span>
+          </button>
         }
       />
 
       <div className="space-y-4 sm:space-y-6">
 
-        {/* Onglets de vue + actions secondaires (export/actualiser/filtres) */}
+        {/* Dates a gauche, actions secondaires (export/actualiser) a droite -
+            plus de systeme d'onglets, tableau de bord et journal s'enchainent
+            sur la meme page ; plus de "Filtres avances", les filtres sont
+            desormais des menus deroulants au niveau du tableau. */}
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 w-fit">
-            {[
-              { id: 'dashboard', label: 'Analyse', icon: Squares2X2Icon },
-              { id: 'journal', label: 'Journal', icon: TableCellsIcon }
-            ].map(view => (
-              <button
-                key={view.id}
-                onClick={() => setActiveView(view.id)}
-                className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-all flex items-center gap-2 ${
-                  activeView === view.id
-                  ? 'bg-[#005566] text-white shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                <view.icon className="w-4 h-4" />
-                <span>{view.label}</span>
-              </button>
-            ))}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-2 sm:px-3 py-1.5">
+              <span className="text-[11px] sm:text-xs font-medium text-slate-400">Du</span>
+              <input
+                type="date"
+                className="text-[11px] sm:text-xs font-medium text-slate-700 bg-transparent border-none focus:ring-0 p-0 cursor-pointer w-full"
+                value={dateDebut}
+                onChange={(e) => setDateDebut(e.target.value)}
+              />
+            </div>
+            <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-2 sm:px-3 py-1.5">
+              <span className="text-[11px] sm:text-xs font-medium text-slate-400">au</span>
+              <input
+                type="date"
+                className="text-[11px] sm:text-xs font-medium text-slate-700 bg-transparent border-none focus:ring-0 p-0 cursor-pointer w-full"
+                value={dateFin}
+                onChange={(e) => setDateFin(e.target.value)}
+              />
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
@@ -676,129 +669,13 @@ const TransactionsPro = () => {
               <ArrowPathIcon className={`w-4 h-4 ${status === 'loading' ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">Actualiser</span>
             </button>
-
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`h-8 sm:h-9 px-3 sm:px-4 flex items-center gap-1.5 sm:gap-2 rounded-lg transition-all text-xs font-medium ${
-                showFilters
-                ? 'bg-blue-50 border-2 border-blue-200 text-blue-700'
-                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              <FunnelIcon className="w-4 h-4" />
-              <span className="hidden sm:inline">Filtres avancés</span>
-              {Object.values(filters).filter(f => f !== 'all' && f !== '').length > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 bg-blue-600 text-white text-[10px] font-bold rounded-full">
-                  {Object.values(filters).filter(f => f !== 'all' && f !== '').length}
-                </span>
-              )}
-            </button>
           </div>
         </div>
       </div>
 
-      {/* Panneau de filtres avancés */}
-      {showFilters && (
-        <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm animate-in fade-in slide-in-from-top-2 duration-200">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-              <FunnelIcon className="w-4 h-4" />
-              Filtres avancés
-            </h3>
-            <button
-              onClick={() => setFilters({
-                type: 'all',
-                statut: 'all',
-                categorie: 'all',
-                payment_method: 'all',
-                montant_min: '',
-                montant_max: ''
-              })}
-              className="text-xs text-blue-600 hover:text-blue-700 font-medium"
-            >
-              Réinitialiser
-            </button>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1.5">Type</label>
-              <select
-                value={filters.type}
-                onChange={(e) => setFilters({ ...filters, type: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-blue-500"
-              >
-                <option value="all">Tous</option>
-                <option value="encaissement">Encaissements</option>
-                <option value="decaissement">Décaissements</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1.5">Moyen de paiement</label>
-              <select
-                value={filters.payment_method}
-                onChange={(e) => setFilters({ ...filters, payment_method: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-blue-500"
-              >
-                <option value="all">Tous</option>
-                {paymentMethods.map(pm => (
-                  <option key={pm.value} value={pm.value}>{pm.icon} {pm.label}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1.5">Catégorie</label>
-              <select
-                value={filters.categorie}
-                onChange={(e) => setFilters({ ...filters, categorie: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-blue-500"
-              >
-                <option value="all">Toutes</option>
-                {categories.map(cat => (
-                  <option key={cat.value} value={cat.value}>{cat.icon} {cat.label}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1.5">Montant minimum</label>
-              <input
-                type="number"
-                min="0"
-                value={filters.montant_min}
-                onChange={(e) => setFilters({ ...filters, montant_min: e.target.value !== '' && Number(e.target.value) < 0 ? '0' : e.target.value })}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-blue-500"
-                placeholder="0"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1.5">Montant maximum</label>
-              <input
-                type="number"
-                min="0"
-                value={filters.montant_max}
-                onChange={(e) => setFilters({ ...filters, montant_max: e.target.value !== '' && Number(e.target.value) < 0 ? '0' : e.target.value })}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-blue-500"
-                placeholder="Illimité"
-              />
-            </div>
-
-            <div className="flex items-end">
-              <div className="text-xs text-slate-500 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200">
-                <strong className="text-slate-900">{filteredTransactions.length}</strong> résultat(s) trouvé(s)
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 🎯 VUE TABLEAU DE BORD */}
-      {activeView === 'dashboard' && (
-        <>
-          {/* 🔔 Centre d'alertes */}
+      {/* 🎯 TABLEAU DE BORD */}
+      <>
+        {/* 🔔 Centre d'alertes */}
           {alerts.length > 0 && (
             <div className="bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-200 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-3">
@@ -865,7 +742,7 @@ const TransactionsPro = () => {
                   <span className="text-xl font-bold text-blue-600 tabular-nums leading-tight">
                     {financialKPIs.nombreTransactions.total}
                   </span>
-                  <span className="text-xs text-slate-400 font-medium">OPS</span>
+                  <span className="text-xs text-slate-400 font-medium">Opérations</span>
                 </div>
               </div>
             </div>
@@ -901,156 +778,73 @@ const TransactionsPro = () => {
             </div>
           </div>
 
-          {/* 💳 Statistiques par Moyen de Paiement */}
-          <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
-            <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
-              <CreditCardIcon className="w-5 h-5 text-blue-600" />
-              Répartition par Moyen de Paiement
-            </h3>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Tableau */}
-              <div className="space-y-2">
-                {paymentMethodStats.map((stat, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <span className="text-2xl">{stat.icon}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-slate-900">{stat.label}</p>
-                        <p className="text-xs text-slate-500">{stat.count} transaction(s) • {stat.percentage}%</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-slate-900">{formatCurrency(stat.total)}</p>
-                      <p className="text-xs text-slate-400">{getCurrencyLabel()}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+      </>
 
-              {/* Graphique circulaire */}
-              <div className="flex items-center justify-center">
-                {paymentPieData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={250}>
-                    <PieChart>
-                      <Pie
-                        data={paymentPieData}
-                        dataKey="value"
-                        nameKey="name"
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={80}
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                        labelLine={false}
-                      >
-                        {paymentPieData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip 
-                        formatter={(value) => formatCurrency(value) + ' ' + getCurrencyLabel()}
-                        contentStyle={{ fontSize: '12px', borderRadius: '8px' }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="text-center text-slate-400 py-12">
-                    <InboxIcon className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">Aucune donnée</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Indicateurs de performance (fusionnés depuis l'ancien onglet Analyses) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white border border-slate-200 rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <CalculatorIcon className="w-5 h-5 text-purple-600" />
-                </div>
-                <h4 className="text-sm font-bold text-slate-900">Moyennes</h4>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-600">Moy. Encaissement</span>
-                  <span className="text-sm font-bold text-emerald-600">
-                    {formatCurrency(Math.round(financialKPIs.moyenneEncaissement))} {getCurrencyLabel()}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-600">Moy. Décaissement</span>
-                  <span className="text-sm font-bold text-rose-600">
-                    {formatCurrency(Math.round(financialKPIs.moyenneDecaissement))} {getCurrencyLabel()}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white border border-slate-200 rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <ArrowTrendingUpIcon className="w-5 h-5 text-green-600" />
-                </div>
-                <h4 className="text-sm font-bold text-slate-900">Maximum</h4>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-600">Plus gros +</span>
-                  <span className="text-sm font-bold text-emerald-600">
-                    {formatCurrency(financialKPIs.plusGrosEncaissement)} {getCurrencyLabel()}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-600">Plus gros -</span>
-                  <span className="text-sm font-bold text-rose-600">
-                    {formatCurrency(financialKPIs.plusGrosDecaissement)} {getCurrencyLabel()}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white border border-slate-200 rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <ClockIcon className="w-5 h-5 text-blue-600" />
-                </div>
-                <h4 className="text-sm font-bold text-slate-900">Période</h4>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-600">Du</span>
-                  <span className="text-sm font-bold text-slate-900">
-                    {formatDate(dateDebut)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-600">Au</span>
-                  <span className="text-sm font-bold text-slate-900">
-                    {formatDate(dateFin)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* 📋 VUE JOURNAL */}
-      {activeView === 'journal' && (
+      {/* 📋 JOURNAL DES TRANSACTIONS */}
         <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
-          {/* Barre de recherche */}
-          <div className="px-4 py-3 border-b border-slate-100">
-            <div className="relative">
+          {/* Barre de recherche + filtres (catégorie, moyen de paiement,
+              type d'opération) directement au niveau du tableau - remplace
+              l'ancien panneau "Filtres avancés" et l'ancien bloc
+              "Répartition par moyen de paiement". */}
+          <div className="px-4 py-3 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center gap-2.5">
+            <div className="relative flex-1 min-w-0">
               <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input 
+              <input
                 type="text"
                 placeholder="Rechercher par référence, client, expédition..."
                 className="w-full pl-10 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:bg-white focus:border-slate-300"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
+            </div>
+            <div className="flex items-center gap-2 flex-wrap shrink-0">
+              <select
+                value={filters.type}
+                onChange={(e) => setFilters({ ...filters, type: e.target.value })}
+                className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:outline-none focus:border-slate-300"
+              >
+                <option value="all">Type : Tous</option>
+                <option value="encaissement">Encaissements</option>
+                <option value="decaissement">Décaissements</option>
+              </select>
+
+              <select
+                value={filters.payment_method}
+                onChange={(e) => setFilters({ ...filters, payment_method: e.target.value })}
+                className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:outline-none focus:border-slate-300"
+              >
+                <option value="all">Moyen : Tous</option>
+                {paymentMethods.map(pm => (
+                  <option key={pm.value} value={pm.value}>{pm.icon} {pm.label}</option>
+                ))}
+              </select>
+
+              <select
+                value={filters.categorie}
+                onChange={(e) => setFilters({ ...filters, categorie: e.target.value })}
+                className="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:outline-none focus:border-slate-300"
+              >
+                <option value="all">Catégorie : Toutes</option>
+                {categories.map(cat => (
+                  <option key={cat.value} value={cat.value}>{cat.icon} {cat.label}</option>
+                ))}
+              </select>
+
+              {Object.values(filters).some(f => f !== 'all' && f !== '') && (
+                <button
+                  onClick={() => setFilters({
+                    type: 'all',
+                    statut: 'all',
+                    categorie: 'all',
+                    payment_method: 'all',
+                    montant_min: '',
+                    montant_max: ''
+                  })}
+                  className="text-xs text-blue-600 hover:text-blue-700 font-medium whitespace-nowrap"
+                >
+                  Réinitialiser
+                </button>
+              )}
             </div>
           </div>
 
@@ -1080,7 +874,11 @@ const TransactionsPro = () => {
                   ))
                 ) : paginatedTransactions.length > 0 ? (
                   paginatedTransactions.map((t) => (
-                    <tr key={t.id} className="hover:bg-slate-50 transition-colors">
+                    <tr
+                      key={t.id}
+                      onClick={() => { setSelectedTransaction(t); setIsDrawerOpen(true); }}
+                      className="hover:bg-slate-50 transition-colors cursor-pointer"
+                    >
                       <td className="px-4 py-3 text-center">
                         <div className={`w-8 h-8 rounded-lg mx-auto flex items-center justify-center ${
                           t.type === 'encaissement' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
@@ -1115,14 +913,12 @@ const TransactionsPro = () => {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <div className="flex flex-col items-end">
-                          <span className={`text-sm font-bold ${
-                            t.type === 'encaissement' ? 'text-emerald-600' : 'text-rose-600'
-                          }`}>
-                            {t.type === 'encaissement' ? '+' : '-'}{formatCurrency(t.amount)}
-                          </span>
-                          <span className="text-xs text-slate-400">{getCurrencyLabel()}</span>
-                        </div>
+                        <span className={`text-sm font-bold ${
+                          t.type === 'encaissement' ? 'text-emerald-600' : 'text-rose-600'
+                        }`}>
+                          {t.type === 'encaissement' ? '+' : '-'}{formatCurrency(t.amount)}
+                          <span className="text-xs font-medium text-slate-400 ml-1">{getCurrencyLabel()}</span>
+                        </span>
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex flex-col items-end">
@@ -1131,21 +927,10 @@ const TransactionsPro = () => {
                           }`}>
                             {formatCurrency(Math.abs(t.running_balance))}
                           </span>
-                          <span className="text-xs text-slate-400">
-                            {t.running_balance >= 0 ? '✓' : '⚠'}
-                          </span>
                         </div>
                       </td>
                       <td className="px-2 py-3">
-                        <button
-                          onClick={() => {
-                            setSelectedTransaction(t);
-                            setIsDrawerOpen(true);
-                          }}
-                          className="p-1.5 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-900 transition-colors"
-                        >
-                          <ChevronRightIcon className="w-4 h-4" />
-                        </button>
+                        <ChevronRightIcon className="w-4 h-4 text-slate-400" />
                       </td>
                     </tr>
                   ))
@@ -1276,7 +1061,6 @@ const TransactionsPro = () => {
             </div>
           )}
         </div>
-      )}
 
       {/* Modal nouvelle transaction */}
       <RecordTransactionModal
@@ -1290,115 +1074,106 @@ const TransactionsPro = () => {
         defaultObject="autre"
       />
 
-      {/* Drawer détails transaction (à implémenter) */}
+      {/* Drawer détails transaction */}
       {isDrawerOpen && selectedTransaction && (
         <div className="fixed inset-0 z-50 flex items-end justify-end bg-slate-900/50 backdrop-blur-sm"
           onClick={() => setIsDrawerOpen(false)}
         >
-          <div 
+          <div
             className="w-full max-w-md h-full bg-white shadow-2xl overflow-y-auto animate-in slide-in-from-right duration-300"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-4 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white">
-              <h3 className="text-lg font-bold text-slate-900">Détails Transaction</h3>
-              <button
-                onClick={() => setIsDrawerOpen(false)}
-                className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-900"
-              >
-                <XMarkIcon className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="p-4 space-y-4">
-              {/* Type */}
-              <div>
-                <p className="text-xs font-medium text-slate-500 mb-1">Type</p>
-                <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg ${
-                  selectedTransaction.type === 'encaissement' 
-                  ? 'bg-emerald-100 text-emerald-700' 
-                  : 'bg-rose-100 text-rose-700'
-                }`}>
+            {/* En-tête coloré type ticket : montant en évidence, type en badge */}
+            <div className={`sticky top-0 p-5 pb-6 text-white ${
+              selectedTransaction.type === 'encaissement'
+              ? 'bg-gradient-to-br from-emerald-600 to-emerald-700'
+              : 'bg-gradient-to-br from-rose-600 to-rose-700'
+            }`}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-white/15 backdrop-blur-sm">
                   {selectedTransaction.type === 'encaissement' ? (
-                    <ArrowDownLeftIcon className="w-4 h-4" />
+                    <ArrowDownLeftIcon className="w-3.5 h-3.5" />
                   ) : (
-                    <ArrowUpRightIcon className="w-4 h-4" />
+                    <ArrowUpRightIcon className="w-3.5 h-3.5" />
                   )}
-                  <span className="text-sm font-semibold">
+                  <span className="text-xs font-semibold">
                     {selectedTransaction.type === 'encaissement' ? 'Encaissement' : 'Décaissement'}
                   </span>
                 </div>
+                <button
+                  onClick={() => setIsDrawerOpen(false)}
+                  className="p-1.5 rounded-lg hover:bg-white/15 transition-colors"
+                >
+                  <XMarkIcon className="w-5 h-5" />
+                </button>
               </div>
+              <p className="text-xs font-medium text-white/70 mb-1">Montant</p>
+              <p className="text-3xl font-bold tracking-tight text-white">
+                {selectedTransaction.type === 'encaissement' ? '+' : '-'}
+                {formatCurrency(selectedTransaction.amount)}
+                <span className="text-lg font-semibold ml-1 text-white/80">{getCurrencyLabel()}</span>
+              </p>
+              <p className="text-xs text-white/70 mt-1">
+                {formatDate(selectedTransaction.recorded_at || selectedTransaction.created_at, true)}
+              </p>
+            </div>
 
-              {/* Montant */}
-              <div>
-                <p className="text-xs font-medium text-slate-500 mb-1">Montant</p>
-                <p className={`text-2xl font-bold ${
-                  selectedTransaction.type === 'encaissement' ? 'text-emerald-600' : 'text-rose-600'
-                }`}>
-                  {selectedTransaction.type === 'encaissement' ? '+' : '-'}
-                  {formatCurrency(selectedTransaction.amount)} {getCurrencyLabel()}
-                </p>
-              </div>
-
-              {/* Date */}
-              <div>
-                <p className="text-xs font-medium text-slate-500 mb-1">Date & Heure</p>
-                <p className="text-sm text-slate-900">
-                  {formatDate(selectedTransaction.recorded_at || selectedTransaction.created_at, true)}
-                </p>
-              </div>
-
-              {/* Moyen de paiement */}
-              <div>
-                <p className="text-xs font-medium text-slate-500 mb-1">Moyen de paiement</p>
-                <p className="text-sm text-slate-900">
-                  {selectedTransaction.payment_method === 'cash' ? '💵' : '📱'}{' '}
-                  {paymentMethods.find(pm => pm.value === selectedTransaction.payment_method)?.label}
-                </p>
-              </div>
-
-              {/* Objet */}
-              <div>
-                <p className="text-xs font-medium text-slate-500 mb-1">Objet</p>
-                <p className="text-sm text-slate-900">
-                  {selectedTransaction.payment_object?.replace(/_/g, ' ') || 'Non spécifié'}
-                </p>
-              </div>
-
-              {/* Référence */}
-              {selectedTransaction.reference && (
-                <div>
-                  <p className="text-xs font-medium text-slate-500 mb-1">Référence</p>
-                  <p className="text-sm font-mono text-slate-900 bg-slate-100 px-2 py-1 rounded">
-                    {selectedTransaction.reference}
-                  </p>
+            {/* Corps : lignes label/valeur groupées dans une carte, pas de
+                sections isolées empilées sans hiérarchie. */}
+            <div className="p-5">
+              <div className="bg-slate-50 border border-slate-200 rounded-lg divide-y divide-slate-200">
+                <div className="flex items-center justify-between px-4 py-3">
+                  <span className="text-xs font-medium text-slate-500">Moyen de paiement</span>
+                  <span className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
+                    <span>{selectedTransaction.payment_method === 'cash' ? '💵' : '📱'}</span>
+                    {paymentMethods.find(pm => pm.value === selectedTransaction.payment_method)?.label}
+                  </span>
                 </div>
-              )}
 
-              {/* Expédition */}
-              {selectedTransaction.expedition && (
-                <div>
-                  <p className="text-xs font-medium text-slate-500 mb-1">Expédition liée</p>
-                  <button
-                    onClick={() => navigate(`/expeditions/${selectedTransaction.expedition_id}`)}
-                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                  >
-                    {selectedTransaction.expedition.reference} →
-                  </button>
+                <div className="flex items-center justify-between px-4 py-3">
+                  <span className="text-xs font-medium text-slate-500">Objet</span>
+                  <span className="text-sm font-semibold text-slate-900 text-right capitalize">
+                    {selectedTransaction.payment_object?.replace(/_/g, ' ') || 'Non spécifié'}
+                  </span>
                 </div>
-              )}
 
-              {/* Solde après opération */}
-              <div>
-                <p className="text-xs font-medium text-slate-500 mb-1">Solde après opération</p>
-                <p className={`text-lg font-bold ${
+                {selectedTransaction.reference && (
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <span className="text-xs font-medium text-slate-500">Référence</span>
+                    <span className="text-xs font-mono font-semibold text-slate-900 bg-white border border-slate-200 px-2 py-1 rounded">
+                      {selectedTransaction.reference}
+                    </span>
+                  </div>
+                )}
+
+                {selectedTransaction.expedition && (
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <span className="text-xs font-medium text-slate-500">Expédition liée</span>
+                    <button
+                      onClick={() => navigate(`/expeditions/${selectedTransaction.expedition_id}`)}
+                      className="text-sm font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+                    >
+                      {selectedTransaction.expedition.reference}
+                      <ArrowRightIcon className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Solde après opération - mis à part, c'est le résultat de
+                  l'opération, pas une simple propriété au même niveau. */}
+              <div className="mt-4 flex items-center justify-between px-4 py-3 bg-white border border-slate-200 rounded-lg">
+                <span className="text-xs font-medium text-slate-500">Solde après opération</span>
+                <span className={`text-base font-bold flex items-center gap-1.5 ${
                   selectedTransaction.running_balance >= 0 ? 'text-slate-900' : 'text-rose-600'
                 }`}>
                   {formatCurrency(Math.abs(selectedTransaction.running_balance))} {getCurrencyLabel()}
-                  <span className="text-sm ml-2">
-                    {selectedTransaction.running_balance >= 0 ? '✓' : '⚠'}
-                  </span>
-                </p>
+                  {selectedTransaction.running_balance >= 0 ? (
+                    <CheckCircleIcon className="w-4 h-4 text-emerald-500" />
+                  ) : (
+                    <span className="text-rose-500">⚠</span>
+                  )}
+                </span>
               </div>
             </div>
           </div>

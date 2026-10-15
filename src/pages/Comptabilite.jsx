@@ -661,102 +661,107 @@ const Comptabilite = () => {
   return (
     <div className="max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 animate-fade-in">
       
-      {/* Page Header - Responsive */}
+      {/* Page Header - Scope (International/Interville) sur la ligne du
+          titre, à droite, comme l'action principale de TransactionsPro.jsx. */}
       <PageHeader
           title="Comptabilité & Flux"
           subtitle="Tableau de bord financier professionnel - Analyse des revenus et répartition des commissions"
           actions={
-            <>
-            <div className="flex items-center bg-white border border-slate-200 rounded-lg overflow-hidden">
-              <div className="flex items-center px-2 sm:px-3 py-1.5 gap-1 sm:gap-2 border-r border-slate-100">
-                <input
-                  type="date"
-                  className="text-[11px] sm:text-xs font-medium text-slate-700 bg-transparent border-none focus:ring-0 p-0 cursor-pointer w-full"
-                  value={dateDebut}
-                  onChange={(e) => setDateDebut(e.target.value)}
-                />
-              </div>
-              <div className="flex items-center px-2 sm:px-3 py-1.5 gap-1 sm:gap-2">
-                <input
-                  type="date"
-                  className="text-[11px] sm:text-xs font-medium text-slate-700 bg-transparent border-none focus:ring-0 p-0 cursor-pointer w-full"
-                  value={dateFin}
-                  onChange={(e) => setDateFin(e.target.value)}
-                />
-              </div>
+            <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 w-fit">
+              {[
+                { id: 'international', label: 'International' },
+                { id: 'interville', label: 'Interville' }
+              ].map(scope => (
+                <button
+                  key={scope.id}
+                  onClick={() => setAccountingScope(scope.id)}
+                  className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-all ${
+                    accountingScope === scope.id
+                      ? 'bg-[#005566] text-white shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  {scope.label}
+                </button>
+              ))}
             </div>
-            
-            <button
-              onClick={() => loadAccounting({ date_debut: dateDebut, date_fin: dateFin }, true)}
-              disabled={status === 'loading'}
-              className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 bg-white border border-slate-200 text-slate-500 rounded-lg hover:bg-slate-50 hover:text-slate-900 transition-colors disabled:opacity-50"
-              title="Actualiser les données"
-            >
-              <ArrowPathIcon className={`w-3.5 sm:w-4 h-3.5 sm:h-4 ${status === 'loading' ? 'animate-spin' : ''}`} />
-            </button>
-
-            <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={() => setIsExportDropdownOpen(!isExportDropdownOpen)}
-                className={`h-8 sm:h-9 px-3 sm:px-4 flex items-center gap-1.5 sm:gap-2 border rounded-lg text-xs font-semibold transition-all shadow-sm active:scale-95 ${
-                  isExportDropdownOpen 
-                  ? 'bg-slate-100 border-slate-300 text-slate-900' 
-                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
-                }`}
-                disabled={!filteredData || filteredData.length === 0}
-              >
-                <span className="hidden sm:inline">Exporter</span>
-                <ChevronDownIcon className={`w-3 h-3 ml-1 transition-transform ${isExportDropdownOpen ? 'rotate-180' : ''}`} />
-              </button>
-
-              {isExportDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-lg shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                  <div className="p-1">
-                    <button
-                      onClick={handleExportExcel}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 rounded-lg transition-colors"
-                    >
-                      <div className="w-7 h-7 flex items-center justify-center bg-emerald-50 text-emerald-600 rounded-lg">
-                        <TableCellsIcon className="w-4 h-4" />
-                      </div>
-                      <span>Format Excel (.xlsx)</span>
-                    </button>
-                    <button
-                      onClick={handleExportPDF}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 rounded-lg transition-colors"
-                    >
-                      <div className="w-7 h-7 flex items-center justify-center bg-red-50 text-red-600 rounded-lg">
-                        <DocumentArrowDownIcon className="w-4 h-4" />
-                      </div>
-                      <span>Rapport PDF (.pdf)</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-            </>
           }
         />
 
-      {/* Scope de comptabilité - International et Interville sont deux
-          périmètres distincts, chacun avec ses propres chiffres et journal */}
-      <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 w-fit">
-        {[
-          { id: 'international', label: 'International' },
-          { id: 'interville', label: 'Interville' }
-        ].map(scope => (
+      {/* Dates à gauche, actions secondaires (export/actualiser) à droite -
+          même design que TransactionsPro.jsx. */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-2 sm:px-3 py-1.5">
+            <span className="text-[11px] sm:text-xs font-medium text-slate-400">Du</span>
+            <input
+              type="date"
+              className="text-[11px] sm:text-xs font-medium text-slate-700 bg-transparent border-none focus:ring-0 p-0 cursor-pointer w-full"
+              value={dateDebut}
+              onChange={(e) => setDateDebut(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-2 sm:px-3 py-1.5">
+            <span className="text-[11px] sm:text-xs font-medium text-slate-400">au</span>
+            <input
+              type="date"
+              className="text-[11px] sm:text-xs font-medium text-slate-700 bg-transparent border-none focus:ring-0 p-0 cursor-pointer w-full"
+              value={dateFin}
+              onChange={(e) => setDateFin(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setIsExportDropdownOpen(!isExportDropdownOpen)}
+              className={`h-8 sm:h-9 px-3 sm:px-4 flex items-center gap-1.5 sm:gap-2 border rounded-lg text-xs font-semibold transition-all shadow-sm active:scale-95 ${
+                isExportDropdownOpen
+                ? 'bg-slate-100 border-slate-300 text-slate-900'
+                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+              }`}
+              disabled={!filteredData || filteredData.length === 0}
+            >
+              <span className="hidden sm:inline">Exporter</span>
+              <ChevronDownIcon className={`w-3 h-3 ml-1 transition-transform ${isExportDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {isExportDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-lg shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="p-1">
+                  <button
+                    onClick={handleExportExcel}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 rounded-lg transition-colors"
+                  >
+                    <div className="w-7 h-7 flex items-center justify-center bg-emerald-50 text-emerald-600 rounded-lg">
+                      <TableCellsIcon className="w-4 h-4" />
+                    </div>
+                    <span>Format Excel (.xlsx)</span>
+                  </button>
+                  <button
+                    onClick={handleExportPDF}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 rounded-lg transition-colors"
+                  >
+                    <div className="w-7 h-7 flex items-center justify-center bg-red-50 text-red-600 rounded-lg">
+                      <DocumentArrowDownIcon className="w-4 h-4" />
+                    </div>
+                    <span>Rapport PDF (.pdf)</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
           <button
-            key={scope.id}
-            onClick={() => setAccountingScope(scope.id)}
-            className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-all ${
-              accountingScope === scope.id
-                ? 'bg-[#005566] text-white shadow-sm'
-                : 'text-slate-500 hover:text-slate-700'
-            }`}
+            onClick={() => loadAccounting({ date_debut: dateDebut, date_fin: dateFin }, true)}
+            disabled={status === 'loading'}
+            className="h-8 sm:h-9 px-3 sm:px-4 flex items-center gap-1.5 sm:gap-2 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 transition-all disabled:opacity-50 text-xs font-medium"
           >
-            {scope.label}
+            <ArrowPathIcon className={`w-4 h-4 ${status === 'loading' ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Actualiser</span>
           </button>
-        ))}
+        </div>
       </div>
 
       {/* KPI Section - Responsive Grid */}
@@ -817,15 +822,18 @@ const Comptabilite = () => {
         })()}
       </div>
 
-      {/* Détail des Commissions Agence - Responsive */}
+      {/* Détail des Commissions Agence - Responsive, même pattern que les
+          cartes KPI (barre d'accent + icône + label/valeur sur fond blanc
+          uni) plutôt qu'un cadre dégradé englobant, pour rester cohérent
+          avec le reste de l'app. */}
       {(
-        <div className="bg-gradient-to-br from-blue-50 to-slate-50 border border-blue-100 rounded-lg p-4 sm:p-5 shadow-sm">
-          <div className="flex items-center gap-2 mb-3 sm:mb-4">
-            <ReceiptPercentIcon className="w-4 sm:w-5 h-4 sm:h-5 text-blue-600" />
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <ReceiptPercentIcon className="w-4 h-4 text-slate-400" />
             <h2 className="text-xs sm:text-sm font-bold text-slate-900 uppercase tracking-tight">Détail des Commissions Agence</h2>
             <span className="ml-auto text-[10px] sm:text-xs text-slate-500 font-medium">Période sélectionnée</span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             {(accountingScope === 'interville' ? [
               { label: "Trajet Départ", value: scopedSummary.potential.details_agence.trajet_depart, icon: TruckIcon },
               { label: "Trajet Arrivée", value: scopedSummary.potential.details_agence.trajet_arrivee, icon: MapPinIcon },
@@ -840,14 +848,17 @@ const Comptabilite = () => {
               { label: "Retard", value: scopedSummary.potential.details_agence.com_retard, icon: InformationCircleIcon },
               { label: "Parrainage (Retenue)", value: scopedSummary.potential.details_agence.retenue_parrainage, icon: InformationCircleIcon, negative: true },
             ]).map((item, idx) => (
-              <div key={idx} className={`bg-white rounded-lg p-2.5 sm:p-3 border ${item.negative ? 'border-rose-200' : 'border-slate-200'}`}>
-                <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
-                  <item.icon className={`w-3 sm:w-3.5 h-3 sm:h-3.5 flex-shrink-0 ${item.negative ? 'text-rose-500' : 'text-blue-500'}`} />
-                  <p className="text-[9px] sm:text-[10px] font-semibold text-slate-500 uppercase truncate">{item.label}</p>
-                </div>
-                <div className="flex items-baseline gap-1">
-                  <span className={`text-sm sm:text-lg font-bold tabular-nums ${item.negative ? 'text-rose-600' : 'text-blue-600'}`}>{item.negative && item.value > 0 ? '-' : ''}{formatCurrency(item.value)}</span>
-                  <span className="text-[8px] sm:text-[9px] font-semibold text-slate-400">{getCurrencyLabel()}</span>
+              <div key={idx} className="flex items-center gap-2.5 bg-white border border-slate-200 rounded-lg pl-3 pr-3 py-3 min-w-0">
+                <span className={`self-stretch w-1 rounded-sm shrink-0 ${item.negative ? 'bg-rose-600' : 'bg-blue-600'}`} aria-hidden="true" />
+                <item.icon className={`w-7 h-7 shrink-0 ${item.negative ? 'text-rose-600' : 'text-blue-600'}`} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide leading-snug truncate">{item.label}</p>
+                  <div className="flex items-baseline gap-1">
+                    <span className={`text-base font-bold tabular-nums leading-tight ${item.negative ? 'text-rose-600' : 'text-blue-600'}`}>
+                      {item.negative && item.value > 0 ? '-' : ''}{formatCurrency(item.value)}
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-medium">{getCurrencyLabel()}</span>
+                  </div>
                 </div>
               </div>
             ))}

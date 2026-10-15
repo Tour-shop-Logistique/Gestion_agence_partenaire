@@ -33,6 +33,7 @@ import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import AgencyProfile from "./pages/AgencyProfile";
 import Agents from "./pages/Agents";
+import RoleForm from "./pages/RoleForm";
 import AgentProfile from "./pages/AgentProfile";
 import CreateExpeditionV2 from "./pages/CreateExpeditionV2";
 import TarifsSimples from "./pages/TarifsSimples";
@@ -383,6 +384,8 @@ function AppContent() {
           <Route path="/agent-profile" element={<AgentProfile />} />
           <Route path="/comptabilite" element={<AgencySetupGuard><PageGuard pageKey="comptabilite"><Comptabilite /></PageGuard></AgencySetupGuard>} />
           <Route path="/agents" element={<AgencySetupGuard><PageGuard pageKey="agents"><Agents /></PageGuard></AgencySetupGuard>} />
+          <Route path="/agents/roles/new" element={<AgencySetupGuard><PageGuard pageKey="agents"><RoleForm /></PageGuard></AgencySetupGuard>} />
+          <Route path="/agents/roles/:roleId" element={<AgencySetupGuard><PageGuard pageKey="agents"><RoleForm /></PageGuard></AgencySetupGuard>} />
           <Route path="/expeditions" element={<AgencySetupGuard><PageGuard pageKey="expeditions"><Expeditions /></PageGuard></AgencySetupGuard>} />
           <Route path="/demandes" element={<AgencySetupGuard><PageGuard pageKey="demandes"><Demandes /></PageGuard></AgencySetupGuard>} />
           <Route path="/colis" element={<AgencySetupGuard><PageGuard pageKey="colis"><Colis /></PageGuard></AgencySetupGuard>} />

@@ -450,49 +450,53 @@ const Colis = () => {
                 }
             />
 
-            {/* Onglets Extraville / Interville (deux mecaniques d'envoi
-                differentes : entrepot + backoffice vs agence d'arrivee
-                choisie directement, pas de selection multiple commune) +
-                barre de recherche sur la meme ligne. */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1 w-fit shrink-0">
+            {/* Barre outils : onglets compacts + recherche, alignés sur une
+                rangée en desktop (International/Interville = deux mecaniques
+                d'envoi differentes : entrepot + backoffice vs agence
+                d'arrivee choisie directement, pas de selection multiple
+                commune). Même design que Demandes.jsx. */}
+            <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-2 flex flex-col sm:flex-row sm:items-center gap-2">
+                <div className="flex gap-1 bg-slate-100 rounded-lg p-1 shrink-0">
                     <button
                         onClick={() => setActiveTab('extraville')}
-                        className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-all ${
+                        className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${
                             activeTab === 'extraville' ? 'bg-[#005566] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
                         }`}
                     >
                         International
                         {tabColis.length > 0 && (
-                            <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-700">
+                            <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                                activeTab === 'extraville' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-500'
+                            }`}>
                                 {tabColis.length}
                             </span>
                         )}
                     </button>
                     <button
                         onClick={() => setActiveTab('interville')}
-                        className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-all ${
+                        className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all whitespace-nowrap ${
                             activeTab === 'interville' ? 'bg-[#005566] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
                         }`}
                     >
                         Interville
                         {tabExpeditionsInterville.length > 0 && (
-                            <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-700">
+                            <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                                activeTab === 'interville' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-500'
+                            }`}>
                                 {tabExpeditionsInterville.length}
                             </span>
                         )}
                     </button>
                 </div>
 
-                {/* Search Bar - Responsive (les deux onglets, filtre par colis
+                {/* Recherche - largeur bornée, ne s'étire plus sur toute la
+                    ligne en desktop (les deux onglets, filtre par colis
                     pour Extraville, par expédition pour Interville) */}
-                <div className="relative flex-1">
-                    <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
-                        <MagnifyingGlassIcon className="h-4 w-4 sm:h-5 sm:w-5 text-slate-400" />
-                    </div>
+                <div className="relative sm:max-w-xs sm:ml-auto w-full">
+                    <MagnifyingGlassIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
                         type="text"
-                        className="block w-full pl-9 sm:pl-11 pr-3 py-2.5 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm placeholder-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow"
+                        className="w-full pl-8 pr-3 py-1.5 border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                         placeholder="Rechercher..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
