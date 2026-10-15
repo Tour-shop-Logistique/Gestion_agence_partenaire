@@ -41,6 +41,18 @@ const FORM_TYPE_TO_API_TYPE = {
     INTERVILLE: "interville",
 };
 
+// Options affichées à l'étape 1 (sélection du type) - extraites en
+// constante pour être réutilisées comme rappel du type choisi à l'étape 2
+// (Colis), où le type d'expédition n'était sinon plus visible à l'écran.
+const TYPE_EXPEDITION_OPTIONS = [
+    { value: 'SIMPLE',                label: 'Livraison à domicile',   icon: '📦' },
+    { value: 'GROUPAGE_DHD_AERIEN',   label: 'DHD Aérien',             icon: '✈️' },
+    { value: 'GROUPAGE_DHD_MARITIME', label: 'DHD Maritime',           icon: '🚢' },
+    { value: 'GROUPAGE_AFRIQUE',      label: 'Afrique',                icon: '🌍' },
+    { value: 'GROUPAGE_CA',           label: 'CA',                     icon: '📮' },
+    { value: 'INTERVILLE',            label: 'Interville (National)',  icon: '🏙️' },
+];
+
 // Un colis est valide pour la simulation/soumission s'il a un poids,
 // une désignation et au moins un article
 const isColisComplete = (c) => Boolean(c.poids && c.designation && c.articles && c.articles.length > 0);
@@ -1525,14 +1537,7 @@ const CreateExpeditionV2 = () => {
                                             Type d'expédition <span className="text-amber-600">*</span>
                                         </label>
                                         <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
-                                            {[
-                                                { value: 'SIMPLE',                label: 'Livraison à domicile',           icon: '📦' },
-                                                { value: 'GROUPAGE_DHD_AERIEN',   label: 'DHD Aérien',   icon: '✈️' },
-                                                { value: 'GROUPAGE_DHD_MARITIME', label: 'DHD Maritime', icon: '🚢' },
-                                                { value: 'GROUPAGE_AFRIQUE',      label: 'Afrique',      icon: '🌍' },
-                                                { value: 'GROUPAGE_CA',           label: 'CA',           icon: '📮' },
-                                                { value: 'INTERVILLE',            label: 'Interville (National)', icon: '🏙️' },
-                                            ].map(type => (
+                                            {TYPE_EXPEDITION_OPTIONS.map(type => (
                                                 <button
                                                     key={type.value}
                                                     type="button"
@@ -1823,16 +1828,29 @@ const CreateExpeditionV2 = () => {
                             <div className={simulationResult ? "grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6" : "space-y-4 sm:space-y-6"}>
                                 <div className={simulationResult ? "lg:col-span-2 space-y-4 sm:space-y-6" : "space-y-4 sm:space-y-6"}>
                                     <section className="overflow-hidden">
-                                        <div className="py-3 sm:py-4 flex items-center gap-3">
-                                            <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
-                                                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                                                </svg>
+                                        <div className="py-3 sm:py-4 flex items-center justify-between gap-3 flex-wrap">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
+                                                    <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <h2 className="text-sm font-bold text-slate-800">Étape 2 — Colis</h2>
+                                                    <p className="text-xs text-slate-400">Poids, dimensions, contenu</p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <h2 className="text-sm font-bold text-slate-800">Étape 2 — Colis</h2>
-                                                <p className="text-xs text-slate-400">Poids, dimensions, contenu</p>
-                                            </div>
+                                            {/* Rappel du type d'expédition choisi à l'étape 1 - invisible sinon
+                                                une fois passé à cette étape. */}
+                                            {(() => {
+                                                const typeChoisi = TYPE_EXPEDITION_OPTIONS.find(t => t.value === formData.type_expedition);
+                                                return typeChoisi ? (
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-100 text-xs font-semibold text-indigo-700">
+                                                        <span>{typeChoisi.icon}</span>
+                                                        {typeChoisi.label}
+                                                    </span>
+                                                ) : null;
+                                            })()}
                                         </div>
                                         <div className="space-y-4 sm:space-y-5">
                                             {formData.colis.map((colis, index) => (
