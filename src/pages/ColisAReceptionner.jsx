@@ -163,26 +163,30 @@ const ColisAReceptionner = () => {
     // Transformer les données en liste de colis à plat pour la recherche/filtre
     const flatColis = useMemo(() => {
         if (!reception || !Array.isArray(reception)) return [];
-        
+
         // Si c'est déjà une liste de colis (le format envoyé par l'API maintenant)
         if (reception.length > 0 && !reception[0].colis) {
-            return reception.map(item => ({
-                ...item,
-                is_received: item.is_received_by_agence_destination === true,
-                is_received_by_backoffice: item.is_received_by_backoffice === true
-            }));
+            return reception
+                .filter(item => item.expedition?.type_expedition !== 'interville')
+                .map(item => ({
+                    ...item,
+                    is_received: item.is_received_by_agence_destination === true,
+                    is_received_by_backoffice: item.is_received_by_backoffice === true
+                }));
         }
 
         // Ancien format : liste d'expéditions contenant des colis
-        return reception.flatMap(exp =>
-            (exp.colis || []).map(item => ({
-                ...item,
-                expedition: exp,
-                expedition_id: exp.id,
-                is_received: item.is_received_by_agence_destination === true,
-                is_received_by_backoffice: item.is_received_by_backoffice === true
-            }))
-        );
+        return reception
+            .filter(exp => exp.type_expedition !== 'interville')
+            .flatMap(exp =>
+                (exp.colis || []).map(item => ({
+                    ...item,
+                    expedition: exp,
+                    expedition_id: exp.id,
+                    is_received: item.is_received_by_agence_destination === true,
+                    is_received_by_backoffice: item.is_received_by_backoffice === true
+                }))
+            );
     }, [reception]);
 
     // Regrouper les colis par expédition pour l'affichage structuré
@@ -191,15 +195,16 @@ const ColisAReceptionner = () => {
 
         // Si c'est déjà groupé (ancien format)
         if (reception.length > 0 && reception[0].colis) {
-            return reception;
+            return reception.filter(exp => exp.type_expedition !== 'interville');
         }
 
-        // Regrouper le format plat par expédition
+        // Regrouper le format plat par expédition (exclure Interville)
         const groups = {};
         reception.forEach(item => {
+            if (item.expedition?.type_expedition === 'interville') return;
             const expId = item.expedition_id || item.expedition?.id;
             if (!expId) return;
-            
+
             if (!groups[expId]) {
                 groups[expId] = {
                     ...(item.expedition || {}),
@@ -862,14 +867,18 @@ const ColisAReceptionner = () => {
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-4">
                                                     {/* Badge référence */}
-                                                    <div className="flex items-center gap-2.5">
+                                                    <Link
+                                                        to={`/expeditions/${exp.id}`}
+                                                        title="Voir les détails de l'expédition"
+                                                        className="flex items-center gap-2.5 hover:underline"
+                                                    >
                                                         <svg className="w-5 h-5 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                                                         </svg>
                                                         <span className="text-sm font-bold text-white tracking-wide">
                                                             {exp.reference}
                                                         </span>
-                                                    </div>
+                                                    </Link>
                                                     
                                                     {/* Séparateur vertical */}
                                                     <div className="w-px h-5 bg-white/30"></div>

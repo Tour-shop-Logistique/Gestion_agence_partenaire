@@ -102,7 +102,7 @@ const Header = ({ onToggleSidebar }) => {
     .slice(0, 2) || "?";
 
   return (
-    <header className="h-16 sticky top-0 z-50 relative overflow-hidden" style={{ background: "linear-gradient(90deg, #003d47 0%, #005566 50%, #003d47 100%)", borderBottom: "1px solid rgba(0,180,200,0.25)" }}>
+    <header className="h-16 sticky top-0 z-50 relative" style={{ background: "linear-gradient(90deg, #003d47 0%, #005566 50%, #003d47 100%)", borderBottom: "1px solid rgba(0,180,200,0.25)" }}>
       {/* Mosaïque losanges — même motif que le sidebar */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" className="absolute inset-0">
@@ -169,9 +169,9 @@ const Header = ({ onToggleSidebar }) => {
             >
               <Bell className="w-5 h-5 text-white/80" />
               {unreadNotifTotal > 0 && (
-                <span className="absolute top-1 right-1 flex h-4 w-4">
+                <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 items-center justify-center">
+                  <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 items-center justify-center ring-2 ring-[#003d47]">
                     <span className="text-[10px] font-semibold text-white">{unreadNotifTotal > 9 ? '9+' : unreadNotifTotal}</span>
                   </span>
                 </span>
