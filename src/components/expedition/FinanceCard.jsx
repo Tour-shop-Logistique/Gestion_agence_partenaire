@@ -11,7 +11,12 @@ import ConvertedAmount from '../common/ConvertedAmount';
 const FinanceCard = ({ expedition, formatCurrency, onRecordTransaction, onOpenFraisDecision }) => {
     const montantExpedition = parseFloat(expedition.montant_expedition || 0);
     const fraisAnnexes = parseFloat(expedition.frais_annexes || 0);
-    const totalAmount = montantExpedition + fraisAnnexes;
+    const fraisEnlevement = parseFloat(expedition.frais_enlevement_domicile || 0);
+    const totalAmount = montantExpedition + fraisAnnexes + fraisEnlevement;
+    // Aucun statut de paiement n'existe pour l'enlèvement (voir
+    // statut_paiement_expedition / statut_paiement_frais) : la progression
+    // ne porte que sur les montants dont le règlement est suivi.
+    const totalSuivi = montantExpedition + fraisAnnexes;
 
     const expeditionPaid = expedition.statut_paiement_expedition === 'paye';
     const annexesPaid = expedition.statut_paiement_frais === 'paye';
@@ -26,7 +31,7 @@ const FinanceCard = ({ expedition, formatCurrency, onRecordTransaction, onOpenFr
     const decisionAgencePrise = expedition.frais_decision_agence_prise;
 
     const amountPaid = (expeditionPaid ? montantExpedition : 0) + (annexesPaid ? fraisAnnexes : 0);
-    const percentPaid = totalAmount > 0 ? (amountPaid / totalAmount) * 100 : 0;
+    const percentPaid = totalSuivi > 0 ? (amountPaid / totalSuivi) * 100 : 0;
 
     const StatusPill = ({ label, paid, urgent, decisionAttente, aPercevoirArrivee, onClick, buttonLabel = 'Encaisser' }) => (
         <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border shrink-0 ${
@@ -89,21 +94,29 @@ const FinanceCard = ({ expedition, formatCurrency, onRecordTransaction, onOpenFr
 
                 {/* Montants */}
                 <div className="flex items-center gap-4 shrink-0">
+                    {(fraisAnnexes > 0 || fraisEnlevement > 0) && (
+                        <div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase">Frais expédition</p>
+                            <p className="text-sm font-bold text-slate-900 tabular-nums">
+                                <ConvertedAmount amount={montantExpedition} sourceCurrency={expedition.devise_origine} />
+                            </p>
+                        </div>
+                    )}
+                    {fraisEnlevement > 0 && (
+                        <div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase">Frais enlèvement</p>
+                            <p className="text-sm font-bold text-rose-600 tabular-nums">
+                                +<ConvertedAmount amount={fraisEnlevement} sourceCurrency={expedition.devise_origine} />
+                            </p>
+                        </div>
+                    )}
                     {fraisAnnexes > 0 && (
-                        <>
-                            <div>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase">Frais expédition</p>
-                                <p className="text-sm font-bold text-slate-900 tabular-nums">
-                                    <ConvertedAmount amount={montantExpedition} sourceCurrency={expedition.devise_origine} />
-                                </p>
-                            </div>
-                            <div>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase">Frais annexes</p>
-                                <p className="text-sm font-bold text-rose-600 tabular-nums">
-                                    +<ConvertedAmount amount={fraisAnnexes} sourceCurrency={expedition.devise_origine} />
-                                </p>
-                            </div>
-                        </>
+                        <div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase">Frais annexes</p>
+                            <p className="text-sm font-bold text-rose-600 tabular-nums">
+                                +<ConvertedAmount amount={fraisAnnexes} sourceCurrency={expedition.devise_origine} />
+                            </p>
+                        </div>
                     )}
                     <div>
                         <p className="text-[10px] font-bold text-slate-400 uppercase">Total</p>

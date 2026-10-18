@@ -1,5 +1,5 @@
-import React from 'react';
-import { Package } from 'lucide-react';
+import React, { useState } from 'react';
+import { Package, X } from 'lucide-react';
 import { getCurrencyLabel } from '../../utils/format';
 
 /**
@@ -7,6 +7,9 @@ import { getCurrencyLabel } from '../../utils/format';
  * Zebra rows, highlight, résumé
  */
 const ParcelTable = ({ colis = [], formatCurrency, devise }) => {
+    // Photo du colis agrandie (renseignée par le client à la demande).
+    const [photoOuverte, setPhotoOuverte] = useState(null);
+
     const totalWeight = colis.reduce((sum, c) => sum + parseFloat(c.poids || 0), 0);
     const totalAmount = colis.reduce((sum, c) => sum + parseFloat(c.montant_colis_total || 0), 0);
     const totalEstimation = colis.reduce((sum, c) => sum + parseFloat(c.prix_estimation || 0), 0);
@@ -28,6 +31,7 @@ const ParcelTable = ({ colis = [], formatCurrency, devise }) => {
     }
 
     return (
+        <>
         <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
             {/* Header avec résumé */}
             <div className="px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-indigo-50 to-white">
@@ -97,18 +101,35 @@ const ParcelTable = ({ colis = [], formatCurrency, devise }) => {
 
                                 {/* Désignation */}
                                 <td className="px-3 py-3">
-                                    <div className="min-w-0">
-                                        <p className="text-sm font-bold text-slate-900 truncate">
-                                            {parcel.designation}
-                                        </p>
-                                        <p className="text-[10px] text-slate-500 mt-0.5 truncate">
-                                            {Array.isArray(parcel.articles)
-                                                ? parcel.articles
-                                                    .map(a => (typeof a === 'string' ? a : a?.designation))
-                                                    .filter(Boolean)
-                                                    .join(', ') || 'N/A'
-                                                : parcel.articles || 'N/A'}
-                                        </p>
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        {parcel.photo_url && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setPhotoOuverte({ url: parcel.photo_url, code: parcel.code_colis })}
+                                                title="Voir la photo du colis"
+                                                className="shrink-0 w-11 h-11 rounded-lg overflow-hidden border border-slate-200 hover:border-indigo-400 hover:ring-2 hover:ring-indigo-100 transition-all"
+                                            >
+                                                <img
+                                                    src={parcel.photo_url}
+                                                    alt={`Photo du colis ${parcel.code_colis || idx + 1}`}
+                                                    loading="lazy"
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            </button>
+                                        )}
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-bold text-slate-900 truncate">
+                                                {parcel.designation}
+                                            </p>
+                                            <p className="text-[10px] text-slate-500 mt-0.5 truncate">
+                                                {Array.isArray(parcel.articles)
+                                                    ? parcel.articles
+                                                        .map(a => (typeof a === 'string' ? a : a?.designation))
+                                                        .filter(Boolean)
+                                                        .join(', ') || 'N/A'
+                                                    : parcel.articles || 'N/A'}
+                                            </p>
+                                        </div>
                                     </div>
                                 </td>
 
@@ -178,6 +199,33 @@ const ParcelTable = ({ colis = [], formatCurrency, devise }) => {
                 </table>
             </div>
         </div>
+
+        {photoOuverte && (
+            <div
+                className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4"
+                onClick={() => setPhotoOuverte(null)}
+            >
+                <button
+                    type="button"
+                    onClick={() => setPhotoOuverte(null)}
+                    aria-label="Fermer"
+                    className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+                >
+                    <X className="w-6 h-6" />
+                </button>
+                <div className="max-w-full max-h-full flex flex-col items-center gap-3" onClick={(e) => e.stopPropagation()}>
+                    <img
+                        src={photoOuverte.url}
+                        alt={`Photo du colis ${photoOuverte.code || ''}`}
+                        className="max-w-full max-h-[85vh] object-contain rounded-lg"
+                    />
+                    {photoOuverte.code && (
+                        <span className="text-xs font-mono font-bold text-white/80">{photoOuverte.code}</span>
+                    )}
+                </div>
+            </div>
+        )}
+        </>
     );
 };
 

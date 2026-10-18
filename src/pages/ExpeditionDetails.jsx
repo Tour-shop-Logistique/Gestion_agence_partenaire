@@ -396,7 +396,7 @@ const ExpeditionDetails = () => {
                                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors"
                                     >
                                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                        <span className="hidden sm:inline">Encaisser transport</span>
+                                        <span className="hidden sm:inline">Encaisser expédition</span>
                                     </button>
                                 )}
 
@@ -699,7 +699,7 @@ const ExpeditionDetails = () => {
                 )} au titre de : ${
                     transactionType === 'frais_annexes'
                         ? 'Frais annexes / HUB'
-                        : 'Frais de transport'
+                        : "Frais d'expédition"
                 } ?`}
                 confirmText="Confirmer"
                 type="success"
@@ -724,7 +724,7 @@ const ExpeditionDetails = () => {
                         <span className="font-medium text-gray-700">
                             {transactionType === 'frais_annexes'
                                 ? 'Frais annexes / HUB'
-                                : 'Frais de transport'}
+                                : "Frais d'expédition"}
                         </span>
                     </div>
 
