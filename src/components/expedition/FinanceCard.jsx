@@ -12,10 +12,11 @@ const FinanceCard = ({ expedition, formatCurrency, onRecordTransaction, onOpenFr
     const montantExpedition = parseFloat(expedition.montant_expedition || 0);
     const fraisAnnexes = parseFloat(expedition.frais_annexes || 0);
     const fraisEnlevement = parseFloat(expedition.frais_enlevement_domicile || 0);
-    const totalAmount = montantExpedition + fraisAnnexes + fraisEnlevement;
-    // Aucun statut de paiement n'existe pour l'enlèvement (voir
-    // statut_paiement_expedition / statut_paiement_frais) : la progression
-    // ne porte que sur les montants dont le règlement est suivi.
+    const fraisLivraison = parseFloat(expedition.frais_livraison_domicile || 0);
+    const totalAmount = montantExpedition + fraisAnnexes + fraisEnlevement + fraisLivraison;
+    // Aucun statut de paiement n'existe pour l'enlèvement ni la livraison à
+    // domicile (voir statut_paiement_expedition / statut_paiement_frais) :
+    // la progression ne porte que sur les montants dont le règlement est suivi.
     const totalSuivi = montantExpedition + fraisAnnexes;
 
     const expeditionPaid = expedition.statut_paiement_expedition === 'paye';
@@ -94,7 +95,7 @@ const FinanceCard = ({ expedition, formatCurrency, onRecordTransaction, onOpenFr
 
                 {/* Montants */}
                 <div className="flex items-center gap-4 shrink-0">
-                    {(fraisAnnexes > 0 || fraisEnlevement > 0) && (
+                    {(fraisAnnexes > 0 || fraisEnlevement > 0 || fraisLivraison > 0) && (
                         <div>
                             <p className="text-[10px] font-bold text-slate-400 uppercase">Frais expédition</p>
                             <p className="text-sm font-bold text-slate-900 tabular-nums">
@@ -107,6 +108,14 @@ const FinanceCard = ({ expedition, formatCurrency, onRecordTransaction, onOpenFr
                             <p className="text-[10px] font-bold text-slate-400 uppercase">Frais enlèvement</p>
                             <p className="text-sm font-bold text-rose-600 tabular-nums">
                                 +<ConvertedAmount amount={fraisEnlevement} sourceCurrency={expedition.devise_origine} />
+                            </p>
+                        </div>
+                    )}
+                    {fraisLivraison > 0 && (
+                        <div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase">Frais livraison</p>
+                            <p className="text-sm font-bold text-rose-600 tabular-nums">
+                                +<ConvertedAmount amount={fraisLivraison} sourceCurrency={expedition.devise_origine} />
                             </p>
                         </div>
                     )}
