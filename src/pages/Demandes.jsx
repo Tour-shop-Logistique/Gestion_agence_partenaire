@@ -283,7 +283,7 @@ const Demandes = () => {
     // Récupérer les colis en agence depuis les expéditions (colis acceptés non encore reçus)
     const colisEnAgence = expeditions ? expeditions.flatMap(exp =>
         (exp.colis || []).filter(colis => 
-            exp.statut_expedition === 'accepted' && !colis.is_received_by_agence_depart
+            ['accepted', 'en_cours_enlevement'].includes(exp.statut_expedition) && !colis.is_received_by_agence_depart
         ).map(colis => ({
             ...colis,
             expedition: exp,
@@ -869,15 +869,16 @@ const Demandes = () => {
                                         <div className="p-2.5" onClick={(e) => e.stopPropagation()}>
                                             <button
                                                 onClick={() => handleReceiveOne(colis.code_colis)}
-                                                disabled={receivingCode === colis.code_colis || isReceiving}
-                                                className="w-full flex items-center justify-center gap-1.5 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 shadow-sm transition-colors disabled:opacity-50"
+                                                disabled={receivingCode === colis.code_colis || isReceiving || colis.expedition?.depot_livreur_attendu}
+                                                title={colis.expedition?.depot_livreur_attendu ? "Le livreur doit d'abord déclarer avoir déposé le colis à l'agence" : undefined}
+                                                className="w-full flex items-center justify-center gap-1.5 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 {receivingCode === colis.code_colis ? (
                                                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                                                 ) : (
                                                     <CheckCircle2 className="w-3.5 h-3.5" />
                                                 )}
-                                                <span>Réceptionner</span>
+                                                <span>{colis.expedition?.depot_livreur_attendu ? 'Attente dépôt livreur' : 'Réceptionner'}</span>
                                             </button>
                                         </div>
                                     )}
@@ -988,16 +989,16 @@ const Demandes = () => {
                                             {canAccept && (
                                                 <button
                                                     onClick={() => handleReceiveOne(colis.code_colis)}
-                                                    disabled={receivingCode === colis.code_colis || isReceiving}
-                                                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 shadow-sm transition-colors disabled:opacity-50"
-                                                    title="Marquer ce colis comme réceptionné"
+                                                    disabled={receivingCode === colis.code_colis || isReceiving || colis.expedition?.depot_livreur_attendu}
+                                                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    title={colis.expedition?.depot_livreur_attendu ? "Le livreur doit d'abord déclarer avoir déposé le colis à l'agence" : "Marquer ce colis comme réceptionné"}
                                                 >
                                                     {receivingCode === colis.code_colis ? (
                                                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
                                                     ) : (
                                                         <CheckCircle2 className="w-3.5 h-3.5" />
                                                     )}
-                                                    <span>Réceptionner</span>
+                                                    <span>{colis.expedition?.depot_livreur_attendu ? 'Attente dépôt livreur' : 'Réceptionner'}</span>
                                                 </button>
                                             )}
                                         </td>

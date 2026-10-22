@@ -36,6 +36,7 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, L
 import { getCountryName } from "../utils/countries";
 import PageHeader from "../components/ui/PageHeader";
 import ConvertedAmount from "../components/common/ConvertedAmount";
+import FluxFinanciersSection from "../components/paiements/FluxFinanciersSection";
 
 const Comptabilite = () => {
   const navigate = useNavigate();
@@ -821,6 +822,14 @@ const Comptabilite = () => {
           );
         })()}
       </div>
+
+      {/* Règlements avec le backoffice : ce que l'agence doit reverser et
+          ce qu'elle doit recevoir, distinct des KPI ci-dessus qui montrent
+          la répartition théorique des commissions. */}
+      <FluxFinanciersSection
+        agenceId={agencyData?.id}
+        formatCurrency={formatCurrency}
+      />
 
       {/* Détail des Commissions Agence - Responsive, même pattern que les
           cartes KPI (barre d'accent + icône + label/valeur sur fond blanc

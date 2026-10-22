@@ -23,6 +23,7 @@ import {
     FinanceCard
 } from '../components/expedition';
 import FraisDecisionModal from '../components/transaction/FraisDecisionModal';
+import PreuvesPaiementCard from '../components/paiements/PreuvesPaiementCard';
 import useHasPermission from '../hooks/useHasPermission';
 import SearchableDropdown from '../components/common/SearchableDropdown';
 import { expeditionsApi } from '../utils/api/expeditions';
@@ -364,14 +365,17 @@ const ExpeditionDetails = () => {
                                     </>
                                 )}
 
-                                {expedition.statut_expedition === 'accepted' && (
+                                {['accepted', 'en_cours_enlevement'].includes(expedition.statut_expedition) && (
                                     <button
                                         onClick={() => setIsConfirmReceptionModalOpen(true)}
-                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm transition-colors"
-                                        title="Confirmer que les colis enlevés chez le client sont arrivés à l'agence, avant de pouvoir les contrôler"
+                                        disabled={expedition.depot_livreur_attendu}
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        title={expedition.depot_livreur_attendu
+                                            ? "Le livreur doit d'abord déclarer avoir récupéré et déposé le colis à l'agence"
+                                            : "Confirmer que les colis enlevés chez le client sont arrivés à l'agence, avant de pouvoir les contrôler"}
                                     >
                                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8 8-4-4" /></svg>
-                                        <span className="hidden sm:inline">Confirmer réception</span>
+                                        <span className="hidden sm:inline">{expedition.depot_livreur_attendu ? 'Attente dépôt livreur' : 'Confirmer réception'}</span>
                                     </button>
                                 )}
 
@@ -478,10 +482,20 @@ const ExpeditionDetails = () => {
                         {/* Confirmer le départ : par l'agence de départ elle-même
                             (cahier des charges §8.1), jamais le backoffice pour
                             Interville. Nécessite l'agence d'arrivée renseignée. */}
+                        {['accepted', 'recu_agence_depart'].includes(expedition.statut_expedition)
+                            && (expedition.colis || []).some((c) => !c.is_received_by_agence_depart) && (
+                            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                                Tous les colis doivent être réceptionnés à l'agence avant de confirmer le départ.
+                            </p>
+                        )}
                         {['accepted', 'recu_agence_depart'].includes(expedition.statut_expedition) && (
                             <Button
                                 onClick={handleConfirmerDepart}
-                                disabled={!expedition.agence_arrivee || isConfirmingDepart}
+                                disabled={
+                                    !expedition.agence_arrivee
+                                    || isConfirmingDepart
+                                    || (expedition.colis || []).some((c) => !c.is_received_by_agence_depart)
+                                }
                                 className="w-full sm:w-auto"
                             >
                                 {isConfirmingDepart ? (
@@ -531,6 +545,14 @@ const ExpeditionDetails = () => {
                     formatCurrency={formatCurrency}
                     onRecordTransaction={handleRecordTransaction}
                     onOpenFraisDecision={() => setIsFraisDecisionModalOpen(true)}
+                />
+
+                {/* 🧾 PREUVES DE PAIEMENT - paiements hors plateforme */}
+                <PreuvesPaiementCard
+                    expeditionId={expedition.id}
+                    missions={expedition.missions || []}
+                    formatCurrency={formatCurrency}
+                    canDecide={canControl}
                 />
 
                 {/* 📦 COLIS - pleine largeur */}

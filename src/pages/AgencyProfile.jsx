@@ -13,6 +13,7 @@ import { agenciesApi } from "../utils/api/agencies";
 import { splitPhoneNumber, joinPhoneNumber } from "../utils/phoneCountries";
 import { communesApi } from "../utils/api/communes";
 import { exportAgencyProfilePDF } from "../utils/pdfExport";
+import MoyensPaiementSection from "../components/paiements/MoyensPaiementSection";
 
 import {
   BuildingOffice2Icon,
@@ -931,6 +932,12 @@ const AgencyProfile = () => {
           <SaveBar saving={saving} onCancel={handleEditToggle} />
         )}
       </form>
+
+      {/* Hors du formulaire principal : CRUD autonome, chaque moyen de
+          paiement s'enregistre immédiatement sans passer par SaveBar. */}
+      <div className="mt-4">
+        <MoyensPaiementSection canEdit={isAdmin} />
+      </div>
 
       {viewerIndex != null && (
         <ImageLightbox

@@ -15,6 +15,7 @@ import factureReducer from './slices/factureSlice';
 import rolesReducer from './slices/rolesSlice';
 import permissionsReducer from './slices/permissionsSlice';
 import inAppNotificationsReducer from './slices/inAppNotificationsSlice';
+import paiementsReducer from './slices/paiementsSlice';
 
 /**
  * Root Reducer avec logique de reset
@@ -35,6 +36,7 @@ const appReducer = combineReducers({
   roles: rolesReducer,
   permissions: permissionsReducer,
   inAppNotifications: inAppNotificationsReducer,
+  paiements: paiementsReducer,
 });
 
 const rootReducer = (state, action) => {

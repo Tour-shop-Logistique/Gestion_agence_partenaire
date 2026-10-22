@@ -65,6 +65,29 @@ export const API_ENDPOINTS = {
     DELETE: "/agence/promotions/:id",
   },
 
+  // Moyens de paiement de l'agence, visibles par les clients qui paient
+  // à distance (mobile money, virement...).
+  MOYENS_PAIEMENT: {
+    LIST: "/agence/moyens-paiement",
+    CREATE: "/agence/moyens-paiement",
+    UPDATE: "/agence/moyens-paiement/:id",
+    DELETE: "/agence/moyens-paiement/:id",
+  },
+
+  // Preuves de paiement : le paiement se fait hors plateforme, seule la
+  // preuve est tracée ici (voir PreuvePaiementController backend).
+  PREUVES_PAIEMENT: {
+    BY_EXPEDITION: "/agence/preuves-paiement/expedition/:expeditionId",
+    DECISION: "/agence/preuves-paiement/:id/decision",
+    PAYER_LIVREUR: "/agence/preuves-paiement/payer-livreur",
+  },
+
+  // Flux financiers agence <-> backoffice (commissions à reverser/recevoir)
+  FLUX_FINANCIERS: {
+    LIST: "/agence/flux-financiers",
+    PAYER: "/agence/flux-financiers/:id/payer",
+  },
+
   // Rôles et permissions
   ROLES: {
     LIST: "/agence/roles",
