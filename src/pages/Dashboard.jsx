@@ -13,7 +13,6 @@ import PageHeader from "../components/ui/PageHeader";
 import DemandesAlert from "../components/dashboard/DemandesAlert";
 import PriorityActions from "../components/dashboard/PriorityActions";
 import KPISection from "../components/dashboard/KPISection";
-import RecentExpeditions from "../components/dashboard/RecentExpeditions";
 import StatsCards from "../components/dashboard/StatsCards";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 
@@ -182,10 +181,7 @@ const Dashboard = () => {
                 operational={operational}
             />
 
-            {/* ========== 3. DERNIÈRES EXPÉDITIONS (Pleine largeur) ========== */}
-            <RecentExpeditions expeditions={logistics.dernieres_expeditions} />
-
-            {/* ========== 4. STATISTIQUES (En dessous) ========== */}
+            {/* ========== 3. STATISTIQUES (En dessous) ========== */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-5">
                 <StatsCards
                     logistics={logistics}

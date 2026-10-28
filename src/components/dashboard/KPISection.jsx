@@ -70,7 +70,7 @@ const KPICard = ({
         return (
             <Link
                 to={link}
-                className={`${colors.tint} backdrop-blur-sm p-4 sm:p-5 rounded-xl border border-slate-200/80 border-t-2 ${colors.accent} shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group relative`}
+                className={`${colors.tint} backdrop-blur-sm p-4 sm:p-5 rounded-xl border border-slate-200/80 border-t-2 ${colors.accent} shadow-md hover:shadow-lg hover:-translate-y-0.5 hover:z-30 transition-all duration-200 group relative`}
             >
                 {content}
             </Link>
@@ -78,7 +78,7 @@ const KPICard = ({
     }
 
     return (
-        <div className={`${colors.tint} backdrop-blur-sm p-4 sm:p-5 rounded-xl border border-slate-200/80 border-t-2 ${colors.accent} shadow-md hover:shadow-lg transition-all duration-200 group relative`}>
+        <div className={`${colors.tint} backdrop-blur-sm p-4 sm:p-5 rounded-xl border border-slate-200/80 border-t-2 ${colors.accent} shadow-md hover:shadow-lg hover:z-30 transition-all duration-200 group relative`}>
             {content}
         </div>
     );
