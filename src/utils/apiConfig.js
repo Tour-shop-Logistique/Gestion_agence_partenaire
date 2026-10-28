@@ -164,6 +164,7 @@ export const API_ENDPOINTS = {
     UPDATE_COLIS: "/expedition/agence/:expeditionId/colis/:colisId",
     SPLIT_COLIS: "/expedition/agence/:expeditionId/colis/:colisId/split",
     RECALCULATE_TARIF: "/expedition/agence/:expeditionId/recalculer-tarif",
+    NOTIFY_CLIENT: "/expedition/agence/:expeditionId/notifier-client",
     UPDATE_EXPEDITION_CONTROL: "/expedition/agence/:id/controle",
     // Choix de l'agence d'arrivée (Interville uniquement), par l'agence de
     // départ au contrôle - voir AgenceExpeditionController::choisirAgenceArrivee.

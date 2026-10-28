@@ -564,6 +564,22 @@ export const expeditionsApi = {
     },
 
     /**
+     * Notifier le client du montant final après contrôle
+     * @param {string} expeditionId
+     * @param {number} [montantAvant] montant que le client connaissait avant le contrôle
+     * @returns {Promise<Object>}
+     */
+    async notifyClient(expeditionId, montantAvant) {
+        try {
+            const url = API_ENDPOINTS.EXPEDITIONS.NOTIFY_CLIENT.replace(':expeditionId', expeditionId);
+            const response = await apiService.post(url, montantAvant !== undefined ? { montant_avant: montantAvant } : {});
+            return { success: response.success !== false, message: response.message };
+        } catch (error) {
+            return { success: false, message: error.message || "Erreur lors de l'envoi de la notification" };
+        }
+    },
+
+    /**
      * Modifier l'expédition complète (type, expéditeur, destinataire, pays,
      * paiement/livraison) avec recalcul automatique du tarif dans le même appel.
      * @param {string} expeditionId
