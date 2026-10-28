@@ -367,7 +367,7 @@ const RetraitColis = () => {
                                         )}
 
                                         {/* 📦 EXPEDITION HEADER - Design Card-like avec ombre */}
-                                        <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 shadow-lg px-5 py-3.5">
+                                        <div className="bg-gradient-to-r from-[#005566] via-[#007a8c] to-[#005566] shadow-lg px-5 py-3.5">
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-4">
                                                     {/* Badge référence */}
@@ -417,7 +417,7 @@ const RetraitColis = () => {
                                         </div>
 
                                         {/* ── Ligne de transition header → colis (bordure fine) ── */}
-                                        <div className="h-0.5 bg-indigo-100 border-b border-indigo-200"></div>
+                                        <div className="h-0.5 bg-[#007a8c]/10 border-b border-[#007a8c]/20"></div>
 
                                         {/* 📋 COLIS ROWS */}
                                         {group.colis.map((item, idx) => {

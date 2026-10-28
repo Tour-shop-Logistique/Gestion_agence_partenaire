@@ -871,7 +871,7 @@ const ColisAReceptionner = () => {
                                     </tr>
 
                                     {/* 📦 EXPEDITION HEADER - Design Card-like avec ombre */}
-                                    <tr className="bg-gradient-to-r from-indigo-500 to-indigo-600 shadow-lg">
+                                    <tr className="bg-gradient-to-r from-[#005566] via-[#007a8c] to-[#005566] shadow-lg">
                                         <td className="px-5 py-3.5" colSpan="7">
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-4">
@@ -915,8 +915,8 @@ const ColisAReceptionner = () => {
                                     </tr>
 
                                     {/* ── Ligne de transition header → colis (bordure fine) ── */}
-                                    <tr className="h-0.5 bg-indigo-100">
-                                        <td colSpan="7" className="border-b border-indigo-200"></td>
+                                    <tr className="h-0.5 bg-[#007a8c]/10">
+                                        <td colSpan="7" className="border-b border-[#007a8c]/20"></td>
                                     </tr>
 
                                     {/* 📋 COLIS ROWS */}
@@ -1135,7 +1135,7 @@ const ColisAReceptionner = () => {
                             const isConfirming = confirmingReceptionId === exp.id;
                             return (
                                 <div key={exp.id} id={`expedition-interville-${exp.id}`} className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-                                    <div className="flex items-center justify-between gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-indigo-600">
+                                    <div className="flex items-center justify-between gap-2 px-4 py-2.5 bg-gradient-to-r from-[#005566] via-[#007a8c] to-[#005566]">
                                         <Link to={`/expeditions/${exp.id}`} className="flex items-center gap-2 min-w-0">
                                             <span className="text-xs font-bold text-white truncate">{exp.reference}</span>
                                             <span className="text-[10px] font-medium text-white/70">

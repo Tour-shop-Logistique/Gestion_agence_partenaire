@@ -570,7 +570,7 @@ const Colis = () => {
                                 séparées (colis vs expéditions) */}
                             <Link
                                 to={`/expeditions/${exp.id}`}
-                                className="flex items-center justify-between gap-2 px-3 py-2.5 bg-gradient-to-r from-[#003d47] via-[#005566] to-[#003d47]"
+                                className="flex items-center justify-between gap-2 px-3 py-2.5 bg-gradient-to-r from-[#005566] via-[#007a8c] to-[#005566]"
                                 title="Voir les détails de l'expédition"
                             >
                                 <div className="flex items-center gap-2 min-w-0">
@@ -752,7 +752,7 @@ const Colis = () => {
                                                 </tr>
 
                                                 {/* 📦 EXPEDITION HEADER - Design Card-like avec ombre */}
-                                                <tr className="bg-gradient-to-r from-[#003d47] via-[#005566] to-[#003d47] shadow-lg">
+                                                <tr className="bg-gradient-to-r from-[#005566] via-[#007a8c] to-[#005566] shadow-lg">
                                                     <td className="px-5 py-3.5" colSpan="7">
                                                         <div className="flex items-center justify-between">
                                                             <div className="flex items-center gap-4">
@@ -791,8 +791,8 @@ const Colis = () => {
                                                 </tr>
 
                                                 {/* ── Ligne de transition header → colis (bordure fine) ── */}
-                                                <tr className="h-0.5 bg-[#003d47]/10">
-                                                    <td colSpan="7" className="border-b border-[#003d47]/20"></td>
+                                                <tr className="h-0.5 bg-[#007a8c]/10">
+                                                    <td colSpan="7" className="border-b border-[#007a8c]/20"></td>
                                                 </tr>
 
                                                 {/* 📋 COLIS ROWS */}
@@ -1010,7 +1010,7 @@ const Colis = () => {
                             const isConfirmingDepart = confirmingDepartExpeditionId === exp.id;
                             return (
                                 <div key={exp.id} id={`expedition-interville-${exp.id}`} className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-                                    <div className="flex items-center justify-between gap-2 px-4 py-2.5 bg-gradient-to-r from-[#003d47] via-[#005566] to-[#003d47]">
+                                    <div className="flex items-center justify-between gap-2 px-4 py-2.5 bg-gradient-to-r from-[#005566] via-[#007a8c] to-[#005566]">
                                         <Link to={`/expeditions/${exp.id}`} className="flex items-center gap-2 min-w-0">
                                             <span className="text-xs font-bold text-white truncate">{exp.reference}</span>
                                             <span className="text-[10px] font-medium text-white/70">
