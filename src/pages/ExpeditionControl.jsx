@@ -21,6 +21,7 @@ import {
     realtimeCurrentExpeditionColisPatched,
 } from '../store/slices/expeditionSlice';
 import { getCurrencyLabel } from '../utils/format';
+import { getCountryName } from '../utils/countries';
 
 const formatFCFA = (amount) => new Intl.NumberFormat('fr-FR').format(amount || 0) + ' ' + getCurrencyLabel();
 
@@ -49,6 +50,104 @@ const emptyPersonForm = () => ({
     societe: '', code_postal: '', etat: '', quartier: '',
 });
 
+// Pays distincts (code ISO) couverts par les tarifs groupage d'un type.
+const paysDesTarifsGroupage = (tarifs, type) => {
+    const byCode = {};
+    tarifs.filter((t) => t.type_expedition === type && t.code_pays).forEach((t) => {
+        const code = t.code_pays.toUpperCase();
+        if (!byCode[code]) byCode[code] = { id: code, code, label: (getCountryName(code) || t.pays || code).toUpperCase() };
+    });
+    return Object.values(byCode).sort((a, b) => a.label.localeCompare(b.label));
+};
+
+// Pays couverts par les zones des tarifs simples (LD), agence + base backoffice.
+const paysDesTarifsSimples = (tarifs) => {
+    const byKey = {};
+    tarifs.forEach((tarif) => {
+        (Array.isArray(tarif.prix_zones) ? tarif.prix_zones : []).forEach(({ zone }) => {
+            (Array.isArray(zone?.pays) ? zone.pays : []).forEach((pays, idx) => {
+                const code = Array.isArray(zone.pays_codes) ? zone.pays_codes[idx] : null;
+                const key = code || pays;
+                if (pays && !byKey[key]) byKey[key] = { id: key, code, label: (code ? getCountryName(code) : pays).toUpperCase() };
+            });
+        });
+    });
+    return Object.values(byKey).sort((a, b) => a.label.localeCompare(b.label));
+};
+
+// Même logique que CreateExpeditionV2 : produits proposés selon le type et la catégorie du colis.
+const produitsProposes = (products, type, categoryId) => {
+    const liste = Array.isArray(products) ? products : [];
+    if (type === 'groupage_ca') return liste.filter((p) => p.category?.nom === 'Colis Accompagnés');
+    if (type.includes('dhd')) return categoryId ? liste.filter((p) => p.category_id === categoryId) : [];
+    return liste;
+};
+
+// Catégorie (types à catégorie) + articles contenus d'un colis : même saisie qu'à la création.
+const ColisClassement = ({ type, categories, products, categoryId, articles, onChange }) => {
+    const liste = articles || [];
+    const avecCategorie = TYPES_REQUERANT_CATEGORIE.includes(type);
+    const categoriesProposees = type === 'groupage_ca' ? (categories || []).filter((c) => c.is_default) : (categories || []);
+    const options = produitsProposes(products, type, categoryId).map((p) => ({ id: p.id, label: p.designation }));
+
+    const changerCategorie = (nouvelleCategorie) => {
+        // Les articles d'une autre catégorie ne sont plus valides pour DHD.
+        const gardes = type.includes('dhd')
+            ? liste.filter((a) => (products || []).find((p) => p.id === a.produit_id)?.category_id === nouvelleCategorie)
+            : liste;
+        onChange({ category_id: nouvelleCategorie, articles: gardes });
+    };
+
+    return (
+        <div className="space-y-2">
+            {avecCategorie && (
+                <div>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase">Catégorie *</label>
+                    <select
+                        value={categoryId || ''}
+                        onChange={(e) => changerCategorie(e.target.value)}
+                        className={`w-full mt-1 px-2.5 py-1.5 text-sm border rounded-lg outline-none bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 ${categoryId ? 'border-slate-200' : 'border-amber-300'}`}
+                    >
+                        <option value="">Sélectionner une catégorie...</option>
+                        {categoriesProposees.map((cat) => <option key={cat.id} value={cat.id}>{cat.nom}</option>)}
+                    </select>
+                </div>
+            )}
+            <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Articles contenus</label>
+                <div className="mt-1">
+                    <SearchableDropdown
+                        options={options}
+                        onSelect={(o) => {
+                            if (!liste.some((a) => a.produit_id === o.id)) {
+                                onChange({ category_id: categoryId, articles: [...liste, { produit_id: o.id, designation: o.label }] });
+                            }
+                        }}
+                        disabled={options.length === 0}
+                        placeholder={options.length === 0 ? "Sélectionnez d'abord une catégorie" : 'Rechercher un article...'}
+                        buttonClassName="h-9 text-sm font-medium"
+                    />
+                </div>
+                {liste.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                        {liste.map((a, i) => (
+                            <span key={`${a.produit_id || a.designation}-${i}`} className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs font-semibold">
+                                {a.designation}
+                                <button
+                                    type="button"
+                                    aria-label={`Retirer l'article ${a.designation}`}
+                                    onClick={() => onChange({ category_id: categoryId, articles: liste.filter((_, j) => j !== i) })}
+                                    className="hover:text-indigo-900"
+                                >×</button>
+                            </span>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
 /**
  * 🔍 CONTRÔLE PHYSIQUE D'UNE EXPÉDITION
  * Écran dédié pour corriger poids/dimensions/frais des colis d'une demande
@@ -65,7 +164,7 @@ const ExpeditionControl = () => {
 
     const {
         currentExpedition: expedition, getExpeditionDetails, message, error, resetStatus,
-        categories, loadCategories, updateExpedition,
+        categories, loadCategories, updateExpedition, products, loadProducts,
     } = useExpedition();
 
     const [editingColisId, setEditingColisId] = useState(null);
@@ -81,10 +180,52 @@ const ExpeditionControl = () => {
     const [isSavingExpedition, setIsSavingExpedition] = useState(false);
 
     const { data: agencyData } = useAgency();
-    const { intervilleTarifs, fetchTarifsInterville, formatsColis, fetchFormatsColis } = useTarifs();
+    const {
+        intervilleTarifs, fetchTarifsInterville, formatsColis, fetchFormatsColis,
+        existingGroupageTarifs, fetchTarifGroupageAgence, existingTarifs, fetchAgencyTarifs,
+        tarifs: baseTarifs, fetchTarifs: fetchBaseTarifs,
+        groupageTarifs: baseGroupageTarifs, fetchTarifsGroupageBase: fetchBaseGroupageTarifs,
+    } = useTarifs();
 
     useEffect(() => { fetchTarifsInterville(); }, [fetchTarifsInterville]);
     useEffect(() => { fetchFormatsColis(); }, [fetchFormatsColis]);
+    useEffect(() => {
+        fetchTarifGroupageAgence();
+        fetchAgencyTarifs();
+        fetchBaseTarifs();
+        fetchBaseGroupageTarifs();
+        loadProducts();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Pays de destination proposés : uniquement ceux réellement couverts par un tarif du type choisi.
+    const typeForm = expeditionForm?.type_expedition;
+    const tarifsGroupage = useMemo(() => [
+        ...(Array.isArray(existingGroupageTarifs) ? existingGroupageTarifs : []),
+        ...(Array.isArray(baseGroupageTarifs) ? baseGroupageTarifs : []),
+    ], [existingGroupageTarifs, baseGroupageTarifs]);
+    const paysDisponibles = useMemo(() => {
+        if (!typeForm || typeForm === 'interville') return [];
+        if (typeForm === 'simple') {
+            return paysDesTarifsSimples([
+                ...(Array.isArray(existingTarifs) ? existingTarifs : []),
+                ...(Array.isArray(baseTarifs) ? baseTarifs : []),
+            ]);
+        }
+        return paysDesTarifsGroupage(tarifsGroupage, typeForm);
+    }, [typeForm, existingTarifs, baseTarifs, tarifsGroupage]);
+
+    // DHD : lignes (ville départ-ville arrivée) du pays choisi, sans doublon.
+    const lignesDhd = useMemo(() => {
+        if (!typeForm?.includes('dhd') || !expeditionForm?.code_pays_destination) return [];
+        const code = expeditionForm.code_pays_destination.toUpperCase();
+        const lignes = new Set(
+            tarifsGroupage
+                .filter((t) => t.type_expedition === typeForm && (t.code_pays || '').toUpperCase() === code && t.ligne)
+                .map((t) => t.ligne.trim())
+        );
+        return [...lignes].sort().map((l) => ({ id: l, label: l.toUpperCase() }));
+    }, [typeForm, expeditionForm?.code_pays_destination, tarifsGroupage]);
 
     const communeDepartId = agencyData?.agence?.commune_id || agencyData?.commune_id || null;
     const intervilleAvailableCommunes = useMemo(() => {
@@ -207,6 +348,21 @@ const ExpeditionControl = () => {
 
     const colisList = expedition.colis || [];
 
+    // DHD : seules les catégories tarifées sur la ligne de l'expédition sont proposées
+    // (sinon le recalcul échoue), comme à la création. Aucune catégorie tarifée = toutes.
+    const categoriesColis = (() => {
+        const toutes = categories || [];
+        if (!expedition.type_expedition?.includes('dhd')) return toutes;
+        const norm = (l) => (l || '').toLowerCase().replace(/\s*-\s*/g, '-').trim();
+        const ligne = norm(`${expedition.expediteur?.ville || ''}-${expedition.destinataire?.ville || ''}`);
+        const ids = new Set(
+            tarifsGroupage
+                .filter((t) => t.type_expedition === expedition.type_expedition && norm(t.ligne) === ligne && t.category_id)
+                .map((t) => t.category_id)
+        );
+        return ids.size === 0 ? toutes : toutes.filter((c) => ids.has(c.id));
+    })();
+
     const startEdit = (colis) => {
         setSplittingColisId(null);
         setEditingColisId(colis.id);
@@ -218,6 +374,8 @@ const ExpeditionControl = () => {
             prix_emballage: colis.prix_emballage ?? '',
             designation: colis.designation ?? '',
             format_colis_id: colis.format_colis_id ?? '',
+            category_id: colis.category_id ?? '',
+            articles: Array.isArray(colis.articles) ? colis.articles : [],
         });
     };
 
@@ -227,6 +385,10 @@ const ExpeditionControl = () => {
     };
 
     const saveEdit = async (colisId) => {
+        if (TYPES_REQUERANT_CATEGORIE.includes(expedition.type_expedition) && !editForm.category_id) {
+            toast.error('Sélectionnez une catégorie pour ce colis.');
+            return;
+        }
         setIsSubmitting(true);
         try {
             const payload = {
@@ -237,6 +399,8 @@ const ExpeditionControl = () => {
                 prix_emballage: editForm.prix_emballage === '' ? 0 : parseFloat(editForm.prix_emballage),
                 designation: editForm.designation || null,
                 ...(editForm.format_colis_id ? { format_colis_id: editForm.format_colis_id } : {}),
+                category_id: editForm.category_id || null,
+                articles: editForm.articles,
             };
             const result = await dispatch(updateColisControl({ expeditionId: expedition.id, colisId, data: payload }));
             if (!result.error) {
@@ -251,10 +415,12 @@ const ExpeditionControl = () => {
     const startSplit = (colis) => {
         setEditingColisId(null);
         setSplittingColisId(colis.id);
-        setSplitParts([
-            { poids: '', longueur: '', largeur: '', hauteur: '', prix_emballage: '', designation: colis.designation || '' },
-            { poids: '', longueur: '', largeur: '', hauteur: '', prix_emballage: '', designation: colis.designation || '' },
-        ]);
+        const part = () => ({
+            poids: '', longueur: '', largeur: '', hauteur: '', prix_emballage: '', designation: colis.designation || '',
+            category_id: colis.category_id ?? '',
+            articles: Array.isArray(colis.articles) ? colis.articles : [],
+        });
+        setSplitParts([part(), part()]);
     };
 
     const cancelSplit = () => {
@@ -263,7 +429,7 @@ const ExpeditionControl = () => {
     };
 
     const addSplitPart = () => {
-        setSplitParts(prev => [...prev, { poids: '', longueur: '', largeur: '', hauteur: '', prix_emballage: '', designation: '' }]);
+        setSplitParts(prev => [...prev, { poids: '', longueur: '', largeur: '', hauteur: '', prix_emballage: '', designation: '', category_id: '', articles: [] }]);
     };
 
     const removeSplitPart = (index) => {
@@ -283,6 +449,10 @@ const ExpeditionControl = () => {
             toast.error('Chaque nouveau colis doit avoir un poids renseigné.');
             return;
         }
+        if (TYPES_REQUERANT_CATEGORIE.includes(expedition.type_expedition) && splitParts.some(p => !p.category_id)) {
+            toast.error('Chaque nouveau colis doit avoir une catégorie.');
+            return;
+        }
 
         setIsSubmitting(true);
         try {
@@ -293,10 +463,13 @@ const ExpeditionControl = () => {
                 hauteur: p.hauteur === '' ? 0 : parseFloat(p.hauteur),
                 prix_emballage: p.prix_emballage === '' ? 0 : parseFloat(p.prix_emballage),
                 designation: p.designation || null,
+                category_id: p.category_id || null,
+                articles: p.articles,
             }));
             const result = await dispatch(splitColisControl({ expeditionId: expedition.id, colisId, colis: payload }));
             if (!result.error) {
                 cancelSplit();
+                await handleRecalculate();
             }
         } finally {
             setIsSubmitting(false);
@@ -342,6 +515,15 @@ const ExpeditionControl = () => {
         if (!expeditionForm) return;
         if (typeRequiresCategorie && colisSansCategorie.length > 0) {
             toast.error('Sélectionnez une catégorie pour chaque colis avant de continuer.');
+            return;
+        }
+
+        if (expeditionForm.type_expedition !== 'interville' && !expeditionForm.pays_destination) {
+            toast.error('Sélectionnez le pays de destination.');
+            return;
+        }
+        if (expeditionForm.type_expedition.includes('dhd') && !expeditionForm.destinataire.ville) {
+            toast.error('Sélectionnez la ligne (trajet) DHD.');
             return;
         }
 
@@ -464,7 +646,15 @@ const ExpeditionControl = () => {
                                     <label className="text-[10px] font-bold text-slate-500 uppercase">Type d'expédition</label>
                                     <select
                                         value={expeditionForm.type_expedition}
-                                        onChange={(e) => setExpeditionForm({ ...expeditionForm, type_expedition: e.target.value })}
+                                        onChange={(e) => setExpeditionForm({
+                                            ...expeditionForm,
+                                            type_expedition: e.target.value,
+                                            // La destination dépend du type (tarifs, lignes) : à rechoisir.
+                                            pays_destination: '',
+                                            code_pays_destination: '',
+                                            destinataire: { ...expeditionForm.destinataire, ville: '' },
+                                            destinataire_commune_id: null,
+                                        })}
                                         className="w-full mt-1 px-2.5 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none bg-white"
                                     >
                                         {Object.entries(TYPE_LABELS).map(([value, label]) => (
@@ -506,24 +696,66 @@ const ExpeditionControl = () => {
                                     <div className="p-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
                                         <label className="text-[10px] font-bold text-slate-500 uppercase">Pays de départ</label>
+                                        {/* Le départ est toujours le pays de l'agence, comme à la création. */}
                                         <input
                                             type="text"
                                             value={expeditionForm.pays_depart}
-                                            readOnly={expeditionForm.type_expedition === 'interville'}
-                                            onChange={(e) => setExpeditionForm({ ...expeditionForm, pays_depart: e.target.value })}
-                                            className={`w-full mt-1 px-2.5 py-1.5 text-sm border rounded-lg outline-none ${expeditionForm.type_expedition === 'interville' ? 'bg-slate-50 border-slate-200 text-slate-500 cursor-not-allowed' : 'border-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
+                                            readOnly
+                                            className="w-full mt-1 px-2.5 py-1.5 text-sm border rounded-lg outline-none bg-slate-50 border-slate-200 text-slate-500 cursor-not-allowed"
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-[10px] font-bold text-slate-500 uppercase">Pays de destination</label>
-                                        <input
-                                            type="text"
-                                            value={expeditionForm.type_expedition === 'interville' ? expeditionForm.pays_depart : expeditionForm.pays_destination}
-                                            readOnly={expeditionForm.type_expedition === 'interville'}
-                                            onChange={(e) => setExpeditionForm({ ...expeditionForm, pays_destination: e.target.value })}
-                                            className={`w-full mt-1 px-2.5 py-1.5 text-sm border rounded-lg outline-none ${expeditionForm.type_expedition === 'interville' ? 'bg-slate-50 border-slate-200 text-slate-500 cursor-not-allowed' : 'border-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
-                                        />
+                                        <label className="text-[10px] font-bold text-slate-500 uppercase">Pays de destination *</label>
+                                        {expeditionForm.type_expedition === 'interville' ? (
+                                            <input
+                                                type="text"
+                                                value={expeditionForm.pays_depart}
+                                                readOnly
+                                                className="w-full mt-1 px-2.5 py-1.5 text-sm border rounded-lg outline-none bg-slate-50 border-slate-200 text-slate-500 cursor-not-allowed"
+                                            />
+                                        ) : (
+                                            <div className="mt-1">
+                                                <SearchableDropdown
+                                                    options={paysDisponibles}
+                                                    onSelect={(pays) => setExpeditionForm({
+                                                        ...expeditionForm,
+                                                        pays_destination: getCountryName(pays.code) || pays.label,
+                                                        code_pays_destination: pays.code || '',
+                                                        destinataire: { ...expeditionForm.destinataire, ville: '' },
+                                                    })}
+                                                    disabled={paysDisponibles.length === 0}
+                                                    placeholder={expeditionForm.pays_destination?.toUpperCase() || (paysDisponibles.length === 0 ? 'Aucun pays configuré' : 'Rechercher un pays...')}
+                                                    buttonClassName="h-9 text-sm font-medium"
+                                                />
+                                            </div>
+                                        )}
                                     </div>
+                                    {/* DHD : le trajet se choisit parmi les lignes du pays, les villes en découlent. */}
+                                    {expeditionForm.type_expedition.includes('dhd') && (
+                                        <div className="sm:col-span-2">
+                                            <label className="text-[10px] font-bold text-slate-500 uppercase">Ligne (trajet) *</label>
+                                            <div className="mt-1">
+                                                <SearchableDropdown
+                                                    options={lignesDhd}
+                                                    onSelect={(ligne) => {
+                                                        const [depart, arrivee] = ligne.id.split('-').map((v) => v.trim());
+                                                        setExpeditionForm({
+                                                            ...expeditionForm,
+                                                            expediteur: { ...expeditionForm.expediteur, ville: depart || '' },
+                                                            destinataire: { ...expeditionForm.destinataire, ville: arrivee || '' },
+                                                        });
+                                                    }}
+                                                    disabled={lignesDhd.length === 0}
+                                                    placeholder={!expeditionForm.code_pays_destination
+                                                        ? "Choisissez d'abord un pays"
+                                                        : expeditionForm.destinataire.ville
+                                                            ? `${expeditionForm.expediteur.ville}-${expeditionForm.destinataire.ville}`.toUpperCase()
+                                                            : 'Rechercher un trajet...'}
+                                                    buttonClassName="h-9 text-sm font-medium"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>{/* fin grid pays */}
                                 </div>{/* fin card Trajet */}
 
@@ -540,6 +772,9 @@ const ExpeditionControl = () => {
                                             ['code_postal', 'Code postal'], ['etat', 'État / Région'], ['quartier', 'Quartier'],
                                         ].map(([field, label]) => {
                                             const isVilleInterville = field === 'ville' && expeditionForm.type_expedition === 'interville';
+                                            // DHD : ville de départ dérivée de la ligne choisie.
+                                            const isVilleDhd = field === 'ville' && expeditionForm.type_expedition.includes('dhd');
+                                            const villeVerrouillee = isVilleInterville || isVilleDhd;
                                             const villeAgence = agencyData?.agence?.commune?.nom || agencyData?.commune?.nom || '';
                                             return (
                                                 <div key={field}>
@@ -547,12 +782,12 @@ const ExpeditionControl = () => {
                                                     <input
                                                         type="text"
                                                         value={isVilleInterville ? villeAgence : (expeditionForm.expediteur[field] || '')}
-                                                        readOnly={isVilleInterville}
-                                                        onChange={(e) => !isVilleInterville && setExpeditionForm({
+                                                        readOnly={villeVerrouillee}
+                                                        onChange={(e) => !villeVerrouillee && setExpeditionForm({
                                                             ...expeditionForm,
                                                             expediteur: { ...expeditionForm.expediteur, [field]: e.target.value },
                                                         })}
-                                                        className={`w-full mt-1 px-2.5 py-1.5 text-sm border rounded-lg outline-none ${isVilleInterville ? 'bg-slate-50 border-slate-200 text-slate-500 cursor-not-allowed' : 'border-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
+                                                        className={`w-full mt-1 px-2.5 py-1.5 text-sm border rounded-lg outline-none ${villeVerrouillee ? 'bg-slate-50 border-slate-200 text-slate-500 cursor-not-allowed' : 'border-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
                                                     />
                                                 </div>
                                             );
@@ -592,11 +827,12 @@ const ExpeditionControl = () => {
                                                     <input
                                                         type="text"
                                                         value={expeditionForm.destinataire[field] || ''}
+                                                        readOnly={field === 'ville' && expeditionForm.type_expedition.includes('dhd')}
                                                         onChange={(e) => setExpeditionForm({
                                                             ...expeditionForm,
                                                             destinataire: { ...expeditionForm.destinataire, [field]: e.target.value },
                                                         })}
-                                                        className="w-full mt-1 px-2.5 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+                                                        className={`w-full mt-1 px-2.5 py-1.5 text-sm border rounded-lg outline-none ${field === 'ville' && expeditionForm.type_expedition.includes('dhd') ? 'bg-slate-50 border-slate-200 text-slate-500 cursor-not-allowed' : 'border-slate-200 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500'}`}
                                                     />
                                                 )}
                                             </div>
@@ -676,7 +912,9 @@ const ExpeditionControl = () => {
                                 <div className="flex items-center gap-2 min-w-0">
                                     <Package className="w-4 h-4 text-indigo-600 flex-shrink-0" />
                                     <span className="text-xs font-mono font-bold text-slate-700 truncate">{colis.code_colis}</span>
-                                    <span className="text-sm text-slate-600 truncate">{colis.designation}</span>
+                                    <span className="text-sm text-slate-600 truncate">
+                                        {colis.articles?.length ? colis.articles.map((a) => a.designation).join(', ') : colis.designation}
+                                    </span>
                                 </div>
                                 {canControl && editingColisId !== colis.id && splittingColisId !== colis.id && (
                                     <div className="flex items-center gap-2 flex-shrink-0">
@@ -722,6 +960,26 @@ const ExpeditionControl = () => {
                                     <div>
                                         <p className="text-[10px] font-bold text-slate-400 uppercase">Total colis</p>
                                         <p className="font-semibold text-indigo-600">{formatFCFA(colis.montant_colis_total)}</p>
+                                    </div>
+                                    {TYPES_REQUERANT_CATEGORIE.includes(expedition.type_expedition) && (
+                                        <div>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase">Catégorie</p>
+                                            <p className={`font-semibold ${colis.category_id ? 'text-slate-800' : 'text-amber-600'}`}>
+                                                {(categories || []).find((c) => c.id === colis.category_id)?.nom || 'Non définie'}
+                                            </p>
+                                        </div>
+                                    )}
+                                    <div className="col-span-2 sm:col-span-4">
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase">Articles contenus</p>
+                                        {colis.articles?.length ? (
+                                            <div className="flex flex-wrap gap-1.5 mt-1">
+                                                {colis.articles.map((a, i) => (
+                                                    <span key={i} className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded text-xs font-semibold">{a.designation}</span>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p className="text-xs text-slate-400 mt-1">Aucun article déclaré</p>
+                                        )}
                                     </div>
                                 </div>
                             )}
@@ -833,6 +1091,14 @@ const ExpeditionControl = () => {
                                             />
                                         </div>
                                     </div>
+                                    <ColisClassement
+                                        type={expedition.type_expedition}
+                                        categories={categoriesColis}
+                                        products={products}
+                                        categoryId={editForm.category_id}
+                                        articles={editForm.articles}
+                                        onChange={(v) => setEditForm({ ...editForm, ...v })}
+                                    />
                                     <div className="flex justify-end gap-2 pt-1">
                                         <button
                                             onClick={cancelEdit}
@@ -909,6 +1175,14 @@ const ExpeditionControl = () => {
                                                     className="px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none"
                                                 />
                                             </div>
+                                            <ColisClassement
+                                                type={expedition.type_expedition}
+                                                categories={categoriesColis}
+                                                products={products}
+                                                categoryId={part.category_id}
+                                                articles={part.articles}
+                                                onChange={(v) => setSplitParts((prev) => prev.map((p, i) => (i === index ? { ...p, ...v } : p)))}
+                                            />
                                         </div>
                                     ))}
                                     <button

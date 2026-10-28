@@ -1,6 +1,12 @@
 import { toast as sonnerToast } from 'sonner';
 import { createElement } from 'react';
 import { MessageCircle } from 'lucide-react';
+import { isSafeMessage, ERROR_MESSAGES } from './errorMessages';
+
+// Dernier filet de sécurité : un toast d'erreur n'affiche jamais un texte
+// technique (exception JavaScript, réponse serveur brute...).
+const guardErrorMessage = (message) =>
+    typeof message === 'string' && !isSafeMessage(message) ? ERROR_MESSAGES.DEFAULT : message;
 
 /**
  * Façade au-dessus de sonner : garde la même API publique (showToast/toast.*)
@@ -13,7 +19,7 @@ export const showToast = (message, type = 'info', duration = 5000) => {
         case 'success':
             return sonnerToast.success(message, options);
         case 'error':
-            return sonnerToast.error(message, options);
+            return sonnerToast.error(guardErrorMessage(message), options);
         case 'warning':
             return sonnerToast.warning(message, options);
         case 'chat':

@@ -1,5 +1,6 @@
 import { API_BASE_URL } from "./apiConfig";
 import { getStore } from "../store/storeAccessor";
+import { sanitizeErrorPayload, friendlyThrown } from "./errorMessages";
 
 /**
  * Service API centralisé pour gérer toutes les requêtes HTTP
@@ -83,6 +84,7 @@ class ApiService {
     // Si la réponse n'est pas OK (status 4xx ou 5xx)
     if (!response.ok) {
       console.error(`❌ Erreur API ${response.status}:`, data);
+      data = sanitizeErrorPayload(data, response.status);
 
       // Gestion spécifique des erreurs 520 (problème de serveur backend)
       if (response.status === 520) {
@@ -128,6 +130,7 @@ class ApiService {
 
     // Si la réponse contient success: false
     if (data && typeof data === "object" && data.success === false) {
+      data = sanitizeErrorPayload(data, response.status);
       const error = new Error(this.extractErrorMessage(data) || "Une erreur est survenue");
       error.status = response.status;
       error.data = data;
@@ -152,7 +155,7 @@ class ApiService {
       return await this.handleResponse(response);
     } catch (error) {
       console.error(`GET ${endpoint} error:`, error);
-      throw error;
+      throw friendlyThrown(error);
     }
   }
 
@@ -178,7 +181,7 @@ class ApiService {
       return await this.handleResponse(response);
     } catch (error) {
       console.error(`POST ${endpoint} error:`, error);
-      throw error;
+      throw friendlyThrown(error);
     }
   }
 
@@ -204,7 +207,7 @@ class ApiService {
       return await this.handleResponse(response);
     } catch (error) {
       console.error(`PUT ${endpoint} error:`, error);
-      throw error;
+      throw friendlyThrown(error);
     }
   }
 
@@ -223,7 +226,7 @@ class ApiService {
       return await this.handleResponse(response);
     } catch (error) {
       console.error(`PATCH ${endpoint} error:`, error);
-      throw error;
+      throw friendlyThrown(error);
     }
   }
 
@@ -241,7 +244,7 @@ class ApiService {
       return await this.handleResponse(response);
     } catch (error) {
       console.error(`DELETE ${endpoint} error:`, error);
-      throw error;
+      throw friendlyThrown(error);
     }
   }
 
@@ -269,7 +272,7 @@ class ApiService {
       return await this.handleResponse(response);
     } catch (error) {
       console.error(`UPLOAD ${endpoint} error:`, error);
-      throw error;
+      throw friendlyThrown(error);
     }
   }
 }
