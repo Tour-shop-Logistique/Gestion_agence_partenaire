@@ -39,7 +39,7 @@ export const useExpedition = () => {
         currentExpedition, error, message,
         lastFilters, lastColisFilters, lastDemandesFilters,
         demandes, demandesMeta,
-        reception, receptionMeta, lastReceptionFilters
+        reception, receptionMeta, lastReceptionFilters, stale
     } = useSelector(state => state.expedition);
     const { list: products, categories, status: productStatus, error: productError } = useSelector(state => state.products);
 
@@ -60,11 +60,11 @@ export const useExpedition = () => {
             String(params.date_fin) === String(lastFilters.date_fin) &&
             String(params.mode || '') === String(lastFilters.mode || '');
 
-        if (!forceRefresh && lastFilters && isSameParams && status === 'succeeded') {
+        if (!forceRefresh && !stale.expeditions && lastFilters && isSameParams && status === 'succeeded') {
             return Promise.resolve();
         }
         return dispatch(fetchExpeditions(params));
-    }, [dispatch, lastFilters, status]);
+    }, [dispatch, lastFilters, status, stale.expeditions]);
 
     const loadColis = useCallback((params = { page: 1 }, forceRefresh = false) => {
         if (!forceRefresh && (colisStatus === 'loading')) {
@@ -76,11 +76,11 @@ export const useExpedition = () => {
             params.date_debut === lastColisFilters.date_debut &&
             params.date_fin === lastColisFilters.date_fin;
 
-        if (!forceRefresh && lastColisFilters && isSameParams && colisStatus === 'succeeded') {
+        if (!forceRefresh && !stale.colis && lastColisFilters && isSameParams && colisStatus === 'succeeded') {
             return Promise.resolve();
         }
         return dispatch(fetchColis(params));
-    }, [dispatch, lastColisFilters, colisStatus]);
+    }, [dispatch, lastColisFilters, colisStatus, stale.colis]);
 
     const getExpeditionDetails = useCallback((id) => {
         // Optimisation : si l'expédition est déjà dans l'une des listes, on l'utilise directement
@@ -159,14 +159,14 @@ export const useExpedition = () => {
 
             // ❌ SUPPRESSION de la vérification sur demandes.length qui cause la boucle
             // Car demandes change à chaque fois, ce qui recréé le callback
-            if (!forceRefresh && lastDemandesFilters && isSameParams && status === 'succeeded') {
+            if (!forceRefresh && !stale.demandes && lastDemandesFilters && isSameParams && status === 'succeeded') {
                 console.log('✅ Demandes déjà chargées avec les mêmes paramètres, skip');
                 return Promise.resolve();
             }
-            
+
             console.log('📞 Appel API fetchDemandesClients avec params:', params);
             return dispatch(fetchDemandesClients(params));
-        }, [dispatch, lastDemandesFilters, status]), // ❌ RETRAIT de 'demandes' des dépendances
+        }, [dispatch, lastDemandesFilters, status, stale.demandes]), // ❌ RETRAIT de 'demandes' des dépendances
         acceptDemande: useCallback((id) => dispatch(acceptDemandeClient(id)), [dispatch]),
         refuseDemande: useCallback((id, data) => dispatch(refuseDemandeClient({ id, data })), [dispatch]),
         confirmReception: useCallback((id) => dispatch(confirmExpeditionReception(id)), [dispatch]),
@@ -179,11 +179,11 @@ export const useExpedition = () => {
             const isSameParams = lastReceptionFilters &&
                 String(params.page) === String(lastReceptionFilters.page);
 
-            if (!forceRefresh && lastReceptionFilters && isSameParams && status === 'succeeded') {
+            if (!forceRefresh && !stale.reception && lastReceptionFilters && isSameParams && status === 'succeeded') {
                 return Promise.resolve({ payload: { data: reception, meta: receptionMeta } });
             }
             return dispatch(fetchExpeditionsReception(params));
-        }, [dispatch, reception, receptionMeta, lastReceptionFilters, status]),
+        }, [dispatch, reception, receptionMeta, lastReceptionFilters, status, stale.reception]),
         receiveColisDestination: useCallback((codes) => dispatch(receiveColisDestinationThunk(codes)), [dispatch]),
         sendColisToEntrepot: useCallback((codes) => dispatch(sendColisToEntrepotThunk(codes)), [dispatch]),
         initiateRecupColis: useCallback((codes) => dispatch(initiateRecupColisThunk(codes)), [dispatch]),

@@ -7,6 +7,7 @@ import { useExpedition } from "../hooks/useExpedition";
 import { useAgency } from "../hooks/useAgency";
 import { useAuth } from "../hooks/useAuth";
 import { useWebSocket } from "../hooks/useWebSocket";
+import { useRealtimeRefetch } from "../hooks/useRealtimeRefetch";
 import PageHeader from "../components/ui/PageHeader";
 import PrintSuccessModal from "../components/Receipts/PrintSuccessModal";
 import ColisDetailsDrawer from "../components/common/ColisDetailsDrawer";
@@ -162,6 +163,14 @@ const ExpeditionsPremium = () => {
             mode: expeditionMode
         });
     }, [currentPage, dateDebut, dateFin, type, expeditionMode]);
+
+    useRealtimeRefetch(() => loadExpeditions({
+        page: currentPage,
+        date_debut: dateDebut,
+        date_fin: dateFin,
+        type: type,
+        mode: expeditionMode
+    }, true));
 
     useEffect(() => {
         fetchAgencyData();

@@ -4,6 +4,7 @@ import { useExpedition } from "../hooks/useExpedition";
 import { useAuth } from "../hooks/useAuth";
 import { useAgency } from "../hooks/useAgency";
 import { useWebSocket } from "../hooks/useWebSocket";
+import { useRealtimeRefetch, getRealtimeVersion } from "../hooks/useRealtimeRefetch";
 import { realtimeColisUpdated } from "../store/slices/expeditionSlice";
 import { Link } from "react-router-dom";
 import { toast, showToast } from "../utils/toast";
@@ -34,7 +35,7 @@ import { expeditionsApi } from "../utils/api/expeditions";
 // démontage du composant, contrairement à la réception Extraville qui vit
 // dans Redux (voir useExpedition::loadReception). Évite de refetch à chaque
 // retour sur cette page tant que les données n'ont pas été invalidées.
-let intervilleCache = { loaded: false, data: [] };
+let intervilleCache = { loaded: false, data: [], version: 0 };
 
 const ColisAReceptionner = () => {
     const dispatch = useDispatch();
@@ -114,8 +115,11 @@ const ColisAReceptionner = () => {
     }, [currentPage]);
 
     const fetchInterville = async (force = false) => {
-        if (!force && intervilleCache.loaded) return;
+        // Le cache est périmé dès qu'un événement temps réel est arrivé depuis
+        // son chargement (ex. réception confirmée depuis la page de détails).
+        if (!force && intervilleCache.loaded && intervilleCache.version === getRealtimeVersion()) return;
         intervilleCache.loaded = true;
+        intervilleCache.version = getRealtimeVersion();
         setLoadingInterville(true);
         const result = await expeditionsApi.listExpeditions({
             mode: 'reception',
@@ -135,6 +139,11 @@ const ColisAReceptionner = () => {
     useEffect(() => {
         if (activeTab === 'interville') fetchInterville();
     }, [activeTab]);
+
+    useRealtimeRefetch(() => {
+        fetchReceptionData(true);
+        if (activeTab === 'interville') fetchInterville(true);
+    }, { enabled: !!currentUser?.agence_id });
 
     const handleConfirmerReceptionInterville = async (expeditionId) => {
         setConfirmingReceptionId(expeditionId);

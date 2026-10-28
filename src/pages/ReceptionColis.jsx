@@ -12,6 +12,7 @@ import {
     QrCodeIcon
 } from "@heroicons/react/24/outline";
 import { useExpedition } from "../hooks/useExpedition";
+import { useRealtimeRefetch } from "../hooks/useRealtimeRefetch";
 import { toast } from "../utils/toast";
 import PageHeader from "../components/ui/PageHeader";
 import soundNotification from "../utils/soundNotification";
@@ -44,6 +45,8 @@ const ReceptionColis = () => {
     useEffect(() => {
         loadReception({ page: 1 }, true);
     }, [loadReception]);
+
+    useRealtimeRefetch(() => loadReception({ page: 1 }, true));
 
     // Handle toast messages
     useEffect(() => {

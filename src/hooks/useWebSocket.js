@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { getEcho, disconnectEcho } from '../services/echo';
+import { emitRealtime } from './useRealtimeRefetch';
 
 // Stockage des références récemment créées pour éviter les notifications auto-générées
 const recentlyCreatedRefs = new Set();
@@ -250,6 +251,7 @@ export function useWebSocket(agenceId, handlers = {}, enabled = true) {
 
       console.log(`👂 [WebSocket] Écoute de l'événement '.model.updated' sur ${channelName}`);
       channel.listen('.model.updated', (payload) => {
+        emitRealtime(payload);
         channelListeners.get(channelName)?.forEach((cb) => cb(payload));
       });
     }

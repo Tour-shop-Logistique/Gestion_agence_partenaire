@@ -22,8 +22,9 @@ import { autoCheckAndUpdate, handleChunkLoadError } from "./utils/versionChecker
 import { getEcho, disconnectEcho } from "./services/echo";
 import { fetchNotifications, announcementReceived } from "./store/slices/notificationsSlice";
 import { messageReceived, messageUpdated, messageDeleted } from "./store/slices/messagesSlice";
-import { fraisDecisionRequested, fraisDecisionResolved } from "./store/slices/expeditionSlice";
+import { fraisDecisionRequested, fraisDecisionResolved, invalidateListCaches } from "./store/slices/expeditionSlice";
 import { useWebSocket } from "./hooks/useWebSocket";
+import { subscribeRealtime } from "./hooks/useRealtimeRefetch";
 import { showToast } from "./utils/toast";
 import soundNotification from "./utils/soundNotification";
 import { requestNotificationPermission, showBrowserNotification } from "./utils/browserNotification";
@@ -164,6 +165,15 @@ function AppContent() {
       };
     }
   }, [isAuthenticated, status]);
+
+  // Tout événement temps réel sur une expédition/un colis rend les listes en
+  // cache obsolètes : la prochaine navigation vers une liste la recharge au
+  // lieu de réafficher une version périmée (ex. retour après réception).
+  useEffect(() => subscribeRealtime((payload) => {
+    if (payload?.model === "Expedition" || payload?.model === "Colis") {
+      dispatch(invalidateListCaches());
+    }
+  }), [dispatch]);
 
   // Demande la permission d'afficher des notifications systeme une fois
   // l'utilisateur authentifie (le navigateur exige un geste/contexte utilisateur).

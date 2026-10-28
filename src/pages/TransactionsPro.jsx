@@ -11,6 +11,7 @@ import {
   selectTransactionsStatus 
 } from '../store/slices/agencySlice';
 import { useExpedition } from '../hooks/useExpedition';
+import { useRealtimeRefetch } from '../hooks/useRealtimeRefetch';
 import { useAgency } from '../hooks/useAgency';
 import { getCurrencyLabel } from '../utils/format';
 import { toast } from '../utils/toast';
@@ -91,6 +92,13 @@ const TransactionsPro = () => {
     dispatch(fetchTransactions({ date_debut: dateDebut, date_fin: dateFin }));
     fetchAgencyData();
   }, [dispatch, dateDebut, dateFin, fetchAgencyData]);
+
+  // Paiements enregistrés (par un collègue, le client ou le backoffice) :
+  // la liste se met à jour sans cliquer sur Actualiser.
+  useRealtimeRefetch(
+    () => dispatch(fetchTransactions({ date_debut: dateDebut, date_fin: dateFin })),
+    { models: ['Expedition'] }
+  );
 
   // Fermer dropdown export au clic extérieur
   useEffect(() => {

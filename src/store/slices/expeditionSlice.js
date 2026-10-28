@@ -420,8 +420,15 @@ const expeditionSlice = createSlice({
         // frais annexes et pour lesquelles l'agence doit choisir un mode de
         // règlement (écran de décision bloquant, voir FraisDecisionModal).
         pendingFraisDecisions: [],
+        // Une liste "stale" est rechargée au prochain load*() même si les
+        // paramètres n'ont pas changé : un événement temps réel l'a rendue
+        // obsolète (voir invalidateListCaches).
+        stale: { expeditions: false, colis: false, demandes: false, reception: false },
     },
     reducers: {
+        invalidateListCaches: (state) => {
+            state.stale = { expeditions: true, colis: true, demandes: true, reception: true };
+        },
         clearExpeditionStatus: (state) => {
             state.status = "idle";
             state.colisStatus = "idle";
@@ -567,6 +574,7 @@ const expeditionSlice = createSlice({
                 state.expeditions = action.payload.data;
                 state.meta = action.payload.meta || state.meta;
                 state.lastFilters = action.meta.arg; // The params passed to the thunk
+                state.stale.expeditions = false;
             })
             .addCase(fetchExpeditions.rejected, (state, action) => {
                 // Ne pas effacer les données existantes en cas d'erreur
@@ -586,6 +594,7 @@ const expeditionSlice = createSlice({
                 state.colis = action.payload.data;
                 state.colisMeta = action.payload.meta || state.colisMeta;
                 state.lastColisFilters = action.meta.arg;
+                state.stale.colis = false;
             })
             .addCase(fetchColis.rejected, (state, action) => {
                 state.colisStatus = "failed";
@@ -626,6 +635,7 @@ const expeditionSlice = createSlice({
                 state.demandes = action.payload.data;
                 state.demandesMeta = action.payload.meta || state.demandesMeta;
                 state.lastDemandesFilters = action.meta.arg;
+                state.stale.demandes = false;
             })
             .addCase(fetchDemandesClients.rejected, (state, action) => {
                 // Ne pas effacer les données existantes en cas d'erreur
@@ -791,6 +801,7 @@ const expeditionSlice = createSlice({
                 state.reception = action.payload.data;
                 state.receptionMeta = action.payload.meta || state.receptionMeta;
                 state.lastReceptionFilters = action.meta.arg;
+                state.stale.reception = false;
             })
             .addCase(fetchExpeditionsReception.rejected, (state, action) => {
                 state.status = "failed";
@@ -914,6 +925,6 @@ const expeditionSlice = createSlice({
     },
 });
 
-export const { clearExpeditionStatus, setCurrentExpedition, clearSimulation, clearCurrentExpedition, fraisDecisionRequested, fraisDecisionResolved, realtimeColisUpdated, realtimeExpeditionPatched, realtimeCurrentExpeditionColisPatched } = expeditionSlice.actions;
+export const { invalidateListCaches, clearExpeditionStatus, setCurrentExpedition, clearSimulation, clearCurrentExpedition, fraisDecisionRequested, fraisDecisionResolved, realtimeColisUpdated, realtimeExpeditionPatched, realtimeCurrentExpeditionColisPatched } = expeditionSlice.actions;
 
 export default expeditionSlice.reducer;

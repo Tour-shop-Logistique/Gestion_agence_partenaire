@@ -2,6 +2,7 @@
 import { useExpedition } from "../hooks/useExpedition";
 import { useAuth } from "../hooks/useAuth";
 import { useWebSocket } from "../hooks/useWebSocket";
+import { useRealtimeRefetch } from "../hooks/useRealtimeRefetch";
 import { Link } from "react-router-dom";
 import ConvertedAmount from "../components/common/ConvertedAmount";
 import { toast, showToast } from "../utils/toast";
@@ -110,6 +111,8 @@ const Colis = () => {
         fetchColisData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentPage]); // ✅ Retrait de loadExpeditions des dépendances
+
+    useRealtimeRefetch(() => fetchColisData(true), { enabled: !!currentUser?.agence_id });
 
     useEffect(() => {
         if (message || error) {
@@ -567,7 +570,7 @@ const Colis = () => {
                                 séparées (colis vs expéditions) */}
                             <Link
                                 to={`/expeditions/${exp.id}`}
-                                className="flex items-center justify-between gap-2 px-3 py-2.5 bg-gradient-to-r from-indigo-500 to-indigo-600"
+                                className="flex items-center justify-between gap-2 px-3 py-2.5 bg-gradient-to-r from-[#003d47] via-[#005566] to-[#003d47]"
                                 title="Voir les détails de l'expédition"
                             >
                                 <div className="flex items-center gap-2 min-w-0">
@@ -581,15 +584,10 @@ const Colis = () => {
                                         {getCountryName(exp.code_pays_destination) || exp.pays_destination}
                                     </span>
                                 </div>
-                                <div className="flex items-center gap-2 flex-shrink-0">
-                                    <span className="px-2 py-0.5 bg-white/20 rounded text-[9px] font-bold text-white">
-                                        {exp.colis.length} colis
-                                    </span>
-                                    <span className="px-2 py-0.5 bg-white/20 rounded text-[9px] font-bold text-white flex items-center gap-1">
-                                        Détails
-                                        <ChevronRightIcon className="w-3 h-3 text-white/80" />
-                                    </span>
-                                </div>
+                                <span className="flex-shrink-0 px-2 py-0.5 bg-white/20 rounded text-[9px] font-bold text-white flex items-center gap-1">
+                                    Détails
+                                    <ChevronRightIcon className="w-3 h-3 text-white/80" />
+                                </span>
                             </Link>
 
                             <div className="divide-y divide-slate-100">
@@ -754,7 +752,7 @@ const Colis = () => {
                                                 </tr>
 
                                                 {/* 📦 EXPEDITION HEADER - Design Card-like avec ombre */}
-                                                <tr className="bg-gradient-to-r from-indigo-500 to-indigo-600 shadow-lg">
+                                                <tr className="bg-gradient-to-r from-[#003d47] via-[#005566] to-[#003d47] shadow-lg">
                                                     <td className="px-5 py-3.5" colSpan="7">
                                                         <div className="flex items-center justify-between">
                                                             <div className="flex items-center gap-4">
@@ -781,21 +779,20 @@ const Colis = () => {
                                                                 </div>
                                                             </div>
 
-                                                            {/* Compteur colis */}
-                                                            <div className="flex items-center gap-2 px-3 py-1.5 bg-white/20 rounded-lg backdrop-blur-sm border border-white/30">
-                                                                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                                                                </svg>
-                                                                <span className="text-xs font-bold text-white">{expColis.length}</span>
-                                                                <span className="text-xs font-medium text-white/80">colis</span>
-                                                            </div>
+                                                            <Link
+                                                                to={`/expeditions/${exp.id}`}
+                                                                className="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg border border-white/30 text-xs font-bold text-white transition-colors"
+                                                            >
+                                                                Détails
+                                                                <ChevronRightIcon className="w-4 h-4 text-white/80" />
+                                                            </Link>
                                                         </div>
                                                     </td>
                                                 </tr>
 
                                                 {/* ── Ligne de transition header → colis (bordure fine) ── */}
-                                                <tr className="h-0.5 bg-indigo-100">
-                                                    <td colSpan="7" className="border-b border-indigo-200"></td>
+                                                <tr className="h-0.5 bg-[#003d47]/10">
+                                                    <td colSpan="7" className="border-b border-[#003d47]/20"></td>
                                                 </tr>
 
                                                 {/* 📋 COLIS ROWS */}
@@ -1013,7 +1010,7 @@ const Colis = () => {
                             const isConfirmingDepart = confirmingDepartExpeditionId === exp.id;
                             return (
                                 <div key={exp.id} id={`expedition-interville-${exp.id}`} className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-                                    <div className="flex items-center justify-between gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-indigo-600">
+                                    <div className="flex items-center justify-between gap-2 px-4 py-2.5 bg-gradient-to-r from-[#003d47] via-[#005566] to-[#003d47]">
                                         <Link to={`/expeditions/${exp.id}`} className="flex items-center gap-2 min-w-0">
                                             <span className="text-xs font-bold text-white truncate">{exp.reference}</span>
                                             <span className="text-[10px] font-medium text-white/70">
@@ -1022,9 +1019,13 @@ const Colis = () => {
                                                 {exp.commune_arrivee_nom || getCountryName(exp.code_pays_destination) || exp.pays_destination}
                                             </span>
                                         </Link>
-                                        <span className="flex-shrink-0 px-2 py-0.5 bg-white/20 rounded text-[9px] font-bold text-white">
-                                            {exp.colis.length} colis
-                                        </span>
+                                        <Link
+                                            to={`/expeditions/${exp.id}`}
+                                            className="flex-shrink-0 flex items-center gap-1 px-2 py-0.5 bg-white/20 hover:bg-white/30 rounded text-[9px] font-bold text-white transition-colors"
+                                        >
+                                            Détails
+                                            <ChevronRightIcon className="w-3 h-3 text-white/80" />
+                                        </Link>
                                     </div>
 
                                     <div className="p-4 space-y-3">

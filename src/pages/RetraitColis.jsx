@@ -16,6 +16,7 @@ import {
     MapPinIcon
 } from "@heroicons/react/24/outline";
 import { useExpedition } from "../hooks/useExpedition";
+import { useRealtimeRefetch } from "../hooks/useRealtimeRefetch";
 import { toast } from "../utils/toast";
 import ConfirmationModal from "../components/ConfirmationModal";
 import ColisDetailsDrawer from "../components/common/ColisDetailsDrawer";
@@ -115,11 +116,15 @@ const RetraitColis = () => {
         }
     }, [message, error, resetStatus]);
 
-    const handleSearch = async (e) => {
-        if (e) e.preventDefault();
+    // silent : rechargement déclenché par un événement temps réel, sans
+    // spinner ni perte de la sélection en cours.
+    const handleSearch = async (e, { silent = false } = {}) => {
+        if (e?.preventDefault) e.preventDefault();
 
-        setLocalLoading(true);
-        setHasSearched(true);
+        if (!silent) {
+            setLocalLoading(true);
+            setHasSearched(true);
+        }
         const result = await loadColis({
             retrait: 1,
             ...(searchQuery ? { search: searchQuery } : {}),
@@ -130,10 +135,12 @@ const RetraitColis = () => {
 
         if (result && result.payload) {
             setSearchResults(result.payload.data || []);
-            setSelectedColis([]);
+            if (!silent) setSelectedColis([]);
         }
-        setLocalLoading(false);
+        if (!silent) setLocalLoading(false);
     };
+
+    useRealtimeRefetch(() => handleSearch(null, { silent: true }));
 
     // Charge la liste dès l'arrivée sur la page (colis reçus en agence, pas
     // encore retirés) - pas besoin de taper une recherche pour voir quoi que

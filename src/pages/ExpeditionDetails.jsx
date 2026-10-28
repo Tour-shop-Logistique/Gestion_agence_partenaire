@@ -7,6 +7,7 @@ import { useExpedition } from '../hooks/useExpedition';
 import { useAgency } from '../hooks/useAgency';
 import { useAuth } from '../hooks/useAuth';
 import { useWebSocket } from '../hooks/useWebSocket';
+import { useRealtimeRefetch } from '../hooks/useRealtimeRefetch';
 import { realtimeExpeditionPatched } from '../store/slices/expeditionSlice';
 import PrintSuccessModal from '../components/Receipts/PrintSuccessModal';
 import { getLogoUrl } from '../utils/apiConfig';
@@ -81,6 +82,15 @@ const ExpeditionDetails = () => {
         },
         !!currentUser?.agence_id
     );
+
+    // Recharge le détail quand un événement concerne CETTE expédition (ou l'un
+    // de ses colis), y compris les actions sans handler dédié ci-dessus
+    // (réception de colis, dépôt livreur, retrait...).
+    useRealtimeRefetch(() => getExpeditionDetails(id), {
+        enabled: !!id,
+        match: (p) => (p.ids || []).includes(id)
+            || (p.data || []).some((d) => d?.expedition_id === id || d?.id === id),
+    });
 
     // États des modales
     const [isRefuseModalOpen, setIsRefuseModalOpen] = React.useState(false);

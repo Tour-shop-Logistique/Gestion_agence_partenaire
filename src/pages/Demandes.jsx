@@ -3,6 +3,7 @@ import { useExpedition } from "../hooks/useExpedition";
 import { useAgency } from "../hooks/useAgency";
 import { useAuth } from "../hooks/useAuth";
 import { useWebSocket } from "../hooks/useWebSocket";
+import { useRealtimeRefetch } from "../hooks/useRealtimeRefetch";
 import { getCurrencyLabel } from "../utils/format";
 import { Link, useNavigate } from "react-router-dom";
 import { toast, showToast } from "../utils/toast";
@@ -104,6 +105,13 @@ const Demandes = () => {
         !!currentUser?.agence_id
     );
     
+    // Filet de sécurité : tout événement expédition/colis (réception, enlèvement,
+    // statut...) recharge les deux onglets, même sans handler dédié ci-dessus.
+    useRealtimeRefetch(() => {
+        loadDemandes({ page: currentPage }, true);
+        loadExpeditions({ page: 1 }, true);
+    }, { enabled: !!currentUser?.agence_id });
+
     // Charger les demandes lorsque la page change
     useEffect(() => {
         console.log('📄 Demandes page: Chargement page', currentPage);
