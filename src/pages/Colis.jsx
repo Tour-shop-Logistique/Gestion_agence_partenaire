@@ -666,19 +666,31 @@ const Colis = () => {
                                         {/* Footer Actions : le bouton Détails reste toujours visible,
                                             même une fois le colis envoyé - seul "Envoyer" disparaît. */}
                                         <div className="px-3 pb-3 pt-1 flex items-center justify-between gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setDetailsColis(item);
-                                                }}
-                                                className="px-2.5 py-1.5 bg-slate-900 text-white rounded text-[9px] font-bold uppercase hover:bg-slate-800 transition-all flex items-center gap-1"
-                                            >
-                                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                                </svg>
-                                                Détails
-                                            </button>
+                                            <div className="flex items-center gap-1.5">
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setDetailsColis(item);
+                                                    }}
+                                                    className="px-2.5 py-1.5 bg-slate-900 text-white rounded text-[9px] font-bold uppercase hover:bg-slate-800 transition-all flex items-center gap-1"
+                                                >
+                                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                    </svg>
+                                                    Colis
+                                                </button>
+                                                <Link
+                                                    to={`/expeditions/${item.expedition_id}`}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className="px-2.5 py-1.5 bg-indigo-600 text-white rounded text-[9px] font-bold uppercase hover:bg-indigo-700 transition-all flex items-center gap-1"
+                                                >
+                                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8 8-4-4" />
+                                                    </svg>
+                                                    Expédition
+                                                </Link>
+                                            </div>
                                             {!item.is_sent && (
                                                 <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
                                                     <button
@@ -884,17 +896,29 @@ const Colis = () => {
                                                             </div>
                                                         </td>
                                                         <td className="px-4 py-4 text-center" onClick={(e) => e.stopPropagation()}>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setDetailsColis(item)}
-                                                                className="inline-flex items-center px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition-colors"
-                                                                title="Voir les détails"
-                                                            >
-                                                                <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                                                </svg>
-                                                                Détails
-                                                            </button>
+                                                            <div className="flex items-center justify-center gap-2">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setDetailsColis(item)}
+                                                                    className="inline-flex items-center px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition-colors"
+                                                                    title="Détails du colis"
+                                                                >
+                                                                    <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                                    </svg>
+                                                                    Colis
+                                                                </button>
+                                                                <Link
+                                                                    to={`/expeditions/${item.expedition_id}`}
+                                                                    className="inline-flex items-center px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg transition-colors"
+                                                                    title="Voir l'expédition"
+                                                                >
+                                                                    <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8 8-4-4" />
+                                                                    </svg>
+                                                                    Expédition
+                                                                </Link>
+                                                            </div>
                                                         </td>
                                                     </tr>
                                                 ))}
