@@ -616,6 +616,15 @@ const expeditionSlice = createSlice({
                 // Unwrap potentially nested expedition data from API response
                 const expeditionData = action.payload?.expedition || action.payload?.data || action.payload;
                 state.currentExpedition = expeditionData;
+                // Les listes (expéditions, demandes) reprennent la version fraîche,
+                // sinon elles restent figées jusqu'à une actualisation manuelle.
+                if (expeditionData?.id) {
+                    const patch = (list) => Array.isArray(list)
+                        ? list.map((e) => (e.id === expeditionData.id ? { ...e, ...expeditionData } : e))
+                        : list;
+                    state.expeditions = patch(state.expeditions);
+                    state.demandes = patch(state.demandes);
+                }
             })
             .addCase(fetchExpeditionById.rejected, (state, action) => {
                 state.status = "failed";
@@ -707,6 +716,8 @@ const expeditionSlice = createSlice({
             })
             .addCase(updateColisControl.fulfilled, (state, action) => {
                 state.status = "succeeded";
+                state.stale.expeditions = true;
+                state.stale.colis = true;
                 state.message = action.payload.message;
                 const { expeditionId, colisId, colis } = action.payload;
                 if (state.currentExpedition?.id === expeditionId && colis) {
@@ -722,6 +733,8 @@ const expeditionSlice = createSlice({
             })
             .addCase(splitColisControl.fulfilled, (state, action) => {
                 state.status = "succeeded";
+                state.stale.expeditions = true;
+                state.stale.colis = true;
                 state.message = action.payload.message;
                 const { expeditionId, colis } = action.payload;
                 if (state.currentExpedition?.id === expeditionId && Array.isArray(colis)) {
@@ -734,6 +747,8 @@ const expeditionSlice = createSlice({
             })
             .addCase(recalculateExpeditionTarif.fulfilled, (state, action) => {
                 state.status = "succeeded";
+                state.stale.expeditions = true;
+                state.stale.colis = true;
                 state.message = action.payload.message;
                 const { expeditionId, expedition } = action.payload;
                 if (state.currentExpedition?.id === expeditionId && expedition) {
@@ -750,6 +765,8 @@ const expeditionSlice = createSlice({
             })
             .addCase(updateExpeditionControl.fulfilled, (state, action) => {
                 state.status = "succeeded";
+                state.stale.expeditions = true;
+                state.stale.colis = true;
                 state.message = action.payload.message;
                 const { expeditionId, expedition } = action.payload;
                 if (state.currentExpedition?.id === expeditionId && expedition) {

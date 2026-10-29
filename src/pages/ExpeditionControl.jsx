@@ -476,6 +476,7 @@ const ExpeditionControl = () => {
             format_colis_id: colis.format_colis_id ?? '',
             category_id: colis.category_id ?? '',
             articles: Array.isArray(colis.articles) ? colis.articles : [],
+            designation: colis.designation ?? '',
         });
     };
 
@@ -632,27 +633,27 @@ const ExpeditionControl = () => {
     const enregistrerExpedition = async () => {
         if (panel) {
             toast.error('Validez ou annulez le colis en cours de modification.');
-            return;
+            return false;
         }
         if (!expeditionForm) {
             await recalculer();
-            return;
+            return true;
         }
         setMontantInitial((m) => m ?? parseFloat(expedition.montant_expedition));
         if (!formIsInterville && !expeditionForm.pays_destination) {
             toast.error('Choisissez le pays de destination.');
-            return;
+            return false;
         }
         if (formIsDhd && !expeditionForm.destinataire.ville) {
             toast.error('Choisissez la ligne DHD.');
-            return;
+            return false;
         }
 
         setIsSaving(true);
         setIsRecalculating(true);
         try {
             const result = await updateExpedition(expedition.id, expeditionPayload());
-            if (result.error) return;
+            if (result.error) return false;
             cancelEditExpedition();
             const { montantAvant, montantApres } = result.payload || {};
             setMontantFlash(true);
@@ -660,6 +661,7 @@ const ExpeditionControl = () => {
             if (montantAvant !== undefined && montantAvant !== montantApres) {
                 toast.success(`Nouveau montant : ${formatFCFA(montantApres)} (avant : ${formatFCFA(montantAvant)})`);
             }
+            return true;
         } finally {
             setIsSaving(false);
             setIsRecalculating(false);
@@ -668,13 +670,25 @@ const ExpeditionControl = () => {
         }
     };
 
+    // Revient sur la page détails sans empiler d'entrée d'historique (le bouton
+    // retour ne doit pas ramener ici) ; accès direct sans historique : remplace.
+    const retourDetails = () => {
+        if (window.history.state?.idx > 0) navigate(-1);
+        else navigate(`/expeditions/${expedition.id}`, { replace: true });
+    };
+
     const notifierClient = async () => {
+        // Modification d'expédition en cours : on l'enregistre d'abord.
+        if (expeditionForm) {
+            if (!(await enregistrerExpedition())) return;
+        }
         setIsNotifying(true);
         try {
             const r = await expeditionsApi.notifyClient(expedition.id, montantInitial ?? undefined);
             if (r.success) {
                 toast.success(r.message || 'Le client a été notifié.');
                 setMontantInitial(null);
+                retourDetails();
             } else {
                 toast.error(r.message || "La notification n'a pas pu être envoyée.");
             }
@@ -774,7 +788,7 @@ const ExpeditionControl = () => {
                 <header className="bg-white rounded-2xl shadow-sm ring-1 ring-slate-900/5 overflow-hidden">
                     <div className="h-1 bg-gradient-to-r from-[#005566] via-[#007a8c] to-emerald-400" />
                     <div className="px-4 sm:px-6 py-4 flex items-center gap-3">
-                        <button onClick={() => navigate(`/expeditions/${expedition.id}`)} aria-label="Retour"
+                        <button onClick={retourDetails} aria-label="Retour"
                             className="w-10 h-10 flex-shrink-0 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center justify-center transition">
                             <ArrowLeft className="w-4 h-4" />
                         </button>
@@ -1037,6 +1051,7 @@ const ExpeditionControl = () => {
                                             </p>
                                         ) : (
                                             <div className="flex flex-wrap gap-1.5">
+                                                {colis.designation && <p className="w-full text-xs text-slate-600 mb-0.5">{colis.designation}</p>}
                                                 {colis.articles.map((a, i) => (
                                                     <span key={i} className="px-2.5 py-1 rounded-full bg-[#007a8c]/10 text-[#005566] text-xs font-semibold">{a.designation}</span>
                                                 ))}
@@ -1081,6 +1096,11 @@ const ExpeditionControl = () => {
                                             articles={editForm.articles}
                                             onChange={(v) => setEditForm({ ...editForm, ...v })}
                                         />
+                                        <Field label="Désignation">
+                                            <input type="text" maxLength={255} value={editForm.designation || ''}
+                                                onChange={(e) => setEditForm({ ...editForm, designation: e.target.value })}
+                                                placeholder="Description du contenu" className={inputCls} />
+                                        </Field>
                                         <ActionBar onCancel={closePanel} onConfirm={() => validerEdit(colis.id)} busy={isSubmitting}
                                             disabled={!editForm.poids} label="Valider et recalculer" />
                                     </div>
@@ -1164,7 +1184,7 @@ const ExpeditionControl = () => {
                                     title={expedition.is_demande_client ? undefined : "Expédition créée en agence : pas de client à notifier"}
                                     className="h-11 px-4 sm:px-5 rounded-xl text-sm font-bold text-white bg-white/15 hover:bg-white/25 ring-1 ring-white/40 disabled:opacity-50 inline-flex items-center justify-center gap-2 transition">
                                     {isNotifying ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bell className="w-4 h-4" />}
-                                    Notifier le client
+                                    Enregistrer et notifier le client
                                 </button>
                             </div>
                         )}

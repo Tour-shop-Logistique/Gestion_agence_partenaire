@@ -181,7 +181,7 @@ const CreateExpeditionV2 = () => {
         loading: tarifsLoading
     } = useTarifs();
     const { data: agencyData, fetchAgencyData, status: agencyStatus } = useAgency();
-    const { logistics, fetchDashboard, status: dashboardStatus } = useDashboard();
+    const { logistics, fetchDashboard } = useDashboard();
 
     // Villes du pays de destination (LD, Afrique, CA) — chargées via CountriesNow
     const [citiesForDestination, setCitiesForDestination] = useState([]);
@@ -1326,11 +1326,17 @@ const CreateExpeditionV2 = () => {
 
     // Chargement initial des données nécessaires au formulaire (produits, catégories,
     // tarifs, agence, dashboard) : évite d'afficher des listes vides le temps du fetch
+    // Stale-while-revalidate : si les données sont déjà en cache Redux (visite
+    // précédente), le formulaire s'affiche aussitôt et se rafraîchit en
+    // arrière-plan. Le dashboard n'est jamais bloquant : il sert seulement à
+    // déduire le prochain numéro de colis, recalculé dès qu'il arrive.
+    const isSettled = (s) => s === 'succeeded' || s === 'failed';
+    const hasCachedTarifs = [baseTarifs, existingTarifs, baseGroupageTarifs, existingGroupageTarifs, intervilleTarifs]
+        .some((t) => (Array.isArray(t) ? t.length > 0 : !!t && Object.keys(t).length > 0));
     const initialLoading =
-        (productStatus !== 'succeeded' && productStatus !== 'failed') ||
-        (agencyStatus !== 'succeeded' && agencyStatus !== 'failed') ||
-        (dashboardStatus !== 'succeeded' && dashboardStatus !== 'failed') ||
-        tarifsLoading;
+        (!(products?.length > 0) && !isSettled(productStatus)) ||
+        (!agencyData && !isSettled(agencyStatus)) ||
+        (tarifsLoading && !hasCachedTarifs);
 
     const getInputBorderClass = (value, isRequired = false, isDisabled = false) => {
         if (isDisabled) {

@@ -48,7 +48,9 @@ const ExpeditionDetails = () => {
     const canRefuse = useHasPermission("demandes.refuse");
     const canControl = useHasPermission("expeditions.control");
     const {
-        currentExpedition: expedition,
+        currentExpedition,
+        expeditions: listeExpeditions,
+        demandes: listeDemandes,
         getExpeditionDetails,
         acceptDemande,
         refuseDemande,
@@ -59,6 +61,15 @@ const ExpeditionDetails = () => {
         recordTransaction
     } = useExpedition();
     const { data: agencyData, fetchAgencyData } = useAgency();
+
+    // L'API est toujours appelée à l'ouverture ; les données de la liste
+    // d'origine ne servent que si ce chargement échoue.
+    const [chargement, setChargement] = React.useState('loading'); // 'loading' | 'ok' | 'failed'
+    const expedition = chargement === 'ok'
+        ? (String(currentExpedition?.id) === String(id) ? currentExpedition : null)
+        : chargement === 'failed'
+            ? ([...(listeExpeditions || []), ...(listeDemandes || [])].find((e) => String(e.id) === String(id)) || null)
+            : null;
 
     // Cette page affiche state.expedition.currentExpedition, un state distinct
     // de celui patché par le hook websocket global (App.jsx) - sans cette
@@ -116,9 +127,11 @@ const ExpeditionDetails = () => {
 
     // Chargement des données
     useEffect(() => {
-        if (id) {
-            getExpeditionDetails(id);
-        }
+        if (!id) return;
+        setChargement('loading');
+        getExpeditionDetails(id).then((action) => {
+            setChargement(action.meta?.requestStatus === 'rejected' ? 'failed' : 'ok');
+        });
     }, [id, getExpeditionDetails]);
 
     useEffect(() => {
@@ -277,6 +290,14 @@ const ExpeditionDetails = () => {
     // toute la page à chaque refetch silencieux déclenché après une action
     // annexe (ex: enregistrement d'une transaction de paiement).
     if (!expedition) {
+        if (chargement === 'failed') {
+            return (
+                <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
+                    <p className="text-sm font-medium text-slate-600">Impossible de charger cette expédition.</p>
+                    <button onClick={() => navigate(-1)} className="text-sm font-semibold text-indigo-600">Retour</button>
+                </div>
+            );
+        }
         return (
             <div className="flex flex-col items-center justify-center min-h-[400px]">
                 <Spinner size="xl" color="indigo" />
