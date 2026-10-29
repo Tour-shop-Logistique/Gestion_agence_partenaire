@@ -4,6 +4,7 @@ import Sidebar from './Sidebar';
 import Header from './Header';
 import OrnamentalBackground from './OrnamentalBackground';
 import PushNotificationPrompt from './PushNotificationPrompt';
+import IdleLock from './IdleLock';
 
 const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -12,6 +13,7 @@ const DashboardLayout = () => {
     <div className="min-h-screen bg-transparent relative">
       {/* ========== FOND ORNAMENTAL GLOBAL ========== */}
       <OrnamentalBackground />
+      <IdleLock />
 
       {/* Sidebar - fixed position for desktop only */}
       <aside className="hidden lg:block fixed inset-y-0 left-0 z-40 w-64 border-r border-white/5">
