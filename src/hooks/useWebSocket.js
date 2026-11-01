@@ -208,6 +208,12 @@ export function useWebSocket(agenceId, handlers = {}, enabled = true) {
         }
         break;
 
+      case 'Mission':
+        if (action === 'paiement_livreur_requis' && handlersRef.current.onMissionPaiementLivreurRequis) {
+          handlersRef.current.onMissionPaiementLivreurRequis(data, { ids, references, changes, count, at });
+        }
+        break;
+
       case 'PreuvePaiement':
         if (action === 'soumise' && handlersRef.current.onPreuvePaiementSoumise) {
           handlersRef.current.onPreuvePaiementSoumise(data, { ids, references, changes, count, at });

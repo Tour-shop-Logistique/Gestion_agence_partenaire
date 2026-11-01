@@ -242,6 +242,30 @@ function AppContent() {
       soundNotification.playSuccess();
       showBrowserNotification(entry.title, { body: entry.message, onClick: () => navigate(entry.link) });
     },
+    onMissionPaiementLivreurRequis: (data) => {
+      const item = Array.isArray(data) ? data[0] : data;
+      if (!item) return;
+      const estExpress = item.mode === 'express';
+      const montant = item.montant ? ` (${Number(item.montant).toLocaleString('fr-FR')})` : '';
+      const title = estExpress ? '💰 Paiement livreur à enregistrer' : '💰 Transfert au backoffice requis';
+      const message = estExpress
+        ? `Colis ${item.reference} récupéré. Payez le livreur${montant} et enregistrez le décaissement.`
+        : `Colis ${item.reference} récupéré. Transférez${montant} au backoffice pour paiement du livreur.`;
+      const link = item.expedition_id ? `/expeditions/${item.expedition_id}` : '/transactions';
+      dispatch(notificationAdded({
+        id: `mission-paiement-livreur-${item.id}-${Date.now()}`,
+        model: 'Mission',
+        action: 'paiement_livreur_requis',
+        title,
+        message,
+        link,
+        read: false,
+        createdAt: new Date().toISOString(),
+      }));
+      showToast(`💰 ${message}`, 'warning');
+      soundNotification.playAlert();
+      showBrowserNotification(title, { body: message, onClick: () => navigate(link) });
+    },
     onMessageReceived: (data) => {
       const message = Array.isArray(data) ? data[0] : data;
       if (!message) return;
