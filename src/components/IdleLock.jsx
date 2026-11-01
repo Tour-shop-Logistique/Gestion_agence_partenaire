@@ -4,7 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { authApi } from '../utils/api/auth';
 
 // Verrouillage après 10 min sans activité (touche, souris, tactile, défilement).
-const IDLE_MS = 10 * 60 * 1000;
+const IDLE_MS = 30 * 60 * 1000;
 const ACTIVITY_KEY = 'last_activity_at';
 // sessionStorage survit au rechargement (F5) mais pas à la fermeture de
 // l'onglet : sa disparition signale une page fermée puis rouverte.
