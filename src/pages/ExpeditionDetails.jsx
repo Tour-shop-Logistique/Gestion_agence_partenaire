@@ -410,7 +410,7 @@ const ExpeditionDetails = () => {
                                     </button>
                                 )}
 
-                                {expedition.statut_expedition === 'recu_agence_depart' && canControl && (
+                                {expedition.statut_expedition === 'recu_agence_depart' && canControl && expedition.statut_paiement_expedition !== 'paye' && (
                                     <button
                                         onClick={() => navigate(`/expeditions/${expedition.id}/controle`)}
                                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors"
