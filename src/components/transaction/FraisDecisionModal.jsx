@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import Spinner from '../common/Spinner';
 import RecordTransactionModal from './RecordTransactionModal';
 import { decisionFraisAnnexes } from '../../store/slices/expeditionSlice';
@@ -27,6 +28,13 @@ const FraisDecisionModal = ({ expedition, onClose }) => {
   const dispatch = useDispatch();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showTransactionModal, setShowTransactionModal] = useState(false);
+  const navigate = useNavigate();
+  // Preuve déposée à distance : sa confirmation enregistre l'encaissement
+  // toute seule, le formulaire ci-dessous ne sert qu'au paiement au guichet.
+  const preuveEnAttente = useSelector((state) =>
+    state.paiements.preuvesExpeditionId === expedition?.id
+      && state.paiements.preuves.some((p) => p.objet_paiement === 'frais_annexes' && p.statut === 'en_attente')
+  );
 
   const montant = Number(expedition?.frais_annexes || 0);
 
@@ -118,6 +126,19 @@ const FraisDecisionModal = ({ expedition, onClose }) => {
             </span>
           </div>
 
+          {preuveEnAttente && (
+            <button
+              type="button"
+              onClick={() => { onClose(); navigate(`/expeditions/${expedition.id}`); }}
+              className="w-full text-left p-3 rounded-lg border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 transition-colors"
+            >
+              <p className="text-sm font-bold text-indigo-900">Le client a envoyé une preuve de paiement</p>
+              <p className="text-xs text-indigo-700 mt-0.5">
+                Vérifiez-la dans « Preuves de paiement » : sa confirmation enregistre l'encaissement automatiquement.
+              </p>
+            </button>
+          )}
+
           <div className="space-y-2">
             <button
               onClick={handleClientAPaye}
@@ -128,8 +149,8 @@ const FraisDecisionModal = ({ expedition, onClose }) => {
                 <BanknotesIcon className="w-5 h-5 text-emerald-600" />
               </div>
               <div className="text-left flex-1">
-                <p className="text-sm font-bold text-emerald-900">Le client a payé</p>
-                <p className="text-xs text-emerald-700">Enregistrer l'encaissement maintenant</p>
+                <p className="text-sm font-bold text-emerald-900">Le client a payé à l'agence</p>
+                <p className="text-xs text-emerald-700">Enregistrer l'encaissement au guichet</p>
               </div>
             </button>
 

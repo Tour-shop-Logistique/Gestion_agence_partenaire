@@ -208,6 +208,12 @@ export function useWebSocket(agenceId, handlers = {}, enabled = true) {
         }
         break;
 
+      case 'PreuvePaiement':
+        if (action === 'soumise' && handlersRef.current.onPreuvePaiementSoumise) {
+          handlersRef.current.onPreuvePaiementSoumise(data, { ids, references, changes, count, at });
+        }
+        break;
+
       default:
         console.warn(`⚠️ [WebSocket] Modèle '${model}' non reconnu, événement ignoré:`, { model, action });
     }

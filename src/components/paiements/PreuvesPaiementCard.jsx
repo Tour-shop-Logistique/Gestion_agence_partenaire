@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { Loader2, ReceiptText, Check, X, Upload, ExternalLink } from "lucide-react";
+import { Loader2, ReceiptText, Check, X, Upload, ZoomIn } from "lucide-react";
 import {
   fetchPreuvesExpedition,
   deciderPreuve,
   payerLivreur,
 } from "../../store/slices/paiementsSlice";
+import { useRealtimeRefetch } from "../../hooks/useRealtimeRefetch";
 import { toast } from "../../utils/toast";
 
 /**
@@ -41,17 +43,32 @@ const BADGES_STATUT = {
 
 const PreuvesPaiementCard = ({ expeditionId, missions = [], formatCurrency, canDecide = true }) => {
   const dispatch = useDispatch();
-  const { preuves, preuvesStatus, preuvesExpeditionId, isSaving } = useSelector(
+  const { preuves, preuvesExpeditionId, isSaving } = useSelector(
     (state) => state.paiements
   );
 
   const [rejectingId, setRejectingId] = useState(null);
   const [motifRejet, setMotifRejet] = useState("");
   const [paiementLivreur, setPaiementLivreur] = useState(null);
+  const [apercu, setApercu] = useState(null);
 
   useEffect(() => {
     if (expeditionId) dispatch(fetchPreuvesExpedition(expeditionId));
   }, [dispatch, expeditionId]);
+
+  // Preuve déposée ou traitée ailleurs (client, autre agent) : la liste suit.
+  useRealtimeRefetch(() => dispatch(fetchPreuvesExpedition(expeditionId)), {
+    enabled: !!expeditionId,
+    models: ["PreuvePaiement", "Expedition"],
+    match: (p) => (p.data || []).some((d) => d?.expedition_id === expeditionId || d?.id === expeditionId),
+  });
+
+  useEffect(() => {
+    if (!apercu) return undefined;
+    const onKey = (e) => e.key === "Escape" && setApercu(null);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [apercu]);
 
   // Les preuves du store peuvent encore appartenir à l'expédition
   // précédemment consultée le temps du chargement.
@@ -98,6 +115,10 @@ const PreuvesPaiementCard = ({ expeditionId, missions = [], formatCurrency, canD
 
   const inputClasses =
     "w-full px-3 py-2 text-sm text-slate-800 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400";
+
+  // Ces preuves sont toutes déposées à distance (client/destinataire) :
+  // sans elles, le bloc n'a de raison d'être que pour payer un livreur.
+  if (preuvesAffichees.length === 0 && (!canDecide || missionsPayables.length === 0)) return null;
 
   return (
     <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
@@ -238,13 +259,9 @@ const PreuvesPaiementCard = ({ expeditionId, missions = [], formatCurrency, canD
       )}
 
       <div className="px-4 sm:px-6 py-4">
-        {preuvesStatus === "loading" && preuvesAffichees.length === 0 ? (
-          <div className="flex items-center justify-center py-6 text-slate-400">
-            <Loader2 className="w-5 h-5 animate-spin" />
-          </div>
-        ) : preuvesAffichees.length === 0 ? (
-          <p className="text-xs text-slate-400 text-center py-4">
-            Aucune preuve de paiement pour cette expédition.
+        {preuvesAffichees.length === 0 ? (
+          <p className="text-xs text-slate-400 text-center py-2">
+            Aucun paiement à distance pour cette expédition.
           </p>
         ) : (
           <div className="divide-y divide-slate-100">
@@ -254,7 +271,26 @@ const PreuvesPaiementCard = ({ expeditionId, missions = [], formatCurrency, canD
 
               return (
                 <div key={preuve.id} className="py-3 first:pt-0 last:pb-0">
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                  <div className="flex flex-col sm:flex-row sm:items-start gap-3">
+                    {preuve.photo_url && (
+                      <button
+                        type="button"
+                        onClick={() => setApercu(preuve)}
+                        title="Agrandir la preuve"
+                        className="group relative w-full sm:w-24 h-40 sm:h-24 shrink-0 rounded-lg overflow-hidden border border-slate-200 bg-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                      >
+                        <img
+                          src={preuve.photo_url}
+                          alt="Preuve de paiement"
+                          loading="lazy"
+                          className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                        />
+                        <span className="absolute inset-0 flex items-center justify-center bg-slate-900/0 group-hover:bg-slate-900/40 transition-colors">
+                          <ZoomIn className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </span>
+                      </button>
+                    )}
+
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-sm font-medium text-slate-800">
@@ -287,19 +323,6 @@ const PreuvesPaiementCard = ({ expeditionId, missions = [], formatCurrency, canD
                     </div>
 
                     <div className="flex items-center gap-1.5 shrink-0">
-                      {preuve.photo_path && (
-                        <a
-                          href={preuve.photo_path}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          title="Voir la preuve"
-                          className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
-                        >
-                          <ExternalLink className="w-3.5 h-3.5" />
-                          Voir
-                        </a>
-                      )}
-
                       {canDecide && enAttente && (
                         <>
                           <button
@@ -365,6 +388,38 @@ const PreuvesPaiementCard = ({ expeditionId, missions = [], formatCurrency, canD
           </div>
         )}
       </div>
+
+      {apercu && createPortal(
+        <div
+          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center p-4 bg-slate-950/85 backdrop-blur-sm"
+          onClick={() => setApercu(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Preuve de paiement"
+        >
+          <button
+            type="button"
+            onClick={() => setApercu(null)}
+            className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+            aria-label="Fermer"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          <img
+            src={apercu.photo_url}
+            alt="Preuve de paiement"
+            onClick={(e) => e.stopPropagation()}
+            className="max-w-full max-h-[80vh] rounded-lg shadow-2xl object-contain"
+          />
+          <p className="mt-3 text-sm text-white/80 text-center">
+            {LABELS_OBJET[apercu.objet_paiement] || apercu.objet_paiement}
+            {" · "}
+            {formatCurrency ? formatCurrency(apercu.montant) : apercu.montant}
+            {apercu.reference_transaction && ` · ${apercu.reference_transaction}`}
+          </p>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };

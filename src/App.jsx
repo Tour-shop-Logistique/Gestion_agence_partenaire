@@ -173,6 +173,11 @@ function AppContent() {
     if (payload?.model === "Expedition" || payload?.model === "Colis") {
       dispatch(invalidateListCaches());
     }
+    // Décision prise ailleurs (preuve confirmée, autre agent) : l'écran
+    // bloquant n'a plus lieu d'être.
+    if (payload?.model === "Expedition" && payload?.action === "frais_decision_agence") {
+      (payload.data || []).forEach((e) => e?.id && dispatch(fraisDecisionResolved(e.id)));
+    }
   }), [dispatch]);
 
   // Demande la permission d'afficher des notifications systeme une fois
@@ -226,6 +231,14 @@ function AppContent() {
       if (!entry) return;
       dispatch(notificationAdded(entry));
       showToast(`✅ ${entry.message}`, "success");
+      soundNotification.playSuccess();
+      showBrowserNotification(entry.title, { body: entry.message, onClick: () => navigate(entry.link) });
+    },
+    onPreuvePaiementSoumise: (data) => {
+      const entry = classifyNotification('PreuvePaiement', 'soumise', data);
+      if (!entry) return;
+      dispatch(notificationAdded(entry));
+      showToast(`💳 ${entry.message}`, "info");
       soundNotification.playSuccess();
       showBrowserNotification(entry.title, { body: entry.message, onClick: () => navigate(entry.link) });
     },

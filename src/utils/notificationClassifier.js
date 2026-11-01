@@ -1,3 +1,5 @@
+import { formatPrice } from './format';
+
 /**
  * Construit une entrée de notification interne à partir d'un événement
  * WebSocket (model.updated) déjà diffusé par le backend. Retourne null si
@@ -57,6 +59,23 @@ export function classifyNotification(model, action, data, ctx = {}) {
         ? `${count} colis expédiés par votre agence ont été débloqués.`
         : `Le colis ${first.code_colis || ''} a été débloqué.`,
       link: '/colis',
+    };
+  }
+
+  if (model === 'PreuvePaiement' && action === 'soumise') {
+    const objet = {
+      frais_annexes: 'les frais annexes',
+      montant_expedition: "les frais d'expédition",
+      frais_enlevement: "les frais d'enlèvement",
+      frais_livraison: 'les frais de livraison',
+      tout_compris: 'la totalité',
+    }[first.objet_paiement] || 'un paiement';
+    const montant = first.montant ? ` (${formatPrice(first.montant)})` : '';
+    return {
+      ...base,
+      title: 'Preuve de paiement reçue',
+      message: `Le client a déclaré avoir payé ${objet}${montant} pour l'expédition ${first.reference || ''}. Vérifiez la preuve.`,
+      link: first.expedition_id ? `/expeditions/${first.expedition_id}` : '/expeditions',
     };
   }
 
