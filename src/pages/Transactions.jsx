@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
+import { useRealtimeRefetch } from '../hooks/useRealtimeRefetch';
 import { 
   fetchTransactions, 
   selectTransactions, 
@@ -51,6 +52,13 @@ const Transactions = () => {
   useEffect(() => {
     dispatch(fetchTransactions({ date_debut: dateDebut, date_fin: dateFin }));
   }, [dispatch, dateDebut, dateFin]);
+
+  // Paiements enregistrés (par un collègue, le client ou le backoffice) :
+  // la liste se met à jour sans cliquer sur Actualiser.
+  useRealtimeRefetch(
+    () => dispatch(fetchTransactions({ date_debut: dateDebut, date_fin: dateFin })),
+    { models: ['Expedition'] }
+  );
 
   const handleRefresh = () => {
     dispatch(fetchTransactions({ date_debut: dateDebut, date_fin: dateFin }));
