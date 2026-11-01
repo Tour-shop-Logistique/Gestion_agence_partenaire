@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useWebSocket } from './useWebSocket';
 import { showToast } from '../utils/toast';
+import soundNotification from '../utils/soundNotification';
 
 const FORCED_LOGOUT_DELAY_MS = 3000;
 
@@ -20,8 +21,8 @@ export function useDashboardWebSocket({ agenceId, enabled, navigate, refreshAll 
         agenceId,
         {
             onExpeditionCreated: () => {
-                // Les créations auto-générées (par l'agent lui-même) sont filtrées en amont :
-                // il ne reste ici que les créations d'un collègue, à refléter sans notifier.
+                soundNotification.playUrgent();
+                showToast('🔔 Nouvelle demande client reçue', 'warning');
                 notifyAndRefresh(null, null);
             },
 

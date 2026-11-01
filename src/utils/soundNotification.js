@@ -162,6 +162,54 @@ class SoundNotification {
     playWarningSound() {
         this.playBeep('warning');
     }
+
+    /**
+     * Son d'alerte fort pour nouvelle demande client (agence).
+     * 3 bips descendants à volume élevé.
+     */
+    playUrgent() {
+        if (!this.audioContext) return;
+        if (this.audioContext.state === 'suspended') this.audioContext.resume();
+        const freqs = [880, 660, 440];
+        freqs.forEach((freq, i) => {
+            try {
+                const osc = this.audioContext.createOscillator();
+                const gain = this.audioContext.createGain();
+                osc.connect(gain);
+                gain.connect(this.audioContext.destination);
+                osc.type = 'square';
+                const t = this.audioContext.currentTime + i * 0.22;
+                osc.frequency.setValueAtTime(freq, t);
+                gain.gain.setValueAtTime(0, t);
+                gain.gain.linearRampToValueAtTime(0.7, t + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
+                osc.start(t);
+                osc.stop(t + 0.2);
+            } catch (_) { /* ignore */ }
+        });
+    }
+
+    /**
+     * Bip discret de rappel (toutes les 5min si demandes en attente).
+     */
+    playReminder() {
+        if (!this.audioContext) return;
+        if (this.audioContext.state === 'suspended') this.audioContext.resume();
+        try {
+            const osc = this.audioContext.createOscillator();
+            const gain = this.audioContext.createGain();
+            osc.connect(gain);
+            gain.connect(this.audioContext.destination);
+            osc.type = 'sine';
+            const t = this.audioContext.currentTime;
+            osc.frequency.setValueAtTime(660, t);
+            gain.gain.setValueAtTime(0, t);
+            gain.gain.linearRampToValueAtTime(0.5, t + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+            osc.start(t);
+            osc.stop(t + 0.3);
+        } catch (_) { /* ignore */ }
+    }
 }
 
 // Créer une instance singleton

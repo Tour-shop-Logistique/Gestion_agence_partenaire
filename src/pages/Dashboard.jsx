@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
+import soundNotification from "../utils/soundNotification";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowPathIcon } from "@heroicons/react/24/outline";
 
@@ -118,6 +119,13 @@ const Dashboard = () => {
     // Récupérer le nombre de demandes depuis l'API des demandes
     // L'API ne retourne pas toujours meta, donc on utilise la longueur du tableau
     const pendingDemandesCount = demandesMeta?.total || demandes?.length || 0;
+
+    // Bip de rappel toutes les 5min tant qu'il y a des demandes en attente
+    useEffect(() => {
+        if (pendingDemandesCount <= 0) return;
+        const id = setInterval(() => soundNotification.playReminder(), 5 * 60 * 1000);
+        return () => clearInterval(id);
+    }, [pendingDemandesCount]);
 
     // Loading state - Ne JAMAIS afficher le loader si on a déjà des données en cache
     // Même si c'est un "chargement initial", on affiche les données existantes
