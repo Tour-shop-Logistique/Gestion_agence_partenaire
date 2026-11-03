@@ -1118,8 +1118,14 @@ const CreateExpedition = () => {
                                                             <SearchableDropdown
                                                                 options={Array.isArray(products) ? products
                                                                     .filter(p => {
+                                                                        if (formData.type_expedition === 'GROUPAGE_CA') {
+                                                                            // CA : uniquement les produits de la catégorie par défaut (is_default)
+                                                                            return p.category?.is_default === true;
+                                                                        }
                                                                         const champ = ELIGIBILITE_CHAMP_PAR_TYPE[formData.type_expedition];
-                                                                        return !champ || p[champ];
+                                                                        if (!champ) return true;
+                                                                        // DHD/Afrique/LD : produits éligibles au type ET hors catégorie CA
+                                                                        return p[champ] && p.category?.is_default !== true;
                                                                     })
                                                                     .map(p => ({
                                                                         id: p.id,
