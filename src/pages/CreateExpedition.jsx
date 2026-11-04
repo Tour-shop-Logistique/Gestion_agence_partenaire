@@ -7,6 +7,8 @@ import { useTarifs } from "../hooks/useTarifs";
 import { useAgency } from "../hooks/useAgency";
 import PrintSuccessModal from "../components/Receipts/PrintSuccessModal";
 import SearchableDropdown from "../components/common/SearchableDropdown";
+import { communesApi } from "../utils/api/communes";
+import { COUNTRY_OPTIONS } from "../utils/countries";
 import { getLogoUrl } from "../utils/apiConfig";
 import { getCurrencyLabel } from "../utils/format";
 import { toast } from "../utils/toast";
@@ -86,6 +88,8 @@ const CreateExpedition = () => {
         destinataire_ville: "",
         destinataire_pays: "",
         destinataire_code_postal: "",
+        destinataire_commune_id: "",
+        destinataire_code_pays: "",
 
         colis: [
             {
@@ -123,6 +127,21 @@ const CreateExpedition = () => {
             console.log("✅ CreateExpedition - AgencyData chargé:", agencyData);
         }
     }, [agencyData]);
+
+    // Communes arrivée pour CA (chargées selon le code pays destinataire)
+    const [communesArriveeCA, setCommunesArriveeCA] = useState([]);
+    const [loadingCommunesArriveeCA, setLoadingCommunesArriveeCA] = useState(false);
+    useEffect(() => {
+        if (formData.type_expedition !== 'GROUPAGE_CA' || !formData.destinataire_code_pays) {
+            setCommunesArriveeCA([]);
+            return;
+        }
+        setLoadingCommunesArriveeCA(true);
+        communesApi.getCommunesByPays(formData.destinataire_code_pays).then((res) => {
+            setCommunesArriveeCA(res.success ? (res.data || []) : []);
+            setLoadingCommunesArriveeCA(false);
+        });
+    }, [formData.type_expedition, formData.destinataire_code_pays]);
 
     // Nettoyage au démontage
     useEffect(() => {
@@ -597,6 +616,9 @@ const CreateExpedition = () => {
             expediteur_ville: formData.expediteur_ville,
             destinataire_ville: formData.destinataire_ville,
             statut_paiement: formData.statut_paiement,
+            ...(formData.type_expedition === 'GROUPAGE_CA' && {
+                destinataire_commune_id: formData.destinataire_commune_id || null,
+            }),
             colis: formData.colis.map((c, index) => {
                 const item = {
                     designation: c.designation,
@@ -920,6 +942,37 @@ const CreateExpedition = () => {
                                                     />
                                                 </div>
                                             </div>
+
+                                            {/* CA : sélection du pays arrivée (code ISO) + commune arrivée */}
+                                            {formData.type_expedition === 'GROUPAGE_CA' && (
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-amber-50 rounded-lg border border-amber-200">
+                                                    <div className="space-y-1.5">
+                                                        <label className="block text-xs font-semibold text-slate-600">
+                                                            Pays arrivée (code) <span className="text-amber-600">*</span>
+                                                        </label>
+                                                        <SearchableDropdown
+                                                            value={formData.destinataire_code_pays}
+                                                            onChange={(v) => setFormData(prev => ({ ...prev, destinataire_code_pays: v, destinataire_commune_id: '' }))}
+                                                            options={COUNTRY_OPTIONS.map(c => ({ label: c.label, value: c.id }))}
+                                                            placeholder="Sélectionner un pays..."
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-1.5">
+                                                        <label className="block text-xs font-semibold text-slate-600">
+                                                            Commune arrivée <span className="text-amber-600">*</span>
+                                                        </label>
+                                                        <SearchableDropdown
+                                                            value={formData.destinataire_commune_id}
+                                                            onChange={(v) => setFormData(prev => ({ ...prev, destinataire_commune_id: v }))}
+                                                            options={communesArriveeCA.map(c => ({ label: c.nom, value: String(c.id) }))}
+                                                            placeholder={!formData.destinataire_code_pays ? "Choisissez d'abord un pays..." : loadingCommunesArriveeCA ? 'Chargement...' : 'Sélectionner...'}
+                                                        />
+                                                        {formData.destinataire_code_pays && !loadingCommunesArriveeCA && communesArriveeCA.length === 0 && (
+                                                            <p className="text-[10px] text-amber-600 mt-1">Aucune commune configurée pour ce pays.</p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
 
                                             {/* Options - Mode de paiement et Livraison */}
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
