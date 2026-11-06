@@ -11,7 +11,7 @@ const labelClasses = "block text-sm font-medium text-slate-700 mb-1.5";
  * changent la vue affichée par le panneau parent plutôt que d'ouvrir une
  * modale par-dessus (pattern aligné sur le backoffice, voir WelcomePage.jsx).
  */
-const LoginForm = ({ switchToRegister, switchToForgotPassword, successMessage }) => {
+const LoginForm = ({ switchToRegister, switchToForgotPassword, successMessage, onVerificationRequired }) => {
   const navigate = useNavigate();
   const { login, isLoading } = useAuth();
 
@@ -56,6 +56,8 @@ const LoginForm = ({ switchToRegister, switchToForgotPassword, successMessage })
         } else {
           navigate("/dashboard");
         }
+      } else if (result.error?.code === "EMAIL_NOT_VERIFIED" && onVerificationRequired) {
+        onVerificationRequired(result.error.email);
       } else {
         console.error("[Login] Failed:", result.message || result.error);
         setLocalError(result.message || result.error || "Échec de la connexion");

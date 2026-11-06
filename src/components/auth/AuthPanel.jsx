@@ -111,6 +111,10 @@ const AuthPanel = ({ initialView = "login" }) => {
             switchToRegister={() => setView("register")}
             switchToForgotPassword={() => setView("forgot")}
             successMessage={loginSuccessMessage}
+            onVerificationRequired={(email) => {
+              setPendingVerificationEmail(email);
+              setView("verify-email");
+            }}
           />
         )}
 

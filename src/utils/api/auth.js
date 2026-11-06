@@ -75,6 +75,8 @@ export const authApi = {
       return {
         success: false,
         message: error.message || "Erreur lors de la connexion",
+        code: error.data?.code,
+        email: error.data?.email,
         error: error,
       };
     }

@@ -67,6 +67,9 @@ export const login = createAsyncThunk(
     try {
       const result = await authApi.login(credentials);
       if (!result.success) {
+        if (result.code === "EMAIL_NOT_VERIFIED") {
+          return rejectWithValue({ message: result.message, code: result.code, email: result.email });
+        }
         return rejectWithValue(result.message);
       }
       return result.data;
@@ -245,7 +248,7 @@ const authSlice = createSlice({
       })
       .addCase(login.rejected, (state, action) => {
         state.status = "failed";
-        state.error = action.payload;
+        state.error = action.payload?.message ?? action.payload;
         state.isAuthenticated = false;
       })
 

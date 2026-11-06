@@ -576,6 +576,103 @@ const AgencyProfile = () => {
     paiement: moyensPaiement.some((m) => m.actif),
   };
 
+  /* ── Render setup initial (formulaire simplifié) ── */
+  if (!agencyConfigured) {
+    return (
+      <ErrorBoundary>
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-10 animate-fade-in">
+          <div className="mb-6">
+            <h1 className="text-2xl font-bold text-slate-900">Configurer votre agence</h1>
+            <p className="mt-1 text-sm text-slate-500">
+              Renseignez les informations essentielles. Vous pourrez compléter les horaires, photos et moyens de paiement depuis le profil.
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-7 space-y-5">
+            {/* Identité */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2">
+                <EditLabel>Nom de l'agence <span className="text-red-500">*</span></EditLabel>
+                <input name="name" value={formData.name} onChange={handleChange} required placeholder="Ex : TourShop Abidjan Cocody" className={INPUT} />
+              </div>
+              <div>
+                <EditLabel hint="(immuable après création)">Code agence <span className="text-red-500">*</span></EditLabel>
+                <input name="code_agence" value={formData.code_agence} onChange={handleChange} required placeholder="Ex : ABJ-C01" className={INPUT} />
+              </div>
+              <div>
+                <EditLabel>Email <span className="text-red-500">*</span></EditLabel>
+                <input name="email" type="email" value={formData.email} onChange={handleChange} required placeholder="agence@example.com" className={INPUT} />
+              </div>
+            </div>
+
+            {/* Téléphone */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <EditLabel>Téléphone <span className="text-red-500">*</span></EditLabel>
+                <PhoneInput dialCode={telDialCode} localNumber={telLocalNumber} onDialCodeChange={setTelDialCode} onLocalNumberChange={setTelLocalNumber} />
+              </div>
+              <div>
+                <EditLabel hint="(optionnel)">WhatsApp</EditLabel>
+                <PhoneInput dialCode={waDialCode} localNumber={waLocalNumber} onDialCodeChange={setWaDialCode} onLocalNumberChange={setWaLocalNumber} />
+              </div>
+            </div>
+
+            {/* Localisation */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <EditLabel>Pays <span className="text-red-500">*</span></EditLabel>
+                <SearchableDropdown
+                  options={countryOptions}
+                  value={formData.code_pays}
+                  onChange={(id) => setFormData((p) => ({ ...p, code_pays: id, commune: "", commune_id: "" }))}
+                  placeholder="Choisir un pays"
+                />
+              </div>
+              <div>
+                <EditLabel>Commune <span className="text-red-500">*</span></EditLabel>
+                <SearchableDropdown
+                  options={communes.map((c) => ({ id: String(c.id), label: c.nom }))}
+                  value={String(formData.commune_id)}
+                  onChange={(id) => {
+                    const c = communes.find((x) => String(x.id) === id);
+                    setFormData((p) => ({ ...p, commune_id: id, commune: c?.nom || "" }));
+                  }}
+                  placeholder="Choisir une commune"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <EditLabel>Adresse <span className="text-red-500">*</span></EditLabel>
+                <input name="address" value={formData.address} onChange={handleChange} required placeholder="Rue, quartier…" className={INPUT} />
+              </div>
+            </div>
+
+            {/* GPS */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <EditLabel>Position GPS <span className="text-red-500">*</span></EditLabel>
+                <button type="button" onClick={getCurrentLocation} className="text-xs font-semibold text-[#005566] hover:underline">
+                  Utiliser ma position
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <input name="latitude" value={formData.latitude} onChange={handleChange} required placeholder="Latitude" className={INPUT} />
+                <input name="longitude" value={formData.longitude} onChange={handleChange} required placeholder="Longitude" className={INPUT} />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={saving}
+              className="w-full h-12 inline-flex items-center justify-center gap-2 text-sm font-bold text-white bg-[#005566] hover:bg-[#00434f] disabled:opacity-60 rounded-xl transition"
+            >
+              {saving ? <><ArrowPathIcon className="w-4 h-4 animate-spin" /> Enregistrement…</> : "Créer l'agence"}
+            </button>
+          </form>
+        </div>
+      </ErrorBoundary>
+    );
+  }
+
   /* ── Render ── */
   return (
     <ErrorBoundary>
