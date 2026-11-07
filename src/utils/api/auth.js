@@ -49,6 +49,24 @@ export const authApi = {
   },
 
   /**
+   * Inscription admin + agence en une seule requête (tout ou rien).
+   * `payload` contient les champs admin à la racine et ceux de l'agence
+   * sous `entite` (mêmes champs que /agence/setup).
+   */
+  async registerAgence(payload) {
+    try {
+      const response = await apiService.post("/register-agence", payload);
+      return { success: true, data: response };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.message || "Erreur lors de l'inscription",
+        errors: error.data?.errors || {},
+      };
+    }
+  },
+
+  /**
    * Connexion d'un utilisateur
    * @param {Object} credentials - Les identifiants de connexion
    * @param {string} [credentials.telephone] - Téléphone de l'utilisateur

@@ -31,6 +31,8 @@ import { requestNotificationPermission, showBrowserNotification } from "./utils/
 
 // Import des pages
 import Home from "./pages/Home";
+import Connexion from "./pages/Connexion";
+import Inscription from "./pages/Inscription";
 import Dashboard from "./pages/Dashboard";
 import AgencyProfile from "./pages/AgencyProfile";
 import Agents from "./pages/Agents";
@@ -420,6 +422,8 @@ function AppContent() {
             </PublicRoute>
           }
         />
+        <Route path="/connexion" element={<PublicRoute><Connexion /></PublicRoute>} />
+        <Route path="/inscription" element={<PublicRoute><Inscription /></PublicRoute>} />
 
         {/* Routes protégées */}
         <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>

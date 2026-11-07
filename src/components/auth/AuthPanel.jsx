@@ -1,6 +1,6 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import LoginForm from "./LoginForm";
-import RegisterForm from "./RegisterForm";
 import ForgotPasswordForm from "./ForgotPasswordForm";
 import VerifyResetCodeForm from "./VerifyResetCodeForm";
 import ResetPasswordForm from "./ResetPasswordForm";
@@ -40,10 +40,6 @@ const viewCopy = {
     title: "Connexion",
     subtitle: "Accédez à l'espace de gestion de votre agence",
   },
-  register: {
-    title: "Créer un compte admin",
-    subtitle: "Créez votre compte administrateur pour gérer votre agence",
-  },
   forgot: {
     title: "Mot de passe oublié",
     subtitle: "Entrez votre email pour recevoir un code de réinitialisation",
@@ -69,6 +65,7 @@ const viewCopy = {
  * pattern du backoffice (voir WelcomePage.jsx côté backoffice-app).
  */
 const AuthPanel = ({ initialView = "login" }) => {
+  const navigate = useNavigate();
   const [view, setView] = useState(initialView);
   const [resetEmail, setResetEmail] = useState("");
   const [resetCode, setResetCode] = useState("");
@@ -80,14 +77,9 @@ const AuthPanel = ({ initialView = "login" }) => {
     setView("login");
   };
 
-  // L'inscription a deux fois plus de champs (nom/prénom, mot de passe/
-  // confirmation côte à côte) : une carte plus large lui évite d'écraser ces
-  // paires sur desktop, les autres vues (plus courtes) restent en max-w-md.
-  const isWide = view === "register";
-
   return (
-    <div className={`w-full transition-[max-width] duration-200 ${isWide ? "max-w-lg" : "max-w-md"}`}>
-      <div className="bg-white rounded-lg p-6 sm:p-8 shadow-2xl shadow-slate-900/20">
+    <div className="w-full">
+      <div className="bg-white rounded-xl p-6 sm:p-8 border border-slate-200 shadow-sm">
         {view === "verify-code" || view === "reset-password" ? (
           <RouteMarkSteps active={view === "verify-code" ? 2 : 3} />
         ) : (
@@ -108,23 +100,13 @@ const AuthPanel = ({ initialView = "login" }) => {
 
         {view === "login" && (
           <LoginForm
-            switchToRegister={() => setView("register")}
+            switchToRegister={() => navigate("/inscription")}
             switchToForgotPassword={() => setView("forgot")}
             successMessage={loginSuccessMessage}
             onVerificationRequired={(email) => {
               setPendingVerificationEmail(email);
               setView("verify-email");
             }}
-          />
-        )}
-
-        {view === "register" && (
-          <RegisterForm
-            onVerificationRequired={(email) => {
-              setPendingVerificationEmail(email);
-              setView("verify-email");
-            }}
-            switchToLogin={() => goToLogin()}
           />
         )}
 
