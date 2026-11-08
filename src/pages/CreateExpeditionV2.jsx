@@ -2568,8 +2568,8 @@ const CreateExpeditionV2 = () => {
                                                 </div>
                                             </div>
 
-                                            {/* Options de service */}
-                                            <div className="space-y-3">
+                                            {/* Options de service — masquées pour LD (SIMPLE) */}
+                                            {formData.type_expedition !== 'SIMPLE' && <div className="space-y-3">
                                                 <h3 className="text-sm font-bold text-slate-700">Options de service</h3>
                                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                     {/* Livraison à domicile */}
@@ -2654,7 +2654,7 @@ const CreateExpeditionV2 = () => {
                                                         </div>
                                                     </button>
                                                 </div>
-                                            </div>
+                                            </div>}
 
                                             {/* Mode de paiement */}
                                             {!formData.is_paiement_credit && (

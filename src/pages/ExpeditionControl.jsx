@@ -844,10 +844,12 @@ const ExpeditionControl = () => {
 
                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                                 <div className="flex flex-wrap gap-1.5 text-xs font-semibold">
-                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700">
-                                        <Truck className="w-3.5 h-3.5" /> {expedition.is_livraison_domicile ? 'Livraison à domicile' : 'Retrait en agence'}
-                                    </span>
-                                    {expedition.is_paiement_credit && (
+                                    {typeExp !== 'simple' && (
+                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700">
+                                            <Truck className="w-3.5 h-3.5" /> {expedition.is_livraison_domicile ? 'Livraison à domicile' : 'Retrait en agence'}
+                                        </span>
+                                    )}
+                                    {typeExp !== 'simple' && expedition.is_paiement_credit && (
                                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700">
                                             <CreditCard className="w-3.5 h-3.5" /> Paiement à crédit
                                         </span>
@@ -955,7 +957,7 @@ const ExpeditionControl = () => {
                                             ))}
                                         </select>
                                     </Field>
-                                    {[['is_paiement_credit', 'Paiement à crédit'], ['is_livraison_domicile', 'Livraison à domicile']].map(([field, label]) => (
+                                    {formType !== 'simple' && [['is_paiement_credit', 'Paiement à crédit'], ['is_livraison_domicile', 'Livraison à domicile']].map(([field, label]) => (
                                         <label key={field} className="sm:self-end h-10 px-3 flex items-center gap-2.5 rounded-lg bg-white border border-amber-200 text-sm text-slate-700 cursor-pointer hover:bg-amber-50/50">
                                             <input type="checkbox" checked={expeditionForm[field]}
                                                 onChange={(e) => setForm({ [field]: e.target.checked })}
