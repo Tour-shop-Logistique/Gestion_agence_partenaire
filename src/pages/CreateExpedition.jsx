@@ -22,7 +22,6 @@ import PageHeader from "../components/ui/PageHeader";
 // est volontairement absent : jamais configurable, pas de notion d'éligibilité.
 const ELIGIBILITE_CHAMP_PAR_TYPE = {
     SIMPLE: "eligible_ld",
-    GROUPAGE_AFRIQUE: "eligible_afrique",
     GROUPAGE_DHD_AERIEN: "eligible_dhd_aerien",
     GROUPAGE_DHD_MARITIME: "eligible_dhd_maritime",
 };
@@ -277,13 +276,6 @@ const CreateExpedition = () => {
                 displayValue = rawLigne;
                 
                 console.log(`📍 Tarif ID ${tarif.id}: ligne="${rawLigne}" → clé="${key}"`);
-            } else if (currentType === 'groupage_afrique') {
-                // Pour AFRIQUE, la clé est le pays (ex: "GABON LIBREVILLE")
-                const rawPays = tarif.pays || "";
-                key = rawPays.toLowerCase().trim();
-                displayValue = rawPays;
-                
-                console.log(`📍 Tarif ID ${tarif.id}: pays="${rawPays}" → clé="${key}"`);
             } else if (currentType === 'groupage_ca') {
                 // Pour CA, la clé est ligne + pays
                 const rawLigne = tarif.ligne || "";
@@ -389,14 +381,6 @@ const CreateExpedition = () => {
                     const selectedLigne = (routeLigne || "").toLowerCase().trim();
                     const match = tarifLigne === selectedLigne;
                     console.log(`DHD - Comparaison ligne: "${tarif.ligne}" vs "${routeLigne}" (normalisé: "${tarifLigne}" === "${selectedLigne}") = ${match}`);
-                    return match;
-                }
-                // Pour AFRIQUE, on compare le pays (insensible à la casse)
-                if (currentType === 'groupage_afrique') {
-                    const tarifPays = (tarif.pays || "").toLowerCase().trim();
-                    const selectedPays = (routePays || "").toLowerCase().trim();
-                    const match = tarifPays === selectedPays;
-                    console.log(`AFRIQUE - Comparaison pays: "${tarif.pays}" vs "${routePays}" (normalisé: "${tarifPays}" === "${selectedPays}") = ${match}`);
                     return match;
                 }
                 // Pour CA, on compare ligne et pays (insensible à la casse)
@@ -840,7 +824,7 @@ const CreateExpedition = () => {
                                                         onChange={(e) => setFormData(prev => ({ ...prev, type_expedition: e.target.value }))}
                                                         className="w-full border-slate-300 rounded-lg text-sm font-semibold focus:ring-slate-500 bg-white h-10"
                                                     >
-                                                        {['SIMPLE', 'GROUPAGE_DHD_AERIEN', 'GROUPAGE_DHD_MARITIME', 'GROUPAGE_AFRIQUE', 'GROUPAGE_CA'].map(t => (
+                                                        {['SIMPLE', 'GROUPAGE_DHD_AERIEN', 'GROUPAGE_DHD_MARITIME', 'GROUPAGE_CA'].map(t => (
                                                             <option key={t} value={t}>
                                                                 {t === 'SIMPLE' ? 'LD' : t.replace('GROUPAGE_', '').replace('_', ' ')}
                                                             </option>
@@ -864,9 +848,7 @@ const CreateExpedition = () => {
                                                             <option key={r.id} value={r.id}>
                                                                 {(formData.type_expedition === 'GROUPAGE_DHD_AERIEN' || formData.type_expedition === 'GROUPAGE_DHD_MARITIME')
                                                                     ? r.ligne
-                                                                    : formData.type_expedition === 'GROUPAGE_AFRIQUE'
-                                                                        ? r.pays
-                                                                        : `${r.ligne} (${r.pays}) - ${r.mode}`
+                                                                    : `${r.ligne} (${r.pays}) - ${r.mode}`
                                                                 }
                                                             </option>
                                                         ))}

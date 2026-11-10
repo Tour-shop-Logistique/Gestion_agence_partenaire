@@ -30,13 +30,12 @@ const formatFCFA = (amount) => new Intl.NumberFormat('fr-FR').format(amount || 0
 
 // Types tarifés par catégorie (voir ExpeditionTarificationService) : chaque
 // colis doit alors avoir une category_id, sinon le recalcul échoue.
-const TYPES_REQUERANT_CATEGORIE = ['groupage_dhd_aerien', 'groupage_dhd_maritime', 'groupage_ca', 'groupage_afrique'];
+const TYPES_REQUERANT_CATEGORIE = ['groupage_dhd_aerien', 'groupage_dhd_maritime', 'groupage_ca'];
 
 const TYPE_LABELS = {
     simple: 'Livraison directe',
     groupage_dhd_aerien: 'DHD Aérien',
     groupage_dhd_maritime: 'DHD Maritime',
-    groupage_afrique: 'Groupage Afrique',
     groupage_ca: 'Colis accompagné',
     interville: 'Interville',
 };
@@ -46,7 +45,6 @@ const TYPE_ICONS = {
     simple: '📦',
     groupage_dhd_aerien: '✈️',
     groupage_dhd_maritime: '🚢',
-    groupage_afrique: '🌍',
     groupage_ca: '📮',
     interville: '🏙️',
 };

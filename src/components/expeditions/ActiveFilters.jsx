@@ -28,7 +28,6 @@ const ActiveFilters = ({
             'simple': 'Simple',
             'groupage_dhd_aerien': 'DHD Aérien',
             'groupage_dhd_maritine': 'DHD Maritime',
-            'groupage_afrique': 'Afrique',
             'groupage_ca': 'CA'
         };
         return labels[typeValue] || typeValue;

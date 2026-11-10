@@ -166,13 +166,6 @@ const QuickFiltersChips = ({ expeditions, activeFilter, onFilterChange }) => {
             filterFn: (e) => e.type_expedition === 'groupage_dhd_aerien'
         },
         {
-            id: 'afrique',
-            label: 'Afrique',
-            icon: '🌍',
-            count: getFilterCount((e) => e.type_expedition === 'groupage_afrique'),
-            filterFn: (e) => e.type_expedition === 'groupage_afrique'
-        },
-        {
             id: 'ca',
             label: 'CA',
             icon: '📋',

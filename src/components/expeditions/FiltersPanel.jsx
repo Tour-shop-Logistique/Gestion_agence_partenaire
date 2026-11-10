@@ -71,7 +71,6 @@ const FiltersPanel = ({
         { id: 'simple', label: 'Simple', icon: '📮' },
         { id: 'groupage_dhd_aerien', label: 'DHD Aérien', icon: '✈️' },
         { id: 'groupage_dhd_maritine', label: 'DHD Maritime', icon: '🚢' },
-        { id: 'groupage_afrique', label: 'Afrique', icon: '🌍' },
         { id: 'groupage_ca', label: 'CA', icon: '📋' },
         { id: 'interville', label: 'Interville', icon: '🛣️' },
     ];

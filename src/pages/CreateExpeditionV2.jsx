@@ -26,7 +26,6 @@ const CODE_COLIS_TYPE_MAP = {
     SIMPLE: "LD",
     GROUPAGE_DHD_AERIEN: "AERIEN",
     GROUPAGE_DHD_MARITIME: "MARITIME",
-    GROUPAGE_AFRIQUE: "AFRIQUE",
     GROUPAGE_CA: "CA",
     INTERVILLE: "INTERVILLE",
 };
@@ -37,7 +36,6 @@ const FORM_TYPE_TO_API_TYPE = {
     SIMPLE: "simple",
     GROUPAGE_DHD_AERIEN: "groupage_dhd_aerien",
     GROUPAGE_DHD_MARITIME: "groupage_dhd_maritime",
-    GROUPAGE_AFRIQUE: "groupage_afrique",
     GROUPAGE_CA: "groupage_ca",
     INTERVILLE: "interville",
 };
@@ -49,7 +47,6 @@ const TYPE_EXPEDITION_OPTIONS = [
     { value: 'SIMPLE',                label: 'Livraison à domicile',   icon: '📦' },
     { value: 'GROUPAGE_DHD_AERIEN',   label: 'DHD Aérien',             icon: '✈️' },
     { value: 'GROUPAGE_DHD_MARITIME', label: 'DHD Maritime',           icon: '🚢' },
-    { value: 'GROUPAGE_AFRIQUE',      label: 'Afrique',                icon: '🌍' },
     { value: 'GROUPAGE_CA',           label: 'CA',                     icon: '📮' },
     { value: 'INTERVILLE',            label: 'Interville (National)',  icon: '🏙️' },
 ];
@@ -488,7 +485,7 @@ const CreateExpeditionV2 = () => {
 
     // Fetch des villes via CountriesNow quand le pays de destination change (LD, Afrique, CA)
     useEffect(() => {
-        const typesAvecVillesApi = ['SIMPLE', 'GROUPAGE_AFRIQUE', 'GROUPAGE_CA'];
+        const typesAvecVillesApi = ['SIMPLE', 'GROUPAGE_CA'];
         const codeISO = formData.code_pays_destination;
         if (!typesAvecVillesApi.includes(formData.type_expedition) || !codeISO) {
             setCitiesForDestination([]);
@@ -590,12 +587,6 @@ const CreateExpeditionV2 = () => {
                 key = rawLigne.toLowerCase().trim();
                 displayValue = rawLigne;
                 
-            } else if (currentType === 'groupage_afrique') {
-                // Pour AFRIQUE, la clé est le pays (ex: "GABON LIBREVILLE")
-                const rawPays = tarif.pays || "";
-                key = rawPays.toLowerCase().trim();
-                displayValue = rawPays;
-                
             } else if (currentType === 'groupage_ca') {
                 // Pour CA, la clé est ligne + pays
                 const rawLigne = tarif.ligne || "";
@@ -635,9 +626,7 @@ const CreateExpeditionV2 = () => {
             label: (
                 (formData.type_expedition === 'GROUPAGE_DHD_AERIEN' || formData.type_expedition === 'GROUPAGE_DHD_MARITIME')
                     ? r.ligne
-                    : formData.type_expedition === 'GROUPAGE_AFRIQUE'
-                        ? (getCountryName(r.code_pays) || r.pays)
-                        : `${r.ligne} (${getCountryName(r.code_pays) || r.pays}) - ${r.mode}`
+                    : `${r.ligne} (${getCountryName(r.code_pays) || r.pays}) - ${r.mode}`
             )?.toUpperCase() || '',
         }));
     }, [availableRoutes, formData.type_expedition]);
@@ -756,26 +745,7 @@ const CreateExpeditionV2 = () => {
 
     // Pays réellement couverts par des tarifs Afrique configurés (agence ou
     // backoffice) - Afrique n'est pas basé sur des lignes ville-à-ville, donc
-    // ce filtre remplace directement le dropdown "Trajet" par un dropdown
-    // "Pays destination" filtré aux seuls pays africains configurés.
-    const afriqueAvailableCountries = useMemo(() => {
-        const currentType = formData.type_expedition.toLowerCase();
-        if (currentType !== 'groupage_afrique') return [];
-
-        const agenceTarifs = Array.isArray(existingGroupageTarifs) ? existingGroupageTarifs : [];
-        const backofficeTarifs = Array.isArray(baseGroupageTarifs) ? baseGroupageTarifs : [];
-        const all = [...agenceTarifs, ...backofficeTarifs].filter(t => t.type_expedition === currentType);
-
-        const byCode = {};
-        all.forEach((t) => {
-            if (!t.code_pays) return;
-            const code = t.code_pays.toUpperCase();
-            if (!byCode[code]) {
-                byCode[code] = { id: code, code, label: (getCountryName(code) || t.pays || code).toUpperCase() };
-            }
-        });
-        return Object.values(byCode).sort((a, b) => a.label.localeCompare(b.label));
-    }, [existingGroupageTarifs, baseGroupageTarifs, formData.type_expedition]);
+    // afriqueAvailableCountries supprimé (GROUPAGE_AFRIQUE retiré du projet)
 
     // Commune de départ = celle de l'agence connectée, jamais choisie
     // (verrouillée, comme pays_depart) - dérivée directement des données
@@ -816,7 +786,7 @@ const CreateExpeditionV2 = () => {
             return categories.filter(cat => cat.is_default);
         }
 
-        // Pour SIMPLE et AFRIQUE, retourner toutes les catégories SANS filtrage
+        // Pour SIMPLE et les autres types non-DHD, retourner toutes les catégories SANS filtrage
         if (!isDHD) {
             return categories;
         }
@@ -1104,11 +1074,11 @@ const CreateExpeditionV2 = () => {
             return products.filter(estProduitColisAccompagnes);
         }
 
-        // Pour AFRIQUE, SIMPLE (LD) et INTERVILLE, il n'y a pas de sélecteur de
+        // Pour SIMPLE (LD) et INTERVILLE, il n'y a pas de sélecteur de
         // catégorie dans le formulaire : on force l'affichage de tous les
         // articles pour ne jamais avoir une liste vide (un filtrage par
         // category_id serait toujours vide car categoryId reste "")
-        if (formData.type_expedition === 'GROUPAGE_AFRIQUE' || formData.type_expedition === 'SIMPLE' || formData.type_expedition === 'INTERVILLE') {
+        if (formData.type_expedition === 'SIMPLE' || formData.type_expedition === 'INTERVILLE') {
             return products;
         }
 
@@ -1685,29 +1655,9 @@ const CreateExpeditionV2 = () => {
                                                         </p>
                                                     )}
                                                 </>
-                                            ) : formData.type_expedition === 'GROUPAGE_AFRIQUE' ? (
-                                                // Afrique n'a pas de notion de trajet ville-à-ville : le pays
-                                                // se choisit directement ici, filtré aux seuls pays africains
-                                                // réellement configurés (agence ou backoffice).
-                                                <SearchableDropdown
-                                                    id="pays_destination"
-                                                    options={afriqueAvailableCountries}
-                                                    onSelect={(country) => {
-                                                        const paysName = extractCountryName(country.label);
-                                                        setFormData(prev => ({
-                                                            ...prev,
-                                                            pays_destination: paysName,
-                                                            code_pays_destination: country.code || "",
-                                                            destinataire_ville: "",
-                                                        }));
-                                                    }}
-                                                    placeholder={formData.pays_destination || "Rechercher un pays..."}
-                                                    className="w-full"
-                                                    buttonClassName="h-11 text-sm font-medium"
-                                                />
                                             ) : (
-                                                // Atteint uniquement par CA à ce stade (DHD et Afrique sont
-                                                // masqués ci-dessus, SIMPLE prend la branche précédente) - CA
+                                                // Atteint uniquement par CA à ce stade (DHD est masqué
+                                                // ci-dessus, SIMPLE prend la branche précédente) - CA
                                                 // n'affiche que les pays où un tarif CA est réellement configuré.
                                                 <SearchableDropdown
                                                     id="pays_destination"
@@ -2124,7 +2074,7 @@ const CreateExpeditionV2 = () => {
                                                                 placeholder={
                                                                     formData.type_expedition === 'GROUPAGE_CA'
                                                                         ? "Rechercher un article (Colis Accompagnés)..."
-                                                                        : (formData.type_expedition === 'SIMPLE' || formData.type_expedition === 'GROUPAGE_AFRIQUE')
+                                                                        : (formData.type_expedition === 'SIMPLE')
                                                                             ? "Rechercher un article..."
                                                                             : (colis.category_id ? "Rechercher un article..." : "Sélectionnez d'abord une catégorie")
                                                                 }
@@ -2178,6 +2128,13 @@ const CreateExpeditionV2 = () => {
                                                     <span className="font-bold text-indigo-700">{totalEmballage.toLocaleString()} {getCurrencyLabel()}</span>
                                                 </div>
                                             </div>
+
+                                            {/* DHD Maritime : minimum 50 kg (règle appliquée aussi côté backend) */}
+                                            {formData.type_expedition === 'GROUPAGE_DHD_MARITIME' && totalWeight < 50 && (
+                                                <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 text-xs font-medium text-amber-800">
+                                                    Le DHD Maritime nécessite un poids total d'au moins 50 kg (actuellement {totalWeight.toFixed(2)} kg). En dessous, utilisez le DHD Aérien.
+                                                </div>
+                                            )}
 
                                             {/* Bouton simuler */}
                                             <div className="flex justify-between items-center pt-4 border-t border-slate-100">

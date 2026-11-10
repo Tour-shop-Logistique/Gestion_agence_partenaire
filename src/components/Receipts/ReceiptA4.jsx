@@ -277,6 +277,9 @@ const ReceiptA4 = React.forwardRef(({ expedition, agency }, ref) => {
 
                 {/* Footer Info */}
                 <div className="mt-6 pt-4 border-t-2 border-slate-900 break-inside-avoid">
+                    <p className="text-[10px] font-bold text-slate-900 mb-2">
+                        Important : en cas de saisie des colis par les autorités douanières d'un pays tiers, aucun remboursement n'est effectué.
+                    </p>
                     <h4 className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide mb-1">Conditions Générales</h4>
                     <p className="text-[8px] text-slate-400 leading-relaxed font-medium">
                         Les marchandises sont transportées aux risques et périls de l'expéditeur sauf déclaration de valeur. Toute réclamation doit être faite à la réception du colis. Les délais de livraison sont donnés à titre indicatif et ne constituent pas un engagement ferme. En cas de perte ou d'avarie, notre responsabilité est strictement limitée à la valeur déclarée ou au barème en vigueur. La signature du bordereau de remise vaut acceptation pleine et entière de nos conditions générales de transport.
