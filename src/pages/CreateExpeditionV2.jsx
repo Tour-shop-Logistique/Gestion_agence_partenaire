@@ -18,6 +18,7 @@ import { generateColisCode, parseColisCode } from "../utils/codeGenerator";
 import { expeditionsApi } from "../utils/api/expeditions";
 import { getCountryName } from "../utils/countries";
 import PageHeader from "../components/ui/PageHeader";
+import { estProduitColisAccompagnes } from '../utils/categorieColisAccompagnes';
 
 // Correspondance entre la valeur de type_expedition du formulaire
 // et le type attendu par generateColisCode (préfixe du code colis)
@@ -1100,7 +1101,7 @@ const CreateExpeditionV2 = () => {
         
         // Pour le type CA, filtrer uniquement les produits de la catégorie "Colis Accompagnés"
         if (formData.type_expedition === 'GROUPAGE_CA') {
-            return products.filter(p => p.category && p.category.nom === 'Colis Accompagnés');
+            return products.filter(estProduitColisAccompagnes);
         }
 
         // Pour AFRIQUE, SIMPLE (LD) et INTERVILLE, il n'y a pas de sélecteur de

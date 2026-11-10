@@ -24,6 +24,7 @@ import {
 } from '../store/slices/expeditionSlice';
 import { getCurrencyLabel } from '../utils/format';
 import { getCountryName } from '../utils/countries';
+import { estProduitColisAccompagnes } from '../utils/categorieColisAccompagnes';
 
 const formatFCFA = (amount) => new Intl.NumberFormat('fr-FR').format(amount || 0) + ' ' + getCurrencyLabel();
 
@@ -98,7 +99,7 @@ const paysDesTarifsSimples = (tarifs) => {
 // Même logique que CreateExpeditionV2 : produits proposés selon le type et la catégorie du colis.
 const produitsProposes = (products, type, categoryId) => {
     const liste = Array.isArray(products) ? products : [];
-    if (type === 'groupage_ca') return liste.filter((p) => p.category?.nom === 'Colis Accompagnés');
+    if (type === 'groupage_ca') return liste.filter(estProduitColisAccompagnes);
     if (type.includes('dhd')) return categoryId ? liste.filter((p) => p.category_id === categoryId) : [];
     return liste;
 };
