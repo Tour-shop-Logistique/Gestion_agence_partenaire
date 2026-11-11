@@ -14,10 +14,15 @@ const stripAccents = (value) => value.normalize('NFD').replace(/[̀-ͯ]/g, '');
  * @param {String} placeholder - Texte du placeholder
  * @param {String} className - Classes CSS additionnelles
  */
-const SearchableDropdown = ({ options = [], onSelect, placeholder = "Sélectionner...", className = "", buttonClassName = "h-9 text-xs", id, disabled = false, onFreeText }) => {
+const SearchableDropdown = ({ options = [], onSelect, onChange, value, placeholder = "Sélectionner...", className = "", buttonClassName = "h-9 text-xs", id, disabled = false, onFreeText }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [menuPos, setMenuPos] = useState(null);
+
+    // Label de l'option actuellement sélectionnée (via prop value)
+    const selectedLabel = value != null && value !== ""
+        ? (options.find((o) => String(o.id) === String(value))?.label ?? null)
+        : null;
     const dropdownRef = useRef(null);
     const menuRef = useRef(null);
     const searchInputRef = useRef(null);
@@ -79,7 +84,8 @@ const SearchableDropdown = ({ options = [], onSelect, placeholder = "Sélectionn
     }, [isOpen]);
 
     const handleSelect = (option) => {
-        onSelect(option);
+        if (onSelect) onSelect(option);
+        if (onChange) onChange(option.id);
         setIsOpen(false);
         setSearchTerm('');
     };
@@ -96,7 +102,9 @@ const SearchableDropdown = ({ options = [], onSelect, placeholder = "Sélectionn
                 aria-expanded={isOpen}
                 className={`w-full flex items-center justify-between px-3 bg-white border border-slate-300 rounded-lg font-semibold text-slate-700 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-slate-500 transition-colors disabled:bg-slate-50 disabled:text-slate-900 disabled:cursor-default disabled:hover:border-slate-300 ${buttonClassName}`}
             >
-                <span className="text-slate-500">{placeholder}</span>
+                <span className={selectedLabel ? "text-slate-700 truncate" : "text-slate-500"}>
+                    {selectedLabel ?? placeholder}
+                </span>
                 {!disabled && (
                     <ChevronDownIcon className={`w-4 h-4 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                 )}
