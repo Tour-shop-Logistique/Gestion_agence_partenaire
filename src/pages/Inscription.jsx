@@ -167,7 +167,7 @@ const Inscription = () => {
 
   const aside = (
     <>
-      <h1 className="text-3xl font-bold leading-tight mb-3">Ouvrez votre agence sur Tour Shop</h1>
+      <h1 className="text-3xl font-bold leading-tight mb-3 text-white">Ouvrez votre agence sur Tour Shop</h1>
       <p className="text-white/70 mb-10 max-w-sm">
         Deux étapes, quelques minutes. Horaires, photos et moyens de paiement se complètent ensuite depuis votre profil.
       </p>
