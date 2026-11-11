@@ -287,7 +287,7 @@ const Inscription = () => {
               <SearchableDropdown
                 options={pays}
                 value={agence.code_pays}
-                onChange={(id) => setAgence((p) => ({ ...p, code_pays: id, commune_id: "" }))}
+                onSelect={(opt) => setAgence((p) => ({ ...p, code_pays: opt.id, commune_id: "" }))}
                 placeholder="Choisir"
               />
             </div>
@@ -296,7 +296,7 @@ const Inscription = () => {
               <SearchableDropdown
                 options={communes.map((c) => ({ id: String(c.id), label: c.nom }))}
                 value={String(agence.commune_id)}
-                onChange={(id) => majAgence("commune_id", id)}
+                onSelect={(opt) => majAgence("commune_id", opt.id)}
                 placeholder={agence.code_pays ? "Choisir" : "Pays d'abord"}
               />
             </div>
