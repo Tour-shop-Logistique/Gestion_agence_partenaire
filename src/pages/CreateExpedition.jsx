@@ -615,10 +615,6 @@ const CreateExpedition = () => {
                 };
                 if (c.category_id) item.category_id = c.category_id;
 
-                // Optionnel: code_colis pour la simulation si nécessaire
-                const typeCode = formData.type_expedition.replace('GROUPAGE_', '');
-                item.code_colis = `SIM-${typeCode}-${index + 1}`;
-
                 return item;
             })
         };
@@ -665,10 +661,6 @@ const CreateExpedition = () => {
                 if (c.category_id) {
                     item.category_id = c.category_id;
                 }
-
-                // Génération du code_colis comme dans l'exemple
-                const typeCode = formData.type_expedition.replace('GROUPAGE_', '');
-                item.code_colis = `COL-${typeCode}-${Date.now().toString().slice(-4)}-${index + 1}`;
 
                 return item;
             })

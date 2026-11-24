@@ -14,22 +14,12 @@ import { getLogoUrl } from "../utils/apiConfig";
 import { getCurrencyLabel } from "../utils/format";
 import { toast } from "../utils/toast";
 import { markAsRecentlyCreated } from "../hooks/useWebSocket";
-import { generateColisCode, parseColisCode } from "../utils/codeGenerator";
 import { expeditionsApi } from "../utils/api/expeditions";
 import { getCountryName } from "../utils/countries";
 import PageHeader from "../components/ui/PageHeader";
 import { estProduitColisAccompagnes } from '../utils/categorieColisAccompagnes';
 
 // Correspondance entre la valeur de type_expedition du formulaire
-// et le type attendu par generateColisCode (préfixe du code colis)
-const CODE_COLIS_TYPE_MAP = {
-    SIMPLE: "LD",
-    GROUPAGE_DHD_AERIEN: "AERIEN",
-    GROUPAGE_DHD_MARITIME: "MARITIME",
-    GROUPAGE_CA: "CA",
-    INTERVILLE: "INTERVILLE",
-};
-
 // Correspondance entre la valeur de type_expedition du formulaire
 // et la valeur "type_expedition" renvoyée par l'API (dashboard/expéditions)
 const FORM_TYPE_TO_API_TYPE = {
@@ -201,7 +191,6 @@ const CreateExpeditionV2 = () => {
     const lastSimulatedColisRef = useRef(null);
     // Prochain numéro séquentiel de colis pour le type sélectionné,
     // déduit du dernier colis du même type trouvé dans les "dernières expéditions" du dashboard
-    const [nextColisNumero, setNextColisNumero] = useState(1);
     // Ignore le tout premier passage de l'effet "Gestion des pays par défaut
     // selon le type" ci-dessous (déclenché au montage avec la valeur initiale
     // de type_expedition, pas un vrai changement fait par l'utilisateur) -
@@ -388,82 +377,7 @@ const CreateExpeditionV2 = () => {
         isFirstTypeEffect.current = false;
     }, [formData.type_expedition]);
 
-    // Nombre maximal de pages de la liste complète des expéditions à parcourir
-    // en repli si aucune expédition du même type n'est trouvée dans les 5 dernières du dashboard
-    const MAX_EXPEDITIONS_FALLBACK_PAGES = 10;
-
-    // Cherche, dans une liste d'expéditions (résumés), la première du type demandé
-    const findExpeditionByType = (expeditions, apiType) =>
-        (Array.isArray(expeditions) ? expeditions : []).find(
-            (exp) => (exp.type_expedition || exp.type) === apiType
-        );
-
-    // Déduire le prochain numéro de code colis à partir de la dernière expédition du même
-    // type : d'abord dans les "dernières expéditions" du dashboard, sinon en repli dans la
-    // liste complète des expéditions (comme sur la page Expeditions.jsx)
-    useEffect(() => {
-        let cancelled = false;
-
-        const computeNextColisNumero = async () => {
-            const codeAgence = agencyData?.agence?.code_agence || agencyData?.code_agence;
-            const apiType = FORM_TYPE_TO_API_TYPE[formData.type_expedition];
-
-            if (!codeAgence || !apiType) {
-                if (!cancelled) setNextColisNumero(1);
-                return;
-            }
-
-            // 1. D'abord dans les 5 dernières expéditions du dashboard
-            let matchingExpedition = findExpeditionByType(logistics?.dernieres_expeditions, apiType);
-
-            // 2. Sinon, repli sur la liste complète des expéditions (pagination), du plus récent au plus ancien
-            if (!matchingExpedition?.id) {
-                for (let page = 1; page <= MAX_EXPEDITIONS_FALLBACK_PAGES && !cancelled; page++) {
-                    const listResult = await expeditionsApi.listExpeditions({ page });
-                    if (!listResult?.success || !Array.isArray(listResult.data) || listResult.data.length === 0) {
-                        break;
-                    }
-
-                    matchingExpedition = findExpeditionByType(listResult.data, apiType);
-                    if (matchingExpedition?.id) break;
-
-                    const lastPage = listResult.meta?.last_page;
-                    if (lastPage && page >= lastPage) break;
-                }
-            }
-
-            if (cancelled) return;
-
-            if (!matchingExpedition?.id) {
-                setNextColisNumero(1);
-                return;
-            }
-
-            const result = await expeditionsApi.getExpedition(matchingExpedition.id);
-            if (cancelled) return;
-
-            if (!result?.success) {
-                setNextColisNumero(1);
-                return;
-            }
-
-            const cleanCodeAgence = codeAgence.replace(/[-\s]/g, '').toUpperCase();
-            const shortType = CODE_COLIS_TYPE_MAP[formData.type_expedition] || 'LD';
-            const colisList = Array.isArray(result.data?.colis) ? result.data.colis : [];
-
-            const numeros = colisList
-                .map((c) => parseColisCode(c.code_colis))
-                .filter((p) => p && p.typeExpedition === shortType && p.codeAgence === cleanCodeAgence)
-                .map((p) => p.numero);
-
-            setNextColisNumero(numeros.length > 0 ? Math.max(...numeros) + 1 : 1);
-        };
-
-        computeNextColisNumero();
-        return () => { cancelled = true; };
-    }, [formData.type_expedition, agencyData?.agence?.code_agence || agencyData?.code_agence, logistics?.dernieres_expeditions]);
-
-    useEffect(() => {
+        useEffect(() => {
         if (message && status !== 'succeeded') {
             toast.success(message);
             resetStatus();
@@ -1156,12 +1070,6 @@ const CreateExpeditionV2 = () => {
 
                 if (c.category_id) item.category_id = c.category_id;
 
-                item.code_colis = generateColisCode({
-                    codeAgence: agencyData?.agence?.code_agence || agencyData?.code_agence,
-                    numeroColis: nextColisNumero + index,
-                    typeExpedition: CODE_COLIS_TYPE_MAP[formData.type_expedition] || 'LD',
-                });
-
                 return item;
             })
         };
@@ -1205,12 +1113,6 @@ const CreateExpeditionV2 = () => {
                 }
 
                 if (c.category_id) item.category_id = c.category_id;
-
-                item.code_colis = generateColisCode({
-                    codeAgence: agencyData?.agence?.code_agence || agencyData?.code_agence,
-                    numeroColis: nextColisNumero + index,
-                    typeExpedition: CODE_COLIS_TYPE_MAP[formData.type_expedition] || 'LD',
-                });
 
                 return item;
             })
