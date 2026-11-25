@@ -442,18 +442,27 @@ const ExpeditionControl = () => {
         return ids.size === 0 ? toutes : toutes.filter((c) => ids.has(c.id));
     })();
 
+    // frais_emballage est stocké séparément de montant_expedition en base.
+    // Le vrai total client = montant_expedition + frais_emballage.
+    const montantTotal = (exp) =>
+        parseFloat(exp?.montant_expedition || 0) + parseFloat(exp?.frais_emballage || 0);
+
     // Recalcule le tarif (animation) sans notifier le client ; renvoie le résultat.
     const recalculer = async () => {
-        setMontantInitial((m) => m ?? parseFloat(expedition.montant_expedition));
+        setMontantInitial((m) => m ?? montantTotal(expedition));
         setIsRecalculating(true);
         try {
             const result = await dispatch(recalculateExpeditionTarif(expedition.id));
             if (!result.error && result.payload) {
-                const { montantAvant, montantApres } = result.payload;
+                const updatedExp = result.payload.expedition;
+                const avant = result.payload.montantAvant + parseFloat(expedition.frais_emballage || 0);
+                const apres = updatedExp
+                    ? montantTotal(updatedExp)
+                    : result.payload.montantApres + parseFloat(expedition.frais_emballage || 0);
                 setMontantFlash(true);
                 setTimeout(() => setMontantFlash(false), 2000);
-                if (montantAvant !== montantApres) {
-                    toast.success(`Nouveau montant : ${formatFCFA(montantApres)} (avant : ${formatFCFA(montantAvant)})`);
+                if (avant !== apres) {
+                    toast.success(`Nouveau montant : ${formatFCFA(apres)} (avant : ${formatFCFA(avant)})`);
                 }
             }
             return result;
@@ -638,7 +647,7 @@ const ExpeditionControl = () => {
             await recalculer();
             return true;
         }
-        setMontantInitial((m) => m ?? parseFloat(expedition.montant_expedition));
+        setMontantInitial((m) => m ?? montantTotal(expedition));
         if (!formIsInterville && !expeditionForm.pays_destination) {
             toast.error('Choisissez le pays de destination.');
             return false;
@@ -1171,7 +1180,7 @@ const ExpeditionControl = () => {
                                 ) : 'Montant actuel'}
                             </p>
                             <p className={`text-lg sm:text-xl font-bold text-white truncate transition-all duration-500 ${isRecalculating ? 'opacity-40 blur-[2px] animate-pulse' : ''} ${montantFlash ? 'scale-110 origin-left text-emerald-200' : ''}`}>
-                                {formatFCFA(expedition.montant_expedition)}
+                                {formatFCFA(montantTotal(expedition))}
                             </p>
                         </div>
                         {canControl && (
