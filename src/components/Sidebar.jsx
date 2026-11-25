@@ -50,7 +50,7 @@ const Sidebar = ({ onClose }) => {
   const agencyStatus = useSelector((state) => state.agency.status);
   const location = useLocation();
   const { data: agencyData } = useAgency();
-  const { demandesMeta } = useExpedition();
+  const { demandesMeta, demandes } = useExpedition();
 
   const canAccessPage = (pageKey) => checkCanAccessPage(currentUser, isAdmin, pageKey);
 
@@ -58,7 +58,8 @@ const Sidebar = ({ onClose }) => {
   const operational = useSelector((state) => state.dashboard?.operational || {});
 
   const isActive = (path) => location.pathname === path;
-  const pendingDemandesCount = demandesMeta?.total || 0;
+  // Demandes = expéditions en attente d'acceptation : le dashboard les fournit dès le démarrage.
+  const pendingDemandesCount = demandesMeta?.total || demandes?.length || operational.expeditions_attente_acceptation || 0;
 
   const adminMenuItems = [
     {
@@ -295,9 +296,7 @@ const Sidebar = ({ onClose }) => {
                   "/demandes":               pendingDemandesCount,
                   "/messages":               unreadMessagesCount,
                   "/colis-a-receptionner":   operational.colis_attente_reception_depart || 0,
-                  "/retrait-colis":          operational.colis_attente_retrait_livraison || 0,
-                  "/expeditions":            operational.expeditions_attente_acceptation || 0,
-                };
+                  "/retrait-colis":          operational.colis_attente_retrait_livraison || 0,                };
                 const badgeCount = BADGE_COUNTS[item.path] || 0;
                 const showBadge = badgeCount > 0;
                 const c = ITEM_ACCENTS[item.path] || DEFAULT_ACCENT;

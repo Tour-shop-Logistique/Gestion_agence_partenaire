@@ -1,4 +1,5 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowLeftRight, Info, Loader2 } from "lucide-react";
 import { useTarifs } from "../hooks/useTarifs";
 import { useAuth } from "../hooks/useAuth";
@@ -86,6 +87,23 @@ const TarifsInterville = () => {
         pourcentage_commission_arrivee: parseFloat(tarif.pourcentage_commission_arrivee) || 0,
     })), [intervilleTarifs]);
 
+    const tableContainerRef = useRef(null);
+    const mobileContainerRef = useRef(null);
+
+    const tableVirtualizer = useVirtualizer({
+        count: intervilleTarifs?.length || 0,
+        getScrollElement: () => tableContainerRef.current,
+        estimateSize: () => 53,
+        overscan: 10,
+    });
+
+    const mobileVirtualizer = useVirtualizer({
+        count: intervilleTarifs?.length || 0,
+        getScrollElement: () => mobileContainerRef.current,
+        estimateSize: () => 120,
+        overscan: 5,
+    });
+
     return (
         <div className="max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6 animate-fade-in">
             <PageHeader
@@ -130,81 +148,103 @@ const TarifsInterville = () => {
                         </div>
                     ) : (
                         <>
-                            {/* Desktop */}
-                            <div className="hidden md:block overflow-x-auto">
-                                <table className="w-full text-sm">
-                                    <thead className="bg-slate-50/50 border-b border-slate-200">
-                                        <tr>
-                                            <th className="px-6 py-3 text-left font-bold text-slate-500 uppercase tracking-wider text-xs">Trajet</th>
-                                            <th className="px-6 py-3 text-left font-bold text-slate-500 uppercase tracking-wider text-xs">Format</th>
-                                            <th className="px-6 py-3 text-left font-bold text-slate-500 uppercase tracking-wider text-xs">Montant Base</th>
-                                            <th className="px-6 py-3 text-left font-bold text-slate-500 uppercase tracking-wider text-xs">Commission si départ</th>
-                                            <th className="px-6 py-3 text-left font-bold text-slate-500 uppercase tracking-wider text-xs">Commission si arrivée</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-200">
-                                        {intervilleTarifs.map((tarif) => (
-                                            <tr key={tarif.id} className="hover:bg-slate-50/50 transition-colors">
-                                                <td className="px-6 py-3">
-                                                    <div className="flex items-center gap-1.5 text-slate-900 font-semibold">
-                                                        <span>{tarif.commune_a?.nom || '?'}</span>
-                                                        <ArrowLeftRight size={12} className="text-slate-400 shrink-0" />
-                                                        <span>{tarif.commune_b?.nom || '?'}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-3">
-                                                    <FormatBadge format={tarif.format_colis} />
-                                                </td>
-                                                <td className="px-6 py-3">
-                                                    <p className="font-medium text-slate-700">{formatFCFA(tarif.montant_base)}</p>
-                                                </td>
-                                                <td className="px-6 py-3">
-                                                    <span className="inline-flex items-center px-2 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-100 font-bold">
-                                                        {tarif.pourcentage_commission_depart}%
-                                                    </span>
-                                                    <span className="text-slate-500 font-medium ml-2 text-xs">
-                                                        ({formatFCFA(tarif.montant_commission_depart)})
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-3">
-                                                    <span className="inline-flex items-center px-2 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-100 font-bold">
-                                                        {tarif.pourcentage_commission_arrivee}%
-                                                    </span>
-                                                    <span className="text-slate-500 font-medium ml-2 text-xs">
-                                                        ({formatFCFA(tarif.montant_commission_arrivee)})
-                                                    </span>
-                                                </td>
+                            {/* Desktop — virtualisé */}
+                            <div className="hidden md:block">
+                                <div ref={tableContainerRef} className="overflow-auto" style={{ maxHeight: 600 }}>
+                                    <table className="w-full text-sm">
+                                        <thead className="sticky top-0 z-10 bg-white">
+                                            <tr className="bg-slate-50/50 border-b border-slate-200">
+                                                <th className="px-6 py-3 text-left font-bold text-slate-500 uppercase tracking-wider text-xs">Trajet</th>
+                                                <th className="px-6 py-3 text-left font-bold text-slate-500 uppercase tracking-wider text-xs">Format</th>
+                                                <th className="px-6 py-3 text-left font-bold text-slate-500 uppercase tracking-wider text-xs">Montant Base</th>
+                                                <th className="px-6 py-3 text-left font-bold text-slate-500 uppercase tracking-wider text-xs">Commission si départ</th>
+                                                <th className="px-6 py-3 text-left font-bold text-slate-500 uppercase tracking-wider text-xs">Commission si arrivée</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody style={{ height: tableVirtualizer.getTotalSize(), position: 'relative' }}>
+                                            {tableVirtualizer.getVirtualItems().map((virtualRow) => {
+                                                const tarif = intervilleTarifs[virtualRow.index];
+                                                return (
+                                                    <tr
+                                                        key={tarif.id}
+                                                        data-index={virtualRow.index}
+                                                        ref={tableVirtualizer.measureElement}
+                                                        className="hover:bg-slate-50/50 transition-colors"
+                                                        style={{ position: 'absolute', top: virtualRow.start, left: 0, width: '100%', display: 'table', tableLayout: 'fixed' }}
+                                                    >
+                                                        <td className="px-6 py-3" style={{ width: '25%' }}>
+                                                            <div className="flex items-center gap-1.5 text-slate-900 font-semibold">
+                                                                <span>{tarif.commune_a?.nom || '?'}</span>
+                                                                <ArrowLeftRight size={12} className="text-slate-400 shrink-0" />
+                                                                <span>{tarif.commune_b?.nom || '?'}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-3" style={{ width: '15%' }}>
+                                                            <FormatBadge format={tarif.format_colis} />
+                                                        </td>
+                                                        <td className="px-6 py-3" style={{ width: '20%' }}>
+                                                            <p className="font-medium text-slate-700">{formatFCFA(tarif.montant_base)}</p>
+                                                        </td>
+                                                        <td className="px-6 py-3" style={{ width: '20%' }}>
+                                                            <span className="inline-flex items-center px-2 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-100 font-bold">
+                                                                {tarif.pourcentage_commission_depart}%
+                                                            </span>
+                                                            <span className="text-slate-500 font-medium ml-2 text-xs">
+                                                                ({formatFCFA(tarif.montant_commission_depart)})
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-6 py-3" style={{ width: '20%' }}>
+                                                            <span className="inline-flex items-center px-2 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-100 font-bold">
+                                                                {tarif.pourcentage_commission_arrivee}%
+                                                            </span>
+                                                            <span className="text-slate-500 font-medium ml-2 text-xs">
+                                                                ({formatFCFA(tarif.montant_commission_arrivee)})
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
 
-                            {/* Mobile */}
-                            <div className="md:hidden divide-y divide-slate-200">
-                                {intervilleTarifs.map((tarif) => (
-                                    <div key={tarif.id} className="p-3 space-y-2">
-                                        <div className="flex items-center gap-2">
-                                            <p className="font-semibold text-slate-900 text-sm flex items-center gap-1 truncate">
-                                                {tarif.commune_a?.nom} <ArrowLeftRight size={10} className="text-slate-400 shrink-0" /> {tarif.commune_b?.nom}
-                                            </p>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <FormatBadge format={tarif.format_colis} />
-                                            <p className="text-xs text-slate-500 font-bold uppercase">{formatFCFA(tarif.montant_base)}</p>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <div className="bg-slate-50 rounded-lg p-2 flex flex-col items-center justify-center border border-slate-100">
-                                                <span className="text-[10px] text-slate-500 font-bold">Si départ</span>
-                                                <span className="text-xs font-semibold text-orange-600">{tarif.pourcentage_commission_depart}%</span>
+                            {/* Mobile — virtualisé */}
+                            <div ref={mobileContainerRef} className="md:hidden overflow-auto" style={{ maxHeight: 600 }}>
+                                <div style={{ height: mobileVirtualizer.getTotalSize(), position: 'relative' }}>
+                                    {mobileVirtualizer.getVirtualItems().map((virtualRow) => {
+                                        const tarif = intervilleTarifs[virtualRow.index];
+                                        return (
+                                            <div
+                                                key={tarif.id}
+                                                data-index={virtualRow.index}
+                                                ref={mobileVirtualizer.measureElement}
+                                                className="p-3 space-y-2 border-b border-slate-200"
+                                                style={{ position: 'absolute', top: virtualRow.start, left: 0, width: '100%' }}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <p className="font-semibold text-slate-900 text-sm flex items-center gap-1 truncate">
+                                                        {tarif.commune_a?.nom} <ArrowLeftRight size={10} className="text-slate-400 shrink-0" /> {tarif.commune_b?.nom}
+                                                    </p>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <FormatBadge format={tarif.format_colis} />
+                                                    <p className="text-xs text-slate-500 font-bold uppercase">{formatFCFA(tarif.montant_base)}</p>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <div className="bg-slate-50 rounded-lg p-2 flex flex-col items-center justify-center border border-slate-100">
+                                                        <span className="text-[10px] text-slate-500 font-bold">Si départ</span>
+                                                        <span className="text-xs font-semibold text-orange-600">{tarif.pourcentage_commission_depart}%</span>
+                                                    </div>
+                                                    <div className="bg-slate-50 rounded-lg p-2 flex flex-col items-center justify-center border border-slate-100">
+                                                        <span className="text-[10px] text-slate-500 font-bold">Si arrivée</span>
+                                                        <span className="text-xs font-semibold text-orange-600">{tarif.pourcentage_commission_arrivee}%</span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div className="bg-slate-50 rounded-lg p-2 flex flex-col items-center justify-center border border-slate-100">
-                                                <span className="text-[10px] text-slate-500 font-bold">Si arrivée</span>
-                                                <span className="text-xs font-semibold text-orange-600">{tarif.pourcentage_commission_arrivee}%</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
+                                        );
+                                    })}
+                                </div>
                             </div>
                         </>
                     )}

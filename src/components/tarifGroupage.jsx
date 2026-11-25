@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { useTarifs } from "../hooks/useTarifs";
 import { useAuth } from "../hooks/useAuth";
 import AddAgencyTarifModal from "../components/groupageForm";
@@ -221,6 +222,23 @@ const TarifGroupageComponent = () => {
     };
   }), [currentData, activeTab]);
 
+  const tableContainerRef = useRef(null);
+  const mobileContainerRef = useRef(null);
+
+  const tableVirtualizer = useVirtualizer({
+    count: currentData?.length || 0,
+    getScrollElement: () => tableContainerRef.current,
+    estimateSize: () => 65,
+    overscan: 10,
+  });
+
+  const mobileVirtualizer = useVirtualizer({
+    count: currentData?.length || 0,
+    getScrollElement: () => mobileContainerRef.current,
+    estimateSize: () => 180,
+    overscan: 5,
+  });
+
   return (
     <div className="space-y-4">
       {/* Premium Action Bar */}
@@ -375,214 +393,179 @@ const TarifGroupageComponent = () => {
           <TableSkeleton />
         ) : (
           <>
-            <div className="hidden lg:block overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-50/50 border-b border-slate-200">
-                    <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-r border-slate-100/50">
-                      Type
-                    </th>
-                    <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-r border-slate-100/50">
-                      Catégorie / Pays
-                    </th>
-                    <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-r border-slate-100/50">
-                      Montant de Base
-                    </th>
-                    <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-r border-slate-100/50">
-                      Frais Prestation
-                    </th>
-                    <th className="px-6 py-4 text-[10px] font-semibold text-indigo-600 uppercase tracking-wide border-r border-slate-200 bg-indigo-50/30">
-                      Total Expédition
-                    </th>
-                    {activeTab === "agency" && (
-                      <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-r border-slate-100/50 text-center">
-                        Statut
-                      </th>
-                    )}
-                    <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide text-right">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {currentData?.map((tarif, index) => {
-                    const montantBase = tarif.montant_base || 0;
-                    const pourcentage = tarif.pourcentage_prestation || 0;
-                    const montantPrestation = Math.round(montantBase * pourcentage / 100);
-                    const total = activeTab === "agency" ? (tarif.montant_expedition || 0) : (montantBase + montantPrestation);
+            {/* Desktop — virtualisé */}
+            <div className="hidden lg:block">
+              <div ref={tableContainerRef} className="overflow-auto" style={{ maxHeight: 600 }}>
+                <table className="w-full text-left border-collapse">
+                  <thead className="sticky top-0 z-10 bg-white">
+                    <tr className="bg-slate-50/50 border-b border-slate-200">
+                      <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-r border-slate-100/50">Type</th>
+                      <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-r border-slate-100/50">Catégorie / Pays</th>
+                      <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-r border-slate-100/50">Montant de Base</th>
+                      <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-r border-slate-100/50">Frais Prestation</th>
+                      <th className="px-6 py-4 text-[10px] font-semibold text-indigo-600 uppercase tracking-wide border-r border-slate-200 bg-indigo-50/30">Total Expédition</th>
+                      {activeTab === "agency" && (
+                        <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-r border-slate-100/50 text-center">Statut</th>
+                      )}
+                      <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody style={{ height: tableVirtualizer.getTotalSize(), position: 'relative' }}>
+                    {tableVirtualizer.getVirtualItems().map((virtualRow) => {
+                      const tarif = currentData[virtualRow.index];
+                      const montantBase = tarif.montant_base || 0;
+                      const pourcentage = tarif.pourcentage_prestation || 0;
+                      const montantPrestation = Math.round(montantBase * pourcentage / 100);
+                      const total = activeTab === "agency" ? (tarif.montant_expedition || 0) : (montantBase + montantPrestation);
+                      return (
+                        <tr
+                          key={`${activeTab}-tarif-${tarif.id || virtualRow.index}`}
+                          data-index={virtualRow.index}
+                          ref={tableVirtualizer.measureElement}
+                          className="transition-all duration-200 group hover:bg-slate-50/80"
+                          style={{ position: 'absolute', top: virtualRow.start, left: 0, width: '100%', display: 'table', tableLayout: 'fixed' }}
+                        >
+                          <td className="px-6 py-4 border-r border-slate-100/30" style={{ width: '20%' }}>
+                            <div className="flex flex-col gap-1">
+                              <span className={`inline-flex w-fit items-center px-2 py-1 rounded text-[10px] font-bold uppercase tracking-tight ${typeBadgeClasses(tarif.type_expedition)}`}>
+                                {tarif.type_expedition?.replace('groupage_', '').replace('_', ' ').toUpperCase() || 'N/A'}
+                              </span>
+                              {tarif.mode && <span className="text-[11px] font-medium text-slate-500">{tarif.mode?.toUpperCase()} {tarif.ligne ? `→ ${tarif.ligne.toUpperCase()}` : ''}</span>}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 border-r border-slate-100/30" style={{ width: '22%' }}>
+                            {tarif.category?.nom ? (
+                              <div className="flex flex-col">
+                                <span className="text-[13px] font-bold text-slate-900">{tarif.category.nom}</span>
+                                <span className="text-xs font-semibold text-slate-500 uppercase">{getCountryName(tarif.code_pays) || tarif.pays || 'N/A'}</span>
+                              </div>
+                            ) : (
+                              <span className="text-[13px] font-bold text-slate-900 uppercase">{getCountryName(tarif.code_pays) || tarif.pays || 'N/A'}</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 border-r border-slate-100/30 font-medium text-sm text-slate-600" style={{ width: '16%' }}>
+                            {montantBase.toLocaleString()} {getCurrencyLabel()}
+                          </td>
+                          <td className="px-6 py-4 border-r border-slate-100/30" style={{ width: '16%' }}>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-indigo-600">+{pourcentage}%</span>
+                              <span className="text-[10px] text-slate-400 font-medium">{montantPrestation.toLocaleString()} {getCurrencyLabel()}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 border-r border-slate-200 bg-indigo-50/10 group-hover:bg-indigo-50/40 transition-colors" style={{ width: '14%' }}>
+                            <span className="text-sm font-bold text-slate-950">{total.toLocaleString()} {getCurrencyLabel()}</span>
+                          </td>
+                          {activeTab === "agency" && (
+                            <td className="px-6 py-4 border-r border-slate-100/30 text-center" style={{ width: '6%' }}>
+                              <StatusToggle active={tarif.actif} onClick={() => !isAgent && handleToggleStatus(tarif)} disabled={isAgent} />
+                            </td>
+                          )}
+                          <td className="px-6 py-4 text-right" style={{ width: '6%' }}>
+                            <div className="flex items-center justify-end space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                              {activeTab === "agency" && !isAgent && (
+                                <>
+                                  <button onClick={() => handleEditTarif(tarif)} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-lg border border-transparent hover:border-indigo-100 transition-all shadow-none hover:shadow-sm" title="Modifier ce tarif">
+                                    <PencilSquareIcon className="w-4 h-4" />
+                                  </button>
+                                  <button onClick={() => handleDeleteTarif(tarif)} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-white rounded-lg border border-transparent hover:border-rose-100 transition-all shadow-none hover:shadow-sm" title="Supprimer ce tarif">
+                                    <TrashIcon className="w-4 h-4" />
+                                  </button>
+                                </>
+                              )}
+                              {activeTab === "base" && !isAgent && (
+                                <button onClick={() => handleNewTarif(tarif)} className="px-3 py-1.5 bg-slate-900 text-white text-[10px] font-bold rounded hover:bg-indigo-600 transition-all shadow-sm active:scale-95">
+                                  Configurer
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
 
-                    return (
-                      <tr key={`${activeTab}-tarif-${tarif.id || index}`} className="transition-all duration-200 group hover:bg-slate-50/80">
-                        <td className="px-6 py-4 border-r border-slate-100/30">
+            {/* Mobile — virtualisé */}
+            <div ref={mobileContainerRef} className="lg:hidden overflow-auto" style={{ maxHeight: 600 }}>
+              <div style={{ height: mobileVirtualizer.getTotalSize(), position: 'relative' }}>
+                {mobileVirtualizer.getVirtualItems().map((virtualRow) => {
+                  const tarif = currentData[virtualRow.index];
+                  const montantBase = tarif.montant_base || 0;
+                  const pourcentage = tarif.pourcentage_prestation || 0;
+                  const montantPrestation = Math.round(montantBase * pourcentage / 100);
+                  const total = activeTab === "agency" ? (tarif.montant_expedition || 0) : (montantBase + montantPrestation);
+                  return (
+                    <div
+                      key={`${activeTab}-mobile-${tarif.id || virtualRow.index}`}
+                      data-index={virtualRow.index}
+                      ref={mobileVirtualizer.measureElement}
+                      className="p-4 space-y-4 transition-colors hover:bg-slate-50 border-b border-slate-100"
+                      style={{ position: 'absolute', top: virtualRow.start, left: 0, width: '100%' }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
                           <div className="flex flex-col gap-1">
                             <span className={`inline-flex w-fit items-center px-2 py-1 rounded text-[10px] font-bold uppercase tracking-tight ${typeBadgeClasses(tarif.type_expedition)}`}>
                               {tarif.type_expedition?.replace('groupage_', '').replace('_', ' ').toUpperCase() || 'N/A'}
                             </span>
-                            {tarif.mode && (
-                              <span className="text-[11px] font-medium text-slate-500">
-                                {tarif.mode?.toUpperCase()} {tarif.ligne ? `→ ${tarif.ligne.toUpperCase()}` : ''}
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 border-r border-slate-100/30">
-                          {tarif.category?.nom ? (
-                            // DHD / CA : la catégorie prime, le pays est
-                            // secondaire.
-                            <div className="flex flex-col">
-                              <span className="text-[13px] font-bold text-slate-900">{tarif.category.nom}</span>
-                              <span className="text-xs font-semibold text-slate-500 uppercase">{getCountryName(tarif.code_pays) || tarif.pays || 'N/A'}</span>
-                            </div>
-                          ) : (
-                            // Afrique (et autres types sans catégorie) : pas
-                            // de "N/A" en avant, le pays est l'info utile.
-                            <span className="text-[13px] font-bold text-slate-900 uppercase">{getCountryName(tarif.code_pays) || tarif.pays || 'N/A'}</span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 border-r border-slate-100/30 font-medium text-sm text-slate-600">
-                          {montantBase.toLocaleString()} {getCurrencyLabel()}
-                        </td>
-                        <td className="px-6 py-4 border-r border-slate-100/30">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-indigo-600">+{pourcentage}%</span>
-                            <span className="text-[10px] text-slate-400 font-medium">{montantPrestation.toLocaleString()} {getCurrencyLabel()}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 border-r border-slate-200 bg-indigo-50/10 group-hover:bg-indigo-50/40 transition-colors">
-                          <span className="text-sm font-bold text-slate-950">
-                            {total.toLocaleString()} {getCurrencyLabel()}
-                          </span>
-                        </td>
-                        {activeTab === "agency" && (
-                          <td className="px-6 py-4 border-r border-slate-100/30 text-center">
-                            <StatusToggle
-                              active={tarif.actif}
-                              onClick={() => !isAgent && handleToggleStatus(tarif)}
-                              disabled={isAgent}
-                            />
-                          </td>
-                        )}
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                            {activeTab === "agency" && !isAgent && (
+                            {tarif.category?.nom ? (
                               <>
-                                <button
-                                  onClick={() => handleEditTarif(tarif)}
-                                  className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-lg border border-transparent hover:border-indigo-100 transition-all shadow-none hover:shadow-sm"
-                                  title="Modifier ce tarif"
-                                >
-                                  <PencilSquareIcon className="w-4 h-4" />
+                                <p className="text-[13px] font-bold text-slate-900">{tarif.category.nom}</p>
+                                <span className="text-xs font-semibold text-slate-500 uppercase">{getCountryName(tarif.code_pays) || tarif.pays || 'N/A'}</span>
+                              </>
+                            ) : (
+                              <p className="text-[13px] font-bold text-slate-900 uppercase">{getCountryName(tarif.code_pays) || tarif.pays || 'N/A'}</p>
+                            )}
+                            {tarif.mode && <span className="text-[11px] font-medium text-slate-500">{tarif.mode?.toUpperCase()} {tarif.ligne ? `→ ${tarif.ligne.toUpperCase()}` : ''}</span>}
+                          </div>
+                        </div>
+                        {activeTab === "agency" ? (
+                          <div className="flex items-center gap-1.5">
+                            {!isAgent && (
+                              <>
+                                <button onClick={() => handleEditTarif(tarif)} className="p-2 bg-white text-indigo-600 rounded-lg border border-slate-200 active:scale-95 shadow-sm">
+                                  <PencilSquareIcon className="w-5 h-5" />
                                 </button>
-                                <button
-                                  onClick={() => handleDeleteTarif(tarif)}
-                                  className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-white rounded-lg border border-transparent hover:border-rose-100 transition-all shadow-none hover:shadow-sm"
-                                  title="Supprimer ce tarif"
-                                >
-                                  <TrashIcon className="w-4 h-4" />
+                                <button onClick={() => handleDeleteTarif(tarif)} className="p-2 bg-white text-rose-600 rounded-lg border border-slate-200 active:scale-95 shadow-sm">
+                                  <TrashIcon className="w-5 h-5" />
                                 </button>
                               </>
                             )}
-
-                            {activeTab === "base" && !isAgent && (
-                              <button
-                                onClick={() => handleNewTarif(tarif)}
-                                className="px-3 py-1.5 bg-slate-900 text-white text-[10px] font-bold rounded hover:bg-indigo-600 transition-all shadow-sm active:scale-95"
-                              >
-                                Configurer
-                              </button>
-                            )}
                           </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Mobile View - Enhanced Card List */}
-            <div className="lg:hidden divide-y divide-slate-100">
-              {currentData?.map((tarif, index) => {
-                const montantBase = tarif.montant_base || 0;
-                const pourcentage = tarif.pourcentage_prestation || 0;
-                const montantPrestation = Math.round(montantBase * pourcentage / 100);
-                const total = activeTab === "agency" ? (tarif.montant_expedition || 0) : (montantBase + montantPrestation);
-
-                return (
-                  <div key={`${activeTab}-mobile-${tarif.id || index}`} className="p-4 space-y-4 transition-colors hover:bg-slate-50">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="flex flex-col gap-1">
-                          <span className={`inline-flex w-fit items-center px-2 py-1 rounded text-[10px] font-bold uppercase tracking-tight ${typeBadgeClasses(tarif.type_expedition)}`}>
-                            {tarif.type_expedition?.replace('groupage_', '').replace('_', ' ').toUpperCase() || 'N/A'}
-                          </span>
-                          {tarif.category?.nom ? (
-                            <>
-                              <p className="text-[13px] font-bold text-slate-900">{tarif.category.nom}</p>
-                              <span className="text-xs font-semibold text-slate-500 uppercase">{getCountryName(tarif.code_pays) || tarif.pays || 'N/A'}</span>
-                            </>
-                          ) : (
-                            <p className="text-[13px] font-bold text-slate-900 uppercase">{getCountryName(tarif.code_pays) || tarif.pays || 'N/A'}</p>
-                          )}
-                          {tarif.mode && (
-                            <span className="text-[11px] font-medium text-slate-500">
-                              {tarif.mode?.toUpperCase()} {tarif.ligne ? `→ ${tarif.ligne.toUpperCase()}` : ''}
-                            </span>
-                          )}
-                        </div>
+                        ) : (
+                          !isAgent && (
+                            <button onClick={() => handleNewTarif(tarif)} className="px-4 py-2 bg-slate-900 text-white text-[10px] font-bold rounded-lg shadow-sm active:scale-95">
+                              Configurer
+                            </button>
+                          )
+                        )}
                       </div>
-                      {activeTab === "agency" ? (
-                        <div className="flex items-center gap-1.5">
-                          {!isAgent && (
-                            <>
-                              <button onClick={() => handleEditTarif(tarif)} className="p-2 bg-white text-indigo-600 rounded-lg border border-slate-200 active:scale-95 shadow-sm">
-                                <PencilSquareIcon className="w-5 h-5" />
-                              </button>
-                              <button onClick={() => handleDeleteTarif(tarif)} className="p-2 bg-white text-rose-600 rounded-lg border border-slate-200 active:scale-95 shadow-sm">
-                                <TrashIcon className="w-5 h-5" />
-                              </button>
-                            </>
-                          )}
+                      <div className="grid grid-cols-2 gap-3 pt-2">
+                        <div className="p-3 rounded-lg border bg-slate-50 border-slate-100">
+                          <p className="text-[9px] font-bold uppercase tracking-wider mb-1 text-slate-400">Base</p>
+                          <p className="text-xs font-bold text-slate-900">{montantBase.toLocaleString()} {getCurrencyLabel()}</p>
                         </div>
-                      ) : (
-                        !isAgent && (
-                          <button
-                            onClick={() => handleNewTarif(tarif)}
-                            className="px-4 py-2 bg-slate-900 text-white text-[10px] font-bold rounded-lg shadow-sm active:scale-95"
-                          >
-                            Configurer
-                          </button>
-                        )
-                      )}
+                        <div className="p-3 rounded-lg border bg-indigo-50/50 border-indigo-100">
+                          <p className="text-[9px] font-bold uppercase tracking-wider mb-1 text-indigo-400">Prestation</p>
+                          <p className="text-xs font-bold text-indigo-700">+{pourcentage}%</p>
+                        </div>
+                        <div className="col-span-2 p-3 rounded-lg flex items-center justify-between shadow-sm bg-indigo-600">
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-indigo-100">Total Expédition</p>
+                          <p className="text-base font-bold text-white">{total.toLocaleString()} {getCurrencyLabel()}</p>
+                        </div>
+                        {activeTab === "agency" && (
+                          <div className="col-span-2 flex items-center justify-between pt-1">
+                            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Statut</span>
+                            <StatusToggle active={tarif.actif} onClick={() => !isAgent && handleToggleStatus(tarif)} disabled={isAgent} />
+                          </div>
+                        )}
+                      </div>
                     </div>
-
-                    <div className="grid grid-cols-2 gap-3 pt-2">
-                      <div className="p-3 rounded-lg border bg-slate-50 border-slate-100">
-                        <p className="text-[9px] font-bold uppercase tracking-wider mb-1 text-slate-400">Base</p>
-                        <p className="text-xs font-bold text-slate-900">{montantBase.toLocaleString()} {getCurrencyLabel()}</p>
-                      </div>
-                      <div className="p-3 rounded-lg border bg-indigo-50/50 border-indigo-100">
-                        <p className="text-[9px] font-bold uppercase tracking-wider mb-1 text-indigo-400">Prestation</p>
-                        <p className="text-xs font-bold text-indigo-700">+{pourcentage}%</p>
-                      </div>
-                      <div className="col-span-2 p-3 rounded-lg flex items-center justify-between shadow-sm bg-indigo-600">
-                        <p className="text-[10px] font-semibold uppercase tracking-wide text-indigo-100">Total Expédition</p>
-                        <p className="text-base font-bold text-white">{total.toLocaleString()} {getCurrencyLabel()}</p>
-                      </div>
-                      {activeTab === "agency" && (
-                        <div className="col-span-2 flex items-center justify-between pt-1">
-                          <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Statut</span>
-                          <StatusToggle
-                            active={tarif.actif}
-                            onClick={() => !isAgent && handleToggleStatus(tarif)}
-                            disabled={isAgent}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
 
             {(!loading && currentData?.length === 0) && (

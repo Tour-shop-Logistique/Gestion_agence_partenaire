@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import SaveTarifModal from "../components/SaveTarifModal";
 
 import { getCurrencyLabel } from "../utils/format";
@@ -488,6 +489,23 @@ const TarifSimpleComponent = () => {
     actif: tarif.actif ? 'Oui' : 'Non',
   })), [currentData]);
 
+  const tableContainerRef = useRef(null);
+  const mobileContainerRef = useRef(null);
+
+  const tableVirtualizer = useVirtualizer({
+    count: currentData?.length || 0,
+    getScrollElement: () => tableContainerRef.current,
+    estimateSize: () => 57,
+    overscan: 10,
+  });
+
+  const mobileVirtualizer = useVirtualizer({
+    count: currentData?.length || 0,
+    getScrollElement: () => mobileContainerRef.current,
+    estimateSize: () => 170,
+    overscan: 5,
+  });
+
   return (
     <div className="space-y-4">
       {/* KPI Section */}
@@ -616,182 +634,155 @@ const TarifSimpleComponent = () => {
           <TableSkeleton />
         ) : (
           <>
-            <div className="hidden lg:block overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-50/50 border-b border-slate-200">
-                    <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-r border-slate-100/50">
-                      Indice
-                    </th>
-                    <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-r border-slate-100/50">
-                      Destination
-                    </th>
-                    <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-r border-slate-100/50">
-                      Montant de Base
-                    </th>
-                    <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-r border-slate-100/50">
-                      Frais Prestation
-                    </th>
-                    <th className="px-6 py-4 text-[10px] font-semibold text-indigo-600 uppercase tracking-wide border-r border-slate-200 bg-indigo-50/30">
-                      Total Expédition
-                    </th>
-                    {activeTab === "agency" && (
-                      <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-r border-slate-100/50 text-center">
-                        Statut
-                      </th>
-                    )}
-                    <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide text-right">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {currentData?.map((tarif) => {
-                    return (
-                    <tr key={tarif.id} className="transition-all duration-200 group hover:bg-slate-50/80">
-                      <td className="px-6 py-4 border-r border-slate-100/30">
-                        <span className="inline-flex items-center px-2 py-1 rounded text-[11px] font-bold leading-none bg-slate-900 text-white">
-                          {tarif.indice}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 border-r border-slate-100/30">
-                        <div className="flex flex-col">
-                          <span className="text-[13px] font-bold text-slate-900">{tarif.zone?.nom || tarif.nom_zone}</span>
-                          <CountriesDisplay 
-                            countries={tarif.zone?.pays}
-                            countryCodes={tarif.zone?.pays_codes}
-                            zoneName={tarif.zone?.nom || tarif.nom_zone}
-                          />
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 border-r border-slate-100/30 font-medium text-sm text-slate-600">
-                        {formatMontant(tarif.montant_base)}
-                      </td>
-                      <td className="px-6 py-4 border-r border-slate-100/30">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-indigo-600">+{tarif.pourcentage_prestation}%</span>
-                          <span className="text-[10px] text-slate-400 font-medium">{formatMontant(tarif.montant_prestation)}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 border-r border-slate-200 transition-colors bg-indigo-50/10 group-hover:bg-indigo-50/40">
-                        <span className="text-sm font-bold text-slate-950">
-                          {formatMontant(tarif.montant_expedition)}
-                        </span>
-                      </td>
+            {/* Desktop — virtualisé */}
+            <div className="hidden lg:block">
+              <div ref={tableContainerRef} className="overflow-auto" style={{ maxHeight: 600 }}>
+                <table className="w-full text-left border-collapse">
+                  <thead className="sticky top-0 z-10 bg-white">
+                    <tr className="bg-slate-50/50 border-b border-slate-200">
+                      <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-r border-slate-100/50">Indice</th>
+                      <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-r border-slate-100/50">Destination</th>
+                      <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-r border-slate-100/50">Montant de Base</th>
+                      <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-r border-slate-100/50">Frais Prestation</th>
+                      <th className="px-6 py-4 text-[10px] font-semibold text-indigo-600 uppercase tracking-wide border-r border-slate-200 bg-indigo-50/30">Total Expédition</th>
                       {activeTab === "agency" && (
-                        <td className="px-6 py-4 border-r border-slate-100/30 text-center">
-                          <StatusToggle
-                            active={tarif.actif}
-                            onClick={() => !isAgent && handleStatus(tarif)}
-                            disabled={isAgent}
-                          />
-                        </td>
+                        <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-r border-slate-100/50 text-center">Statut</th>
                       )}
-
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                          {activeTab === "agency" && !isAgent && (
-                            <>
-                              <button
-                                onClick={() => handleEditSingle(tarif)}
-                                className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-lg border border-transparent hover:border-indigo-100 transition-all shadow-none hover:shadow-sm"
-                                title="Modifier ce tarif"
-                              >
-                                <PencilSquareIcon className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => handleDelete(tarif)}
-                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-white rounded-lg border border-transparent hover:border-rose-100 transition-all shadow-none hover:shadow-sm"
-                                title="Supprimer ce tarif"
-                              >
-                                <TrashIcon className="w-4 h-4" />
-                              </button>
-                            </>
-                          )}
-
-                          {activeTab === "base" && !isAgent && (
-                            <button
-                              onClick={() => handleInitializeSingle(tarif)}
-                              className="px-3 py-1.5 bg-slate-900 text-white text-[10px] font-bold rounded hover:bg-indigo-600 transition-all shadow-sm active:scale-95"
-                            >
-                              Initialiser
-                            </button>
-                          )}
-                        </div>
-                      </td>
+                      <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide text-right">Actions</th>
                     </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody style={{ height: tableVirtualizer.getTotalSize(), position: 'relative' }}>
+                    {tableVirtualizer.getVirtualItems().map((virtualRow) => {
+                      const tarif = currentData[virtualRow.index];
+                      return (
+                        <tr
+                          key={tarif.id}
+                          data-index={virtualRow.index}
+                          ref={tableVirtualizer.measureElement}
+                          className="transition-all duration-200 group hover:bg-slate-50/80"
+                          style={{ position: 'absolute', top: virtualRow.start, left: 0, width: '100%', display: 'table', tableLayout: 'fixed' }}
+                        >
+                          <td className="px-6 py-4 border-r border-slate-100/30" style={{ width: '8%' }}>
+                            <span className="inline-flex items-center px-2 py-1 rounded text-[11px] font-bold leading-none bg-slate-900 text-white">
+                              {tarif.indice}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 border-r border-slate-100/30" style={{ width: '22%' }}>
+                            <div className="flex flex-col">
+                              <span className="text-[13px] font-bold text-slate-900">{tarif.zone?.nom || tarif.nom_zone}</span>
+                              <CountriesDisplay
+                                countries={tarif.zone?.pays}
+                                countryCodes={tarif.zone?.pays_codes}
+                                zoneName={tarif.zone?.nom || tarif.nom_zone}
+                              />
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 border-r border-slate-100/30 font-medium text-sm text-slate-600" style={{ width: '18%' }}>
+                            {formatMontant(tarif.montant_base)}
+                          </td>
+                          <td className="px-6 py-4 border-r border-slate-100/30" style={{ width: '18%' }}>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-indigo-600">+{tarif.pourcentage_prestation}%</span>
+                              <span className="text-[10px] text-slate-400 font-medium">{formatMontant(tarif.montant_prestation)}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 border-r border-slate-200 transition-colors bg-indigo-50/10 group-hover:bg-indigo-50/40" style={{ width: '16%' }}>
+                            <span className="text-sm font-bold text-slate-950">{formatMontant(tarif.montant_expedition)}</span>
+                          </td>
+                          {activeTab === "agency" && (
+                            <td className="px-6 py-4 border-r border-slate-100/30 text-center" style={{ width: '8%' }}>
+                              <StatusToggle active={tarif.actif} onClick={() => !isAgent && handleStatus(tarif)} disabled={isAgent} />
+                            </td>
+                          )}
+                          <td className="px-6 py-4 text-right" style={{ width: '10%' }}>
+                            <div className="flex items-center justify-end space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                              {activeTab === "agency" && !isAgent && (
+                                <>
+                                  <button onClick={() => handleEditSingle(tarif)} className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-lg border border-transparent hover:border-indigo-100 transition-all shadow-none hover:shadow-sm" title="Modifier ce tarif">
+                                    <PencilSquareIcon className="w-4 h-4" />
+                                  </button>
+                                  <button onClick={() => handleDelete(tarif)} className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-white rounded-lg border border-transparent hover:border-rose-100 transition-all shadow-none hover:shadow-sm" title="Supprimer ce tarif">
+                                    <TrashIcon className="w-4 h-4" />
+                                  </button>
+                                </>
+                              )}
+                              {activeTab === "base" && !isAgent && (
+                                <button onClick={() => handleInitializeSingle(tarif)} className="px-3 py-1.5 bg-slate-900 text-white text-[10px] font-bold rounded hover:bg-indigo-600 transition-all shadow-sm active:scale-95">
+                                  Initialiser
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
-            {/* Mobile View - Enhanced Card List */}
-            <div className="lg:hidden divide-y divide-slate-100">
-              {currentData?.map((tarif) => {
-                return (
-                <div key={tarif.id} className="p-4 space-y-4 transition-colors hover:bg-slate-50">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-md bg-slate-950">
-                        {tarif.indice}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide leading-none">Indice</span>
-                          {activeTab === "agency" && (
-                            <StatusToggle
-                              active={tarif.actif}
-                              onClick={() => !isAgent && handleStatus(tarif)}
-                              disabled={isAgent}
-                            />
-                          )}
+            {/* Mobile — virtualisé */}
+            <div ref={mobileContainerRef} className="lg:hidden overflow-auto" style={{ maxHeight: 600 }}>
+              <div style={{ height: mobileVirtualizer.getTotalSize(), position: 'relative' }}>
+                {mobileVirtualizer.getVirtualItems().map((virtualRow) => {
+                  const tarif = currentData[virtualRow.index];
+                  return (
+                    <div
+                      key={tarif.id}
+                      data-index={virtualRow.index}
+                      ref={mobileVirtualizer.measureElement}
+                      className="p-4 space-y-4 transition-colors hover:bg-slate-50 border-b border-slate-100"
+                      style={{ position: 'absolute', top: virtualRow.start, left: 0, width: '100%' }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-md bg-slate-950">
+                            {tarif.indice}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide leading-none">Indice</span>
+                              {activeTab === "agency" && (
+                                <StatusToggle active={tarif.actif} onClick={() => !isAgent && handleStatus(tarif)} disabled={isAgent} />
+                              )}
+                            </div>
+                            <p className="text-[13px] font-bold text-slate-900">{tarif.zone?.nom || tarif.nom_zone}</p>
+                            <CountriesDisplay countries={tarif.zone?.pays} countryCodes={tarif.zone?.pays_codes} zoneName={tarif.zone?.nom || tarif.nom_zone} />
+                          </div>
                         </div>
-
-                        <p className="text-[13px] font-bold text-slate-900">{tarif.zone?.nom || tarif.nom_zone}</p>
-                        <CountriesDisplay
-                          countries={tarif.zone?.pays}
-                          countryCodes={tarif.zone?.pays_codes}
-                          zoneName={tarif.zone?.nom || tarif.nom_zone}
-                        />
+                        {activeTab === "agency" && !isAgent ? (
+                          <div className="flex items-center gap-1.5">
+                            <button onClick={() => handleEditSingle(tarif)} className="p-2 bg-white text-indigo-600 rounded-lg border border-slate-200 active:scale-95 shadow-sm">
+                              <PencilSquareIcon className="w-5 h-5" />
+                            </button>
+                            <button onClick={() => handleDelete(tarif)} className="p-2 bg-white text-rose-600 rounded-lg border border-slate-200 active:scale-95 shadow-sm">
+                              <TrashIcon className="w-5 h-5" />
+                            </button>
+                          </div>
+                        ) : activeTab === "base" && !isAgent ? (
+                          <button onClick={() => handleInitializeSingle(tarif)} className="px-4 py-2 bg-slate-900 text-white text-[10px] font-bold rounded-lg shadow-sm active:scale-95">
+                            Initialiser
+                          </button>
+                        ) : null}
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 pt-2">
+                        <div className="p-3 rounded-lg border bg-slate-50 border-slate-100">
+                          <p className="text-[9px] font-bold uppercase tracking-wider mb-1 text-slate-400">Base</p>
+                          <p className="text-xs font-bold text-slate-900">{formatMontant(tarif.montant_base)}</p>
+                        </div>
+                        <div className="p-3 rounded-lg border bg-indigo-50/50 border-indigo-100">
+                          <p className="text-[9px] font-bold uppercase tracking-wider mb-1 text-indigo-400">Prestation</p>
+                          <p className="text-xs font-bold text-indigo-700">+{tarif.pourcentage_prestation}%</p>
+                        </div>
+                        <div className="col-span-2 p-3 rounded-lg flex items-center justify-between shadow-sm bg-indigo-600">
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-indigo-100">Total Expédition</p>
+                          <p className="text-base font-bold text-white">{formatMontant(tarif.montant_expedition)}</p>
+                        </div>
                       </div>
                     </div>
-                    {activeTab === "agency" && !isAgent ? (
-                      <div className="flex items-center gap-1.5">
-                        <button onClick={() => handleEditSingle(tarif)} className="p-2 bg-white text-indigo-600 rounded-lg border border-slate-200 active:scale-95 shadow-sm">
-                          <PencilSquareIcon className="w-5 h-5" />
-                        </button>
-                        <button onClick={() => handleDelete(tarif)} className="p-2 bg-white text-rose-600 rounded-lg border border-slate-200 active:scale-95 shadow-sm">
-                          <TrashIcon className="w-5 h-5" />
-                        </button>
-                      </div>
-                    ) : activeTab === "base" && !isAgent ? (
-                      <button
-                        onClick={() => handleInitializeSingle(tarif)}
-                        className="px-4 py-2 bg-slate-900 text-white text-[10px] font-bold rounded-lg shadow-sm active:scale-95"
-                      >
-                        Initialiser
-                      </button>
-                    ) : null}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 pt-2">
-                    <div className="p-3 rounded-lg border bg-slate-50 border-slate-100">
-                      <p className="text-[9px] font-bold uppercase tracking-wider mb-1 text-slate-400">Base</p>
-                      <p className="text-xs font-bold text-slate-900">{formatMontant(tarif.montant_base)}</p>
-                    </div>
-                    <div className="p-3 rounded-lg border bg-indigo-50/50 border-indigo-100">
-                      <p className="text-[9px] font-bold uppercase tracking-wider mb-1 text-indigo-400">Prestation</p>
-                      <p className="text-xs font-bold text-indigo-700">+{tarif.pourcentage_prestation}%</p>
-                    </div>
-                    <div className="col-span-2 p-3 rounded-lg flex items-center justify-between shadow-sm bg-indigo-600">
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-indigo-100">Total Expédition</p>
-                      <p className="text-base font-bold text-white">{formatMontant(tarif.montant_expedition)}</p>
-                    </div>
-                  </div>
-                </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
 
             {(!loading && currentData?.length === 0) && (
