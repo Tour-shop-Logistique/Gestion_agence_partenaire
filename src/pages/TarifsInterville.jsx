@@ -151,14 +151,7 @@ const TarifsInterville = () => {
                             {/* Desktop — virtualisé */}
                             <div className="hidden md:block">
                                 <div ref={tableContainerRef} className="overflow-auto" style={{ maxHeight: 600 }}>
-                                    <table className="w-full text-sm table-fixed">
-                                        <colgroup>
-                                            <col style={{ width: '25%' }} />
-                                            <col style={{ width: '15%' }} />
-                                            <col style={{ width: '20%' }} />
-                                            <col style={{ width: '20%' }} />
-                                            <col style={{ width: '20%' }} />
-                                        </colgroup>
+                                    <table className="w-full text-sm">
                                         <thead className="sticky top-0 z-10 bg-white">
                                             <tr className="bg-slate-50/50 border-b border-slate-200">
                                                 <th className="px-6 py-3 text-left font-bold text-slate-500 uppercase tracking-wider text-xs">Trajet</th>
@@ -168,7 +161,10 @@ const TarifsInterville = () => {
                                                 <th className="px-6 py-3 text-left font-bold text-slate-500 uppercase tracking-wider text-xs">Commission si arrivée</th>
                                             </tr>
                                         </thead>
-                                        <tbody style={{ height: tableVirtualizer.getTotalSize(), position: 'relative' }}>
+                                        <tbody className="divide-y divide-slate-100">
+                                          {(tableVirtualizer.getVirtualItems()[0]?.start ?? 0) > 0 && (
+                                            <tr><td colSpan={5} style={{ height: tableVirtualizer.getVirtualItems()[0].start, padding: 0 }} /></tr>
+                                          )}
                                             {tableVirtualizer.getVirtualItems().map((virtualRow) => {
                                                 const tarif = intervilleTarifs[virtualRow.index];
                                                 return (
@@ -177,22 +173,21 @@ const TarifsInterville = () => {
                                                         data-index={virtualRow.index}
                                                         ref={tableVirtualizer.measureElement}
                                                         className="hover:bg-slate-50/50 transition-colors"
-                                                        style={{ position: 'absolute', top: virtualRow.start, left: 0, width: '100%', display: 'table', tableLayout: 'fixed' }}
                                                     >
-                                                        <td className="px-6 py-3" style={{ width: '25%' }}>
+                                                        <td className="px-6 py-3">
                                                             <div className="flex items-center gap-1.5 text-slate-900 font-semibold">
                                                                 <span>{tarif.commune_a?.nom || '?'}</span>
                                                                 <ArrowLeftRight size={12} className="text-slate-400 shrink-0" />
                                                                 <span>{tarif.commune_b?.nom || '?'}</span>
                                                             </div>
                                                         </td>
-                                                        <td className="px-6 py-3" style={{ width: '15%' }}>
+                                                        <td className="px-6 py-3">
                                                             <FormatBadge format={tarif.format_colis} />
                                                         </td>
-                                                        <td className="px-6 py-3" style={{ width: '20%' }}>
+                                                        <td className="px-6 py-3">
                                                             <p className="font-medium text-slate-700">{formatFCFA(tarif.montant_base)}</p>
                                                         </td>
-                                                        <td className="px-6 py-3" style={{ width: '20%' }}>
+                                                        <td className="px-6 py-3">
                                                             <span className="inline-flex items-center px-2 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-100 font-bold">
                                                                 {tarif.pourcentage_commission_depart}%
                                                             </span>
@@ -200,7 +195,7 @@ const TarifsInterville = () => {
                                                                 ({formatFCFA(tarif.montant_commission_depart)})
                                                             </span>
                                                         </td>
-                                                        <td className="px-6 py-3" style={{ width: '20%' }}>
+                                                        <td className="px-6 py-3">
                                                             <span className="inline-flex items-center px-2 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-100 font-bold">
                                                                 {tarif.pourcentage_commission_arrivee}%
                                                             </span>
@@ -211,6 +206,7 @@ const TarifsInterville = () => {
                                                     </tr>
                                                 );
                                             })}
+                                          <tr><td colSpan={5} style={{ height: tableVirtualizer.getTotalSize() - (tableVirtualizer.getVirtualItems().at(-1)?.end ?? 0), padding: 0 }} /></tr>
                                         </tbody>
                                     </table>
                                 </div>

@@ -637,16 +637,7 @@ const TarifSimpleComponent = () => {
             {/* Desktop — virtualisé */}
             <div className="hidden lg:block">
               <div ref={tableContainerRef} className="overflow-auto" style={{ maxHeight: 600 }}>
-                <table className="w-full text-left border-collapse table-fixed">
-                  <colgroup>
-                    <col style={{ width: '8%' }} />
-                    <col style={{ width: '22%' }} />
-                    <col style={{ width: '18%' }} />
-                    <col style={{ width: '18%' }} />
-                    <col style={{ width: '16%' }} />
-                    <col style={{ width: '8%' }} />
-                    <col style={{ width: '10%' }} />
-                  </colgroup>
+                <table className="w-full text-left border-collapse">
                   <thead className="sticky top-0 z-10 bg-white">
                     <tr className="bg-slate-50/50 border-b border-slate-200">
                       <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-r border-slate-100/50">Indice</th>
@@ -660,7 +651,10 @@ const TarifSimpleComponent = () => {
                       <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody style={{ height: tableVirtualizer.getTotalSize(), position: 'relative' }}>
+                  <tbody className="divide-y divide-slate-100">
+                    {(tableVirtualizer.getVirtualItems()[0]?.start ?? 0) > 0 && (
+                      <tr><td colSpan={activeTab === "agency" ? 7 : 6} style={{ height: tableVirtualizer.getVirtualItems()[0].start, padding: 0 }} /></tr>
+                    )}
                     {tableVirtualizer.getVirtualItems().map((virtualRow) => {
                       const tarif = currentData[virtualRow.index];
                       return (
@@ -669,14 +663,13 @@ const TarifSimpleComponent = () => {
                           data-index={virtualRow.index}
                           ref={tableVirtualizer.measureElement}
                           className="transition-all duration-200 group hover:bg-slate-50/80"
-                          style={{ position: 'absolute', top: virtualRow.start, left: 0, width: '100%', display: 'table', tableLayout: 'fixed' }}
                         >
-                          <td className="px-6 py-4 border-r border-slate-100/30" style={{ width: '8%' }}>
+                          <td className="px-6 py-4 border-r border-slate-100/30">
                             <span className="inline-flex items-center px-2 py-1 rounded text-[11px] font-bold leading-none bg-slate-900 text-white">
                               {tarif.indice}
                             </span>
                           </td>
-                          <td className="px-6 py-4 border-r border-slate-100/30" style={{ width: '22%' }}>
+                          <td className="px-6 py-4 border-r border-slate-100/30">
                             <div className="flex flex-col">
                               <span className="text-[13px] font-bold text-slate-900">{tarif.zone?.nom || tarif.nom_zone}</span>
                               <CountriesDisplay
@@ -686,24 +679,24 @@ const TarifSimpleComponent = () => {
                               />
                             </div>
                           </td>
-                          <td className="px-6 py-4 border-r border-slate-100/30 font-medium text-sm text-slate-600" style={{ width: '18%' }}>
+                          <td className="px-6 py-4 border-r border-slate-100/30 font-medium text-sm text-slate-600">
                             {formatMontant(tarif.montant_base)}
                           </td>
-                          <td className="px-6 py-4 border-r border-slate-100/30" style={{ width: '18%' }}>
+                          <td className="px-6 py-4 border-r border-slate-100/30">
                             <div className="flex items-center gap-2">
                               <span className="text-xs font-bold text-indigo-600">+{tarif.pourcentage_prestation}%</span>
                               <span className="text-[10px] text-slate-400 font-medium">{formatMontant(tarif.montant_prestation)}</span>
                             </div>
                           </td>
-                          <td className="px-6 py-4 border-r border-slate-200 transition-colors bg-indigo-50/10 group-hover:bg-indigo-50/40" style={{ width: '16%' }}>
+                          <td className="px-6 py-4 border-r border-slate-200 transition-colors bg-indigo-50/10 group-hover:bg-indigo-50/40">
                             <span className="text-sm font-bold text-slate-950">{formatMontant(tarif.montant_expedition)}</span>
                           </td>
                           {activeTab === "agency" && (
-                            <td className="px-6 py-4 border-r border-slate-100/30 text-center" style={{ width: '8%' }}>
+                            <td className="px-6 py-4 border-r border-slate-100/30 text-center">
                               <StatusToggle active={tarif.actif} onClick={() => !isAgent && handleStatus(tarif)} disabled={isAgent} />
                             </td>
                           )}
-                          <td className="px-6 py-4 text-right" style={{ width: '10%' }}>
+                          <td className="px-6 py-4 text-right">
                             <div className="flex items-center justify-end space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                               {activeTab === "agency" && !isAgent && (
                                 <>
@@ -725,6 +718,7 @@ const TarifSimpleComponent = () => {
                         </tr>
                       );
                     })}
+                    <tr><td colSpan={activeTab === "agency" ? 7 : 6} style={{ height: tableVirtualizer.getTotalSize() - (tableVirtualizer.getVirtualItems().at(-1)?.end ?? 0), padding: 0 }} /></tr>
                   </tbody>
                 </table>
               </div>

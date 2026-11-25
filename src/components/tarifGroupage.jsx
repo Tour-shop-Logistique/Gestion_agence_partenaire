@@ -396,16 +396,7 @@ const TarifGroupageComponent = () => {
             {/* Desktop — virtualisé */}
             <div className="hidden lg:block">
               <div ref={tableContainerRef} className="overflow-auto" style={{ maxHeight: 600 }}>
-                <table className="w-full text-left border-collapse table-fixed">
-                  <colgroup>
-                    <col style={{ width: '20%' }} />
-                    <col style={{ width: activeTab === "agency" ? '21%' : '23%' }} />
-                    <col style={{ width: '16%' }} />
-                    <col style={{ width: '16%' }} />
-                    <col style={{ width: '14%' }} />
-                    {activeTab === "agency" && <col style={{ width: '7%' }} />}
-                    <col style={{ width: activeTab === "agency" ? '6%' : '11%' }} />
-                  </colgroup>
+                <table className="w-full text-left border-collapse">
                   <thead className="sticky top-0 z-10 bg-white">
                     <tr className="bg-slate-50/50 border-b border-slate-200">
                       <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-r border-slate-100/50">Type</th>
@@ -419,7 +410,10 @@ const TarifGroupageComponent = () => {
                       <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody style={{ height: tableVirtualizer.getTotalSize(), position: 'relative' }}>
+                  <tbody className="divide-y divide-slate-100">
+                    {(tableVirtualizer.getVirtualItems()[0]?.start ?? 0) > 0 && (
+                      <tr><td colSpan={activeTab === "agency" ? 7 : 6} style={{ height: tableVirtualizer.getVirtualItems()[0].start, padding: 0 }} /></tr>
+                    )}
                     {tableVirtualizer.getVirtualItems().map((virtualRow) => {
                       const tarif = currentData[virtualRow.index];
                       const montantBase = tarif.montant_base || 0;
@@ -432,9 +426,8 @@ const TarifGroupageComponent = () => {
                           data-index={virtualRow.index}
                           ref={tableVirtualizer.measureElement}
                           className="transition-all duration-200 group hover:bg-slate-50/80"
-                          style={{ position: 'absolute', top: virtualRow.start, left: 0, width: '100%', display: 'table', tableLayout: 'fixed' }}
                         >
-                          <td className="px-6 py-4 border-r border-slate-100/30" style={{ width: '20%' }}>
+                          <td className="px-6 py-4 border-r border-slate-100/30">
                             <div className="flex flex-col gap-1">
                               <span className={`inline-flex w-fit items-center px-2 py-1 rounded text-[10px] font-bold uppercase tracking-tight ${typeBadgeClasses(tarif.type_expedition)}`}>
                                 {tarif.type_expedition?.replace('groupage_', '').replace('_', ' ').toUpperCase() || 'N/A'}
@@ -442,7 +435,7 @@ const TarifGroupageComponent = () => {
                               {tarif.mode && <span className="text-[11px] font-medium text-slate-500">{tarif.mode?.toUpperCase()} {tarif.ligne ? `→ ${tarif.ligne.toUpperCase()}` : ''}</span>}
                             </div>
                           </td>
-                          <td className="px-6 py-4 border-r border-slate-100/30" style={{ width: '22%' }}>
+                          <td className="px-6 py-4 border-r border-slate-100/30">
                             {tarif.category?.nom ? (
                               <div className="flex flex-col">
                                 <span className="text-[13px] font-bold text-slate-900">{tarif.category.nom}</span>
@@ -452,24 +445,24 @@ const TarifGroupageComponent = () => {
                               <span className="text-[13px] font-bold text-slate-900 uppercase">{getCountryName(tarif.code_pays) || tarif.pays || 'N/A'}</span>
                             )}
                           </td>
-                          <td className="px-6 py-4 border-r border-slate-100/30 font-medium text-sm text-slate-600" style={{ width: '16%' }}>
+                          <td className="px-6 py-4 border-r border-slate-100/30 font-medium text-sm text-slate-600">
                             {montantBase.toLocaleString()} {getCurrencyLabel()}
                           </td>
-                          <td className="px-6 py-4 border-r border-slate-100/30" style={{ width: '16%' }}>
+                          <td className="px-6 py-4 border-r border-slate-100/30">
                             <div className="flex items-center gap-2">
                               <span className="text-xs font-bold text-indigo-600">+{pourcentage}%</span>
                               <span className="text-[10px] text-slate-400 font-medium">{montantPrestation.toLocaleString()} {getCurrencyLabel()}</span>
                             </div>
                           </td>
-                          <td className="px-6 py-4 border-r border-slate-200 bg-indigo-50/10 group-hover:bg-indigo-50/40 transition-colors" style={{ width: '14%' }}>
+                          <td className="px-6 py-4 border-r border-slate-200 bg-indigo-50/10 group-hover:bg-indigo-50/40 transition-colors">
                             <span className="text-sm font-bold text-slate-950">{total.toLocaleString()} {getCurrencyLabel()}</span>
                           </td>
                           {activeTab === "agency" && (
-                            <td className="px-6 py-4 border-r border-slate-100/30 text-center" style={{ width: '6%' }}>
+                            <td className="px-6 py-4 border-r border-slate-100/30 text-center">
                               <StatusToggle active={tarif.actif} onClick={() => !isAgent && handleToggleStatus(tarif)} disabled={isAgent} />
                             </td>
                           )}
-                          <td className="px-6 py-4 text-right" style={{ width: '6%' }}>
+                          <td className="px-6 py-4 text-right">
                             <div className="flex items-center justify-end space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                               {activeTab === "agency" && !isAgent && (
                                 <>
@@ -491,6 +484,7 @@ const TarifGroupageComponent = () => {
                         </tr>
                       );
                     })}
+                    <tr><td colSpan={activeTab === "agency" ? 7 : 6} style={{ height: tableVirtualizer.getTotalSize() - (tableVirtualizer.getVirtualItems().at(-1)?.end ?? 0), padding: 0 }} /></tr>
                   </tbody>
                 </table>
               </div>
