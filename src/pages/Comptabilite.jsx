@@ -270,6 +270,29 @@ const Comptabilite = () => {
     return { potential: totals, real: { total_cash_received: totals.total_cash_received } };
   }, [filteredData]);
 
+  // Solde emballage : ventes groupées par date (seulement expéditions avec frais_emballage > 0)
+  const emballageByDay = useMemo(() => {
+    const days = {};
+    filteredData.forEach(item => {
+      const montant = parseFloat(item.frais_emballage || 0);
+      if (montant <= 0) return;
+      const jour = formatDate(item.created_at);
+      if (!days[jour]) days[jour] = { jour, items: [], total: 0, totalCommAgence: 0 };
+      days[jour].items.push(item);
+      days[jour].total += montant;
+      days[jour].totalCommAgence += parseFloat(item.commission_details?.emballage?.agence || 0);
+    });
+    return Object.values(days).sort((a, b) => a.jour.localeCompare(b.jour));
+  }, [filteredData]);
+
+  const totalEmballage = useMemo(() =>
+    emballageByDay.reduce((s, d) => s + d.total, 0), [emballageByDay]);
+
+  const totalCommEmballageAgence = useMemo(() =>
+    emballageByDay.reduce((s, d) => s + d.totalCommAgence, 0), [emballageByDay]);
+
+  const [emballageExpanded, setEmballageExpanded] = useState(false);
+
   // Données pour le graphique d'évolution du CA (basé sur les vraies données)
   const revenueEvolution = useMemo(() => {
     if (!filteredData || filteredData.length === 0) return [];
@@ -1109,6 +1132,105 @@ const Comptabilite = () => {
           </table>
         </div>
       </div>
+
+      {/* Solde Emballage */}
+      {accountingScope === 'international' && (
+        <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+          <button
+            onClick={() => setEmballageExpanded(e => !e)}
+            className="w-full flex items-center justify-between px-4 py-3 bg-slate-50/50 border-b border-slate-100 hover:bg-slate-50 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <InboxIcon className="w-4 h-4 text-amber-500" />
+              <h2 className="text-xs font-bold text-slate-900 uppercase tracking-tight">Solde Emballage</h2>
+              {emballageByDay.length > 0 && (
+                <span className="bg-amber-100 text-amber-700 border border-amber-200 text-[10px] font-bold px-1.5 py-0.5 rounded">
+                  {emballageByDay.reduce((s, d) => s + d.items.length, 0)} vente{emballageByDay.reduce((s, d) => s + d.items.length, 0) > 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="text-right hidden sm:block">
+                <p className="text-[10px] text-slate-400 font-medium">Total emballages vendus</p>
+                <p className="text-sm font-bold text-amber-600 tabular-nums">{formatCurrency(totalEmballage)} <span className="text-[10px] font-semibold text-slate-400">{getCurrencyLabel()}</span></p>
+              </div>
+              <div className="text-right hidden sm:block">
+                <p className="text-[10px] text-slate-400 font-medium">Commission agence</p>
+                <p className="text-sm font-bold text-blue-600 tabular-nums">{formatCurrency(totalCommEmballageAgence)} <span className="text-[10px] font-semibold text-slate-400">{getCurrencyLabel()}</span></p>
+              </div>
+              <ChevronDownIcon className={`w-4 h-4 text-slate-400 transition-transform ${emballageExpanded ? 'rotate-180' : ''}`} />
+            </div>
+          </button>
+
+          {emballageExpanded && (
+            emballageByDay.length === 0 ? (
+              <div className="p-8 text-center">
+                <div className="opacity-40 flex flex-col items-center gap-2">
+                  <InboxIcon className="w-8 h-8 text-slate-300" />
+                  <p className="text-xs font-semibold">Aucune vente d'emballage sur cette période</p>
+                </div>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {emballageByDay.map(day => (
+                  <div key={day.jour} className="px-4 py-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <CalendarIcon className="w-3.5 h-3.5 text-slate-400" />
+                        <span className="text-xs font-bold text-slate-700">{day.jour}</span>
+                        <span className="text-[10px] text-slate-400 font-medium">{day.items.length} vente{day.items.length > 1 ? 's' : ''}</span>
+                      </div>
+                      <div className="flex items-center gap-4 text-right">
+                        <div>
+                          <p className="text-[9px] text-slate-400 font-semibold uppercase">Total jour</p>
+                          <p className="text-xs font-bold text-amber-600 tabular-nums">{formatCurrency(day.total)} {getCurrencyLabel()}</p>
+                        </div>
+                        <div className="hidden sm:block">
+                          <p className="text-[9px] text-slate-400 font-semibold uppercase">Com. agence</p>
+                          <p className="text-xs font-bold text-blue-600 tabular-nums">{formatCurrency(day.totalCommAgence)} {getCurrencyLabel()}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="ml-5 space-y-1">
+                      {day.items.map(item => (
+                        <div
+                          key={item.id}
+                          onClick={() => handleRowClick(item)}
+                          className="flex items-center justify-between py-1.5 px-2 rounded bg-amber-50/50 hover:bg-amber-50 cursor-pointer transition-colors border border-amber-100/50"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-[10px] font-semibold text-slate-600 truncate">{item.reference}</span>
+                            <span className="text-[9px] text-slate-400 truncate hidden sm:inline">{item.expediteur?.nom_prenom}</span>
+                          </div>
+                          <div className="flex items-center gap-3 shrink-0">
+                            <span className="text-[10px] font-bold text-amber-700 tabular-nums">{formatCurrency(item.frais_emballage)} {getCurrencyLabel()}</span>
+                            {parseFloat(item.commission_details?.emballage?.agence || 0) > 0 && (
+                              <span className="text-[10px] font-bold text-blue-600 tabular-nums hidden sm:inline">(agence: {formatCurrency(item.commission_details.emballage.agence)})</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                <div className="px-4 py-3 bg-slate-50/50 flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-tight">Total période</span>
+                  <div className="flex items-center gap-6">
+                    <div className="text-right">
+                      <p className="text-[9px] text-slate-400 font-semibold uppercase">Emballages</p>
+                      <p className="text-sm font-bold text-amber-600 tabular-nums">{formatCurrency(totalEmballage)} {getCurrencyLabel()}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[9px] text-slate-400 font-semibold uppercase">Com. agence</p>
+                      <p className="text-sm font-bold text-blue-600 tabular-nums">{formatCurrency(totalCommEmballageAgence)} {getCurrencyLabel()}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          )}
+        </div>
+      )}
 
       {/* Professional Detail Modal */}
       {isModalOpen && selectedExpedition && (
