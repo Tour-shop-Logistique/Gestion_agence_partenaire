@@ -54,17 +54,11 @@ const Sidebar = ({ onClose }) => {
 
   const canAccessPage = (pageKey) => checkCanAccessPage(currentUser, isAdmin, pageKey);
 
-  const demandesMetaDirect = useSelector((state) => state.expedition?.demandesMeta);
   const unreadMessagesCount = useSelector(selectUnreadMessagesCount);
+  const operational = useSelector((state) => state.dashboard?.operational || {});
 
   const isActive = (path) => location.pathname === path;
   const pendingDemandesCount = demandesMeta?.total || 0;
-
-  React.useEffect(() => {
-    console.log("demandesMeta from hook:", demandesMeta);
-    console.log("demandesMeta direct from Redux:", demandesMetaDirect);
-    console.log("pendingDemandesCount:", pendingDemandesCount);
-  }, [demandesMeta, demandesMetaDirect, pendingDemandesCount]);
 
   const adminMenuItems = [
     {
@@ -297,10 +291,15 @@ const Sidebar = ({ onClose }) => {
             <div className="space-y-0">
               {section.items.map((item) => {
                 const active = isActive(item.path);
-                const showBadge =
-                  (item.path === "/demandes" && pendingDemandesCount > 0) ||
-                  (item.path === "/messages" && unreadMessagesCount > 0);
-                const badgeCount = item.path === "/messages" ? unreadMessagesCount : pendingDemandesCount;
+                const BADGE_COUNTS = {
+                  "/demandes":               pendingDemandesCount,
+                  "/messages":               unreadMessagesCount,
+                  "/colis-a-receptionner":   operational.colis_attente_reception_depart || 0,
+                  "/retrait-colis":          operational.colis_attente_retrait_livraison || 0,
+                  "/expeditions":            operational.expeditions_attente_acceptation || 0,
+                };
+                const badgeCount = BADGE_COUNTS[item.path] || 0;
+                const showBadge = badgeCount > 0;
                 const c = ITEM_ACCENTS[item.path] || DEFAULT_ACCENT;
 
                 return (
