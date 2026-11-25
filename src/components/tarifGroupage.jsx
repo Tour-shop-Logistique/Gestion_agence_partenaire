@@ -396,7 +396,16 @@ const TarifGroupageComponent = () => {
             {/* Desktop — virtualisé */}
             <div className="hidden lg:block">
               <div ref={tableContainerRef} className="overflow-auto" style={{ maxHeight: 600 }}>
-                <table className="w-full text-left border-collapse">
+                <table className="w-full text-left border-collapse table-fixed">
+                  <colgroup>
+                    <col style={{ width: '20%' }} />
+                    <col style={{ width: activeTab === "agency" ? '21%' : '23%' }} />
+                    <col style={{ width: '16%' }} />
+                    <col style={{ width: '16%' }} />
+                    <col style={{ width: '14%' }} />
+                    {activeTab === "agency" && <col style={{ width: '7%' }} />}
+                    <col style={{ width: activeTab === "agency" ? '6%' : '11%' }} />
+                  </colgroup>
                   <thead className="sticky top-0 z-10 bg-white">
                     <tr className="bg-slate-50/50 border-b border-slate-200">
                       <th className="px-6 py-4 text-[10px] font-semibold text-slate-400 uppercase tracking-wide border-r border-slate-100/50">Type</th>

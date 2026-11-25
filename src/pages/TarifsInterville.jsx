@@ -151,7 +151,14 @@ const TarifsInterville = () => {
                             {/* Desktop — virtualisé */}
                             <div className="hidden md:block">
                                 <div ref={tableContainerRef} className="overflow-auto" style={{ maxHeight: 600 }}>
-                                    <table className="w-full text-sm">
+                                    <table className="w-full text-sm table-fixed">
+                                        <colgroup>
+                                            <col style={{ width: '25%' }} />
+                                            <col style={{ width: '15%' }} />
+                                            <col style={{ width: '20%' }} />
+                                            <col style={{ width: '20%' }} />
+                                            <col style={{ width: '20%' }} />
+                                        </colgroup>
                                         <thead className="sticky top-0 z-10 bg-white">
                                             <tr className="bg-slate-50/50 border-b border-slate-200">
                                                 <th className="px-6 py-3 text-left font-bold text-slate-500 uppercase tracking-wider text-xs">Trajet</th>
